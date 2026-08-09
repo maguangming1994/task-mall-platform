@@ -1,0 +1,98 @@
+{
+	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/login/index",
+			"style": {
+				"navigationBarTitleText": "登录"
+			}
+		},
+		{
+			"path": "pages/legal-consent/index",
+			"style": {
+				"navigationBarTitleText": "协议确认"
+			}
+		},
+    {
+      "path": "pages/privacy/index",
+			"style": {
+				"navigationBarTitleText": "隐私与账号"
+      }
+    },
+    {
+      "path": "pages/account/index",
+      "style": {
+        "navigationBarTitleText": "账户中心"
+      }
+    },
+    {
+      "path": "pages/assets/index",
+      "style": {
+        "navigationBarTitleText": "我的资产"
+      }
+    },
+    {
+      "path": "pages/tasks/index",
+      "style": {
+				"navigationBarTitleText": "任务大厅",
+				"enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/task-detail/index",
+      "style": {
+        "navigationBarTitleText": "任务详情"
+      }
+    },
+    {
+      "path": "pages/task-claim/index",
+      "style": {
+        "navigationBarTitleText": "任务提交"
+      }
+    },
+    {
+      "path": "pages/referrals/index",
+      "style": { "navigationBarTitleText": "我的推荐" }
+    },
+    {
+      "path": "pages/publisher/index",
+      "style": { "navigationBarTitleText": "任务发布中心" }
+    },
+    {
+      "path": "pages/products/index",
+      "style": { "navigationBarTitleText": "精选商城", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/cart/index",
+      "style": { "navigationBarTitleText": "购物车" }
+    },
+    {
+      "path": "pages/orders/index",
+      "style": { "navigationBarTitleText": "我的订单" }
+    },
+    {
+      "path": "pages/after-sales/index",
+      "style": { "navigationBarTitleText": "售后服务" }
+    },
+    {
+      "path": "pages/community/index",
+      "style": { "navigationBarTitleText": "成长社区", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/notifications/index",
+      "style": { "navigationBarTitleText": "消息中心" }
+    }
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "任务商城",
+		"navigationBarBackgroundColor": "#FFFFFF",
+		"backgroundColor": "#F6F8FC",
+		"backgroundTextStyle": "dark"
+	}
+}

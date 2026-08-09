@@ -1,0 +1,21 @@
+{
+  "name": "task-mall-platform",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=11 <12"
+  },
+  "scripts": {
+    "dev:user:h5": "pnpm --dir apps/user-app dev:h5",
+    "dev:user:wechat": "pnpm --dir apps/user-app dev:mp-weixin",
+    "dev:admin": "pnpm --dir apps/admin-web dev",
+    "build:user:h5": "pnpm --dir apps/user-app build:h5",
+    "build:user:wechat": "pnpm --dir apps/user-app build:mp-weixin",
+    "build:admin": "pnpm --dir apps/admin-web build",
+    "build": "pnpm run build:user:h5 && pnpm run build:user:wechat && pnpm run build:admin",
+    "typecheck": "pnpm --dir apps/user-app type-check && pnpm --dir apps/admin-web typecheck",
+    "lint": "pnpm --dir apps/admin-web lint"
+  }
+}

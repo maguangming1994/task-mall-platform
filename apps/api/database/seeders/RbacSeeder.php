@@ -1,0 +1,75 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Modules\Admin\Models\Permission;
+use App\Modules\Admin\Models\Role;
+use Illuminate\Database\Seeder;
+
+class RbacSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $permissions = [
+            ['code' => 'user.view_masked', 'name' => '查看脱敏用户', 'group' => 'user'],
+            ['code' => 'user.view_sensitive', 'name' => '查看完整敏感资料', 'group' => 'user'],
+            ['code' => 'identity.resolve', 'name' => '处理身份合并冲突', 'group' => 'user'],
+            ['code' => 'privacy.manage', 'name' => '处理隐私请求与账号注销', 'group' => 'user'],
+            ['code' => 'legal.manage', 'name' => '管理协议版本与发布', 'group' => 'system'],
+            ['code' => 'task.view', 'name' => '查看任务', 'group' => 'task'],
+            ['code' => 'task.manage', 'name' => '管理任务', 'group' => 'task'],
+            ['code' => 'task.review', 'name' => '审核任务提交', 'group' => 'task'],
+            ['code' => 'task.frontend_publish', 'name' => '用户端发布任务', 'group' => 'task'],
+            ['code' => 'community.review', 'name' => '审核社区内容', 'group' => 'community'],
+            ['code' => 'product.manage', 'name' => '管理商品与优惠券', 'group' => 'mall'],
+            ['code' => 'fulfillment.manage', 'name' => '管理库存与履约', 'group' => 'mall'],
+            ['code' => 'after_sale.review', 'name' => '审核售后', 'group' => 'after_sale'],
+            ['code' => 'finance.manage', 'name' => '管理支付与对账', 'group' => 'finance'],
+            ['code' => 'operations.manage', 'name' => '管理通知与运营', 'group' => 'operations'],
+            ['code' => 'deployment.manage', 'name' => '管理发布、灰度与回滚', 'group' => 'system'],
+            ['code' => 'settings.manage', 'name' => '管理系统配置', 'group' => 'system'],
+            ['code' => 'settings.approve', 'name' => '审核高风险系统配置', 'group' => 'system'],
+            ['code' => 'rbac.manage', 'name' => '管理角色权限', 'group' => 'system'],
+            ['code' => 'audit.view', 'name' => '查看全局审计', 'group' => 'audit'],
+            ['code' => 'audit.view_own', 'name' => '查看本人审计', 'group' => 'audit'],
+        ];
+
+        foreach ($permissions as $attributes) {
+            Permission::query()->updateOrCreate(['code' => $attributes['code']], $attributes);
+        }
+
+        $rolePermissions = [
+            'super_admin' => array_column($permissions, 'code'),
+            'platform_admin' => ['user.view_masked', 'privacy.manage', 'legal.manage', 'task.view', 'task.manage', 'task.frontend_publish', 'audit.view_own'],
+            'operations_admin' => ['user.view_masked', 'task.view', 'task.manage', 'product.manage', 'operations.manage', 'audit.view_own'],
+            'task_reviewer' => ['user.view_masked', 'task.view', 'task.review', 'after_sale.review', 'audit.view_own'],
+            'community_reviewer' => ['user.view_masked', 'community.review', 'audit.view_own'],
+            'customer_service' => ['user.view_masked', 'privacy.manage', 'task.view', 'after_sale.review', 'audit.view_own'],
+            'warehouse' => ['user.view_sensitive', 'product.manage', 'fulfillment.manage', 'audit.view_own'],
+            'finance' => ['user.view_masked', 'finance.manage', 'after_sale.review', 'audit.view'],
+            'auditor' => ['user.view_masked', 'task.view', 'audit.view'],
+        ];
+
+        $roleNames = [
+            'super_admin' => '超级管理员',
+            'platform_admin' => '平台管理员',
+            'operations_admin' => '运营管理员',
+            'task_reviewer' => '任务审核员',
+            'community_reviewer' => '社区审核员',
+            'customer_service' => '客服人员',
+            'warehouse' => '仓储人员',
+            'finance' => '财务人员',
+            'auditor' => '审计人员',
+        ];
+
+        foreach ($rolePermissions as $code => $permissionCodes) {
+            $role = Role::query()->updateOrCreate(
+                ['code' => $code],
+                ['name' => $roleNames[$code], 'system_role' => true],
+            );
+            $role->permissions()->sync(
+                Permission::query()->whereIn('code', $permissionCodes)->pluck('id'),
+            );
+        }
+    }
+}

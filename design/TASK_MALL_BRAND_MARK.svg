@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
+  <title id="title">任务商城品牌标记</title>
+  <desc id="description">蓝色圆角方形中由任务节点与购物袋组合形成的抽象标记</desc>
+  <defs>
+    <linearGradient id="brand" x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2455C3"/>
+      <stop offset="1" stop-color="#5688F4"/>
+    </linearGradient>
+  </defs>
+  <path d="M28 8h60c17.7 0 32 14.3 32 32v60c0 11-9 20-20 20H40C22.3 120 8 105.7 8 88V28C8 17 17 8 28 8Z" fill="url(#brand)"/>
+  <path d="M39 48h50l6 44H33l6-44Z" fill="none" stroke="#fff" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M50 50c0-10 6-18 14-18s14 8 14 18" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+  <path d="m50 69 10 10 20-23" fill="none" stroke="#FFD7A8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

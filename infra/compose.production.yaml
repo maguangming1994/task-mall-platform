@@ -1,0 +1,90 @@
+name: task-mall-production
+
+x-api: &api
+  build:
+    context: ..
+    dockerfile: infra/docker/api.Dockerfile
+  env_file: ${PRODUCTION_ENV_FILE:-.env.production}
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks: [backend]
+  volumes:
+    - ${WECHAT_PAYMENT_PRIVATE_KEY_FILE:?set WECHAT_PAYMENT_PRIVATE_KEY_FILE}:/run/secrets/wechat_merchant_key:ro
+    - ${WECHAT_PAYMENT_PLATFORM_CERT_FILE:?set WECHAT_PAYMENT_PLATFORM_CERT_FILE}:/run/secrets/wechat_platform_cert:ro
+
+services:
+  api:
+    <<: *api
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://nginx:8080/api/v1/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  queue:
+    <<: *api
+    command: ["php", "artisan", "queue:work", "--sleep=2", "--tries=3", "--timeout=3600", "--max-time=7200"]
+    stop_grace_period: 10m
+
+  scheduler:
+    <<: *api
+    command: ["php", "artisan", "schedule:work"]
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: infra/docker/web.Dockerfile
+    ports:
+      - "${HTTP_BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:8080"
+    restart: unless-stopped
+    depends_on: [api]
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/gateway-health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:?set DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME:?set DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      TZ: Asia/Shanghai
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?set REDIS_PASSWORD}"]
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a '$${REDIS_PASSWORD}' ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+networks:
+  backend:
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -1,0 +1,371 @@
+import {
+  AppstoreOutlined,
+  AuditOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  DashboardOutlined,
+  FileDoneOutlined,
+  LockOutlined,
+  LogoutOutlined,
+  KeyOutlined,
+  MenuFoldOutlined,
+  MenuOutlined,
+  MenuUnfoldOutlined,
+  MessageOutlined,
+  NotificationOutlined,
+  ProfileOutlined,
+  SafetyCertificateOutlined,
+  SettingOutlined,
+  ShopOutlined,
+  ShoppingCartOutlined,
+  TeamOutlined,
+  UserOutlined,
+  WalletOutlined,
+} from '@ant-design/icons'
+import {
+  Alert,
+  Avatar,
+  Button,
+  Card,
+  ConfigProvider,
+  Dropdown,
+  Drawer,
+  Form,
+  Input,
+  Layout,
+  Menu,
+  Modal,
+  Result,
+  Skeleton,
+  Space,
+  Statistic,
+  Tag,
+  Typography,
+  message,
+} from 'antd'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
+import { ApiError, changeAdminPassword, getOperationsDashboard, type AdminMfaChallenge, type NavigationItem, type OperationsMetrics } from './api/admin'
+import { useAdminAuth } from './features/auth/AdminAuthContext'
+import { AdminAuthProvider } from './features/auth/AdminAuthProvider'
+import './App.css'
+
+const SettingsPage = lazy(() => import('./features/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })))
+const SecurityPage = lazy(() => import('./features/security/SecurityPage').then((module) => ({ default: module.SecurityPage })))
+const PrivacyPage = lazy(() => import('./features/privacy/PrivacyPage').then((module) => ({ default: module.PrivacyPage })))
+const ReadinessPage = lazy(() => import('./features/readiness/ReadinessPage').then((module) => ({ default: module.ReadinessPage })))
+const TaskManagementPage = lazy(() => import('./features/tasks/TaskManagementPage').then((module) => ({ default: module.TaskManagementPage })))
+const AssetManagementPage = lazy(() => import('./features/assets/AssetManagementPage').then((module) => ({ default: module.AssetManagementPage })))
+const ProductManagementPage = lazy(() => import('./features/products/ProductManagementPage').then((module) => ({ default: module.ProductManagementPage })))
+const AfterSaleManagementPage = lazy(() => import('./features/after-sales/AfterSaleManagementPage').then((module) => ({ default: module.AfterSaleManagementPage })))
+const CommunityManagementPage = lazy(() => import('./features/community/CommunityManagementPage').then((module) => ({ default: module.CommunityManagementPage })))
+const OperationsPage = lazy(() => import('./features/operations/OperationsPage').then((module) => ({ default: module.OperationsPage })))
+const UserOperationsPage = lazy(() => import('./features/users/UserOperationsPage').then((module) => ({ default: module.UserOperationsPage })))
+
+const iconMap: Record<string, ReactNode> = {
+  DashboardOutlined: <DashboardOutlined />,
+  TeamOutlined: <TeamOutlined />,
+  ProfileOutlined: <ProfileOutlined />,
+  ShopOutlined: <ShopOutlined />,
+  FileDoneOutlined: <FileDoneOutlined />,
+  WalletOutlined: <WalletOutlined />,
+  MessageOutlined: <MessageOutlined />,
+  NotificationOutlined: <NotificationOutlined />,
+  SettingOutlined: <SettingOutlined />,
+  SafetyCertificateOutlined: <SafetyCertificateOutlined />,
+}
+
+const roleNames: Record<string, string> = {
+  super_admin: '超级管理员',
+  platform_admin: '平台管理员',
+  operations_admin: '运营管理员',
+  task_reviewer: '任务审核员',
+  community_reviewer: '社区审核员',
+  customer_service: '客服人员',
+  warehouse: '仓储人员',
+  finance: '财务人员',
+  auditor: '审计人员',
+}
+
+function LoginPage() {
+  const { login, verifyMfa } = useAdminAuth()
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [challenge, setChallenge] = useState<AdminMfaChallenge | null>(null)
+
+  const submit = async (values: { account: string; password: string; code?: string }) => {
+    setSubmitting(true)
+    setError(null)
+    try {
+      if (challenge) {
+        await verifyMfa(challenge, values.code ?? '')
+      } else {
+        setChallenge(await login(values.account, values.password))
+      }
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : '登录失败，请检查网络后重试。')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <main className="login-page">
+      <section className="login-story">
+        <div className="brand-mark"><AppstoreOutlined /></div>
+        <Typography.Text className="eyebrow">TASK MALL · OPERATIONS</Typography.Text>
+        <Typography.Title>一处管理任务、商城与用户资产</Typography.Title>
+        <Typography.Paragraph>
+          面向微信小程序与多端 H5 的统一运营后台。关键操作均由服务端权限校验并进入审计记录。
+        </Typography.Paragraph>
+        <div className="security-note"><SafetyCertificateOutlined /> 独立后台会话 · 最小权限 · 全程审计</div>
+      </section>
+      <Card className="login-card" bordered={false}>
+        <Typography.Title level={2}>{challenge ? '完成二次验证' : '登录管理后台'}</Typography.Title>
+        <Typography.Paragraph type="secondary">{challenge ? '输入验证器动态码或一次性恢复码' : '请输入管理员账号和密码'}</Typography.Paragraph>
+        {error && <Alert showIcon type="error" message={error} className="login-alert" />}
+        <Form layout="vertical" requiredMark={false} onFinish={submit} size="large">
+          {!challenge && <Form.Item label="管理员账号" name="account" rules={[{ required: true, message: '请输入管理员账号' }]}>
+            <Input prefix={<UserOutlined />} autoComplete="username" placeholder="请输入账号" />
+          </Form.Item>}
+          {!challenge && <Form.Item label="密码" name="password" rules={[{ required: true, message: '请输入密码' }]}>
+            <Input.Password prefix={<LockOutlined />} autoComplete="current-password" placeholder="请输入密码" />
+          </Form.Item>}
+          {challenge && <Form.Item label="验证码或恢复码" name="code" rules={[{ required: true, message: '请输入验证码或恢复码' }]}>
+            <Input prefix={<SafetyCertificateOutlined />} autoComplete="one-time-code" placeholder="6 位动态码" />
+          </Form.Item>}
+          <Button block type="primary" htmlType="submit" loading={submitting}>{challenge ? '验证并登录' : '安全登录'}</Button>
+          {challenge && <Button block type="link" onClick={() => { setChallenge(null); setError(null) }}>返回账号登录</Button>}
+        </Form>
+        <Typography.Paragraph className="login-help" type="secondary">
+          首位管理员由运维人员通过 <code>php artisan admin:create</code> 安全创建，不提供通用默认密码。
+        </Typography.Paragraph>
+      </Card>
+    </main>
+  )
+}
+
+function Workbench() {
+  const [metrics, setMetrics] = useState<OperationsMetrics | null>(null)
+
+  useEffect(() => {
+    void getOperationsDashboard().then(setMetrics).catch(() => setMetrics(null))
+  }, [])
+
+  const pending = [
+    { label: '任务待审核', value: metrics?.tasks.pending_reviews ?? 0, icon: <AuditOutlined /> },
+    { label: '待履约订单', value: metrics?.orders.pending_fulfillment ?? 0, icon: <ShoppingCartOutlined /> },
+    { label: '退款与换货', value: (metrics?.after_sales.pending_refunds ?? 0) + (metrics?.after_sales.pending_exchanges ?? 0), icon: <ClockCircleOutlined /> },
+    { label: '对账差异', value: metrics?.finance.reconciliation_differences ?? 0, icon: <SafetyCertificateOutlined /> },
+  ]
+
+  return (
+    <>
+      <div className="page-heading workbench-heading">
+        <div>
+          <Typography.Text className="eyebrow">OPERATIONS OVERVIEW</Typography.Text>
+          <Typography.Title level={2}>运营工作台</Typography.Title>
+          <Typography.Paragraph type="secondary">集中查看任务、商城、售后和资金风险。</Typography.Paragraph>
+        </div>
+        <Space><Tag color="processing">本地预览</Tag><Tag color="success"><CheckCircleOutlined /> 服务正常</Tag></Space>
+      </div>
+      <div className="stat-grid stat-grid-four">
+        <Card bordered={false}><Statistic title="活跃用户" value={metrics?.users.active_total ?? 0} suffix="人" prefix={<TeamOutlined />} /></Card>
+        <Card bordered={false}><Statistic title="已发布任务" value={metrics?.tasks.published ?? 0} suffix="个" prefix={<ProfileOutlined />} /></Card>
+        <Card bordered={false}><Statistic title="今日实付订单" value={metrics?.orders.paid_today ?? 0} suffix="单" prefix={<ShopOutlined />} /></Card>
+        <Card bordered={false}><Statistic title="未读业务消息" value={metrics?.notifications.unread_total ?? 0} suffix="条" prefix={<NotificationOutlined />} /></Card>
+      </div>
+      <div className="workbench-grid">
+        <Card bordered={false} className="milestone-card" title="待处理事项" extra={<Typography.Text type="secondary">实时汇总</Typography.Text>}>
+          <div className="pending-grid">
+            {pending.map((item) => <div className="pending-item" key={item.label}><span className="pending-icon">{item.icon}</span><span><strong>{item.value}</strong><small>{item.label}</small></span></div>)}
+          </div>
+        </Card>
+        <Card bordered={false} className="milestone-card" title="资产与系统">
+          <Space direction="vertical" size={16} className="system-summary">
+            <Typography.Text><SafetyCertificateOutlined /> 余额与积分流水采用不可变账本</Typography.Text>
+            <Typography.Text><AuditOutlined /> 高风险配置、调账和发布支持四眼复核</Typography.Text>
+            <Typography.Text><CheckCircleOutlined /> 本地自动化 UAT 与一致性审计已接入</Typography.Text>
+          </Space>
+        </Card>
+      </div>
+    </>
+  )
+}
+
+function Workspace({ item }: { item: NavigationItem }) {
+  if (item.code === 'users') return <UserOperationsPage />
+  if (item.code === 'settings') return <SettingsPage />
+  if (item.code === 'security') return <SecurityPage />
+  if (item.code === 'privacy') return <PrivacyPage />
+  if (item.code === 'readiness') return <ReadinessPage />
+  if (item.code === 'tasks') return <TaskManagementPage />
+  if (item.code === 'finance') return <AssetManagementPage />
+  if (item.code === 'mall') return <ProductManagementPage />
+  if (item.code === 'orders') return <AfterSaleManagementPage />
+  if (item.code === 'community') return <CommunityManagementPage />
+  if (item.code === 'operations') return <OperationsPage />
+  if (item.code !== 'workbench') {
+    return (
+      <Result
+        icon={iconMap[item.icon]}
+        title={item.label}
+        subTitle="权限入口已经接通，具体业务页面将在对应迭代中逐项实现。"
+      />
+    )
+  }
+
+  return <Workbench />
+}
+
+function AdminShell() {
+  const { admin, navigation, logout } = useAdminAuth()
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [activeCode, setActiveCode] = useState('workbench')
+  const [passwordOpen, setPasswordOpen] = useState(false)
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false)
+  const [passwordForm] = Form.useForm()
+  const [messageApi, contextHolder] = message.useMessage()
+  const activeItem = navigation.find((item) => item.code === activeCode) ?? navigation[0]
+  const navigationItems = navigation.map((item) => ({ key: item.code, icon: iconMap[item.icon], label: item.label }))
+
+  const selectNavigation = (key: string) => {
+    setActiveCode(key)
+    setMobileNavOpen(false)
+  }
+
+  const signOut = async () => {
+    try {
+      await logout()
+    } catch {
+      messageApi.error('退出请求未完成，本地会话已清理。')
+    }
+  }
+
+  const submitPasswordChange = async (values: { current_password: string; new_password: string; new_password_confirmation: string; mfa_code?: string }) => {
+    setPasswordSubmitting(true)
+    try {
+      await changeAdminPassword(values)
+      messageApi.success('密码修改成功，其他设备上的登录已退出。')
+      setPasswordOpen(false)
+      passwordForm.resetFields()
+    } catch (error) {
+      messageApi.error(error instanceof ApiError ? error.message : '修改密码失败，请稍后重试。')
+    } finally {
+      setPasswordSubmitting(false)
+    }
+  }
+
+  return (
+    <Layout className="admin-layout">
+      {contextHolder}
+      <Layout.Sider width={248} collapsedWidth={76} collapsed={collapsed} className="admin-sider">
+        <div className="sider-brand"><AppstoreOutlined /><span>任务商城</span></div>
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[activeItem?.code ?? 'workbench']}
+          items={navigationItems}
+          onClick={({ key }) => selectNavigation(key)}
+        />
+        <div className="sider-version">{collapsed ? 'V1' : 'V1 · OPERATIONS'}</div>
+      </Layout.Sider>
+      <Layout>
+        <Layout.Header className="admin-header">
+          <Button
+            className="desktop-sider-toggle"
+            type="text"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={() => setCollapsed((value) => !value)}
+          />
+          <Button
+            className="mobile-nav-toggle"
+            type="text"
+            aria-label="打开后台导航"
+            icon={<MenuOutlined />}
+            onClick={() => setMobileNavOpen(true)}
+          />
+          <Dropdown
+            trigger={['click']}
+            menu={{ items: [
+              { key: 'password', icon: <KeyOutlined />, label: '修改密码', onClick: () => setPasswordOpen(true) },
+              { type: 'divider' },
+              { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', danger: true, onClick: signOut },
+            ] }}
+          >
+            <Button type="text" className="profile-button">
+              <Avatar>{admin?.display_name.slice(0, 1)}</Avatar>
+              <span><strong>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
+            </Button>
+          </Dropdown>
+        </Layout.Header>
+        <Layout.Content className="admin-content">
+          {activeItem && <Suspense fallback={<Skeleton active paragraph={{ rows: 5 }} />}><Workspace item={activeItem} /></Suspense>}
+        </Layout.Content>
+      </Layout>
+      <Drawer
+        className="mobile-navigation"
+        placement="left"
+        width={300}
+        open={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+        title={<span className="mobile-navigation-title"><AppstoreOutlined />任务商城</span>}
+      >
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[activeItem?.code ?? 'workbench']}
+          items={navigationItems}
+          onClick={({ key }) => selectNavigation(key)}
+        />
+        <div className="mobile-navigation-footer">
+          <Avatar>{admin?.display_name.slice(0, 1)}</Avatar>
+          <span><strong>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
+        </div>
+      </Drawer>
+      <Modal
+        title="修改登录密码"
+        open={passwordOpen}
+        onCancel={() => { setPasswordOpen(false); passwordForm.resetFields() }}
+        onOk={() => passwordForm.submit()}
+        okText="确认修改"
+        cancelText="取消"
+        confirmLoading={passwordSubmitting}
+        destroyOnHidden
+      >
+        <Alert type="info" showIcon message="新密码至少 12 位，必须同时包含字母和数字；修改后其他设备将退出登录。" style={{ marginBottom: 16 }} />
+        <Form form={passwordForm} layout="vertical" onFinish={submitPasswordChange}>
+          <Form.Item name="current_password" label="当前密码" rules={[{ required: true, message: '请输入当前密码' }]}>
+            <Input.Password autoComplete="current-password" />
+          </Form.Item>
+          <Form.Item name="new_password" label="新密码" rules={[{ required: true, min: 12, message: '请输入至少 12 位的新密码' }, { pattern: /^(?=.*[A-Za-z])(?=.*\d).+$/, message: '新密码必须同时包含字母和数字' }]}>
+            <Input.Password autoComplete="new-password" />
+          </Form.Item>
+          <Form.Item name="new_password_confirmation" label="确认新密码" dependencies={['new_password']} rules={[{ required: true, message: '请再次输入新密码' }, ({ getFieldValue }) => ({ validator: (_, value) => !value || getFieldValue('new_password') === value ? Promise.resolve() : Promise.reject(new Error('两次输入的新密码不一致')) })]}>
+            <Input.Password autoComplete="new-password" />
+          </Form.Item>
+          {admin?.requires_mfa && <Form.Item name="mfa_code" label="动态验证码或恢复码" rules={[{ required: true, message: '请输入动态验证码或恢复码' }]}>
+            <Input autoComplete="one-time-code" inputMode="numeric" />
+          </Form.Item>}
+        </Form>
+      </Modal>
+    </Layout>
+  )
+}
+
+function AppContent() {
+  const { admin, loading } = useAdminAuth()
+  if (loading) return <div className="app-loading"><Skeleton active paragraph={{ rows: 4 }} /></div>
+
+  return admin ? <AdminShell /> : <LoginPage />
+}
+
+function App() {
+  return (
+    <ConfigProvider theme={{ token: { colorPrimary: '#2f67df', colorSuccess: '#15966a', colorWarning: '#e56a16', colorError: '#d14343', borderRadius: 12, fontFamily: 'Inter, "PingFang SC", "Microsoft YaHei", sans-serif' } }}>
+      <AdminAuthProvider><AppContent /></AdminAuthProvider>
+    </ConfigProvider>
+  )
+}
+
+export default App

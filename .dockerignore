@@ -1,0 +1,10 @@
+.git
+.idea
+.vscode
+**/.env
+**/node_modules
+**/vendor
+**/dist
+**/storage/logs/*
+backups
+xmind/*.zip

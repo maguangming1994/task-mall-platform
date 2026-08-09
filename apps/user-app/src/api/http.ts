@@ -1,0 +1,98 @@
+import { clientPlatform } from '@/platform/runtime'
+
+export interface ApiEnvelope<T> {
+  code: string
+  message: string
+  data: T
+  request_id: string
+}
+
+export interface ApiErrorPayload {
+  code: string
+  message: string
+  details?: Record<string, unknown>
+  request_id?: string
+}
+
+export class ApiError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+    public readonly statusCode: number,
+    public readonly details?: Record<string, unknown>,
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
+let defaultApiBaseUrl = 'http://127.0.0.1:8000/api/v1'
+// #ifdef H5
+defaultApiBaseUrl = '/api/v1'
+// #endif
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl
+
+export function apiUrl(path: string) {
+  return `${apiBaseUrl}${path}`
+}
+const deviceStorageKey = 'task_mall_device_id'
+
+function getDeviceId() {
+  const stored = uni.getStorageSync(deviceStorageKey)
+  if (typeof stored === 'string' && stored.length >= 8) {
+    return stored
+  }
+
+  const generated = `device-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+  uni.setStorageSync(deviceStorageKey, generated)
+  return generated
+}
+
+interface ApiRequestOptions {
+  path: string
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  data?: string | Record<string, unknown> | ArrayBuffer
+  accessToken?: string | null
+  headers?: Record<string, string>
+}
+
+export function apiRequest<T>(options: ApiRequestOptions): Promise<T> {
+  return new Promise((resolve, reject) => {
+    uni.request({
+      url: `${apiBaseUrl}${options.path}`,
+      method: options.method || 'GET',
+      data: options.data,
+      header: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-Client-Platform': clientPlatform,
+        'X-Device-Id': getDeviceId(),
+        ...(options.accessToken ? { Authorization: `Bearer ${options.accessToken}` } : {}),
+        ...options.headers,
+      },
+      success(response) {
+        if (response.statusCode === 204) {
+          resolve(undefined as T)
+          return
+        }
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          resolve((response.data as ApiEnvelope<T>).data)
+          return
+        }
+
+        const payload = response.data as ApiErrorPayload
+        reject(new ApiError(
+          payload.code || 'REQUEST_FAILED',
+          payload.message || '请求失败，请稍后重试。',
+          response.statusCode,
+          payload.details,
+        ))
+      },
+      fail(error) {
+        reject(new ApiError('NETWORK_ERROR', error.errMsg || '网络连接失败。', 0))
+      },
+    })
+  })
+}

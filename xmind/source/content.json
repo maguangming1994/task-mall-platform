@@ -1,0 +1,625 @@
+[
+  {
+    "id": "sheet-task-mall-overview",
+    "class": "sheet",
+    "title": "任务商城系统项目总览",
+    "rootTopic": {
+      "id": "root-task-mall-system",
+      "class": "topic",
+      "title": "任务 + 商城系统",
+      "structureClass": "org.xmind.ui.logic.right",
+      "children": {
+        "attached": [
+          {
+            "id": "topic-product-positioning",
+            "class": "topic",
+            "title": "1. 产品定位与首发平台",
+            "children": {
+              "attached": [
+                {"id":"topic-platform-mini","class":"topic","title":"微信小程序"},
+                {"id":"topic-platform-wechat-h5","class":"topic","title":"微信公众号内 H5"},
+                {"id":"topic-platform-browser-h5","class":"topic","title":"微信外通用 H5"},
+                {"id":"topic-platform-later","class":"topic","title":"后续扩展 Android / iOS"},
+                {"id":"topic-platform-price","class":"topic","title":"各端商品价格与购买方案保持一致"},
+                {"id":"topic-platform-self-operated","class":"topic","title":"首版平台自营，不开放第三方商家"}
+              ]
+            }
+          },
+          {
+            "id": "topic-tech-architecture",
+            "class": "topic",
+            "title": "2. 技术架构",
+            "children": {
+              "attached": [
+                {"id":"topic-tech-user","class":"topic","title":"用户端：uni-app + Vue 3 + TypeScript + Pinia"},
+                {"id":"topic-tech-admin","class":"topic","title":"管理后台：React + TypeScript + Ant Design"},
+                {"id":"topic-tech-api","class":"topic","title":"服务端：PHP Laravel 模块化单体"},
+                {"id":"topic-tech-db","class":"topic","title":"数据库：PostgreSQL"},
+                {"id":"topic-tech-cache","class":"topic","title":"缓存与队列：Redis"},
+                {"id":"topic-tech-contract","class":"topic","title":"OpenAPI 统一前后端契约"},
+                {"id":"topic-tech-platform-adapter","class":"topic","title":"登录 / 支付 / 分享 / 上传使用多端适配层"}
+              ]
+            }
+          },
+          {
+            "id": "topic-account",
+            "class": "topic",
+            "title": "3. 用户、账号与权限",
+            "children": {
+              "attached": [
+                {"id":"topic-account-guest","class":"topic","title":"游客可浏览公开任务、社区和商品"},
+                {"id":"topic-account-phone","class":"topic","title":"关键业务前必须登录并绑定已验证手机号"},
+                {"id":"topic-account-identity","class":"topic","title":"手机号、小程序、公众号身份归属统一用户"},
+                {"id":"topic-account-session","class":"topic","title":"Access Token 2 小时 / Refresh Token 30 天"},
+                {"id":"topic-account-device","class":"topic","title":"默认最多 5 台活跃设备"},
+                {"id":"topic-account-i1-status","class":"topic","title":"I1本地工程已收口：认证、治理、隐私注销、真实渠道适配与生产门禁；外部凭据待联调"},
+                {"id":"topic-account-admin-session","class":"topic","title":"后台独立Token：默认1小时访问、7天刷新、30分钟空闲、最多3个会话"},
+                {"id":"topic-account-admin-security","class":"topic","title":"后台失败锁定、停用即时失效、权限菜单、服务端权限中间件与审计已落地"},
+                {"id":"topic-account-wechat-adapter","class":"topic","title":"小程序code2Session、公众号网页授权与三端能力判断已接入；生产凭据待联调"},
+                {"id":"topic-account-union-merge","class":"topic","title":"UnionID归一；OpenID/UnionID密文与HMAC摘要分离保存"},
+                {"id":"topic-account-identity-conflict","class":"topic","title":"UnionID/手机号冲突禁止静默合并，由专权管理员处理并撤销原会话"},
+                {"id":"topic-account-legal-version","class":"topic","title":"8类协议支持草稿、审核发布、预约生效、内容摘要与已发布不可篡改"},
+                {"id":"topic-account-legal-consent","class":"topic","title":"用户接受/撤回记录只追加；新版本生效后重新补签"},
+                {"id":"topic-account-legal-gate","class":"topic","title":"服务端按账号、任务、社区、结算、钱包与注销范围强制协议门槛"},
+                {"id":"topic-account-settings-center","class":"topic","title":"配置中心已落地：39个核心定义、类型校验、草稿差异、四眼审核、发布缓存、版本与回滚"},
+                {"id":"topic-account-settings-invariants","class":"topic","title":"硬约束受保护：运费仅现金、余额与现金不可组合、多端同价、优惠券不可叠加"},
+                {"id":"topic-account-controlled-upload","class":"topic","title":"私有上传已落地：幂等票据、用途校验、隔离区、队列扫描、所有者鉴权与扫描前禁用"},
+                {"id":"topic-account-admin-mfa","class":"topic","title":"后台治理已落地：管理员/角色/会话、TOTP与恢复码、登录挑战、防重放和近期验证"},
+                {"id":"topic-account-privacy-implementation","class":"topic","title":"隐私权利已落地：查阅、复制、更正、删除、撤回同意与7天私有数据副本"},
+                {"id":"topic-account-cancel","class":"topic","title":"注销已落地：资格检查、默认7天冷静期、登录撤回、到期复核与匿名化"},
+                {"id":"topic-account-deletion-replay","class":"topic","title":"删除清单与定时重放已落地，防止备份恢复后个人数据重新出现"},
+                {"id":"topic-account-privacy-admin","class":"topic","title":"后台隐私工单支持专权、近期复验、阻断保护与全程审计"},
+                {"id":"topic-account-production-readiness","class":"topic","title":"生产就绪门禁已落地：18项脱敏检查、后台清单、严格CLI非零退出"},
+                {"id":"topic-account-channel-webhooks","class":"topic","title":"短信与文件扫描Webhook已落地，配置缺失、连接失败或异常响应时失败关闭"},
+                {"id":"topic-account-profile-batch10","class":"topic","title":"第10批已完成：昵称与受控头像、资料完善单次里程碑及奖励待投递状态"},
+                {"id":"topic-account-address-batch10","class":"topic","title":"地址簿已完成：敏感字段加密、20条上限、幂等、所有者隔离与默认地址保护"},
+                {"id":"topic-account-assets-batch10","class":"topic","title":"统一资产总览已完成：积分、余额、优惠券汇总并与注销资格联动"},
+                {
+                  "id":"topic-account-roles",
+                  "class":"topic",
+                  "title":"后台 RBAC 角色",
+                  "children":{"attached":[
+                    {"id":"topic-role-super","class":"topic","title":"超级管理员"},
+                    {"id":"topic-role-platform","class":"topic","title":"平台管理员"},
+                    {"id":"topic-role-operation","class":"topic","title":"运营管理员"},
+                    {"id":"topic-role-review","class":"topic","title":"任务 / 社区审核员"},
+                    {"id":"topic-role-service","class":"topic","title":"客服 / 仓储 / 财务 / 审计"}
+                  ]}
+                }
+              ]
+            }
+          },
+          {
+            "id": "topic-task-system",
+            "class": "topic",
+            "title": "4. 任务系统",
+            "children": {
+              "attached": [
+                {
+                  "id":"topic-task-publisher",
+                  "class":"topic",
+                  "title":"任务发布",
+                  "children":{"attached":[
+                    {"id":"topic-task-publisher-role","class":"topic","title":"首版仅后台账号的平台管理员发布"},
+                    {"id":"topic-task-publisher-admin","class":"topic","title":"可从管理后台发布"},
+                    {"id":"topic-task-publisher-front","class":"topic","title":"可从用户端任务发布中心发布"},
+                    {"id":"topic-task-publisher-session","class":"topic","title":"前端使用独立短时限权发布会话"},
+                    {"id":"topic-task-publisher-own","class":"topic","title":"前端默认只管理本人发布的任务"},
+                    {"id":"topic-task-publisher-flow","class":"topic","title":"草稿 → 预览 → 校验 → 发布 / 必要审批"},
+                    {"id":"topic-task-publisher-risk","class":"topic","title":"发布者不能审核自己的高风险申请"},
+                    {"id":"topic-task-publisher-batch15","class":"topic","title":"第15批已完成：独立短时发布会话、三类令牌隔离、撤权实时失效"},
+                    {"id":"topic-task-batch11-version","class":"topic","title":"第11批已完成：不可变任务版本、普通/重大分类、乐观锁与复制回滚"},
+                    {"id":"topic-task-batch11-status","class":"topic","title":"发布、排期激活、暂停、恢复、关闭与归档动作幂等留痕"}
+                  ]}
+                },
+                {
+                  "id":"topic-task-hall",
+                  "class":"topic",
+                  "title":"任务大厅",
+                  "children":{"attached":[
+                    {"id":"topic-task-hall-recommend","class":"topic","title":"推荐"},
+                    {"id":"topic-task-hall-limited","class":"topic","title":"限时"},
+                    {"id":"topic-task-hall-daily","class":"topic","title":"日常"},
+                    {"id":"topic-task-hall-growth","class":"topic","title":"成长"},
+                    {"id":"topic-task-hall-my","class":"topic","title":"我的任务：进行中 / 审核中 / 已完成 / 已结束"},
+                    {"id":"topic-task-hall-batch13","class":"topic","title":"第13批已完成：公开任务筛选、奖励/期限/剩余名额与uni-app任务大厅"}
+                  ]}
+                },
+                {
+                  "id":"topic-task-participation",
+                  "class":"topic",
+                  "title":"三种参与方式",
+                  "children":{"attached":[
+                    {"id":"topic-task-claim-submit","class":"topic","title":"领取并提交材料"},
+                    {"id":"topic-task-claim-auto","class":"topic","title":"领取后系统自动核验"},
+                    {"id":"topic-task-auto-enroll","class":"topic","title":"系统自动加入成长任务"},
+                    {"id":"topic-task-claim-batch13-atomic","class":"topic","title":"领取与全部奖励预留同事务，任一失败不创建用户任务"},
+                    {"id":"topic-task-claim-batch13-cycle","class":"topic","title":"服务端周期唯一；取消/到期释放名额但当前周期不能重领"}
+                  ]}
+                },
+                {"id":"topic-task-cycle","class":"topic","title":"一次性 / 每日 / 每周 / 可重复任务"},
+                {"id":"topic-task-submit","class":"topic","title":"默认提交 3 次，审核期限 48 小时","children":{"attached":[
+                  {"id":"topic-task-submit-batch14-content","class":"topic","title":"第14批已完成：文字/字段/安全附件提交，撤回不返还次数"},
+                  {"id":"topic-task-submit-batch14-review","class":"topic","title":"显式开始审核后不能撤回；驳回原因必填；逾期只提醒不自动通过"},
+                  {"id":"topic-task-submit-batch14-auto","class":"topic","title":"可信服务端事件幂等核验，达到目标直接通过"}
+                ]}},
+                {"id":"topic-task-appeal","class":"topic","title":"最终驳回后 7 天内申诉 1 次","children":{"attached":[
+                  {"id":"topic-task-appeal-batch15-review","class":"topic","title":"第15批已完成：原审核人回避，申诉通过恢复发奖，驳回释放预留"},
+                  {"id":"topic-task-risk-batch15","class":"topic","title":"材料摘要查重、用户举报、风险SLA、冻结与暂停领取"}
+                ]}},
+                {"id":"topic-task-rewards","class":"topic","title":"奖励：积分 + 优惠券 + 余额，可组合","children":{"attached":[
+                  {"id":"topic-task-reward-batch14-delivery","class":"topic","title":"第14批已完成：奖励组件独立发放，失败不撤销任务通过结论"},
+                  {"id":"topic-task-reward-batch14-retry","class":"topic","title":"失败退避、定时重试、人工重试幂等并同步结算预算"}
+                ]}},
+                {"id":"topic-task-first","class":"topic","title":"被推荐新人完成首次有效任务作为转化里程碑","children":{"attached":[
+                  {"id":"topic-task-referral-batch15","class":"topic","title":"第15批已完成：首个任务 + 首笔现金订单双里程碑后幂等奖励"}
+                ]}}
+              ]
+            }
+          },
+          {
+            "id": "topic-task-budget",
+            "class": "topic",
+            "title": "5. 任务奖励预算",
+            "children": {
+              "attached": [
+                {"id":"topic-budget-platform","class":"topic","title":"仅使用平台统一预算池，禁止个人资产出资"},
+                {"id":"topic-budget-types","class":"topic","title":"积分发行额度 / 优惠券数量 / 余额现金预算分别核算"},
+                {"id":"topic-budget-lock","class":"topic","title":"发布前锁定活动总预算"},
+                {"id":"topic-budget-balance","class":"topic","title":"余额奖励按总金额 100% 锁定"},
+                {"id":"topic-budget-reserve","class":"topic","title":"领取或自动加入时预留个人全部奖励"},
+                {"id":"topic-budget-fail","class":"topic","title":"任一奖励预留失败则不创建用户任务"},
+                {"id":"topic-budget-cycle","class":"topic","title":"必须设置总奖励次数；周期任务另设周期上限"},
+                {"id":"topic-budget-exhausted","class":"topic","title":"预算耗尽停止新参与，已预留用户正常履约"},
+                {"id":"topic-budget-release","class":"topic","title":"审核、申诉、奖励重试结清后释放剩余预算"},
+                {"id":"topic-budget-approval","class":"topic","title":"单次余额 > 200 元或总余额预算 > 5000 元财务二审"},
+                {"id":"topic-budget-ledger","class":"topic","title":"锁定 / 预留 / 发放 / 释放 / 追回均有不可删除流水"},
+                {"id":"topic-budget-batch11-pool","class":"topic","title":"第11批已完成：平台预算池、版本化调整与不可变资金流水"},
+                {"id":"topic-budget-batch11-atomic","class":"topic","title":"多奖励发布按稳定顺序原子锁定，任一不足整体回滚"},
+                {"id":"topic-budget-batch11-review","class":"topic","title":"高额余额奖励先财务四眼复核，批准前不锁预算"}
+              ]
+            }
+          },
+          {
+            "id": "topic-growth-assets",
+            "class": "topic",
+            "title": "6. 积分、优惠券与余额",
+            "children": {
+              "attached": [
+                {
+                  "id":"topic-points",
+                  "class":"topic",
+                  "title":"积分",
+                  "children":{"attached":[
+                    {"id":"topic-points-expiry","class":"topic","title":"全局与来源有效期可配置，默认 365 天"},
+                    {"id":"topic-points-fifo","class":"topic","title":"最早过期优先消费"},
+                    {"id":"topic-points-refund","class":"topic","title":"退款积分按来源当前有效期重新计算"},
+                    {"id":"topic-points-debt","class":"topic","title":"违规撤销不足形成积分欠额，新增积分优先偿还"},
+                    {"id":"topic-points-limits","class":"topic","title":"不能转账、提现、兑换余额或支付运费"},
+                    {"id":"topic-points-batch12","class":"topic","title":"第12批已完成：来源批次、FIFO分配、欠额优先偿还与幂等到期"}
+                  ]}
+                },
+                {
+                  "id":"topic-coupon",
+                  "class":"topic",
+                  "title":"优惠券",
+                  "children":{"attached":[
+                    {"id":"topic-coupon-assets","class":"topic","title":"可抵现金、积分或两者"},
+                    {"id":"topic-coupon-one","class":"topic","title":"每个订单最多使用一张"},
+                    {"id":"topic-coupon-refund","class":"topic","title":"整单取消/退款返券，部分退款不返"},
+                    {"id":"topic-coupon-expiry","class":"topic","title":"默认 30 天，返券使用较晚有效期"},
+                    {"id":"topic-coupon-batch12","class":"topic","title":"第12批已完成：组合权益模板快照、用户券、撤销与到期流水"}
+                  ]}
+                },
+                {
+                  "id":"topic-wallet",
+                  "class":"topic",
+                  "title":"余额钱包",
+                  "children":{"attached":[
+                    {"id":"topic-wallet-valid","class":"topic","title":"永久有效，可支付商城和提现"},
+                    {"id":"topic-wallet-pay","class":"topic","title":"余额必须全额支付，不能与微信组合"},
+                    {"id":"topic-wallet-fee","class":"topic","title":"提现手续费默认 0.6%"},
+                    {"id":"topic-wallet-admin","class":"topic","title":"后台资产调整均有流水和审批"},
+                    {"id":"topic-wallet-batch12-ledger","class":"topic","title":"第12批已完成：余额增减、清零、冻结与解冻只追加账本"},
+                    {"id":"topic-wallet-batch12-review","class":"topic","title":"余额>200元、积分>1000或任意清零由不同财务人员复核"},
+                    {"id":"topic-wallet-batch12-withdraw","class":"topic","title":"提现先展示0.6%报价并冻结全额；拒绝解冻，批准待渠道出款"}
+                  ]}
+                }
+              ]
+            }
+          },
+          {
+            "id": "topic-mall",
+            "class": "topic",
+            "title": "7. 商城、订单与支付",
+            "children": {
+              "attached": [
+                {"id":"topic-mall-spu","class":"topic","title":"SPU + SKU 商品模型"},
+                {"id":"topic-mall-modes","class":"topic","title":"纯积分 / 纯现金 / 现金 + 积分三种购买方式"},
+                {"id":"topic-mall-sku-config","class":"topic","title":"同一 SKU 可开启一种、两种或三种方式"},
+                {"id":"topic-mall-batch16-catalog","class":"topic","title":"第16批已完成：分类、SPU、SKU、独立购买方案与公开商品接口"},
+                {"id":"topic-mall-batch16-price","class":"topic","title":"现金按分、积分按整数；三个首发端共享价格行，不维护渠道价"},
+                {"id":"topic-mall-batch16-version","class":"topic","title":"商品定义只追加版本，购买方案乐观锁且每个SKU至少保留一种方式"},
+                {"id":"topic-mall-batch16-status","class":"topic","title":"上架前重新校验；下架阻止新交易但保留历史版本、审计和售后权利"},
+                {"id":"topic-mall-shipping","class":"topic","title":"运费只能使用现金"},
+                {"id":"topic-mall-split","class":"topic","title":"不同交付类型自动拆单"},
+                {"id":"topic-mall-reserve","class":"topic","title":"待支付和库存预占默认 15 分钟"},
+                {"id":"topic-mall-stock","class":"topic","title":"库存不得为负，所有变动生成流水"},
+                {"id":"topic-mall-batch17-inventory","class":"topic","title":"第17批已完成：在库/预占/可售、乐观锁、不可变流水与低库存预警"},
+                {"id":"topic-mall-batch17-cart","class":"topic","title":"购物车按SKU+购买方式保存意向，不占库存；规则变化保留失效原因"},
+                {"id":"topic-mall-batch17-shipping","class":"topic","title":"运费模板支持固定/按件/按重、区域附加费和四类包邮规则，版本不可覆盖"},
+                {"id":"topic-mall-batch17-cash","class":"topic","title":"地址归属隔离，服务端按模板合并试算；运费只能使用现金"},
+                {"id":"topic-mall-batch18-preview","class":"topic","title":"第18批已完成：5分钟结算预览只计算快照，不创建订单且不占库存或资产"},
+                {"id":"topic-mall-batch18-split","class":"topic","title":"按物流、无需物流、虚拟交付拆单；地址、优惠、运费与商品定义逐单快照"},
+                {"id":"topic-mall-batch18-reserve","class":"topic","title":"建单再次锁行计价，原子预占库存、FIFO积分批次和优惠券；变化则整单回滚"},
+                {"id":"topic-mall-batch18-idempotency","class":"topic","title":"幂等创建防重；纯积分立即扣减待履约，含现金订单待支付"},
+                {"id":"topic-mall-batch19-wallet","class":"topic","title":"第19批已完成：余额只能足额支付，扣款与库存积分优惠券结算同事务"},
+                {"id":"topic-mall-batch19-wechat","class":"topic","title":"微信小程序、微信内H5、外部H5分别使用小程序、JSAPI、MWEB参数"},
+                {"id":"topic-mall-batch19-gateway","class":"topic","title":"真实V3网关RSA签名且失败关闭；本地模拟仅限local/testing并明确sandbox"},
+                {"id":"topic-mall-batch19-readiness","class":"topic","title":"生产门禁检查商户号、证书、私钥、APIv3密钥及HTTPS回调且不泄密"},
+                {"id":"topic-mall-batch20-callback","class":"topic","title":"第20批已完成：平台证书RSA验签、时间窗校验、APIv3 AES-GCM解密后才处理回调"},
+                {"id":"topic-mall-batch20-idempotency","class":"topic","title":"通知ID数据库唯一；重复成功只结算一次，迟到关单不能逆转成功终态"},
+                {"id":"topic-mall-batch20-query","class":"topic","title":"每5分钟主动查询补偿回调丢失；仅可信回调或查询可确认支付"},
+                {"id":"topic-mall-batch20-timeout","class":"topic","title":"每分钟处理超时单，渠道关单成功后幂等释放库存、积分和优惠券"},
+                {"id":"topic-mall-batch21-reconcile","class":"topic","title":"第21批已完成：标准渠道账单与本地支付按单号、金额、状态逐笔日对账"},
+                {"id":"topic-mall-batch21-differences","class":"topic","title":"本地缺失、渠道缺失、金额或状态差异进入财务队列，处置只追加审计不覆盖事实"},
+                {"id":"topic-mall-batch21-referral","class":"topic","title":"推荐奖励仅在首个任务与首笔实际现金大于0的已完成订单均满足后幂等发放"},
+                {"id":"topic-mall-pay-scenes","class":"topic","title":"小程序支付 / JSAPI / H5 MWEB"},
+                {"id":"topic-mall-pay-truth","class":"topic","title":"服务端回调和主动查询作为支付最终依据"}
+              ]
+            }
+          },
+          {
+            "id": "topic-fulfillment-after-sale",
+            "class": "topic",
+            "title": "8. 履约、退款与售后",
+            "children": {
+              "attached": [
+                {"id":"topic-fulfillment-types","class":"topic","title":"实体物流 / 无需物流 / 虚拟交付"},
+                {"id":"topic-fulfillment-batch22","class":"topic","title":"第22批已完成：物流、无需物流、虚拟交付与分批履约，累计数量不得超购"},
+                {"id":"topic-fulfillment-batch22-complete","class":"topic","title":"全部交付后用户确认完成，并触发首笔实付现金订单推荐里程碑"},
+                {"id":"topic-fulfillment-partial","class":"topic","title":"支持分批发货与独立物流单号"},
+                {"id":"topic-refund-types","class":"topic","title":"部分退款 / 整项退款 / 整单退款"},
+                {"id":"topic-refund-cap","class":"topic","title":"累计退款不得超过实付现金、积分和剩余数量"},
+                {"id":"topic-refund-batch23","class":"topic","title":"第23批已完成：按订单项数量分摊退款，进行中与历史累计均不得超实付"},
+                {"id":"topic-refund-batch23-points","class":"topic","title":"余额按原路径退回；退款积分生成新批次并从实际到账日重算有效期"},
+                {"id":"topic-after-sale-batch24","class":"topic","title":"第24批已完成：退货、同SKU换货、责任判定、7天寄回期限与无需物流闭环"},
+                {"id":"topic-after-sale-batch24-config","class":"topic","title":"售后原因后台可配置并保存规则快照；运费补偿强制物流单号与安全付款凭证"},
+                {"id":"topic-after-sale-batch24-ui","class":"topic","title":"用户端售后申请/进度与管理端退款、换货、原因配置操作台已接通"},
+                {"id":"topic-community-batch25","class":"topic","title":"第25批已完成：帖子先审后发、编辑版本、评论敏感词过滤与两级回复"},
+                {"id":"topic-community-batch25-growth","class":"topic","title":"发帖/有效评论按来源发放积分；每日评论奖励封顶，删除违规内容可撤销并形成欠额"},
+                {"id":"topic-community-batch25-ui","class":"topic","title":"用户端社区发帖评论与管理端帖子版本/敏感评论审核队列已接通"},
+                {"id":"topic-community-batch26","class":"topic","title":"第26批已完成：举报去重、警告/隐藏/删除、限发/限评/禁言与账号限制"},
+                {"id":"topic-community-batch26-appeal","class":"topic","title":"单次处置限申诉一次且异人复核；通过后原子恢复内容、积分、评论数与限制"},
+                {"id":"topic-community-batch26-channel","class":"topic","title":"本地规则与管理队列已完成；正式内容安全供应商保留为上线联调项"},
+                {"id":"topic-return-reasons","class":"topic","title":"按买家、卖家、物流或协商原因判责"},
+                {"id":"topic-return-deadline","class":"topic","title":"实体退货批准后 7 天未提交物流自动关闭"},
+                {"id":"topic-return-shipping","class":"topic","title":"运费补偿必须有物流单号和付款凭证"},
+                {"id":"topic-exchange","class":"topic","title":"首版只支持同一 SKU 换货"},
+                {"id":"topic-original-shipping","class":"topic","title":"实际退货不退原运费；未交付整单退款可退"}
+              ]
+            }
+          },
+          {
+            "id": "topic-community",
+            "class": "topic",
+            "title": "9. 社区、成长与推荐",
+            "children": {
+              "attached": [
+                {"id":"topic-community-post","class":"topic","title":"帖子、评论、审核、举报与申诉"},
+                {"id":"topic-community-revoke","class":"topic","title":"违规内容撤销奖励并进入风控"},
+                {"id":"topic-growth-checkin","class":"topic","title":"签到、完善资料、社区行为成长奖励"},
+                {"id":"topic-referral-bind","class":"topic","title":"推荐关系首次绑定后不可覆盖"},
+                {"id":"topic-referral-first-task","class":"topic","title":"新人首次有效任务完成进度"},
+                {"id":"topic-referral-order","class":"topic","title":"新人首笔含现金实付订单完成后奖励推荐人 500 积分"},
+                {"id":"topic-referral-refund","class":"topic","title":"整单退款或异常订单撤销推荐奖励"}
+              ]
+            }
+          },
+          {
+            "id": "topic-admin-ops",
+            "class": "topic",
+            "title": "10. 后台、配置与运营",
+            "children": {
+              "attached": [
+                {"id":"topic-admin-config","class":"topic","title":"默认参数全部进入后台配置中心"},
+                {"id":"topic-admin-version","class":"topic","title":"草稿、校验、审批、发布、版本和回滚"},
+                {"id":"topic-admin-snapshot","class":"topic","title":"配置修改默认只影响新业务，历史使用快照"},
+                {"id":"topic-admin-audit","class":"topic","title":"高风险操作记录操作人、原因、前后值和请求 ID"},
+                {"id":"topic-admin-notification","class":"topic","title":"第27批已完成：站内信优先、微信/短信重试、必要消息与用户免打扰"},
+                {"id":"topic-admin-campaign","class":"topic","title":"模板变量白名单、版本发布、订阅人群活动与预约触达已落地"},
+                {"id":"topic-admin-dashboard","class":"topic","title":"任务、商城、支付、售后、社区、资产和通知综合看板已落地"}
+              ]
+            }
+          },
+          {
+            "id": "topic-design-quality",
+            "class": "topic",
+            "title": "11. UI、原型、质量与安全",
+            "children": {
+              "attached": [
+                {"id":"topic-design-ui","class":"topic","title":"V1视觉系统、品牌标记、首页高保真结构和五栏导航已落地"},
+                {"id":"topic-design-icons","class":"topic","title":"用户端圆角字标与CSS图形、后台线性图标统一；外部素材引入需登记授权"},
+                {"id":"topic-design-demo","class":"topic","title":"本地幂等演示数据已完成：4个任务、3个商品、3篇社区内容及体验资产"},
+                {"id":"topic-design-multi","class":"topic","title":"小程序、微信内 H5、外部 H5 真机检查"},
+                {"id":"topic-quality-tests","class":"topic","title":"单元、接口、集成、E2E、并发和安全测试"},
+                {"id":"topic-quality-accounting","class":"topic","title":"库存、积分、余额、预算和退款对账一致率 100%"},
+                {"id":"topic-quality-performance","class":"topic","title":"第28批已完成：核心 API p95 ≤ 500 ms 压测门禁、关键组合索引与管理端拆包"},
+                {"id":"topic-quality-resilience","class":"topic","title":"存活/就绪探针、安全响应头、一致性审计与可逆恢复演练已落地"},
+                {"id":"topic-quality-privacy","class":"topic","title":"隐私政策、数据保留、脱敏和最小权限"}
+              ]
+            }
+          },
+          {
+            "id": "topic-next",
+            "class": "topic",
+            "title": "12. 需求确认路线图（第一至第三十二组已完成）",
+            "children": {
+              "attached": [
+                {
+                  "id":"topic-next-quota",
+                  "class":"topic",
+                  "title":"第十八组（已确认）：任务领取、名额与占位",
+                  "children":{"attached":[
+                    {"id":"topic-quota-three-counts","class":"topic","title":"历史领取 / 当前占位 / 成功奖励三个口径"},
+                    {"id":"topic-quota-atomic","class":"topic","title":"用户任务、占位和奖励预留原子完成"},
+                    {"id":"topic-quota-window","class":"topic","title":"默认领取后24小时完成"},
+                    {"id":"topic-quota-cancel","class":"topic","title":"取消后当前周期不能重领"},
+                    {"id":"topic-quota-release","class":"topic","title":"过期或最终驳回释放并允许补位"},
+                    {"id":"topic-quota-auto","class":"topic","title":"自动加入按明确业务触发"},
+                    {"id":"topic-quota-waitlist","class":"topic","title":"首版满额不做候补队列"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-hall",
+                  "class":"topic",
+                  "title":"第十九组（已确认）：任务大厅展示规则",
+                  "children":{"attached":[
+                    {"id":"topic-hall-sections-confirmed","class":"topic","title":"推荐 / 限时 / 日常 / 成长 / 全部"},
+                    {"id":"topic-hall-ranking-confirmed","class":"topic","title":"置顶 → 可参与 → 即将截止 → 最新发布"},
+                    {"id":"topic-hall-placement-confirmed","class":"topic","title":"发布者申请推荐位，后台运营审批"},
+                    {"id":"topic-hall-search-confirmed","class":"topic","title":"标题、标签、分类、发布主体搜索与筛选"},
+                    {"id":"topic-hall-eligibility-confirmed","class":"topic","title":"公开资格提示与定向保密隐藏"},
+                    {"id":"topic-hall-status-confirmed","class":"topic","title":"满额可看、到期大厅隐藏"},
+                    {"id":"topic-hall-no-paid-confirmed","class":"topic","title":"首版无竞价排名或付费置顶"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-manage",
+                  "class":"topic",
+                  "title":"第二十组（已确认）：发布后修改与关闭",
+                  "children":{"attached":[
+                    {"id":"topic-change-minor-major","class":"topic","title":"普通修改 / 重大修改由服务端判定"},
+                    {"id":"topic-change-snapshot","class":"topic","title":"已领取用户始终使用原快照"},
+                    {"id":"topic-change-budget","class":"topic","title":"奖励增加先锁预算，名额减少受占位保护"},
+                    {"id":"topic-change-time","class":"topic","title":"时间和流程修改只影响新参与"},
+                    {"id":"topic-change-pause","class":"topic","title":"暂停停止新参与，已有用户默认继续"},
+                    {"id":"topic-change-close","class":"topic","title":"有进行中用户时关闭转后台审批"},
+                    {"id":"topic-change-archive","class":"topic","title":"关闭不可恢复，结清后归档"},
+                    {"id":"topic-change-rollback","class":"topic","title":"回滚复制历史内容形成新版本"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-risk",
+                  "class":"topic",
+                  "title":"第二十一组（已确认）：任务内容审核、作弊和投诉风控",
+                  "children":{"attached":[
+                    {"id":"topic-risk-levels-confirmed","class":"topic","title":"低风险直过、中风险人工、高风险拒绝或冻结"},
+                    {"id":"topic-risk-prohibited-confirmed","class":"topic","title":"违法诈骗、刷单造假、危险骚扰和私下交易禁止"},
+                    {"id":"topic-risk-links-confirmed","class":"topic","title":"外链默认禁止，仅允许名单可用且展示提示"},
+                    {"id":"topic-risk-privacy-confirmed","class":"topic","title":"首版禁止收集证件、银行卡和生物识别等高敏信息"},
+                    {"id":"topic-risk-fraud-confirmed","class":"topic","title":"材料相似度与多账号多信号识别，禁止单信号永久处罚"},
+                    {"id":"topic-risk-report-confirmed","class":"topic","title":"详情可举报，举报量只提升优先级不自动定罪"},
+                    {"id":"topic-risk-sla-confirmed","class":"topic","title":"高风险2小时、普通投诉24小时，后台可配置"},
+                    {"id":"topic-risk-appeal-confirmed","class":"topic","title":"奖励可冻结，处罚可申诉，异人复核，误判恢复补偿"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-user-publish",
+                  "class":"topic",
+                  "title":"第二十二组（已确认）：普通用户或机构发布边界",
+                  "children":{"attached":[
+                    {"id":"topic-partner-closed-confirmed","class":"topic","title":"首发保持关闭，仅平台管理员发布"},
+                    {"id":"topic-partner-rollout-confirmed","class":"topic","title":"受邀机构 → 认证个人 → 开放申请分阶段灰度"},
+                    {"id":"topic-partner-qualification-confirmed","class":"topic","title":"手机号、实名/机构、协议、资质和复审"},
+                    {"id":"topic-partner-funding-confirmed","class":"topic","title":"奖励预付并锁定，独立账本，不使用用户钱包"},
+                    {"id":"topic-partner-reward-confirmed","class":"topic","title":"首期仅平台积分、优惠券和预付余额奖励"},
+                    {"id":"topic-partner-review-confirmed","class":"topic","title":"全部人工发布审核，新主体低额度低频次"},
+                    {"id":"topic-partner-data-confirmed","class":"topic","title":"仅看必要成果，敏感数据和批量下载默认禁止"},
+                    {"id":"topic-partner-gate-confirmed","class":"topic","title":"法务、财务、税务、安全和运营联合上线门槛"}
+                  ]}
+                },
+                {
+                  "id":"topic-confirmation-guide",
+                  "class":"topic",
+                  "title":"需求基线v1.0已冻结；后续改变范围需提交变更申请",
+                  "children":{"attached":[
+                    {"id":"topic-confirmation-status","class":"topic","title":"第一至第三十二组全部已确认并落档"},
+                    {"id":"topic-confirmation-change","class":"topic","title":"变更需评估收益、成本、账务、兼容、合规、测试和排期"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-privacy",
+                  "class":"topic",
+                  "title":"第二十三组（已确认）：隐私、协议与数据保留",
+                  "children":{"attached":[
+                    {"id":"topic-privacy-minimum","class":"topic","title":"原则：目的最小化、最短必要期限、到期删除或匿名化"},
+                    {"id":"topic-privacy-account","class":"topic","title":"建议：账号资料注销后30天内删除/匿名化，法定留存除外"},
+                    {"id":"topic-privacy-security","class":"topic","title":"建议：登录与设备安全日志180天"},
+                    {"id":"topic-privacy-task","class":"topic","title":"建议：普通任务附件结清后180天删除；任务奖励流水3年"},
+                    {"id":"topic-privacy-trade","class":"topic","title":"商城订单、支付、物流、退款和售后至少保留3年"},
+                    {"id":"topic-privacy-assets","class":"topic","title":"建议：积分、优惠券和余额流水保留5年"},
+                    {"id":"topic-privacy-risk","class":"topic","title":"风险/申诉证据3年，重大案件建议5年"},
+                    {"id":"topic-privacy-backup","class":"topic","title":"建议：备份滚动90天，删除随生命周期自然覆盖"},
+                    {"id":"topic-privacy-rights","class":"topic","title":"提供查询、更正、复制、删除、撤回授权和注销入口"},
+                    {"id":"topic-privacy-minor","class":"topic","title":"建议：MVP不面向14周岁以下儿童独立提供服务"},
+                    {"id":"topic-privacy-border","class":"topic","title":"建议：默认不跨境；SDK、共享对象和权限逐项公示"},
+                    {"id":"topic-privacy-legal","class":"topic","title":"正式用户协议、隐私政策和保留清单上线前由法务复核"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-compliance",
+                  "class":"topic",
+                  "title":"第二十四组（已确认）：合规文本、主体资质与第三方账号",
+                  "children":{"attached":[
+                    {"id":"topic-compliance-entity","class":"topic","title":"需提供：运营主体名称、证照、注册地址、客服与隐私联系人"},
+                    {"id":"topic-compliance-agreements","class":"topic","title":"建议文本：用户、隐私、任务、积分、钱包提现、商城售后、社区规范"},
+                    {"id":"topic-compliance-wechat","class":"topic","title":"需准备：小程序AppID、公众号、开放平台及关联主体资料"},
+                    {"id":"topic-compliance-pay","class":"topic","title":"需准备：微信商户号、支付场景权限、退款证书与回调域名"},
+                    {"id":"topic-compliance-domain","class":"topic","title":"需准备：正式域名、ICP备案、HTTPS证书和隐私政策地址"},
+                    {"id":"topic-compliance-third-party","class":"topic","title":"建立短信、对象存储、物流、地图、客服和统计SDK清单"},
+                    {"id":"topic-compliance-tax","class":"topic","title":"发票、税务、提现和余额奖励会计口径需财务确认"},
+                    {"id":"topic-compliance-ip","class":"topic","title":"商品、图片、字体、图标和用户内容版权责任规则"},
+                    {"id":"topic-compliance-gate","class":"topic","title":"未取得的资质对应功能必须关闭，不使用模拟资质上线"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-mvp",
+                  "class":"topic",
+                  "title":"第二十五组（已确认）：MVP范围冻结与明确不做",
+                  "children":{"attached":[
+                    {"id":"topic-mvp-must","class":"topic","title":"必须闭环：登录 → 任务 → 奖励 → 商城 → 支付 → 履约 → 售后"},
+                    {"id":"topic-mvp-platform","class":"topic","title":"首发：微信小程序 + 微信内/外通用H5 + 管理后台"},
+                    {"id":"topic-mvp-no-partner","class":"topic","title":"不做：普通用户/机构发布、多商户入驻与商家结算"},
+                    {"id":"topic-mvp-no-marketing","class":"topic","title":"不做：分销、拼团、秒杀、会员等级和复杂优惠叠加"},
+                    {"id":"topic-mvp-no-social","class":"topic","title":"不做：即时聊天、直播、社交动态和私信"},
+                    {"id":"topic-mvp-no-ai","class":"topic","title":"不做：AI审核定罪、复杂个性化推荐和自动永久处罚"},
+                    {"id":"topic-mvp-no-native","class":"topic","title":"不做：原生App正式发布，先保留uni-app多端能力"},
+                    {"id":"topic-mvp-no-infra","class":"topic","title":"不做：微服务、跨地域多活、数据仓库和过度基础设施"},
+                    {"id":"topic-mvp-change","class":"topic","title":"范围冻结后新增需求必须记录收益、成本、风险和延期影响"},
+                    {"id":"topic-mvp-switch","class":"topic","title":"非核心能力使用功能开关，不能影响账务主链路"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-design",
+                  "class":"topic",
+                  "title":"第二十六组（已确认）：UI视觉、图标与原型验收",
+                  "children":{"attached":[
+                    {"id":"topic-design-tone","class":"topic","title":"建议风格：可信、清爽、轻活力，弱化廉价促销感"},
+                    {"id":"topic-design-color","class":"topic","title":"建议暂定：品牌蓝主色 + 奖励橙点缀 + 语义状态色"},
+                    {"id":"topic-design-token","class":"topic","title":"先定颜色、字号、间距、圆角、阴影和动效Token"},
+                    {"id":"topic-design-prototype","class":"topic","title":"先信息架构/低保真，再关键流程高保真和可点击原型"},
+                    {"id":"topic-design-icon-system","class":"topic","title":"图标建议：统一圆角线性风格、24px网格、禁止混用emoji"},
+                    {"id":"topic-design-illustration","class":"topic","title":"任务、积分、空状态、成功和错误插画统一视觉语言"},
+                    {"id":"topic-design-page-state","class":"topic","title":"每页必须覆盖加载、空、错误、禁用、无权限和成功状态"},
+                    {"id":"topic-design-accessible","class":"topic","title":"正文可读、点击区≥44px、颜色不作为唯一状态提示"},
+                    {"id":"topic-design-responsive","class":"topic","title":"小程序、微信内H5、外部H5和桌面后台分别适配"},
+                    {"id":"topic-design-deliverables","class":"topic","title":"产出：页面清单、流程图、组件库、图标库、切图和标注"},
+                    {"id":"topic-design-input","class":"topic","title":"需提供：品牌名称/Logo/偏好颜色/参考产品（没有可用建议版）"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-admin-ia",
+                  "class":"topic",
+                  "title":"第二十七组（已确认）：管理后台信息架构与操作体验",
+                  "children":{"attached":[
+                    {"id":"topic-admin-overview","class":"topic","title":"首页：核心漏斗、待办、告警、账务差异和风险案件"},
+                    {"id":"topic-admin-users","class":"topic","title":"用户：资料、身份、设备、资产、限制、注销和审计"},
+                    {"id":"topic-admin-tasks","class":"topic","title":"任务：发布、版本、预算、审核、申诉、风控和推荐位"},
+                    {"id":"topic-admin-mall","class":"topic","title":"商城：商品、SKU、库存、运费模板、订单和履约"},
+                    {"id":"topic-admin-finance","class":"topic","title":"财务：支付、退款、钱包、提现、对账和人工调整"},
+                    {"id":"topic-admin-content","class":"topic","title":"内容：帖子、评论、举报、处罚和申诉"},
+                    {"id":"topic-admin-config-center","class":"topic","title":"配置：草稿、校验、审批、发布、版本、差异和回滚"},
+                    {"id":"topic-admin-role-menu","class":"topic","title":"按角色显示菜单与字段；无权按钮不展示，服务端仍强校验"},
+                    {"id":"topic-admin-list","class":"topic","title":"统一筛选、保存视图、批量操作、导出、水印和权限"},
+                    {"id":"topic-admin-danger","class":"topic","title":"高风险动作显示影响预览、二次验证和异人审批"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-tech-resources",
+                  "class":"topic",
+                  "title":"第二十八组（已确认）：技术基线、环境与外部服务",
+                  "children":{"attached":[
+                    {"id":"topic-tech-confirmed","class":"topic","title":"已定：uni-app用户端、React管理端、PHP服务端、PostgreSQL、Redis"},
+                    {"id":"topic-tech-versions","class":"topic","title":"I0已完成：Node 24.19、pnpm 11.9、PHP 8.5、Laravel 13及锁文件"},
+                    {"id":"topic-upcoming-tech-architecture","class":"topic","title":"建议：模块化单体 + 队列 + 领域事件，MVP不拆微服务"},
+                    {"id":"topic-tech-envs","class":"topic","title":"环境：本地、测试、预发布、生产，配置与数据严格隔离"},
+                    {"id":"topic-tech-local","class":"topic","title":"I0已完成：Docker Compose运行PostgreSQL 17、Redis 7.4和MinIO"},
+                    {"id":"topic-tech-storage","class":"topic","title":"对象存储、CDN、短信、物流和支付统一走适配器"},
+                    {"id":"topic-tech-secret","class":"topic","title":"密钥进入密钥管理/环境变量，不进仓库、日志或前端包"},
+                    {"id":"topic-upcoming-tech-contract","class":"topic","title":"OpenAPI作为前后端唯一接口契约并生成类型"},
+                    {"id":"topic-tech-ci","class":"topic","title":"I0已完成：CI工作流就绪，健康接口、检查脚本、首次迁移和三端本地构建通过"},
+                    {"id":"topic-tech-i0-report","class":"topic","title":"I0已验收；I1本地工程与生产门禁已收口，真实微信/短信/扫描器及法务文本待外部联调"},
+                    {"id":"topic-tech-deploy-input","class":"topic","title":"需确认：云厂商/服务器地区/域名/对象存储/短信与支付供应商"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-nfr",
+                  "class":"topic",
+                  "title":"第二十九组（已确认）：性能、安全、可用性与兼容指标",
+                  "children":{"attached":[
+                    {"id":"topic-nfr-performance","class":"topic","title":"建议：核心API正常负载p95≤500ms，慢接口单独设预算"},
+                    {"id":"topic-nfr-availability","class":"topic","title":"建议：MVP月可用性目标99.9%，支付回调和账务优先保障"},
+                    {"id":"topic-nfr-capacity","class":"topic","title":"需确认：DAU、峰值在线、瞬时领任务人数和日订单量"},
+                    {"id":"topic-nfr-concurrency","class":"topic","title":"名额、库存、优惠券、奖励、余额和退款必须并发不超发"},
+                    {"id":"topic-nfr-security","class":"topic","title":"覆盖越权、注入、XSS、CSRF、重放、上传、限流和敏感日志"},
+                    {"id":"topic-nfr-encryption","class":"topic","title":"全站HTTPS；密码强哈希；敏感字段加密/脱敏；密钥轮换"},
+                    {"id":"topic-nfr-rpo","class":"topic","title":"建议目标：核心数据RPO≤15分钟、RTO≤2小时（需结合预算）"},
+                    {"id":"topic-nfr-observability","class":"topic","title":"日志、指标、链路、请求ID、业务事件和审计记录可关联"},
+                    {"id":"topic-nfr-client","class":"topic","title":"兼容矩阵：常用iOS/Android微信、Safari、Chrome、Edge"},
+                    {"id":"topic-nfr-degrade","class":"topic","title":"外部服务失败需超时、重试、熔断、降级和人工补偿"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-acceptance",
+                  "class":"topic",
+                  "title":"第三十组（已确认）：测试矩阵与逐项验收标准",
+                  "children":{"attached":[
+                    {"id":"topic-acceptance-trace","class":"topic","title":"每条需求关联验收场景、接口、数据表、测试用例和负责人"},
+                    {"id":"topic-acceptance-types","class":"topic","title":"单元、接口、集成、E2E、并发、安全、性能和真机测试"},
+                    {"id":"topic-acceptance-business","class":"topic","title":"三种购买、两种现金来源、优惠券、运费和部分退款全矩阵"},
+                    {"id":"topic-acceptance-task","class":"topic","title":"任务名额、预算预留、提交审核、申诉、冻结和补位全状态"},
+                    {"id":"topic-acceptance-ledger","class":"topic","title":"库存、积分、钱包、预算、支付和退款对账一致率100%"},
+                    {"id":"topic-acceptance-payment","class":"topic","title":"支付沙箱 + 生产小额验证；重复/延迟/丢失回调可补偿"},
+                    {"id":"topic-acceptance-ui","class":"topic","title":"设计走查、无障碍、弱网、空状态与小程序/H5真机通过"},
+                    {"id":"topic-acceptance-gate","class":"topic","title":"发布门槛：P0/P1为0，核心E2E全过，无账务差异"},
+                    {"id":"topic-acceptance-uat","class":"topic","title":"产品、设计、开发、测试、运营和财务按职责签字验收"},
+                    {"id":"topic-acceptance-regression","class":"topic","title":"每次配置、接口和迁移变更必须有回归范围"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-release-ops",
+                  "class":"topic",
+                  "title":"第三十一组（已确认）：灰度发布、回滚与运营保障",
+                  "children":{"attached":[
+                    {"id":"topic-release-order","class":"topic","title":"第30批已完成：1%→5%→20%→50%→100%分阶段灰度控制面"},
+                    {"id":"topic-release-feature","class":"topic","title":"功能开关稳定分桶、端类型/白名单、不可变版本、乐观锁和审计已落地"},
+                    {"id":"topic-release-migration","class":"topic","title":"数据库兼容迁移、组合索引、一致性审计与隐私删除重放已落地"},
+                    {"id":"topic-release-backup","class":"topic","title":"备份SHA-256清单与隔离恢复演练脚本已交付；生产RPO/RTO待负责人确认"},
+                    {"id":"topic-release-rollback","class":"topic","title":"提交/制品/配置摘要绑定，灰度递增与只追加回滚事件已落地"},
+                    {"id":"topic-release-monitor","class":"topic","title":"令牌保护Prometheus指标、Server-Timing、慢请求与业务一致性监控已落地"},
+                    {"id":"topic-release-reconcile","class":"topic","title":"支付、退款、余额、积分、预算和库存每日自动对账"},
+                    {"id":"topic-release-incident","class":"topic","title":"建立P0-P3事故分级、值班、止损、通知、补偿和复盘"},
+                    {"id":"topic-release-cs","class":"topic","title":"明确客服工作时间、售后/投诉SLA、升级人和标准话术"},
+                    {"id":"topic-release-store","class":"topic","title":"提前准备小程序审核、隐私弹窗、截图、说明和版本公告"}
+                  ]}
+                },
+                {
+                  "id":"topic-next-schedule-freeze",
+                  "class":"topic",
+                  "title":"第三十二组（已确认）：开发排期、优先级与最终冻结",
+                  "children":{"attached":[
+                    {"id":"topic-schedule-priority","class":"topic","title":"建议：P0闭环、P1运营效率、P2体验增强，禁止优先级漂移"},
+                    {"id":"topic-schedule-sprint","class":"topic","title":"建议：两周一个迭代，设计领先开发一个迭代"},
+                    {"id":"topic-schedule-order","class":"topic","title":"顺序：基线 → 认证 → 任务资产 → 商城订单 → 支付售后 → 发布"},
+                    {"id":"topic-schedule-team","class":"topic","title":"需确认：产品、UI、前端、PHP、测试、运维和业务验收负责人"},
+                    {"id":"topic-schedule-board","class":"topic","title":"每周监督：目标、进度、风险、变更、质量、设计、发布和数据"},
+                    {"id":"topic-schedule-change","class":"topic","title":"新增需求记录原因、收益、成本、依赖、风险和发布日期影响"},
+                    {"id":"topic-schedule-dor","class":"topic","title":"开发前：需求、原型、接口、权限、验收和测试数据全部就绪"},
+                    {"id":"topic-schedule-dod","class":"topic","title":"完成：代码、迁移、文档、测试、监控、审计和回滚同步完成"},
+                    {"id":"topic-schedule-uat","class":"topic","title":"最新product-preview-v1 UAT：113项测试、1405条断言与三端构建通过；5项passed、0项failed、2项真实渠道blocked"},
+                    {"id":"topic-schedule-freeze","class":"topic","title":"需求基线v1.0、第5至30批本地实现及产品化第一阶段完成；113项测试、1405条断言与三端构建通过"},
+                    {"id":"topic-schedule-batch","class":"topic","title":"已授权第5至30批连续开发，不逐批等待确认；仅真实凭据、关键业务选择和高风险外部操作提示用户"},
+                    {"id":"topic-schedule-runbook","class":"topic","title":"监督表：每批同步实现、专项测试、全量回归、OpenAPI、项目文档与XMind"}
+                  ]}
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "topicPositioning": "fixed",
+    "coreVersion": "2.0"
+  }
+]

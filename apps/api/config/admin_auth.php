@@ -1,0 +1,16 @@
+<?php
+
+return [
+    'issuer' => env('AUTH_TOKEN_ISSUER', 'task-mall-api'),
+    'audience' => 'task-mall-admin',
+    'jwt_secret' => env('ADMIN_AUTH_JWT_SECRET') ?: env('AUTH_JWT_SECRET') ?: env('APP_KEY'),
+    'hash_secret' => env('ADMIN_AUTH_HASH_KEY') ?: env('AUTH_IDENTITY_HASH_KEY') ?: env('APP_KEY'),
+    'access_ttl_seconds' => (int) env('ADMIN_AUTH_ACCESS_TTL_SECONDS', 3600),
+    'refresh_ttl_days' => (int) env('ADMIN_AUTH_REFRESH_TTL_DAYS', 7),
+    'idle_ttl_seconds' => (int) env('ADMIN_AUTH_IDLE_TTL_SECONDS', 1800),
+    'max_active_sessions' => (int) env('ADMIN_AUTH_MAX_ACTIVE_SESSIONS', 3),
+    'failure_threshold' => (int) env('ADMIN_AUTH_FAILURE_THRESHOLD', 5),
+    'failure_window_seconds' => (int) env('ADMIN_AUTH_FAILURE_WINDOW_SECONDS', 900),
+    'lock_seconds' => (int) env('ADMIN_AUTH_LOCK_SECONDS', 900),
+    'recent_verification_seconds' => (int) env('ADMIN_AUTH_RECENT_VERIFICATION_SECONDS', 900),
+];
