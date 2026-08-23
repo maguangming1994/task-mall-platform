@@ -1,6 +1,7 @@
 name: task-mall-production
 
 x-api: &api
+  image: task-mall-api:${RELEASE_VERSION:-local}
   build:
     context: ..
     dockerfile: infra/docker/api.Dockerfile
@@ -28,7 +29,7 @@ services:
 
   queue:
     <<: *api
-    command: ["php", "artisan", "queue:work", "--sleep=2", "--tries=3", "--timeout=3600", "--max-time=7200"]
+    command: ["php", "artisan", "queue:work", "--queue=default,file-scans,privacy,media-migrations", "--sleep=2", "--tries=3", "--timeout=3600", "--max-time=7200"]
     stop_grace_period: 10m
 
   scheduler:
@@ -36,6 +37,7 @@ services:
     command: ["php", "artisan", "schedule:work"]
 
   nginx:
+    image: task-mall-web:${RELEASE_VERSION:-local}
     build:
       context: ..
       dockerfile: infra/docker/web.Dockerfile
@@ -81,7 +83,7 @@ services:
     restart: unless-stopped
     networks: [backend]
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a '$${REDIS_PASSWORD}' ping | grep PONG"]
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$${REDIS_PASSWORD} redis-cli ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 10

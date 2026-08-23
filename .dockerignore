@@ -2,6 +2,17 @@
 .idea
 .vscode
 **/.env
+**/.env.*
+**/.secrets
+**/.secrets/**
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.crt
+**/*.cer
+**/*.dump
+**/*.sql
 **/node_modules
 **/vendor
 **/dist

@@ -17,6 +17,7 @@ class WalletRechargeController extends Controller
     {
         /** @var User $user */ $user = $request->user();
         $items = WalletRecharge::query()->where('user_id', $user->id)->latest('id')->limit(50)->get()->map(fn ($item) => $service->present($item));
+
         return ApiResponse::success(['items' => $items]);
     }
 
@@ -34,12 +35,14 @@ class WalletRechargeController extends Controller
         ]);
         /** @var User $user */ $user = $request->user();
         $recharge = $service->create($user, $data, $this->key($request));
+
         return ApiResponse::success($service->present($recharge), 201, '充值申请已创建。');
     }
 
     public function show(Request $request, WalletRecharge $walletRecharge, WalletRechargeService $service): JsonResponse
     {
         abort_unless($walletRecharge->user_id === $request->user()->id, 404);
+
         return ApiResponse::success($service->present($walletRecharge));
     }
 
@@ -47,6 +50,7 @@ class WalletRechargeController extends Controller
     {
         $data = $request->validate(['scene' => ['required', 'in:wechat-mini,wechat-h5,h5-browser']]);
         /** @var User $user */ $user = $request->user();
+
         return ApiResponse::success($payments->present($payments->createRecharge($walletRecharge, $user, $data['scene'], $this->key($request))), 201);
     }
 
@@ -54,6 +58,7 @@ class WalletRechargeController extends Controller
     {
         $key = (string) $request->header('Idempotency-Key');
         abort_unless(strlen($key) >= 12 && strlen($key) <= 128, 422, '请提供有效的幂等键。');
+
         return $key;
     }
 }

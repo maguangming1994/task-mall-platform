@@ -1,6 +1,8 @@
-FROM php:8.4-fpm-alpine AS runtime
+FROM php:8.5-fpm-alpine AS runtime
 
-RUN apk add --no-cache curl icu-dev libzip-dev oniguruma-dev postgresql-dev \
+ARG ALPINE_MIRROR=https://mirrors.cloud.tencent.com/alpine
+RUN sed -i "s|https://dl-cdn.alpinelinux.org/alpine|${ALPINE_MIRROR}|g" /etc/apk/repositories \
+    && apk add --no-cache curl icu-dev libzip-dev oniguruma-dev postgresql-dev \
     && docker-php-ext-install intl mbstring opcache pcntl pdo_pgsql zip
 COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html

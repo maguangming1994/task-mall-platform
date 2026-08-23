@@ -19,7 +19,7 @@ class AdminSupportTicketController extends Controller
             $query->where('category', $request->string('category'));
         }
 
-return ApiResponse::success(['items' => $query->limit(200)->get()->map(fn ($ticket) => $this->data($ticket))]);
+        return ApiResponse::success(['items' => $query->limit(200)->get()->map(fn ($ticket) => $this->data($ticket))]);
     }
 
     public function show(SupportTicket $supportTicket): JsonResponse

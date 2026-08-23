@@ -21,6 +21,7 @@ class AdminWalletRechargeController extends Controller
     {
         $status = $request->string('status')->toString();
         $items = WalletRecharge::query()->with('user')->when($status !== '', fn ($q) => $q->where('status', $status))->latest('id')->limit(100)->get()->map(fn ($item) => $service->present($item));
+
         return ApiResponse::success(['items' => $items]);
     }
 
@@ -31,15 +32,20 @@ class AdminWalletRechargeController extends Controller
         $result = $service->review($admin, $walletRecharge, $data['decision'], $data['note']);
         $presented = $service->present($result);
         $audit->record($admin, 'wallet_recharge.'.$data['decision'], 'wallet_recharge', $result->public_id, null, $presented, $data['note']);
+
         return ApiResponse::success($presented);
     }
 
     public function proof(WalletRecharge $walletRecharge, UploadedFile $file): StreamedResponse
     {
         abort_unless($walletRecharge->method === 'offline' && in_array($file->public_id, $walletRecharge->offline_proof_file_ids ?? [], true) && $file->purpose === 'offline_recharge' && $file->status === 'clean', 404);
+
         return response()->streamDownload(function () use ($file): void {
             $stream = Storage::disk($file->disk)->readStream($file->quarantine_path);
-            if (is_resource($stream)) { fpassthru($stream); fclose($stream); }
+            if (is_resource($stream)) {
+                fpassthru($stream);
+                fclose($stream);
+            }
         }, $file->original_name, ['Content-Type' => $file->detected_mime ?? $file->declared_mime]);
     }
 
@@ -47,6 +53,7 @@ class AdminWalletRechargeController extends Controller
     {
         $status = $request->string('status')->toString();
         $items = WalletRechargeCard::query()->when($status !== '', fn ($q) => $q->where('status', $status))->latest('id')->limit(100)->get()->map(fn ($item) => $service->presentCard($item));
+
         return ApiResponse::success(['items' => $items]);
     }
 
@@ -56,6 +63,7 @@ class AdminWalletRechargeController extends Controller
         /** @var AdminUser $admin */ $admin = $request->user();
         $result = $service->createCards($admin, $data['amount_cents'], $data['quantity'], $data['expires_at'] ?? null);
         $audit->record($admin, 'wallet_recharge_card.batch_create', 'wallet_recharge_card', 'batch', null, ['amount_cents' => $data['amount_cents'], 'quantity' => $data['quantity'], 'expires_at' => $data['expires_at'] ?? null], '创建充值卡密批次。');
+
         return ApiResponse::success($result, 201);
     }
 }

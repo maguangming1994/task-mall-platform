@@ -3,9 +3,9 @@
 namespace App\Modules\Payment\Services;
 
 use App\Models\User;
+use App\Modules\Assets\Services\WalletRechargeService;
 use App\Modules\Payment\Contracts\WechatPaymentGateway;
 use App\Modules\Payment\Models\Payment;
-use App\Modules\Assets\Services\WalletRechargeService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -52,8 +52,11 @@ class PaymentNotificationService
                         throw ValidationException::withMessages(['payment' => '终态支付单不能重新置为成功。']);
                     }
                     $user = User::query()->findOrFail($locked->user_id);
-                    if ($locked->wallet_recharge_id) $this->recharges->settleOnline($locked->walletRecharge);
-                    else $this->settlement->settleExternal($locked->order, $user, $locked->cash_amount);
+                    if ($locked->wallet_recharge_id) {
+                        $this->recharges->settleOnline($locked->walletRecharge);
+                    } else {
+                        $this->settlement->settleExternal($locked->order, $user, $locked->cash_amount);
+                    }
                     $locked->update(['status' => 'succeeded', 'provider_trade_no' => $trade['provider_trade_no'] ?? null, 'succeeded_at' => $trade['success_time'] ?? now()]);
                 });
             } elseif (in_array($state, ['CLOSED', 'REVOKED', 'PAYERROR'], true)) {
@@ -63,8 +66,11 @@ class PaymentNotificationService
                         return;
                     }
                     $locked->update(['status' => $state === 'PAYERROR' ? 'failed' : 'closed', 'closed_at' => now()]);
-                    if ($locked->wallet_recharge_id) $this->recharges->closeOnline($locked->walletRecharge, $state === 'PAYERROR' ? 'cancelled' : 'expired');
-                    else $this->release->close($locked->order, 'payment_provider_closed', '微信支付渠道确认交易关闭，释放订单预占资源。');
+                    if ($locked->wallet_recharge_id) {
+                        $this->recharges->closeOnline($locked->walletRecharge, $state === 'PAYERROR' ? 'cancelled' : 'expired');
+                    } else {
+                        $this->release->close($locked->order, 'payment_provider_closed', '微信支付渠道确认交易关闭，释放订单预占资源。');
+                    }
                 });
             }
             DB::table('payment_notifications')->where('id', $notificationDbId)->update(['status' => 'processed', 'processed_at' => now(), 'updated_at' => now()]);

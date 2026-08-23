@@ -578,7 +578,7 @@ class RefundService
      * PHP array insertion order. Item order and evidence order are not
      * meaningful, while the effective service/return method is.
      *
-     * @param array<string,mixed> $data
+     * @param  array<string,mixed>  $data
      */
     private function requestFingerprint(Order $order, array $data): string
     {

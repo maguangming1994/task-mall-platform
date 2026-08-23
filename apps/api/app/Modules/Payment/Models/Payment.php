@@ -2,8 +2,8 @@
 
 namespace App\Modules\Payment\Models;
 
-use App\Modules\Order\Models\Order;
 use App\Modules\Assets\Models\WalletRecharge;
+use App\Modules\Order\Models\Order;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;

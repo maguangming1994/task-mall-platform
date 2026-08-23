@@ -46,18 +46,26 @@ class WalletRechargeService
     {
         return DB::transaction(function () use ($recharge): WalletRecharge {
             $locked = WalletRecharge::query()->lockForUpdate()->findOrFail($recharge->id);
-            if ($locked->status === 'succeeded') return $locked;
-            if ($locked->status !== 'pending_payment') throw ValidationException::withMessages(['recharge' => '充值单当前不能入账。']);
+            if ($locked->status === 'succeeded') {
+                return $locked;
+            }
+            if ($locked->status !== 'pending_payment') {
+                throw ValidationException::withMessages(['recharge' => '充值单当前不能入账。']);
+            }
             $user = User::query()->findOrFail($locked->user_id);
             $this->ledger->changeWallet($user, $locked->amount_cents, '线上充值到账', 'wallet-recharge-online:'.$locked->public_id, null, 'recharge_online');
             $locked->update(['status' => 'succeeded', 'succeeded_at' => now()]);
+
             return $locked->fresh();
         });
     }
 
     public function closeOnline(WalletRecharge $recharge, string $status = 'expired'): WalletRecharge
     {
-        if ($recharge->status === 'pending_payment') $recharge->update(['status' => $status]);
+        if ($recharge->status === 'pending_payment') {
+            $recharge->update(['status' => $status]);
+        }
+
         return $recharge->fresh();
     }
 
@@ -65,7 +73,9 @@ class WalletRechargeService
     {
         return DB::transaction(function () use ($admin, $recharge, $decision, $note): WalletRecharge {
             $locked = WalletRecharge::query()->lockForUpdate()->findOrFail($recharge->id);
-            if ($locked->method !== 'offline' || $locked->status !== 'pending_review') throw ValidationException::withMessages(['recharge' => '该线下充值单已处理或当前无需审核。']);
+            if ($locked->method !== 'offline' || $locked->status !== 'pending_review') {
+                throw ValidationException::withMessages(['recharge' => '该线下充值单已处理或当前无需审核。']);
+            }
             $updates = ['status' => $decision === 'approve' ? 'succeeded' : 'rejected', 'reviewed_by_admin_user_id' => $admin->id, 'review_note' => $note, 'reviewed_at' => now()];
             if ($decision === 'approve') {
                 $user = User::query()->findOrFail($locked->user_id);
@@ -73,6 +83,7 @@ class WalletRechargeService
                 $updates['succeeded_at'] = now();
             }
             $locked->update($updates);
+
             return $locked->fresh();
         });
     }
@@ -88,8 +99,10 @@ class WalletRechargeService
                 $plainCodes[] = $plain;
                 $created[] = WalletRechargeCard::query()->create(['code_hash' => hash('sha256', $raw), 'code_mask' => '*****-*****-*****-'.substr($raw, -5), 'amount_cents' => $amountCents, 'status' => 'active', 'expires_at' => $expiresAt, 'created_by_admin_user_id' => $admin->id]);
             }
+
             return $created;
         });
+
         return ['cards' => array_map(fn (WalletRechargeCard $card, int $i) => $this->presentCard($card) + ['code' => $plainCodes[$i]], $cards, array_keys($cards)), 'warning' => '卡密明文仅本次返回，请立即安全保存。'];
     }
 
@@ -106,7 +119,10 @@ class WalletRechargeService
     private function redeemCard(User $user, string $code, string $hash, string $legacyHash, string $payloadHash): WalletRecharge
     {
         $normalized = strtoupper(preg_replace('/[^A-Z0-9]/i', '', $code) ?? '');
-        if (strlen($normalized) < 12) throw ValidationException::withMessages(['card_code' => '请输入完整有效的充值卡密。']);
+        if (strlen($normalized) < 12) {
+            throw ValidationException::withMessages(['card_code' => '请输入完整有效的充值卡密。']);
+        }
+
         return DB::transaction(function () use ($user, $normalized, $hash, $legacyHash, $payloadHash): WalletRecharge {
             User::query()->lockForUpdate()->findOrFail($user->id);
             $existing = $this->existingRecharge($user, $hash, $legacyHash);
@@ -117,10 +133,13 @@ class WalletRechargeService
             }
 
             $card = WalletRechargeCard::query()->where('code_hash', hash('sha256', $normalized))->lockForUpdate()->first();
-            if (! $card || $card->status !== 'active' || $card->expires_at?->isPast()) throw ValidationException::withMessages(['card_code' => '卡密无效、已使用或已过期。']);
+            if (! $card || $card->status !== 'active' || $card->expires_at?->isPast()) {
+                throw ValidationException::withMessages(['card_code' => '卡密无效、已使用或已过期。']);
+            }
             $recharge = WalletRecharge::query()->create($this->base($user, 'card_code', $card->amount_cents, 'succeeded', $hash, $payloadHash) + ['succeeded_at' => now()]);
             $this->ledger->changeWallet($user, $card->amount_cents, '充值卡密兑换到账', 'wallet-recharge-card:'.$card->public_id, null, 'recharge_card');
             $card->update(['status' => 'redeemed', 'redeemed_by_user_id' => $user->id, 'redeemed_recharge_id' => $recharge->id, 'redeemed_at' => now()]);
+
             return $recharge->fresh();
         });
     }
@@ -129,7 +148,10 @@ class WalletRechargeService
     {
         $ids = array_values(array_unique($data['offline_proof_file_ids'] ?? []));
         $count = UploadedFile::query()->where('owner_user_id', $user->id)->where('purpose', 'offline_recharge')->where('status', 'clean')->whereIn('public_id', $ids)->count();
-        if ($count !== count($ids)) throw ValidationException::withMessages(['offline_proof_file_ids' => '充值凭证不存在、尚未通过安全扫描或不属于当前用户。']);
+        if ($count !== count($ids)) {
+            throw ValidationException::withMessages(['offline_proof_file_ids' => '充值凭证不存在、尚未通过安全扫描或不属于当前用户。']);
+        }
+
         return WalletRecharge::query()->create($this->base($user, 'offline', (int) $data['amount_cents'], 'pending_review', $hash, $payloadHash) + ['payer_name' => $data['payer_name'], 'offline_reference' => $data['offline_reference'] ?? null, 'note' => $data['note'] ?? null, 'offline_proof_file_ids' => $ids]);
     }
 
