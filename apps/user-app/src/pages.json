@@ -59,9 +59,7 @@
         "path": "pages/task-detail/index",
         "style": {
           "navigationBarTitleText": "任务详情",
-          "navigationStyle": "custom",
-          "enableShareAppMessage": true,
-          "enableShareTimeline": true
+          "navigationStyle": "custom"
         }
       },
       {
@@ -137,7 +135,7 @@
     },
     {
       "path": "pages/community-detail/index",
-      "style": { "navigationBarTitleText": "校园动态", "enableShareAppMessage": true, "enableShareTimeline": true }
+      "style": { "navigationBarTitleText": "校园动态" }
     },
     {
       "path": "pages/publisher-task-detail/index",
