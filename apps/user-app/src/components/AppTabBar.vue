@@ -1,5 +1,5 @@
 <template>
-  <view class="tabbar-shell">
+  <view :class="['tabbar-shell', { flat: variant === 'flat' }]">
     <view class="tabbar-spacer" />
     <view class="tabbar" :style="barStyle">
       <view
@@ -24,7 +24,7 @@ import { computed, onMounted, ref } from 'vue'
 import { navigationRoutes, type BottomNavigationItem, type NavigationTarget } from '@/api/navigation'
 import { useNavigationStore } from '@/stores/navigation'
 
-const props = defineProps<{ currentTarget: NavigationTarget }>()
+const props = defineProps<{ currentTarget: NavigationTarget; variant?: 'floating' | 'flat' }>()
 const emit = defineEmits<{ compose: [] }>()
 const navigation = useNavigationStore()
 const failedIcons = ref(new Set<string>())
@@ -99,6 +99,13 @@ function open(target: NavigationTarget) {
 .tabbar-item.featured.active .tabbar-label{font-weight:800}
 .tabbar-item.featured.active::before{display:block}
 .tabbar-item.featured:active .tabbar-icon-wrap{transform:scale(.94)}
+.tabbar-shell.flat .tabbar-spacer{height:calc(116rpx + env(safe-area-inset-bottom))}
+.tabbar-shell.flat .tabbar{right:0;bottom:0;left:0;height:calc(108rpx + env(safe-area-inset-bottom));padding:11rpx 20rpx calc(9rpx + env(safe-area-inset-bottom));border-right:0;border-bottom:0;border-left:0;border-radius:0;background:#fff;box-shadow:0 -8rpx 25rpx rgba(36,62,92,.075);backdrop-filter:none}
+.tabbar-shell.flat .tabbar-item{gap:4rpx;padding:4rpx}
+.tabbar-shell.flat .tabbar-item.active::before{display:none}
+.tabbar-shell.flat .tabbar-icon-wrap,.tabbar-shell.flat .tabbar-item.featured .tabbar-icon-wrap{width:45rpx;height:45rpx}
+.tabbar-shell.flat .tabbar-icon,.tabbar-shell.flat .tabbar-item.featured .tabbar-icon{width:36rpx;height:36rpx}
+.tabbar-shell.flat .tabbar-label{font-size:18rpx}
 @media (prefers-reduced-motion: reduce){.tabbar-item,.tabbar-icon-wrap{transition:none}.tabbar-item:active .tabbar-icon-wrap{transform:none}}
-@media screen and (min-width:768px){.tabbar{right:auto;left:50%;width:690rpx;transform:translateX(-50%)}}
+@media screen and (min-width:768px){.tabbar{right:auto;left:50%;width:690rpx;transform:translateX(-50%)}.tabbar-shell.flat .tabbar{right:auto;left:50%;width:750rpx;transform:translateX(-50%)}}
 </style>

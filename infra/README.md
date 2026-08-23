@@ -12,4 +12,9 @@
 
 这里的账号只用于本地开发，不得复用到测试或生产。
 
-生产容器使用 `compose.production.yaml`、`docker/api.Dockerfile`、`docker/web.Dockerfile` 和 `nginx/task-mall.conf`。生产配置从未提交的 `.env.production` 读取，API、队列和调度使用同一不可变镜像；Nginx 在反向代理后监听 8080，数据库和 Redis 不暴露宿主机端口。上线、灰度、监控、备份和回滚步骤见 `docs/operations/DEPLOYMENT_RUNBOOK.md`。
+生产容器使用 `compose.production.yaml`、`docker/api.Dockerfile`、`docker/web.Dockerfile` 和 `nginx/task-mall.conf`。生产配置从未提交的 `.env.production` 读取，API、队列和调度使用同一不可变镜像；Nginx 在反向代理后监听 8080，数据库和 Redis 不暴露宿主机端口。
+
+- 腾讯云轻量服务器首次部署：`docs/operations/TENCENT_LIGHTHOUSE_DEPLOYMENT.md`
+- 上线、灰度、监控、备份和回滚：`docs/operations/DEPLOYMENT_RUNBOOK.md`
+- 宝塔站点反向代理片段：`nginx/baota-reverse-proxy-snippet.conf`
+- 服务器一键构建、迁移和启动：`../scripts/deploy-production.sh`

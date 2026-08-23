@@ -1,6 +1,12 @@
 FROM node:24-alpine AS assets
 WORKDIR /workspace
 ENV VITE_BASE_PATH=/admin/
+ARG VITE_API_BASE_URL=/api/v1
+ARG VITE_H5_PUBLIC_URL
+ARG VITE_WECHAT_OA_APP_ID
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_H5_PUBLIC_URL=${VITE_H5_PUBLIC_URL}
+ENV VITE_WECHAT_OA_APP_ID=${VITE_WECHAT_OA_APP_ID}
 RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/user-app/package.json apps/user-app/package.json

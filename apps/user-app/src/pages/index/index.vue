@@ -6,6 +6,188 @@
   >
     <view class="home-v4-safe" />
 
+    <view v-if="auth.isAuthenticated" class="home-v10-auth-shell">
+      <view class="home-v10-hero">
+        <swiper
+          class="home-v10-hero-swiper"
+          :autoplay="home.carousel.autoplay"
+          :interval="home.carousel.interval_ms"
+          :current="activeHeroIndex"
+          circular
+          @change="handleHeroChange"
+        >
+          <swiper-item v-for="slide in home.carousel.items" :key="`v10-${slide.id}`">
+            <view class="home-v10-hero-slide" @click="navigateHomeLink(slide.link_type)">
+              <image
+                class="home-v10-hero-image"
+                :src="heroImageSource(slide)"
+                mode="aspectFill"
+                @error="handleHeroImageError(slide)"
+              />
+              <view class="home-v10-hero-veil" />
+            </view>
+          </swiper-item>
+        </swiper>
+
+        <view class="home-v10-hero-brand">
+          <text class="home-v10-hero-title">{{ home.brand.name || '任务商城' }}</text>
+          <text class="home-v10-hero-subtitle">完成任务，兑换好生活</text>
+        </view>
+
+        <view class="home-v10-hero-actions">
+          <view class="home-v10-hero-action" role="button" aria-label="打开消息中心" @click="openNotifications">
+            <view class="home-v10-bell"><view /></view>
+            <view class="home-v10-notice-dot" />
+            <text>消息</text>
+          </view>
+          <view
+            v-if="home.floating_support.enabled"
+            class="home-v10-hero-action"
+            role="button"
+            aria-label="联系客服"
+            @click="openFloatingSupport"
+          >
+            <image
+              v-if="home.floating_support.icon_url"
+              class="home-v10-action-image"
+              :src="home.floating_support.icon_url"
+              mode="aspectFit"
+            />
+            <view v-else class="home-v10-headset"><view>••</view></view>
+            <text>{{ supportShortLabel }}</text>
+          </view>
+        </view>
+
+        <view v-if="home.carousel.items.length > 1" class="home-v10-hero-dots">
+          <view
+            v-for="(_slide, index) in home.carousel.items"
+            :key="`v10-dot-${index}`"
+            :class="['home-v10-hero-dot', { active: index === activeHeroIndex }]"
+          />
+        </view>
+      </view>
+
+      <view class="home-v10-main">
+        <view class="home-v10-quick-card" :style="backgroundStyle(home.modules.quick_grid_background_url)">
+          <view
+            v-for="item in quickEntries"
+            :key="`v10-quick-${item.id}`"
+            class="home-v10-quick-item"
+            @click="item.action"
+          >
+            <view :class="['home-v10-quick-icon', `tone-${item.tone}`]">
+              <image v-if="item.icon_url" :src="item.icon_url" mode="aspectFit" />
+              <text v-else>{{ quickArtSymbol(item.id, item.link_type) }}</text>
+            </view>
+            <text class="home-v10-quick-label">{{ item.label }}</text>
+          </view>
+        </view>
+
+        <view
+          v-if="home.announcement.enabled"
+          class="home-v10-announcement"
+          role="button"
+          aria-label="查看校园公告"
+          @click="navigateHomeLink(home.announcement.link_type)"
+        >
+          <view class="home-v10-announcement-icon">
+            <image v-if="home.announcement.icon_url" :src="home.announcement.icon_url" mode="aspectFit" />
+            <text v-else>◖</text>
+          </view>
+          <text class="home-v10-announcement-label">校园公告</text>
+          <text class="home-v10-announcement-content">{{ announcementSummary }}</text>
+          <text class="home-v10-announcement-arrow">›</text>
+        </view>
+
+        <view v-if="homeError" class="home-v10-error" @click="loadHome">
+          首页内容使用默认配置，点击重新加载
+        </view>
+
+        <view class="home-v10-section-head">
+          <text class="home-v10-section-title">为你推荐</text>
+          <text class="home-v10-section-link" @click="openTasks">查看全部任务 ›</text>
+        </view>
+
+        <view v-if="recommendedTask" class="home-v10-task-card" @click="openRecommendedTask">
+          <view class="home-v10-task-cover tone-green">
+            <image v-if="recommendedTask?.cover_image_url" :src="recommendedTask.cover_image_url" mode="aspectFill" />
+            <view v-else class="home-v10-task-fallback">✓</view>
+          </view>
+          <view class="home-v10-task-copy">
+            <text class="home-v10-task-title">{{ recommendedTask?.title || home.modules.recommendation.title }}</text>
+            <text class="home-v10-task-description">{{ recommendedDescriptionText }}</text>
+            <text class="home-v10-task-meta">剩余名额 {{ recommendedTask?.remaining_reward_slots ?? 0 }} 人 ｜ 审核时限 {{ recommendedReviewTimeText }}</text>
+          </view>
+          <view class="home-v10-task-side">
+            <text class="home-v10-task-reward">{{ recommendedRewardText }}</text>
+            <button class="home-v10-task-button" @click.stop="openRecommendedTask">去参与</button>
+          </view>
+        </view>
+
+        <view v-else class="home-v10-task-empty" @click="openTasks">
+          <view class="home-v10-task-empty-icon">任</view>
+          <view class="home-v10-task-empty-copy">
+            <text>新的校园任务正在准备中</text>
+            <text>先去任务大厅看看其他可参与内容</text>
+          </view>
+          <text class="home-v10-task-empty-link">去看看 ›</text>
+        </view>
+
+        <view v-if="activeClaim" class="home-v10-continue-section">
+          <view class="home-v10-continue-head">
+            <text>继续使用任务</text>
+            <text @click="openTasks">查看全部任务 ›</text>
+          </view>
+          <view class="home-v10-task-card home-v10-continue-card" @click="openActiveClaim">
+            <view class="home-v10-task-cover tone-blue">
+              <view class="home-v10-task-fallback">续</view>
+            </view>
+            <view class="home-v10-task-copy">
+              <text class="home-v10-task-title">{{ activeClaim.title }}</text>
+              <text class="home-v10-task-description">{{ activeClaimDescriptionText }}</text>
+              <text class="home-v10-task-meta">已完成 {{ activeClaimPercent }}% ｜ {{ activeClaim.execution_status_label || '等待继续提交' }}</text>
+            </view>
+            <view class="home-v10-task-side">
+              <text class="home-v10-task-reward">{{ activeClaimRewardText }}</text>
+              <button class="home-v10-task-button" @click.stop="openActiveClaim">去完成</button>
+            </view>
+          </view>
+        </view>
+
+        <view class="home-v10-mall-section">
+          <view class="home-v10-mall-head">
+            <text>积分商城精选</text>
+            <text @click="openProducts">全部商品 ›</text>
+          </view>
+          <view class="home-v10-products">
+            <view
+              v-for="(product, index) in registeredProducts"
+              :key="`v10-product-${product.id}`"
+              class="home-v10-product"
+              @click="openProduct(product.id)"
+            >
+              <view :class="['home-v10-product-image', `tone-${index % 4}`]">
+                <image v-if="productImage(product)" :src="productImage(product)" mode="aspectFill" />
+                <text v-else>{{ product.name.slice(0, 1) }}</text>
+              </view>
+              <text class="home-v10-product-name">{{ product.name }}</text>
+              <text class="home-v10-product-price">{{ productPriceText(product) }}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="home-v10-trust" @click="openAssets">
+          <view class="home-v10-trust-shield">✓</view>
+          <view>
+            <text>安心保障</text>
+            <text>平台对任务发布与交易全程保障，权益无忧</text>
+          </view>
+          <text>›</text>
+        </view>
+      </view>
+    </view>
+
+    <template v-else>
     <view class="home-v4-header">
       <view class="home-v4-brand">
         <image
@@ -435,6 +617,7 @@
         登录后领取任务与奖励
       </button>
     </view>
+    </template>
 
     <view v-if="popupVisible" class="home-v4-popup-mask" role="presentation" @click.self="closePopup">
       <view :class="['home-v4-popup', `mode-${home.popup.mode}`]">
@@ -449,7 +632,7 @@
       </view>
     </view>
 
-    <AppTabBar current-target="home" />
+    <AppTabBar current-target="home" variant="flat" />
   </view>
 </template>
 
@@ -583,7 +766,7 @@ function createDefaultHome(): HomeContent {
 }
 
 const home = ref<HomeContent>(createDefaultHome())
-const quickEntries = computed(() => home.value.modules.quick_entries.map((item) => ({
+const quickEntries = computed(() => home.value.modules.quick_entries.slice(0, 4).map((item) => ({
   ...item,
   action: () => navigateHomeLink(item.link_type),
 })))
@@ -610,6 +793,26 @@ const recommendedTimeText = computed(() => {
   const minutes = recommendedTask.value?.average_completion_minutes
   return minutes && minutes > 0 ? `约 ${Math.max(1, Math.round(minutes))} 分钟` : home.value.modules.recommendation.time_text
 })
+const recommendedReviewTimeText = computed(() => {
+  const hours = recommendedTask.value?.review_deadline_hours
+  return hours && hours > 0 ? `${Math.max(1, Math.round(hours))}h` : '24h'
+})
+const announcementSummary = computed(() => plainText(home.value.announcement.content) || '暂无新的校园公告')
+const recommendedDescriptionText = computed(() => plainText(
+  recommendedTask.value?.description_text
+    || recommendedTask.value?.description
+    || home.value.modules.recommendation.description,
+))
+const activeClaimDescriptionText = computed(() => plainText(
+  activeClaim.value?.description_text
+    || activeClaim.value?.description
+    || activeClaim.value?.execution_status_label
+    || '已领取，等待继续完成',
+))
+const activeClaimRewardText = computed(() => {
+  const rewards = activeClaim.value?.rewards || []
+  return rewards.length ? rewards.map(rewardLabel).join(' + ') : '任务奖励'
+})
 const registeredProducts = computed<RegisteredProductCard[]>(() => {
   const live = mallProducts.value.slice(0, 4).map((product) => ({
     id: product.id,
@@ -635,10 +838,8 @@ const registeredProducts = computed<RegisteredProductCard[]>(() => {
 
 onShow(async () => {
   await loadHome()
+  if (auth.accessToken) await auth.fetchCurrentUser()
   await loadRegisteredHomeData()
-
-  if (!auth.accessToken) return
-  await auth.fetchCurrentUser()
   if (!auth.accessToken) return
   try {
     const pending = await loadPendingLegalDocuments(auth.accessToken, 'account')
@@ -724,6 +925,17 @@ function titleParts(title: string) {
     secondary: accentMatch ? accentMatch[1] : match[2],
     accent: accentMatch ? accentMatch[2] : '',
   }
+}
+
+function plainText(value: string | null | undefined) {
+  return String(value || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function quickArtType(id: string, linkType: HomeLinkType) {
@@ -854,6 +1066,42 @@ function handlePopupAction() {
 <style scoped>
 .home-v4{min-height:100vh;background:radial-gradient(circle at 96% 3%,rgba(69,207,212,.17),transparent 240rpx),linear-gradient(180deg,#fff 0,#fbfffd 58%,#f7fbff 100%);color:#0b253d}
 .home-v4-safe{height:calc(env(safe-area-inset-top) + 14rpx)}
+.home-v4.is-authenticated{background:#fff;color:#122338}
+.home-v4.is-authenticated>.home-v4-header,.home-v4.is-authenticated>.home-v4-state,.home-v4.is-authenticated>.home-v4-content{display:none}
+.home-v10-auth-shell{min-height:100vh;padding-bottom:18rpx;background:linear-gradient(180deg,#f7fbff 0,#fff 31%,#fff 100%)}
+.home-v10-hero{position:relative;height:390rpx;overflow:hidden;background:#ccecff}
+.home-v10-hero-swiper,.home-v10-hero-slide,.home-v10-hero-image,.home-v10-hero-veil{position:absolute;inset:0;width:100%;height:100%}
+.home-v10-hero-image{display:block}.home-v10-hero-veil{background:linear-gradient(90deg,rgba(255,255,255,.98) 0%,rgba(255,255,255,.92) 27%,rgba(255,255,255,.3) 55%,rgba(255,255,255,.02) 76%)}
+.home-v10-hero-brand{position:absolute;z-index:2;top:31rpx;left:31rpx;display:flex;max-width:370rpx;flex-direction:column}
+.home-v10-hero-title{max-width:100%;overflow:hidden;color:#101923!important;font-size:49rpx;font-weight:950;letter-spacing:-1.5rpx;line-height:1.06;text-overflow:ellipsis;text-shadow:0 2rpx 7rpx rgba(255,255,255,.72);white-space:nowrap}
+.home-v10-hero-subtitle{margin-top:16rpx;color:#4d6076!important;font-size:25rpx;font-weight:650;letter-spacing:.02em}
+.home-v10-hero-actions{position:absolute;z-index:3;top:23rpx;right:21rpx;display:flex;gap:18rpx}
+.home-v10-hero-action{position:relative;display:flex;width:69rpx;align-items:center;flex-direction:column;color:#172536}
+.home-v10-hero-action>text{margin-top:6rpx;color:#172536!important;font-size:18rpx;font-weight:750;line-height:1}
+.home-v10-action-image{width:43rpx;height:43rpx}.home-v10-notice-dot{position:absolute;top:-2rpx;right:9rpx;width:13rpx;height:13rpx;border:3rpx solid #fff;border-radius:50%;background:#ff3e24}
+.home-v10-bell{position:relative;width:32rpx;height:35rpx;border:4rpx solid #152235;border-bottom:0;border-radius:18rpx 18rpx 5rpx 5rpx}.home-v10-bell::before{content:'';position:absolute;right:-7rpx;bottom:-5rpx;left:-7rpx;height:4rpx;border-radius:4rpx;background:#152235}.home-v10-bell::after{content:'';position:absolute;bottom:-12rpx;left:9rpx;width:13rpx;height:7rpx;border-radius:0 0 8rpx 8rpx;background:#152235}
+.home-v10-headset{position:relative;width:39rpx;height:35rpx;border:4rpx solid #152235;border-bottom-color:transparent;border-radius:50%}.home-v10-headset::before,.home-v10-headset::after{content:'';position:absolute;top:18rpx;width:7rpx;height:14rpx;border-radius:4rpx;background:#152235}.home-v10-headset::before{left:-6rpx}.home-v10-headset::after{right:-6rpx}.home-v10-headset>view{position:absolute;top:10rpx;left:8rpx;color:#152235;font-size:15rpx;font-weight:950;letter-spacing:2rpx}
+.home-v10-hero-dots{position:absolute;z-index:3;right:35rpx;bottom:21rpx;display:flex;gap:9rpx}.home-v10-hero-dot{width:10rpx;height:10rpx;border-radius:50%;background:rgba(255,255,255,.78);box-shadow:0 1rpx 5rpx rgba(23,58,67,.2)}.home-v10-hero-dot.active{width:28rpx;border-radius:999rpx;background:#08a96a}
+.home-v10-main{position:relative;z-index:4;margin-top:-58rpx;padding:0 27rpx 30rpx}
+.home-v10-quick-card{display:grid;gap:0;padding:29rpx 17rpx 26rpx;border:1rpx solid #e3e9ef;border-radius:31rpx;background:rgba(255,255,255,.97);box-shadow:0 16rpx 38rpx rgba(41,73,101,.1);grid-template-columns:repeat(4,1fr)}
+.home-v10-quick-item{position:relative;display:flex;min-width:0;align-items:center;flex-direction:column}.home-v10-quick-item+.home-v10-quick-item::before{content:'';position:absolute;top:13rpx;bottom:13rpx;left:0;width:1rpx;background:#edf0f3}
+.home-v10-quick-icon{display:flex;width:76rpx;height:76rpx;align-items:center;justify-content:center;border-radius:23rpx;box-shadow:inset 0 0 0 1rpx rgba(255,255,255,.46),0 9rpx 18rpx rgba(31,65,81,.12);color:#fff}
+.home-v10-quick-icon.tone-green{background:linear-gradient(145deg,#39d68a,#079e61)}.home-v10-quick-icon.tone-blue{background:linear-gradient(145deg,#73b8ff,#2479e9)}.home-v10-quick-icon.tone-orange{background:linear-gradient(145deg,#ffcb4e,#ff921c)}.home-v10-quick-icon.tone-violet{background:linear-gradient(145deg,#b583ff,#7145e9)}
+.home-v10-quick-icon image{width:62rpx;height:62rpx}.home-v10-quick-icon>text{color:#fff!important;font-size:31rpx;font-weight:950;text-shadow:0 2rpx 4rpx rgba(0,0,0,.12)}
+.home-v10-quick-label{max-width:100%;margin-top:13rpx;overflow:hidden;color:#142438!important;font-size:22rpx;font-weight:850;text-overflow:ellipsis;white-space:nowrap}
+.home-v10-announcement{display:flex;min-height:77rpx;box-sizing:border-box;align-items:center;gap:12rpx;margin-top:20rpx;padding:12rpx 20rpx;border:1rpx solid #dfe7ee;border-radius:22rpx;background:#fff;box-shadow:0 9rpx 22rpx rgba(39,72,98,.055)}
+.home-v10-announcement-icon{display:flex;width:45rpx;height:45rpx;flex:none;align-items:center;justify-content:center;border-radius:14rpx;background:#e2f8ec;color:#08a166;font-size:30rpx;font-weight:950}.home-v10-announcement-icon image{width:38rpx;height:38rpx}.home-v10-announcement-label{flex:none;color:#079e61!important;font-size:23rpx;font-weight:950}.home-v10-announcement-content{min-width:0;overflow:hidden;flex:1;color:#657388!important;font-size:20rpx;text-overflow:ellipsis;white-space:nowrap}.home-v10-announcement-arrow{flex:none;color:#53657a!important;font-size:33rpx}
+.home-v10-error{margin-top:14rpx;padding:14rpx 18rpx;border-radius:15rpx;background:#fff5df;color:#a56c08;font-size:18rpx;text-align:center}
+.home-v10-section-head{display:flex;align-items:center;justify-content:space-between;margin:28rpx 3rpx 13rpx}.home-v10-section-title{color:#132338!important;font-size:30rpx;font-weight:950}.home-v10-section-link{color:#586a80!important;font-size:19rpx;font-weight:700}
+.home-v10-task-card{display:flex;align-items:center;gap:16rpx;padding:19rpx;border:1rpx solid #dce7ef;border-radius:25rpx;background:#fff;box-shadow:0 10rpx 26rpx rgba(29,66,99,.055)}
+.home-v10-task-empty{display:flex;min-height:112rpx;box-sizing:border-box;align-items:center;gap:16rpx;padding:20rpx;border:1rpx solid #dce7ef;border-radius:25rpx;background:linear-gradient(90deg,#f7fbff,#fff);box-shadow:0 10rpx 26rpx rgba(29,66,99,.045)}.home-v10-task-empty-icon{display:flex;width:68rpx;height:68rpx;flex:none;align-items:center;justify-content:center;border-radius:21rpx;background:#e3f7ee;color:#089961;font-size:27rpx;font-weight:950}.home-v10-task-empty-copy{min-width:0;flex:1}.home-v10-task-empty-copy>text{display:block}.home-v10-task-empty-copy>text:first-child{color:#17283c!important;font-size:22rpx;font-weight:900}.home-v10-task-empty-copy>text:last-child{margin-top:7rpx;color:#6c7c8e!important;font-size:18rpx}.home-v10-task-empty-link{flex:none;color:#078e61!important;font-size:19rpx;font-weight:850}
+.home-v10-task-cover{display:flex;width:105rpx;height:105rpx;overflow:hidden;flex:none;align-items:center;justify-content:center;border-radius:24rpx}.home-v10-task-cover.tone-green{background:linear-gradient(145deg,#e1f9ed,#b4edd1)}.home-v10-task-cover.tone-blue{background:linear-gradient(145deg,#e5f3ff,#b8dcff)}.home-v10-task-cover image{width:100%;height:100%}.home-v10-task-fallback{display:flex;width:68rpx;height:68rpx;align-items:center;justify-content:center;border-radius:21rpx;background:linear-gradient(145deg,#35cd83,#079a60);box-shadow:0 8rpx 17rpx rgba(8,154,96,.2);color:#fff;font-size:28rpx;font-weight:950}.tone-blue .home-v10-task-fallback{background:linear-gradient(145deg,#59b7ff,#1f77e2)}
+.home-v10-task-copy{min-width:0;flex:1}.home-v10-task-title,.home-v10-task-description,.home-v10-task-meta{display:block}.home-v10-task-title{overflow:hidden;color:#112337!important;font-size:25rpx;font-weight:950;text-overflow:ellipsis;white-space:nowrap}.home-v10-task-description{display:-webkit-box;margin-top:7rpx;overflow:hidden;color:#647388!important;font-size:19rpx;line-height:1.42;-webkit-box-orient:vertical;-webkit-line-clamp:2}.home-v10-task-meta{margin-top:10rpx;overflow:hidden;color:#738095!important;font-size:17rpx;text-overflow:ellipsis;white-space:nowrap}
+.home-v10-task-side{display:flex;max-width:155rpx;flex:none;align-items:flex-end;flex-direction:column}.home-v10-task-reward{max-width:155rpx;overflow:hidden;color:#ff4b19!important;font-size:23rpx;font-weight:950;text-align:right;text-overflow:ellipsis;white-space:nowrap}.home-v10-task-button{height:57rpx;margin:14rpx 0 0;padding:0 26rpx;border:0;border-radius:999rpx;background:linear-gradient(110deg,#08aa67,#08c17d);box-shadow:0 9rpx 18rpx rgba(8,169,104,.2);color:#fff;font-size:20rpx;font-weight:900;line-height:57rpx}.home-v10-task-button::after{display:none}
+.home-v10-continue-section{overflow:hidden;margin-top:25rpx;border:1rpx solid #bcd9fb;border-radius:28rpx;background:linear-gradient(180deg,#eff7ff,#fff 49%)}.home-v10-continue-head{display:flex;align-items:center;justify-content:space-between;padding:22rpx 25rpx 15rpx}.home-v10-continue-head text:first-child{color:#1458a5!important;font-size:27rpx;font-weight:950}.home-v10-continue-head text:last-child{color:#586d86!important;font-size:19rpx}.home-v10-continue-card{border:0;border-top:1rpx solid #e0ebf7;border-radius:0;background:#fff;box-shadow:none}
+.home-v10-mall-section{margin-top:27rpx;padding:21rpx 18rpx 22rpx;border:1rpx solid #f0d69d;border-radius:28rpx;background:linear-gradient(180deg,#fffaf0 0,#fff 54%)}.home-v10-mall-head{display:flex;align-items:center;justify-content:space-between;padding:0 3rpx 16rpx}.home-v10-mall-head text:first-child{color:#8e5b07!important;font-size:28rpx;font-weight:950}.home-v10-mall-head text:last-child{color:#53677f!important;font-size:19rpx}
+.home-v10-products{display:grid;gap:12rpx;grid-template-columns:repeat(4,minmax(0,1fr))}.home-v10-product{min-width:0}.home-v10-product-image{display:flex;height:116rpx;overflow:hidden;align-items:center;justify-content:center;border-radius:18rpx;color:#0a8c61;font-size:34rpx;font-weight:950}.home-v10-product-image.tone-0{background:#e8f8ef}.home-v10-product-image.tone-1{background:#fff1db}.home-v10-product-image.tone-2{background:#eaf2ff}.home-v10-product-image.tone-3{background:#edf7f4}.home-v10-product-image image{width:100%;height:100%}.home-v10-product-name,.home-v10-product-price{display:block;overflow:hidden;text-align:center;text-overflow:ellipsis;white-space:nowrap}.home-v10-product-name{margin-top:10rpx;color:#243246!important;font-size:18rpx;font-weight:750}.home-v10-product-price{margin-top:6rpx;color:#0b9a61!important;font-size:17rpx;font-weight:900}.home-v10-product:nth-child(2n) .home-v10-product-price{color:#e56624!important}
+.home-v10-trust{display:flex;align-items:center;gap:15rpx;margin-top:25rpx;padding:18rpx 20rpx;border:1rpx solid #dbe8f5;border-radius:22rpx;background:linear-gradient(90deg,#eef6ff,#f8fbff)}.home-v10-trust-shield{display:flex;width:57rpx;height:62rpx;flex:none;align-items:center;justify-content:center;border-radius:17rpx 17rpx 23rpx 23rpx;background:linear-gradient(145deg,#5cb2ff,#2678e6);color:#fff;font-size:27rpx;font-weight:950;clip-path:polygon(50% 0,94% 17%,88% 74%,50% 100%,12% 74%,6% 17%)}.home-v10-trust>view:nth-child(2){min-width:0;flex:1}.home-v10-trust>view:nth-child(2)>text{display:block}.home-v10-trust>view:nth-child(2)>text:first-child{color:#17283c!important;font-size:22rpx;font-weight:950}.home-v10-trust>view:nth-child(2)>text:last-child{margin-top:4rpx;color:#66758a!important;font-size:17rpx}.home-v10-trust>text:last-child{color:#50647b!important;font-size:34rpx}
 .home-v4-header{display:flex;align-items:center;justify-content:space-between;padding:18rpx 30rpx 28rpx}
 .home-v4-brand,.home-v4-header-actions{display:flex;align-items:center}.home-v4-brand{min-width:0;gap:18rpx}.home-v4-header-actions{flex:none;gap:14rpx}
 .home-v4-brand-mark,.home-v4-brand-logo{width:84rpx;height:84rpx;flex:none;border-radius:24rpx}
