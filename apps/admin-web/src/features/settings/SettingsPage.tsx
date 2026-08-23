@@ -33,6 +33,7 @@ import { MediaGalleryInput } from '../../components/MediaGalleryInput'
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { useAdminAuth } from '../auth/AdminAuthContext'
 import { StorageManagementPanel } from './StorageManagementPanel'
+import { SmsManagementPanel } from './SmsManagementPanel'
 import navAccountActive from '../../../../user-app/src/static/tabbar/account-active.png'
 import navAccount from '../../../../user-app/src/static/tabbar/account.png'
 import navCommunityActive from '../../../../user-app/src/static/tabbar/community-active.png'
@@ -461,6 +462,7 @@ export function SettingsPage() {
   const [form] = Form.useForm()
   const [messageApi, contextHolder] = message.useMessage()
   const canApprove = admin?.permissions.includes('settings.approve') ?? false
+  const isSuperAdmin = admin?.roles.includes('super_admin') ?? false
 
   const load = useCallback(async (nextGroup?: string) => {
     setLoading(true)
@@ -552,6 +554,7 @@ export function SettingsPage() {
       </div>
       <Alert showIcon type="info" message="金额编辑时使用元，服务端和数据库统一保存为分；发布只影响后续新业务，历史订单与资产事实不重算。" />
       <StorageManagementPanel />
+      {isSuperAdmin && <SmsManagementPanel />}
       <Card bordered={false} className="settings-table-card">
         <Table rowKey="key" loading={loading} dataSource={items} columns={columns} pagination={{ pageSize: 10, showSizeChanger: true }} scroll={{ x: 1000 }} />
       </Card>

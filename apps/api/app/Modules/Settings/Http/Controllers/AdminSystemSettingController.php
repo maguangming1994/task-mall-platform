@@ -6,6 +6,7 @@ use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
+use App\Modules\Auth\Services\SmsProviderSettingsService;
 use App\Modules\Settings\Models\SystemSettingDefinition;
 use App\Modules\Settings\Models\SystemSettingDraft;
 use App\Modules\Settings\Models\SystemSettingVersion;
@@ -23,6 +24,7 @@ class AdminSystemSettingController extends Controller
         ]);
         $definitions = SystemSettingDefinition::query()
             ->where('enabled', true)
+            ->where('setting_key', '!=', SmsProviderSettingsService::SETTING_KEY)
             ->when(isset($data['group']), fn ($query) => $query->where('group_code', $data['group']))
             ->when(isset($data['keyword']), function ($query) use ($data): void {
                 $keyword = '%'.$data['keyword'].'%';
@@ -43,6 +45,9 @@ class AdminSystemSettingController extends Controller
 
     public function show(string $settingKey, SystemSettingService $settings): JsonResponse
     {
+        if ($response = $this->rejectSpecializedSetting($settingKey)) {
+            return $response;
+        }
         $definition = $settings->definition($settingKey);
         $definition->load(['draft.reviewedBy', 'versions' => fn ($query) => $query->latest('version')]);
 
@@ -55,6 +60,9 @@ class AdminSystemSettingController extends Controller
         SystemSettingService $settings,
         AuditLogger $audit,
     ): JsonResponse {
+        if ($response = $this->rejectSpecializedSetting($settingKey)) {
+            return $response;
+        }
         $data = $request->validate([
             'value' => ['present'],
             'reason' => ['required', 'string', 'min:4', 'max:500'],
@@ -91,6 +99,9 @@ class AdminSystemSettingController extends Controller
         SystemSettingService $settings,
         AuditLogger $audit,
     ): JsonResponse {
+        if ($response = $this->rejectSpecializedSetting($settingKey)) {
+            return $response;
+        }
         $data = $request->validate([
             'decision' => ['required', 'in:approve,reject'],
             'comment' => ['required', 'string', 'min:4', 'max:500'],
@@ -117,6 +128,9 @@ class AdminSystemSettingController extends Controller
         SystemSettingService $settings,
         AuditLogger $audit,
     ): JsonResponse {
+        if ($response = $this->rejectSpecializedSetting($settingKey)) {
+            return $response;
+        }
         $request->validate(['confirm_publish' => ['required', 'accepted']]);
         /** @var AdminUser $admin */
         $admin = $request->user();
@@ -138,6 +152,9 @@ class AdminSystemSettingController extends Controller
 
     public function versions(string $settingKey, SystemSettingService $settings): JsonResponse
     {
+        if ($response = $this->rejectSpecializedSetting($settingKey)) {
+            return $response;
+        }
         $definition = $settings->definition($settingKey);
         $versions = $definition->versions()->latest('version')->get();
 
@@ -150,6 +167,9 @@ class AdminSystemSettingController extends Controller
         SystemSettingService $settings,
         AuditLogger $audit,
     ): JsonResponse {
+        if ($response = $this->rejectSpecializedSetting($settingKey)) {
+            return $response;
+        }
         $data = $request->validate([
             'target_version' => ['required', 'integer', 'min:1'],
             'reason' => ['required', 'string', 'min:4', 'max:500'],
@@ -237,5 +257,18 @@ class AdminSystemSettingController extends Controller
             'reason' => $version->reason,
             'published_at' => $version->published_at?->toIso8601String(),
         ];
+    }
+
+    private function rejectSpecializedSetting(string $settingKey): ?JsonResponse
+    {
+        if ($settingKey !== SmsProviderSettingsService::SETTING_KEY) {
+            return null;
+        }
+
+        return ApiResponse::error(
+            'SETTING_SPECIALIZED_ENDPOINT',
+            '短信服务配置必须通过专用安全接口管理。',
+            409,
+        );
     }
 }

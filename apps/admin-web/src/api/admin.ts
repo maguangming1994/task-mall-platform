@@ -342,6 +342,64 @@ export interface MediaStorageMigration {
   errors: Array<{ asset_id?: string; message: string }>; created_at: string; completed_at: string | null
 }
 
+export type SmsServiceDriver = 'aliyun' | 'webhook' | 'log'
+export type SmsSecretField = 'access_key_id' | 'access_key_secret' | 'security_token'
+
+export interface SmsSecretState {
+  configured: boolean
+  masked: string | null
+}
+
+export interface SmsServiceSettings {
+  driver: SmsServiceDriver
+  access_key_id: SmsSecretState
+  access_key_secret: SmsSecretState
+  security_token: SmsSecretState
+  region: string | null
+  endpoint: string | null
+  sign_name: string | null
+  template_code: string | null
+  verification_variables: string[]
+  timeout_seconds: number
+  ttl_seconds: number
+  resend_interval_seconds: number
+  hourly_limit: number
+  daily_limit: number
+  max_attempts: number
+  last_tested_at: string | null
+  last_test_status: 'success' | 'failed' | null
+  last_test_message: string | null
+}
+
+export interface SmsServiceSettingsInput {
+  reason: string
+  driver: SmsServiceDriver
+  region: string | null
+  endpoint: string | null
+  sign_name: string | null
+  template_code: string | null
+  verification_variables: string[]
+  timeout_seconds: number
+  ttl_seconds: number
+  resend_interval_seconds: number
+  hourly_limit: number
+  daily_limit: number
+  max_attempts: number
+  access_key_id?: string
+  access_key_secret?: string
+  security_token?: string
+  clear_access_key_id?: boolean
+  clear_access_key_secret?: boolean
+  clear_security_token?: boolean
+}
+
+export interface SmsServiceTestResult {
+  accepted: boolean
+  message: string
+  request_id?: string
+  sent_at?: string | null
+}
+
 export interface UserAssetSummary {
   user_id: string
   points: { available: number; frozen: number; debt: number }
@@ -872,6 +930,24 @@ export async function createSettingRollback(settingKey: string, targetVersion: n
   return request(`/admin/settings/${encodeURIComponent(settingKey)}/rollback`, {
     method: 'POST',
     body: JSON.stringify({ target_version: targetVersion, reason }),
+  })
+}
+
+export async function getSmsServiceSettings(): Promise<SmsServiceSettings> {
+  return request('/admin/sms/settings')
+}
+
+export async function saveSmsServiceSettings(input: SmsServiceSettingsInput): Promise<SmsServiceSettings> {
+  return request('/admin/sms/settings', {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export async function sendSmsServiceTest(phone: string): Promise<SmsServiceTestResult> {
+  return request('/admin/sms/settings/test', {
+    method: 'POST',
+    body: JSON.stringify({ phone }),
   })
 }
 

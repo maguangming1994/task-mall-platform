@@ -144,7 +144,7 @@ async function requestCode() {
   requestingCode.value = true
   try {
     await auth.requestPhoneCode(phone.value, needsPhoneBinding.value ? 'bind_phone' : 'login')
-    uni.showToast({ title: '验证码已发送', icon: 'success' })
+    uni.showToast({ title: '验证码已发送，请注意查收', icon: 'success' })
     countdown.value = 60
     timer = setInterval(() => {
       countdown.value -= 1

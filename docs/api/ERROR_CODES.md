@@ -22,6 +22,7 @@
 | 409 | `LEGAL_DOCUMENT_STATE_INVALID` | 当前协议版本状态不允许发布或执行该操作 |
 | 422 | `VALIDATION_FAILED` | 字段校验失败 |
 | 422 | `PHONE_VERIFICATION_FAILED` | 手机验证码或换绑身份校验失败 |
+| 429 | `PHONE_VERIFICATION_RATE_LIMITED` | 验证码发送过于频繁，请稍后重试 |
 | 422 | `PHONE_CHANGE_REQUIRES_CURRENT_VERIFICATION` | 已绑定手机号变更时缺少当前手机号验证 |
 | 422 | `WECHAT_AUTH_FAILED` | 微信临时登录凭证无效、过期或已使用 |
 | 409 | `IDENTITY_MERGE_REQUIRED` | 微信或手机号身份已关联其他账号，已进入人工身份处理 |

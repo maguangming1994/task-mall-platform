@@ -2,39 +2,60 @@
 
 namespace App\Modules\Auth\Services;
 
+use App\Modules\Auth\Exceptions\PhoneVerificationRateLimitedException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 
 class PhoneVerificationService
 {
+    public function __construct(
+        private readonly AliyunSmsSender $aliyunSmsSender,
+        private readonly SmsProviderSettingsService $settings,
+    ) {}
+
     public function issue(string $phone, string $purpose): void
     {
-        $code = $this->verificationCode();
-        $ttl = (int) config('auth_tokens.phone_verification.ttl_seconds');
-        $driver = (string) config('auth_tokens.phone_verification.driver');
-        if ($driver === 'log') {
-            if (! app()->environment(['local', 'testing'])) {
-                throw new \RuntimeException('The local phone verification provider is disabled outside local and testing environments.');
-            }
-            Log::info('Phone verification code issued by local log adapter.', [
-                'phone_hash' => $this->phoneHash($phone),
-                'purpose' => $purpose,
-                'code' => $code,
-                'expires_in' => $ttl,
-            ]);
-        } elseif ($driver === 'webhook') {
-            $this->sendWebhook($phone, $purpose, $code, $ttl);
-        } else {
-            throw new \RuntimeException('The configured phone verification provider is not available.');
+        $lock = Cache::lock($this->issueLockKey($phone, $purpose), 10);
+        if (! $lock->get()) {
+            throw new PhoneVerificationRateLimitedException(5);
         }
 
-        Cache::put($this->cacheKey($phone, $purpose), [
-            'code_hash' => hash_hmac('sha256', $code, $this->secret()),
-            'attempts_remaining' => 5,
-            'expires_at' => now()->addSeconds($ttl)->timestamp,
-        ], $ttl);
+        try {
+            $configuration = $this->settings->effective();
+            $this->ensureCanIssue($phone, $purpose, $configuration);
 
+            $code = $this->verificationCode();
+            $ttl = max(60, (int) ($configuration['ttl_seconds'] ?? 300));
+            $driver = (string) ($configuration['driver'] ?? 'log');
+            if ($driver === 'log') {
+                if (! app()->environment(['local', 'testing'])) {
+                    throw new \RuntimeException('The local phone verification provider is disabled outside local and testing environments.');
+                }
+                Log::info('Phone verification code issued by local log adapter.', [
+                    'phone_hash' => $this->phoneHash($phone),
+                    'purpose' => $purpose,
+                    'code' => $code,
+                    'expires_in' => $ttl,
+                ]);
+            } elseif ($driver === 'aliyun') {
+                $this->aliyunSmsSender->send($phone, $purpose, $code);
+            } elseif ($driver === 'webhook') {
+                $this->sendWebhook($phone, $purpose, $code, $ttl, $configuration);
+            } else {
+                throw new \RuntimeException('The configured phone verification provider is not available.');
+            }
+
+            Cache::put($this->cacheKey($phone, $purpose), [
+                'code_hash' => hash_hmac('sha256', $code, $this->secret()),
+                'attempts_remaining' => max(1, (int) ($configuration['max_attempts'] ?? 5)),
+                'expires_at' => now()->addSeconds($ttl)->timestamp,
+            ], $ttl);
+            $this->recordIssue($phone, $purpose, $configuration);
+        } finally {
+            $lock->release();
+        }
     }
 
     public function verify(string $phone, string $purpose, string $code): bool
@@ -81,6 +102,57 @@ class PhoneVerificationService
         return 'phone-verification:'.$purpose.':'.$this->phoneHash($phone);
     }
 
+    private function issueLockKey(string $phone, string $purpose): string
+    {
+        return 'phone-verification:issue-lock:'.$purpose.':'.$this->phoneHash($phone);
+    }
+
+    private function cooldownKey(string $phone, string $purpose): string
+    {
+        return 'phone-verification:cooldown:'.$purpose.':'.$this->phoneHash($phone);
+    }
+
+    private function hourlyRateKey(string $phone): string
+    {
+        return 'phone-verification:hour:'.$this->phoneHash($phone);
+    }
+
+    private function dailyRateKey(string $phone): string
+    {
+        return 'phone-verification:day:'.now()->format('Y-m-d').':'.$this->phoneHash($phone);
+    }
+
+    /** @param array<string,mixed> $configuration */
+    private function ensureCanIssue(string $phone, string $purpose, array $configuration): void
+    {
+        $cooldown = max(0, (int) ($configuration['resend_interval_seconds'] ?? 60));
+        if ($cooldown > 0 && Cache::has($this->cooldownKey($phone, $purpose))) {
+            throw new PhoneVerificationRateLimitedException($cooldown);
+        }
+
+        $hourlyLimit = max(1, (int) ($configuration['hourly_limit'] ?? 5));
+        if (RateLimiter::tooManyAttempts($this->hourlyRateKey($phone), $hourlyLimit)) {
+            throw new PhoneVerificationRateLimitedException(max(1, RateLimiter::availableIn($this->hourlyRateKey($phone))));
+        }
+
+        $dailyLimit = max(1, (int) ($configuration['daily_limit'] ?? 10));
+        if (RateLimiter::tooManyAttempts($this->dailyRateKey($phone), $dailyLimit)) {
+            throw new PhoneVerificationRateLimitedException(max(1, RateLimiter::availableIn($this->dailyRateKey($phone))));
+        }
+    }
+
+    /** @param array<string,mixed> $configuration */
+    private function recordIssue(string $phone, string $purpose, array $configuration): void
+    {
+        $cooldown = max(0, (int) ($configuration['resend_interval_seconds'] ?? 60));
+        if ($cooldown > 0) {
+            Cache::put($this->cooldownKey($phone, $purpose), true, $cooldown);
+        }
+
+        RateLimiter::hit($this->hourlyRateKey($phone), 3600);
+        RateLimiter::hit($this->dailyRateKey($phone), 86400);
+    }
+
     private function verificationCode(): string
     {
         if (app()->environment(['local', 'testing'])) {
@@ -95,23 +167,25 @@ class PhoneVerificationService
         return hash('sha256', (string) config('auth_tokens.identity_hash_secret'));
     }
 
-    private function sendWebhook(string $phone, string $purpose, string $code, int $ttl): void
+    /** @param array<string,mixed> $configuration */
+    private function sendWebhook(string $phone, string $purpose, string $code, int $ttl, array $configuration): void
     {
-        $endpoint = (string) config('auth_tokens.phone_verification.webhook.endpoint');
-        $token = (string) config('auth_tokens.phone_verification.webhook.token');
+        $webhook = (array) ($configuration['webhook'] ?? config('auth_tokens.phone_verification.webhook', []));
+        $endpoint = (string) ($webhook['endpoint'] ?? '');
+        $token = (string) ($webhook['token'] ?? '');
         if ($endpoint === '' || $token === '') {
             throw new \RuntimeException('The SMS webhook provider is incomplete.');
         }
         $response = Http::asJson()
             ->withToken($token)
-            ->timeout((int) config('auth_tokens.phone_verification.webhook.timeout_seconds'))
+            ->timeout((int) ($webhook['timeout_seconds'] ?? 5))
             ->post($endpoint, [
                 'phone' => $phone,
                 'purpose' => $purpose,
                 'verification_code' => $code,
                 'expires_in' => $ttl,
-                'template_id' => config('auth_tokens.phone_verification.webhook.template_id'),
-                'sign_name' => config('auth_tokens.phone_verification.webhook.sign_name'),
+                'template_id' => $webhook['template_id'] ?? null,
+                'sign_name' => $webhook['sign_name'] ?? null,
             ]);
         if (! $response->successful()) {
             throw new \RuntimeException('The SMS provider rejected the verification request.');

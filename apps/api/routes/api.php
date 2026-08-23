@@ -18,6 +18,7 @@ use App\Modules\Assets\Http\Controllers\PayoutNotificationController;
 use App\Modules\Assets\Http\Controllers\UserAssetLedgerController;
 use App\Modules\Assets\Http\Controllers\WalletRechargeController;
 use App\Modules\Audit\Http\Controllers\AdminAuditLogController;
+use App\Modules\Auth\Http\Controllers\AdminSmsProviderController;
 use App\Modules\Auth\Http\Controllers\AuthController;
 use App\Modules\Auth\Http\Controllers\CurrentUserController;
 use App\Modules\Auth\Http\Controllers\PhoneBindingController;
@@ -287,6 +288,12 @@ Route::prefix('admin')->group(function () {
             ->middleware(['admin.permission:privacy.manage', 'admin.recent_verification']);
         Route::get('/settings', [AdminSystemSettingController::class, 'index'])
             ->middleware('admin.permission:settings.manage');
+        Route::get('/sms/settings', [AdminSmsProviderController::class, 'show'])
+            ->middleware('admin.permission:settings.manage');
+        Route::put('/sms/settings', [AdminSmsProviderController::class, 'update'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::post('/sms/settings/test', [AdminSmsProviderController::class, 'test'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification', 'throttle:30,1']);
         Route::get('/media/storage/providers', [AdminMediaController::class, 'providers'])->middleware('admin.permission:settings.manage');
         Route::put('/media/storage/providers/{mediaStorageProvider}', [AdminMediaController::class, 'configure'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
         Route::post('/media/storage/providers/{mediaStorageProvider}/test', [AdminMediaController::class, 'test'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);

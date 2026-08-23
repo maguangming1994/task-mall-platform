@@ -2,8 +2,12 @@
 
 namespace App\Modules\Operations\Services;
 
+use App\Modules\Auth\Services\SmsProviderSettingsService;
+
 class ProductionReadinessService
 {
+    public function __construct(private readonly SmsProviderSettingsService $smsSettings) {}
+
     /** @return array{ready:bool,checked_at:string,checks:array<int,array<string,mixed>>,summary:array<string,int>} */
     public function evaluate(): array
     {
@@ -25,8 +29,8 @@ class ProductionReadinessService
             $this->check('payment.driver', '微信支付使用真实适配器', config('wechat_payment.driver') === 'wechat', '设置 WECHAT_PAYMENT_DRIVER=wechat。'),
             $this->check('payment.merchant', '微信支付商户号、证书序列号和私钥已配置', $this->filled('wechat_payment.merchant_id') && $this->filled('wechat_payment.merchant_certificate_serial') && $this->filled('wechat_payment.merchant_private_key_path'), '提供微信支付商户号、商户证书序列号和只读私钥路径。'),
             $this->check('payment.callback', '微信支付 APIv3 密钥、平台证书与 HTTPS 回调已配置', $this->secretReady(config('wechat_payment.api_v3_key')) && is_file((string) config('wechat_payment.platform_certificate_path')) && str_starts_with((string) config('wechat_payment.notify_url'), 'https://'), '提供 32 字节 APIv3 密钥、微信支付平台证书路径和正式 HTTPS 支付回调地址。'),
-            $this->check('sms.provider', '短信网关已配置', config('auth_tokens.phone_verification.driver') === 'webhook' && $this->filled('auth_tokens.phone_verification.webhook.endpoint') && $this->filled('auth_tokens.phone_verification.webhook.token'), '配置 PHONE_VERIFICATION_DRIVER=webhook、SMS_WEBHOOK_ENDPOINT 与令牌。'),
-            $this->check('sms.template', '短信签名和模板已配置', $this->filled('auth_tokens.phone_verification.webhook.template_id') && $this->filled('auth_tokens.phone_verification.webhook.sign_name'), '提供已审核的 SMS_TEMPLATE_ID 与 SMS_SIGN_NAME。'),
+            $this->check('sms.provider', '短信网关已配置', $this->smsProviderReady(), '推荐配置 PHONE_VERIFICATION_DRIVER=aliyun，并通过服务器环境变量提供阿里云访问凭据。'),
+            $this->check('sms.template', '短信签名和模板已配置', $this->smsTemplateReady(), '提供阿里云已审核通过的 ALIYUN_SMS_SIGN_NAME 与 ALIYUN_SMS_TEMPLATE_CODE。'),
             $this->check('notification.provider', '外部消息投递网关已配置', config('notifications.driver') === 'webhook' && $this->filled('notifications.webhook.endpoint') && $this->secretReady(config('notifications.webhook.token')), '配置 NOTIFICATION_EXTERNAL_DRIVER=webhook、消息端点和至少 32 位独立令牌。'),
             $this->check('upload.storage', '上传使用 S3 预签名私有存储', config('uploads.mode') === 's3_presigned' && config('uploads.disk') === 's3', '配置 UPLOAD_MODE=s3_presigned、UPLOAD_DISK=s3 和生产桶凭据。'),
             $this->check('upload.scanner', '外部文件扫描器已配置', config('uploads.scanner') === 'webhook' && $this->filled('uploads.scanner_webhook.endpoint') && $this->filled('uploads.scanner_webhook.token'), '配置 UPLOAD_SCANNER=webhook、扫描端点与令牌。'),
@@ -69,5 +73,49 @@ class ProductionReadinessService
         $origins = config('cors.allowed_origins', []);
 
         return is_array($origins) && $origins !== [] && ! in_array('*', $origins, true) && collect($origins)->every(fn ($origin) => is_string($origin) && str_starts_with($origin, 'https://'));
+    }
+
+    private function smsProviderReady(): bool
+    {
+        try {
+            $configuration = $this->smsSettings->effective();
+            $driver = (string) ($configuration['driver'] ?? '');
+            if ($driver === 'webhook') {
+                return $this->filledValue($configuration['webhook']['endpoint'] ?? null)
+                    && $this->filledValue($configuration['webhook']['token'] ?? null);
+            }
+            if ($driver !== 'aliyun') {
+                return false;
+            }
+            $credentials = $this->smsSettings->aliyunCredentials();
+
+            return filled($credentials['access_key_id'])
+                && filled($credentials['access_key_secret'])
+                && $this->filledValue($configuration['aliyun']['endpoint'] ?? null);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function smsTemplateReady(): bool
+    {
+        try {
+            $configuration = $this->smsSettings->effective();
+
+            return match ((string) ($configuration['driver'] ?? '')) {
+                'aliyun' => $this->filledValue($configuration['aliyun']['template_code'] ?? null)
+                    && $this->filledValue($configuration['aliyun']['sign_name'] ?? null),
+                'webhook' => $this->filledValue($configuration['webhook']['template_id'] ?? null)
+                    && $this->filledValue($configuration['webhook']['sign_name'] ?? null),
+                default => false,
+            };
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function filledValue(mixed $value): bool
+    {
+        return is_string($value) && trim($value) !== '';
     }
 }
