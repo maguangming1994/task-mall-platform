@@ -12,7 +12,10 @@ use App\Modules\Settings\Models\SystemSettingVersion;
 use Database\Seeders\RbacSeeder;
 use Database\Seeders\SystemSettingDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class WechatIdentityFlowTest extends TestCase
@@ -59,6 +62,47 @@ class WechatIdentityFlowTest extends TestCase
             ->assertJsonPath('data.phone_masked', '138****8880');
 
         $this->assertDatabaseHas('user_identities', ['provider' => 'phone']);
+    }
+
+    public function test_wechat_user_can_bind_phone_from_mini_program_authorization(): void
+    {
+        $login = $this->wechatLogin('mini', 'local:mini-open-phone:union-phone');
+        $token = $login->json('data.access_token');
+
+        config()->set('wechat_auth.driver', 'wechat');
+        config()->set('wechat_auth.mini.app_id', 'test-mini-app-id');
+        config()->set('wechat_auth.mini.app_secret', 'test-mini-app-secret');
+        Cache::clear();
+        Http::fake([
+            'api.weixin.qq.com/cgi-bin/token*' => Http::response([
+                'access_token' => 'test-access-token',
+                'expires_in' => 7200,
+            ]),
+            'api.weixin.qq.com/wxa/business/getuserphonenumber*' => Http::response([
+                'errcode' => 0,
+                'errmsg' => 'ok',
+                'phone_info' => [
+                    'phoneNumber' => '13800138882',
+                    'purePhoneNumber' => '13800138882',
+                    'countryCode' => '86',
+                ],
+            ]),
+        ]);
+
+        $this->withToken($token)
+            ->putJson('/api/v1/me/phone/wechat', ['code' => 'phone-authorization-code'])
+            ->assertOk()
+            ->assertJsonPath('data.phone_bound', true)
+            ->assertJsonPath('data.phone_masked', '138****8882');
+
+        Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://api.weixin.qq.com/wxa/business/getuserphonenumber')
+            && str_contains($request->url(), 'access_token=test-access-token')
+            && $request['code'] === 'phone-authorization-code'
+        );
+        $this->assertDatabaseHas('user_identities', [
+            'provider' => 'phone',
+            'metadata' => json_encode(['source' => 'wechat_phone_authorization']),
+        ]);
     }
 
     public function test_union_collision_creates_a_pending_conflict_without_silent_merge(): void

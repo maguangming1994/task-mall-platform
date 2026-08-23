@@ -45,7 +45,7 @@
         </view>
 
         <template v-if="wechatMethod && !needsPhoneBinding">
-          <button class="wechat-button" :loading="wechatSubmitting" :disabled="wechatSubmitting || !agreed" @click="wechatLogin">
+          <button class="wechat-button" :loading="wechatSubmitting" :disabled="wechatSubmitting" @click="wechatLogin">
             <text class="wechat-icon">微</text>
             {{ wechatMethod === 'wechat_mini' ? '微信小程序快捷登录' : '微信公众号授权登录' }}
           </button>
@@ -56,6 +56,23 @@
           <text class="verified-badge">✓</text>
           <view><text class="verified-title">微信身份验证成功</text><text class="verified-copy">手机号仅用于账号安全与必要业务联系</text></view>
         </view>
+
+        <!-- #ifdef MP-WEIXIN -->
+        <template v-if="needsPhoneBinding">
+          <button
+            v-if="agreed"
+            class="wechat-phone-button"
+            open-type="getPhoneNumber"
+            :loading="wechatPhoneSubmitting"
+            :disabled="wechatPhoneSubmitting"
+            @getphonenumber="authorizeWechatPhone"
+          >
+            微信授权手机号
+          </button>
+          <button v-else class="wechat-phone-button" @click="ensureAgreed">微信授权手机号</button>
+          <view class="divider"><view /><text>或使用短信验证码</text><view /></view>
+        </template>
+        <!-- #endif -->
 
         <view class="field-group">
           <text class="label">手机号</text>
@@ -92,7 +109,7 @@
 
         <view v-if="formError" class="form-error" role="alert" aria-live="assertive">{{ formError }}</view>
 
-        <button class="login-button" :loading="auth.submitting" :disabled="auth.submitting || !agreed" @click="phoneAction">
+        <button class="login-button" :loading="auth.submitting" :disabled="auth.submitting" @click="phoneAction">
           {{ needsPhoneBinding ? '完成绑定并进入首页' : '验证并登录' }}
         </button>
         <text class="register-note">{{ needsPhoneBinding ? '完成绑定后将自动返回业务页面' : '未注册手机号验证后将自动创建账号，无需另行注册' }}</text>
@@ -118,6 +135,7 @@ const code = ref('')
 const countdown = ref(0)
 const requestingCode = ref(false)
 const wechatSubmitting = ref(false)
+const wechatPhoneSubmitting = ref(false)
 const agreed = ref(false)
 const formError = ref('')
 const capabilities = ref<ClientCapabilities | null>(null)
@@ -194,6 +212,35 @@ async function phoneAction() {
   }
 }
 
+interface WechatPhoneEvent {
+  detail?: {
+    code?: string
+    errMsg?: string
+  }
+}
+
+async function authorizeWechatPhone(event: WechatPhoneEvent) {
+  if (!ensureAgreed()) return
+  formError.value = ''
+  const phoneCode = event.detail?.code
+  if (!phoneCode) {
+    const denied = event.detail?.errMsg?.includes('deny') || event.detail?.errMsg?.includes('cancel')
+    formError.value = denied ? '你已取消手机号授权，可改用短信验证码绑定。' : '未获取到微信手机号授权凭证，请重试或改用短信验证码。'
+    uni.showToast({ title: formError.value, icon: 'none', duration: 3000 })
+    return
+  }
+
+  wechatPhoneSubmitting.value = true
+  try {
+    await auth.bindWechatPhone(phoneCode)
+    finishLogin()
+  } catch (error) {
+    showError(error)
+  } finally {
+    wechatPhoneSubmitting.value = false
+  }
+}
+
 async function routeAfterAuthentication(bindPhone: boolean) {
   const pending = await loadPendingLegalDocuments(auth.accessToken, 'account')
   if (pending.length > 0) {
@@ -266,10 +313,10 @@ onUnmounted(() => {
 .hero-copy{position:relative;z-index:2;max-width:440rpx;margin-top:62rpx}.eyebrow,.title,.subtitle,.form-kicker,.form-title,.label,.verified-title,.verified-copy,.register-note{display:block}.eyebrow{color:#087f9d;font-size:18rpx;font-weight:900;letter-spacing:2.4rpx}.title{margin-top:12rpx;color:var(--tm-ink-900);font-size:39rpx;font-weight:950;line-height:1.26;letter-spacing:-.03em}.subtitle{margin-top:13rpx;color:#5f7080;font-size:21rpx;font-weight:600;line-height:1.65}.welcome-visual{position:absolute;right:-8rpx;top:105rpx;width:235rpx;height:205rpx}.visual-card{position:absolute;display:flex;align-items:center;justify-content:center;flex-direction:column;width:145rpx;height:102rpx;border:1rpx solid rgba(24,76,105,.12);border-radius:22rpx;box-shadow:0 14rpx 28rpx rgba(20,89,128,.12)}.visual-card-back{right:0;bottom:10rpx;transform:rotate(11deg);background:linear-gradient(145deg,#22c8d1,#56d6c5);color:#fff;font-size:21rpx;font-weight:850}.visual-card-front{left:5rpx;top:5rpx;transform:rotate(-8deg);background:linear-gradient(145deg,#fff4a4,#ffd94d);color:#ff5561}.visual-card-front>text:first-child{font-size:40rpx;font-weight:950}.pass-label{margin-top:2rpx;color:#635619;font-size:12rpx;font-weight:900;letter-spacing:.08em}.visual-orbit{position:absolute;border:1rpx solid rgba(18,103,223,.13);border-radius:50%}.orbit-one{right:8rpx;top:4rpx;width:185rpx;height:185rpx}.orbit-two{right:43rpx;top:38rpx;width:118rpx;height:118rpx}.benefit-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9rpx;margin-top:28rpx}.benefit-row view{padding:14rpx 11rpx;border:1rpx solid rgba(87,151,184,.16);border-radius:17rpx;background:rgba(255,255,255,.76)}.benefit-row text{display:block}.benefit-title{color:var(--tm-ink-900);font-size:20rpx;font-weight:900}.benefit-row text:last-child{margin-top:4rpx;color:#758594;font-size:14rpx;white-space:nowrap}
 .form-card{margin-top:22rpx;padding:28rpx;border:1rpx solid #dceaf2;border-radius:32rpx;background:rgba(255,255,255,.98);box-shadow:0 18rpx 42rpx rgba(28,79,111,.09)}
 .form-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18rpx;margin-bottom:26rpx}.form-kicker{color:#1178bd;font-size:15rpx;font-weight:900;letter-spacing:2rpx}.form-title{margin-top:6rpx;color:var(--tm-ink-900);font-size:29rpx;font-weight:950}.form-step{padding:8rpx 13rpx;border-radius:999rpx;background:#fff4bd;color:#7c5b00;font-size:17rpx;font-weight:850}
-.wechat-button{display:flex;align-items:center;justify-content:center;gap:13rpx;height:84rpx;margin:0;border:0;border-radius:20rpx;background:#1fbd6b;box-shadow:0 10rpx 22rpx rgba(21,150,84,.18);color:#fff;font-size:25rpx;font-weight:850;line-height:84rpx}.wechat-icon{display:inline-flex;align-items:center;justify-content:center;width:40rpx;height:40rpx;border-radius:50%;background:rgba(255,255,255,.2);font-size:20rpx}.divider{display:flex;align-items:center;gap:16rpx;margin:25rpx 0;color:#98a5b2;font-size:18rpx}.divider view{flex:1;height:1rpx;background:#e6edf1}
+.wechat-button,.wechat-phone-button{display:flex;align-items:center;justify-content:center;gap:13rpx;height:84rpx;margin:0;border:0;border-radius:20rpx;background:#1fbd6b;box-shadow:0 10rpx 22rpx rgba(21,150,84,.18);color:#fff;font-size:25rpx;font-weight:850;line-height:84rpx}.wechat-icon{display:inline-flex;align-items:center;justify-content:center;width:40rpx;height:40rpx;border-radius:50%;background:rgba(255,255,255,.2);font-size:20rpx}.divider{display:flex;align-items:center;gap:16rpx;margin:25rpx 0;color:#98a5b2;font-size:18rpx}.divider view{flex:1;height:1rpx;background:#e6edf1}
 .verified-tip{display:flex;align-items:center;gap:16rpx;margin-bottom:24rpx;padding:18rpx;border:1rpx solid #c9ebd8;border-radius:18rpx;background:#effbf4}.verified-badge{display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;flex:none;border-radius:50%;background:#1ab66d;color:#fff;font-size:24rpx}.verified-title{color:#0b7544;font-size:22rpx;font-weight:850}.verified-copy{margin-top:4rpx;color:#56806b;font-size:17rpx}
 .field-group+.field-group{margin-top:22rpx}.label{margin-bottom:10rpx;color:#31455a;font-size:21rpx;font-weight:850}.input-shell{display:flex;height:82rpx;align-items:center;overflow:hidden;padding:0 10rpx;border:1rpx solid #d4e4ec;border-radius:18rpx;background:#f9fcfd;box-sizing:border-box;transition:border-color .18s ease,box-shadow .18s ease}.input-shell:focus-within{border-color:#2096db;box-shadow:0 0 0 5rpx rgba(32,150,219,.10)}.input-prefix{display:flex;height:46rpx;align-items:center;justify-content:center;flex:none;padding:0 15rpx;border-radius:13rpx;background:#e9f5fb;color:#286078;font-size:19rpx;font-weight:900}.phone-prefix{margin-left:1rpx;letter-spacing:.4rpx}.input{min-width:0;height:80rpx;flex:1;padding:0 16rpx;color:var(--tm-ink-900);font-size:24rpx;box-sizing:border-box}.code-shell{min-width:0;padding-right:7rpx}.code-input{padding-left:17rpx}.code-button{width:auto;min-width:146rpx;height:58rpx;flex:none;margin:0;padding:0 18rpx;border:0;border-radius:14rpx;background:#dff3ff;color:#0d68b7;font-size:19rpx;font-weight:900;line-height:58rpx;white-space:nowrap}.code-button[disabled]{background:#edf2f5;color:#98a3ad}
-.dev-tip{display:flex;align-items:center;gap:10rpx;margin-top:18rpx;padding:13rpx 15rpx;border-radius:14rpx;background:#fff8df;color:#886514;font-size:18rpx}.dev-mark{padding:3rpx 7rpx;border-radius:7rpx;background:#ffd84d;color:#534000;font-size:13rpx;font-weight:950}.agreement-row{display:flex;align-items:flex-start;gap:12rpx;margin-top:24rpx;color:#6c7884;font-size:19rpx;line-height:1.65}.agreement-check{display:flex;width:30rpx;height:30rpx;align-items:center;justify-content:center;flex:none;margin-top:1rpx;border:1rpx solid #aebdc8;border-radius:8rpx;background:#fff;color:#fff;font-size:19rpx}.agreement-check.checked{border-color:#158fca;background:linear-gradient(145deg,#1267df,#20c3c8)}.agreement-copy{min-width:0;flex:1}.agreement-link{color:#0c6fc0;font-weight:800}.login-button{height:88rpx;margin-top:22rpx;border:0;border-radius:21rpx;background:linear-gradient(115deg,#1267df,#1ba2de 62%,#20c6c5);box-shadow:0 13rpx 28rpx rgba(17,111,189,.22);color:#fff;font-size:27rpx;font-weight:900;line-height:88rpx}.login-button[disabled],.wechat-button[disabled]{box-shadow:none;opacity:.46}.register-note{margin-top:14rpx;color:#8a96a2;text-align:center;font-size:17rpx;line-height:1.45}.code-button::after,.login-button::after,.wechat-button::after{border:0}
+.dev-tip{display:flex;align-items:center;gap:10rpx;margin-top:18rpx;padding:13rpx 15rpx;border-radius:14rpx;background:#fff8df;color:#886514;font-size:18rpx}.dev-mark{padding:3rpx 7rpx;border-radius:7rpx;background:#ffd84d;color:#534000;font-size:13rpx;font-weight:950}.agreement-row{display:flex;align-items:flex-start;gap:12rpx;margin-top:24rpx;color:#6c7884;font-size:19rpx;line-height:1.65}.agreement-check{display:flex;width:30rpx;height:30rpx;align-items:center;justify-content:center;flex:none;margin-top:1rpx;border:1rpx solid #aebdc8;border-radius:8rpx;background:#fff;color:#fff;font-size:19rpx}.agreement-check.checked{border-color:#158fca;background:linear-gradient(145deg,#1267df,#20c3c8)}.agreement-copy{min-width:0;flex:1}.agreement-link{color:#0c6fc0;font-weight:800}.login-button{height:88rpx;margin-top:22rpx;border:0;border-radius:21rpx;background:linear-gradient(115deg,#1267df,#1ba2de 62%,#20c6c5);box-shadow:0 13rpx 28rpx rgba(17,111,189,.22);color:#fff;font-size:27rpx;font-weight:900;line-height:88rpx}.login-button[disabled],.wechat-button[disabled],.wechat-phone-button[disabled]{box-shadow:none;opacity:.46}.register-note{margin-top:14rpx;color:#8a96a2;text-align:center;font-size:17rpx;line-height:1.45}.code-button::after,.login-button::after,.wechat-button::after,.wechat-phone-button::after{border:0}
 .form-error{margin-top:16rpx;padding:14rpx 16rpx;border:1rpx solid #f4c4be;border-radius:14rpx;background:#fff5f3;color:#b42318;font-size:18rpx;line-height:1.5}
 .input-shell .input,.input-shell .input:focus{border:0!important;border-color:transparent!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:none}
 @media screen and (min-width:768px){.page-shell{width:750rpx;margin:0 auto}.page{background:#f3f8fb}.page-shell{box-shadow:0 0 70rpx rgba(24,42,78,.06)}}
@@ -283,8 +330,8 @@ onUnmounted(() => {
 .code-button{background:#e8faf2;color:#07885a}
 .agreement-link{color:#078d5d}
 .agreement-check.checked{border-color:#08a86b;background:linear-gradient(145deg,#08a865,#14c78e)}
-.login-button,.wechat-button{background:linear-gradient(110deg,#08a965,#0ac182);box-shadow:0 13rpx 28rpx rgba(7,166,101,.2)}
-.login-button[disabled],.wechat-button[disabled]{background:#b9e5d4;opacity:.76}
+.login-button,.wechat-button,.wechat-phone-button{background:linear-gradient(110deg,#08a965,#0ac182);box-shadow:0 13rpx 28rpx rgba(7,166,101,.2)}
+.login-button[disabled],.wechat-button[disabled],.wechat-phone-button[disabled]{background:#b9e5d4;opacity:.76}
 .verified-badge{background:#0bb476}
 .verified-tip{border-color:#c2ecd7;background:#effbf5}
 .register-note{color:#81909c}

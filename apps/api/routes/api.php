@@ -228,6 +228,8 @@ Route::middleware('auth.access')->group(function () {
     Route::post('/me/legal-consents', [UserLegalConsentController::class, 'store']);
     Route::put('/me/phone', [PhoneBindingController::class, 'store'])
         ->middleware('legal.consent:account');
+    Route::put('/me/phone/wechat', [PhoneBindingController::class, 'storeFromWechat'])
+        ->middleware(['legal.consent:account', 'throttle:10,1']);
     Route::get('/me/privacy-requests', [PrivacyRequestController::class, 'index'])->middleware('legal.consent:account');
     Route::post('/me/privacy-requests', [PrivacyRequestController::class, 'store'])->middleware('legal.consent:account');
     Route::get('/me/account-cancellation/eligibility', [AccountCancellationController::class, 'eligibility'])->middleware('legal.consent:account_cancellation');

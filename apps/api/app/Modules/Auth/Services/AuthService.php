@@ -130,6 +130,18 @@ class AuthService
             throw new AuthException('PHONE_VERIFICATION_FAILED', '验证码错误、已过期或尚未申请。', 422);
         }
 
+        return $this->bindVerifiedPhone($user, $phone, 'sms_verification');
+    }
+
+    /** @return array<string, mixed> */
+    public function bindWechatPhone(User $user, string $phone): array
+    {
+        return $this->bindVerifiedPhone($user, $phone, 'wechat_phone_authorization');
+    }
+
+    /** @return array<string, mixed> */
+    private function bindVerifiedPhone(User $user, string $phone, string $source): array
+    {
         $phoneHash = $this->phoneVerification->phoneHash($phone);
         if ($user->phone_hash !== null && $user->phone_hash !== $phoneHash) {
             throw new AuthException(
@@ -155,7 +167,7 @@ class AuthService
             throw $this->identityConflicts->exception($conflict);
         }
 
-        DB::transaction(function () use ($user, $phone, $phoneHash): void {
+        DB::transaction(function () use ($user, $phone, $phoneHash, $source): void {
             $user->update([
                 'phone' => $phone,
                 'phone_hash' => $phoneHash,
@@ -163,7 +175,7 @@ class AuthService
             ]);
             UserIdentity::query()->updateOrCreate(
                 ['provider' => 'phone', 'provider_user_id' => $phoneHash],
-                ['user_id' => $user->id, 'metadata' => [], 'last_login_at' => now()],
+                ['user_id' => $user->id, 'metadata' => ['source' => $source], 'last_login_at' => now()],
             );
         });
 

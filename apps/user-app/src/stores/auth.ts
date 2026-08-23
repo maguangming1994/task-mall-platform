@@ -101,6 +101,23 @@ export const useAuthStore = defineStore('auth', {
         this.submitting = false
       }
     },
+    async bindWechatPhone(phoneCode: string) {
+      if (!this.accessToken) throw new Error('请先完成微信登录。')
+      this.submitting = true
+      try {
+        this.user = await apiRequest<CurrentUser>({
+          path: '/me/phone/wechat',
+          method: 'PUT',
+          accessToken: this.accessToken,
+          data: { code: phoneCode },
+        })
+        this.persist()
+
+        return this.user
+      } finally {
+        this.submitting = false
+      }
+    },
     async fetchCurrentUser() {
       if (!this.accessToken) return
       try {

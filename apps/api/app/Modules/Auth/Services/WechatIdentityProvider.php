@@ -4,6 +4,7 @@ namespace App\Modules\Auth\Services;
 
 use App\Modules\Auth\Exceptions\AuthException;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class WechatIdentityProvider
@@ -37,6 +38,33 @@ class WechatIdentityProvider
         return config('wechat_auth.driver') === 'wechat'
             && filled(config("wechat_auth.{$configKey}.app_id"))
             && filled(config("wechat_auth.{$configKey}.app_secret"));
+    }
+
+    public function exchangePhoneNumber(string $code): string
+    {
+        $this->ensureAvailable('wechat_mini');
+
+        try {
+            $response = Http::acceptJson()
+                ->timeout((int) config('wechat_auth.timeout_seconds'))
+                ->withQueryParameters(['access_token' => $this->miniAccessToken()])
+                ->post('https://api.weixin.qq.com/wxa/business/getuserphonenumber', [
+                    'code' => $code,
+                ]);
+        } catch (ConnectionException) {
+            throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信手机号授权服务连接失败，请稍后重试。', 503);
+        }
+
+        $payload = $response->json();
+        $phone = is_array($payload) ? data_get($payload, 'phone_info.phoneNumber') : null;
+        if ($response->serverError()) {
+            throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信手机号授权服务暂时不可用。', 503);
+        }
+        if (! is_array($payload) || ($payload['errcode'] ?? null) !== 0 || ! is_string($phone) || ! preg_match('/^\+?[0-9]{6,20}$/', $phone)) {
+            throw new AuthException('WECHAT_PHONE_AUTH_FAILED', '微信手机号授权凭证无效或已过期，请重新授权。', 422);
+        }
+
+        return str_starts_with($phone, '+86') ? substr($phone, 3) : $phone;
     }
 
     /** @return array{openid: string, unionid: ?string} */
@@ -120,5 +148,34 @@ class WechatIdentityProvider
         if (! $this->available($channel)) {
             throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务尚未完成生产配置。', 503);
         }
+    }
+
+    private function miniAccessToken(): string
+    {
+        $appId = (string) config('wechat_auth.mini.app_id');
+        $secret = (string) config('wechat_auth.mini.app_secret');
+        $cacheKey = 'wechat-auth:mini-access-token:'.hash('sha256', $appId.'|'.$secret);
+
+        return Cache::remember($cacheKey, now()->addSeconds(7000), function (): string {
+            try {
+                $response = Http::acceptJson()
+                    ->timeout((int) config('wechat_auth.timeout_seconds'))
+                    ->get('https://api.weixin.qq.com/cgi-bin/token', [
+                        'grant_type' => 'client_credential',
+                        'appid' => config('wechat_auth.mini.app_id'),
+                        'secret' => config('wechat_auth.mini.app_secret'),
+                    ]);
+            } catch (ConnectionException) {
+                throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信接口凭证获取失败，请稍后重试。', 503);
+            }
+
+            $payload = $response->json();
+            $token = is_array($payload) ? ($payload['access_token'] ?? null) : null;
+            if ($response->serverError() || ! is_string($token) || $token === '') {
+                throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信接口凭证获取失败，请检查小程序配置。', 503);
+            }
+
+            return $token;
+        });
     }
 }

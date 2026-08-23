@@ -902,6 +902,41 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /me/phone/wechat:
+    put:
+      tags: [User]
+      operationId: bindPhoneFromWechatAuthorization
+      summary: Bind the authenticated user's verified WeChat phone number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  minLength: 3
+                  maxLength: 512
+                  description: Temporary code returned by the mini program getPhoneNumber event
+      responses:
+        '200':
+          description: WeChat phone number authorized and bound
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/User' }
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
   /me/devices:
     get:
       tags: [User]
@@ -5198,6 +5233,11 @@ components:
           schema: { $ref: '#/components/schemas/ErrorEnvelope' }
     Conflict:
       description: Business state conflict
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    ServiceUnavailable:
+      description: Upstream service is unavailable or not configured
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorEnvelope' }
