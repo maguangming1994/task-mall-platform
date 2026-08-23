@@ -84,6 +84,13 @@ jobs:
               --env-file "$RUNNER_TEMP/task-mall-ci.env" \
               -f infra/compose.production.yaml \
               config --quiet
+      - name: Build production API image
+        run: |
+          docker build --pull \
+            --build-arg ALPINE_MIRROR=https://dl-cdn.alpinelinux.org/alpine \
+            --file infra/docker/api.Dockerfile \
+            --tag task-mall-api:ci \
+            .
 
   deploy-production:
     name: Deploy production

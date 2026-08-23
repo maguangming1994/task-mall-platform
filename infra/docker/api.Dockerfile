@@ -13,7 +13,12 @@ COPY apps/api/ ./
 COPY infra/php/production.ini /usr/local/etc/php/conf.d/zz-task-mall.ini
 RUN composer dump-autoload --no-dev --classmap-authoritative \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chmod 0644 /usr/local/etc/php/conf.d/zz-task-mall.ini \
+    && chmod -R u=rwX,go=rX . \
     && chown -R www-data:www-data storage bootstrap/cache
 USER www-data
+RUN test -r /usr/local/etc/php/conf.d/zz-task-mall.ini \
+    && php --ini \
+    && php artisan --version --no-ansi
 EXPOSE 9000
 CMD ["php-fpm", "-F"]

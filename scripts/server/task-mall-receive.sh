@@ -205,6 +205,9 @@ if [ -e "$release_dir" ]; then
 else
   git -C "$APP_DIR" worktree add --detach "$release_dir" "$RELEASE_SHA"
 fi
+# The receiver's restrictive umask protects artifacts; image build contexts
+# still need conventional source permissions for non-root runtime users.
+chmod -R u=rwX,go=rX "$release_dir"
 [ -f "$release_dir/scripts/deploy-production.sh" ] || fail "目标提交缺少生产部署脚本"
 
 rollback_application() {
