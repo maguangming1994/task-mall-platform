@@ -86,3 +86,29 @@ export async function chooseAndUploadTaskImage(token: string): Promise<string> {
 
   return ticket.file_id
 }
+
+export type PrivateImagePurpose = 'task_submission' | 'task_report' | 'refund_evidence' | 'return_shipping' | 'community' | 'offline_recharge'
+
+export async function chooseAndUploadPrivateImage(token: string, purpose: PrivateImagePurpose): Promise<{ fileId: string; previewUrl: string }> {
+  const selected = await chooseImage()
+  const path = selected.tempFilePaths[0]
+  const selectedFiles = Array.isArray(selected.tempFiles) ? selected.tempFiles : [selected.tempFiles]
+  const data = await readFile(path)
+  const size = selectedFiles[0]?.size ?? data.byteLength
+  const extension = /\.png(?:$|\?)/i.test(path) ? 'png' : 'jpg'
+  const contentType = extension === 'png' ? 'image/png' : 'image/jpeg'
+  const ticket = await apiRequest<UploadTicket>({
+    path: '/files/upload-tickets', method: 'POST', accessToken: token,
+    headers: { 'Idempotency-Key': `${purpose}-${Date.now()}-${Math.random().toString(36).slice(2)}` },
+    data: { filename: `${purpose}-${Date.now()}.${extension}`, content_type: contentType, size, purpose },
+  })
+  await putFile(ticket.upload_url, data, ticket.headers)
+  let file = await apiRequest<PrivateFile>({ path: `/files/${ticket.file_id}/complete`, method: 'POST', accessToken: token, data: {} })
+  for (let attempt = 0; attempt < 10 && ['uploaded', 'scanning'].includes(file.status); attempt += 1) {
+    await delay(800)
+    file = await apiRequest<PrivateFile>({ path: `/files/${ticket.file_id}`, accessToken: token })
+  }
+  if (file.status !== 'clean') throw new Error(file.rejection_code ? `图片未通过安全检查：${file.rejection_code}` : '图片仍在安全检查中，请稍后重试。')
+
+  return { fileId: ticket.file_id, previewUrl: path }
+}

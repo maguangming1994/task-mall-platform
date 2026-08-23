@@ -11,6 +11,7 @@ import {
   type ManagedReferral,
   type UserCenterOverview,
 } from '../../api/admin'
+import { businessLabel, userStatusLabels } from '../../constants/businessLabels'
 
 const verificationLabels = { verified: '已完成账户验证', partial: '部分完成', unverified: '未验证' }
 const referralStatusLabels: Record<string, string> = { tracking: '进行中', qualified: '已达标', rewarded: '已奖励', qualified_cap_reached: '达标待下月', revoked: '已撤销' }
@@ -110,7 +111,7 @@ export function UserOperationsPage() {
       { title: '任务 / 订单', width: 155, render: (_, row) => <><span>任务 {row.task_metrics.approved}/{row.task_metrics.claimed}</span><span className="table-subline">现金订单 {row.cash_order_count}</span></> },
       { title: '邀请人数', dataIndex: 'referral_count', width: 100 },
       { title: '账户验证', width: 180, render: (_, row) => <Space size={[0, 4]} wrap>{yesTag(row.verification.phone, '手机', '手机未验')}{yesTag(row.verification.profile, '资料', '资料未全')}{yesTag(row.verification.wechat, '微信', '微信未绑')}</Space> },
-      { title: '状态', width: 90, render: (_, row) => <Tag color={row.status === 'active' ? 'success' : 'default'}>{row.status === 'active' ? '正常' : row.status}</Tag> },
+      { title: '状态', width: 90, render: (_, row) => <Tag color={row.status === 'active' ? 'success' : 'default'}>{businessLabel(userStatusLabels, row.status)}</Tag> },
       { title: '注册 / 最近登录', width: 190, render: (_, row) => <><span>{time(row.created_at)}</span><span className="table-subline">{time(row.last_login_at)}</span></> },
       { title: '操作', fixed: 'right', width: 100, render: () => <Button size="small">查看详情</Button> },
     ]} /></Card>
@@ -136,7 +137,7 @@ export function UserOperationsPage() {
       { title: '首次任务', render: (_, row) => yesTag(row.first_task_completed) },
       { title: '首笔现金订单', render: (_, row) => yesTag(row.first_cash_order_completed) },
       { title: '奖励', render: (_, row) => row.reward_points ? `${row.reward_points} 积分` : '待达标' },
-      { title: '状态', render: (_, row) => <Tag color={row.rewarded_at ? 'success' : 'processing'}>{referralStatusLabels[row.status] ?? row.status}</Tag> },
+      { title: '状态', render: (_, row) => <Tag color={row.rewarded_at ? 'success' : 'processing'}>{businessLabel(referralStatusLabels, row.status)}</Tag> },
       { title: '绑定时间', render: (_, row) => time(row.bound_at) },
       { title: '操作', render: () => <Button size="small">邀请明细</Button> },
     ]} /></Card>
@@ -155,7 +156,7 @@ export function UserOperationsPage() {
     ]} /></Card>
   </>
 
-  return <>{contextHolder}<div className="page-heading"><div><Typography.Text className="eyebrow">USER OPERATIONS</Typography.Text><Typography.Title level={2}>用户运营中心</Typography.Title><Typography.Paragraph type="secondary">用户统计、成长等级、邀请里程碑和账户可信度集中管理。</Typography.Paragraph></div><Space><Tag color="blue">手机号默认脱敏</Tag><Tag color="green">资产操作走复核</Tag></Space></div>
+  return <>{contextHolder}<div className="page-heading"><div><Typography.Text className="eyebrow">校园用户运营</Typography.Text><Typography.Title level={2}>用户运营中心</Typography.Title><Typography.Paragraph type="secondary">用户统计、成长等级、邀请里程碑和账户可信度集中管理。</Typography.Paragraph></div><Space><Tag color="blue">手机号默认脱敏</Tag><Tag color="green">资产操作走复核</Tag></Space></div>
     <Tabs items={[{ key: 'overview', label: '运营概览', children: overviewTab }, { key: 'users', label: '用户列表', children: userTab }, { key: 'levels', label: '成长等级', children: levelTab }, { key: 'referrals', label: '邀请关系', children: referralTab }, { key: 'verification', label: '账户验证', children: verificationTab }]} />
   </>
 }

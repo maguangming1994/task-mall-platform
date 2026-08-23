@@ -9,6 +9,7 @@ use App\Modules\Task\Models\TaskAppeal;
 use App\Modules\Task\Models\TaskClaim;
 use App\Modules\Task\Models\TaskReview;
 use App\Modules\Task\Models\TaskSubmission;
+use App\Modules\Task\Support\TaskClaimState;
 use App\Modules\Upload\Models\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -56,7 +57,7 @@ class TaskAppealService
                 'original_reviewer_admin_id' => $review->reviewer_admin_id, 'create_idempotency_key_hash' => $hash,
                 'appeal_deadline_at' => $deadline,
             ]);
-            $locked->update(['status' => 'appealed', 'appeal_count' => $number]);
+            $locked->update(['status' => 'appealed', 'execution_status' => TaskClaimState::EXECUTION_UNDER_APPEAL, 'review_status' => TaskClaimState::REVIEW_REJECTED, 'appeal_count' => $number]);
             $this->recordChange($locked, 'rejected', 'appealed', 'appeal', $reason, 'user', $user->id, $hash);
 
             return $appeal->fresh();
@@ -85,7 +86,7 @@ class TaskAppealService
                 'decision' => $decision, 'result_reason' => $reason, 'review_idempotency_key_hash' => $hash, 'reviewed_at' => now(),
             ]);
             if ($decision === 'approve') {
-                $claim->update(['status' => 'approved', 'slot_status' => 'consumed', 'approved_at' => now()]);
+                $claim->update(['status' => 'approved', 'execution_status' => TaskClaimState::EXECUTION_COMPLETED, 'review_status' => TaskClaimState::REVIEW_APPROVED, 'slot_status' => 'consumed', 'approved_at' => now()]);
                 TaskSubmission::query()->whereKey($locked->task_submission_id)->update(['status' => 'approved']);
                 $this->recordChange($claim, 'appealed', 'approved', 'approve_appeal', $reason, 'admin', $admin->id, $hash);
             }
@@ -142,8 +143,12 @@ class TaskAppealService
 
     private function recordChange(TaskClaim $claim, ?string $from, string $to, string $action, string $reason, string $actorType, ?int $actorId, string $hash): void
     {
+        $fromStates = $from === null ? ['execution_status' => null, 'review_status' => null] : TaskClaimState::fromLegacy($from);
+        $toStates = TaskClaimState::fromLegacy($to);
         DB::table('task_claim_status_changes')->insert([
             'task_claim_id' => $claim->id, 'from_status' => $from, 'to_status' => $to, 'action' => $action,
+            'from_execution_status' => $fromStates['execution_status'], 'to_execution_status' => $toStates['execution_status'],
+            'from_review_status' => $fromStates['review_status'], 'to_review_status' => $toStates['review_status'],
             'reason' => $reason, 'actor_type' => $actorType, 'actor_id' => $actorId, 'idempotency_key_hash' => $hash,
             'created_at' => now(), 'updated_at' => now(),
         ]);

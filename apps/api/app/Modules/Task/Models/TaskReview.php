@@ -3,6 +3,7 @@
 namespace App\Modules\Task\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class TaskReview extends Model
@@ -19,5 +20,10 @@ class TaskReview extends Model
     protected function casts(): array
     {
         return ['review_snapshot' => 'array', 'reviewed_at' => 'datetime'];
+    }
+
+    public function stepReviews(): HasMany
+    {
+        return $this->hasMany(TaskStepReview::class);
     }
 }

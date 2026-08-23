@@ -8,6 +8,7 @@ use App\Modules\Admin\Models\Role;
 use App\Modules\Inventory\Models\Inventory;
 use App\Modules\Inventory\Models\InventoryTransaction;
 use App\Modules\Inventory\Models\ShippingTemplateVersion;
+use App\Modules\Product\Models\ProductCategory;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -132,8 +133,12 @@ class InventoryCartShippingFlowTest extends TestCase
     private function createPublishedProduct(string $token, string $skuCode, int $stock = 0, bool $freeThreshold = false): array
     {
         $template = $this->shippingTemplate($token, $freeThreshold);
+        $category = ProductCategory::query()->firstOrCreate(
+            ['slug' => 'inventory-flow-fixture'],
+            ['name' => '库存流程测试分类', 'status' => 'active', 'sort_order' => 1],
+        );
         $created = $this->withToken($token)->withHeaders(['Idempotency-Key' => 'product-'.$skuCode.'-create'])->postJson('/api/v1/admin/products', [
-            'name' => '测试商品 '.$skuCode, 'description' => '库存、购物车和运费专项商品。',
+            'category_id' => $category->public_id, 'name' => '测试商品 '.$skuCode, 'description' => '库存、购物车和运费专项商品。',
             'skus' => [[
                 'sku_code' => $skuCode, 'name' => '标准规格', 'specs' => ['规格' => '标准'], 'fulfillment_type' => 'logistics', 'shipping_template_id' => $template,
                 'limit_per_order' => 5,

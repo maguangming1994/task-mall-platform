@@ -4,6 +4,11 @@ namespace App\Modules\Task\Http\Controllers;
 
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Modules\Audit\Models\OperationLog;
+use App\Modules\Audit\Services\AuditLogger;
+use App\Modules\Audit\Services\AuditPayloadRedactor;
+use App\Modules\Settings\Exceptions\SettingException;
+use App\Modules\Settings\Services\SystemSettingService;
 use App\Modules\Task\Models\RewardBudgetPool;
 use App\Modules\Task\Models\Task;
 use App\Modules\Task\Models\TaskPublisher;
@@ -33,12 +38,26 @@ class TaskPublisherTaskController extends Controller
         return ApiResponse::success(['items' => $items, 'pagination' => ['page' => 1, 'page_size' => $items->count(), 'total' => $items->count()]]);
     }
 
-    public function store(Request $request, TaskDefinitionService $tasks): JsonResponse
+    public function store(Request $request, TaskDefinitionService $tasks, SystemSettingService $settings, AuditLogger $audit): JsonResponse
     {
         $publisher = $this->publisher($request);
-        $task = $tasks->create($publisher->adminUser, $this->definition($request), $this->key($request), 'user_frontend');
+        $task = $tasks->create($publisher->adminUser, $this->definition($request, $settings), $this->key($request), 'user_frontend');
+        $presented = $tasks->present($task);
+        $audit->record($publisher->adminUser, 'task.create_draft', 'task', $task->public_id, null, $presented, '用户端发布管理员保存任务草稿。');
 
-        return ApiResponse::success($tasks->present($task), 201);
+        return ApiResponse::success($presented, 201);
+    }
+
+    public function update(Request $request, Task $task, TaskDefinitionService $tasks, SystemSettingService $settings, AuditLogger $audit): JsonResponse
+    {
+        $publisher = $this->own($request, $task);
+        $version = $request->validate(['version' => ['required', 'integer', 'min:1']])['version'];
+        $before = $tasks->present($task);
+        $changed = $tasks->update($publisher->adminUser, $task, $this->definition($request, $settings), $version);
+        $after = $tasks->present($changed);
+        $audit->record($publisher->adminUser, 'task.publisher_create_version', 'task', $task->public_id, $before, $after, '用户端发布管理员编辑任务并生成版本快照。');
+
+        return ApiResponse::success($after);
     }
 
     public function show(Request $request, Task $task, TaskDefinitionService $tasks): JsonResponse
@@ -48,18 +67,51 @@ class TaskPublisherTaskController extends Controller
         return ApiResponse::success($tasks->present($task));
     }
 
-    public function status(Request $request, Task $task, TaskDefinitionService $tasks): JsonResponse
+    public function versions(Request $request, Task $task, TaskDefinitionService $tasks): JsonResponse
+    {
+        $this->own($request, $task);
+
+        return ApiResponse::success($tasks->versionSummaries($task));
+    }
+
+    public function audit(Request $request, Task $task, AuditPayloadRedactor $redactor): JsonResponse
+    {
+        $this->own($request, $task);
+        $items = OperationLog::query()
+            ->with('adminUser:id,public_id,display_name')
+            ->where('subject_type', 'task')
+            ->where('subject_id', $task->public_id)
+            ->latest('created_at')
+            ->limit(100)
+            ->get()
+            ->map(fn (OperationLog $log): array => [
+                'id' => $log->public_id,
+                'action' => $log->action,
+                'actor' => $log->adminUser?->display_name,
+                'reason' => $log->reason,
+                'before' => $redactor->redact($log->before_value),
+                'after' => $redactor->redact($log->after_value),
+                'created_at' => $log->created_at?->toIso8601String(),
+            ])->values();
+
+        return ApiResponse::success(['items' => $items]);
+    }
+
+    public function status(Request $request, Task $task, TaskDefinitionService $tasks, AuditLogger $audit): JsonResponse
     {
         $publisher = $this->own($request, $task);
         $data = $request->validate([
             'action' => ['required', 'in:publish,pause,resume,close,archive'], 'reason' => ['required', 'string', 'min:1', 'max:500'],
             'existing_claim_policy' => ['sometimes', 'nullable', 'in:continue,terminate_without_compensation,terminate_with_compensation'],
         ]);
+        $before = $tasks->present($task);
         $changed = $data['action'] === 'publish'
             ? $tasks->publish($publisher->adminUser, $task, $data['reason'], $this->key($request))
             : $tasks->transition($publisher->adminUser, $task, $data['action'], $data['reason'], $this->key($request), $data['existing_claim_policy'] ?? null);
+        $after = $tasks->present($changed);
+        $audit->record($publisher->adminUser, 'task.publisher_'.$data['action'], 'task', $task->public_id, $before, $after, $data['reason']);
 
-        return ApiResponse::success($tasks->present($changed));
+        return ApiResponse::success($after);
     }
 
     private function publisher(Request $request): TaskPublisher
@@ -78,7 +130,7 @@ class TaskPublisherTaskController extends Controller
         return $publisher;
     }
 
-    private function definition(Request $request): array
+    private function definition(Request $request, SystemSettingService $settings): array
     {
         $data = $request->validate([
             'business_scenario' => ['sometimes', 'in:platform_task,user_bounty,growth_challenge,referral_milestone'],
@@ -87,11 +139,13 @@ class TaskPublisherTaskController extends Controller
             'supported_devices' => ['sometimes', 'array', 'min:1', 'max:2'],
             'supported_devices.*' => ['in:android,ios'],
             'visibility' => ['required', 'in:public,targeted_private'], 'category' => ['required', 'in:onboarding,daily,community,commerce,research,campaign'],
-            'task_type' => ['required', 'in:one_time,daily,weekly,repeatable'], 'participation_mode' => ['required', 'in:claim_and_submit,claim_and_auto_verify,auto_enroll'],
+            'task_type' => ['required', 'in:one_time,daily,weekly,monthly,milestone,repeatable'], 'participation_mode' => ['required', 'in:claim_and_submit,claim_and_auto_verify,auto_enroll'],
+            'progress_target' => ['sometimes', 'integer', 'min:1'], 'progress_event_type' => ['sometimes', 'nullable', 'string', 'max:64'],
             'verification_mode' => ['required', 'in:manual,automatic'], 'title' => ['required', 'string', 'min:1', 'max:160'], 'description' => ['required', 'string', 'min:1', 'max:200000'],
             'tags' => ['sometimes', 'array', 'max:10'], 'tags.*' => ['string', 'min:1', 'max:30'],
             'rewards' => ['required', 'array', 'min:1'], 'rewards.*.type' => ['required', 'in:points,coupon,wallet_balance'],
             'rewards.*.points' => ['sometimes', 'integer', 'min:1'], 'rewards.*.balance_amount' => ['sometimes', 'integer', 'min:1'], 'rewards.*.coupon_template_id' => ['sometimes', 'string', 'size:26'],
+            'rewards.*.quantity' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'reward_budgets' => ['required', 'array', 'min:1'], 'reward_budgets.*.reward_sequence' => ['required', 'integer', 'min:1'], 'reward_budgets.*.budget_pool_id' => ['required', 'string', 'size:26'],
             'reward_quota_total' => ['required', 'integer', 'min:1'], 'reward_quota_per_cycle' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'completion_window_hours' => ['sometimes', 'integer', 'min:1'], 'submission_limit' => ['sometimes', 'integer', 'min:1'], 'review_deadline_hours' => ['sometimes', 'integer', 'min:1'],
@@ -114,14 +168,25 @@ class TaskPublisherTaskController extends Controller
             'cover_image_url' => $data['cover_image_url'] ?? null,
             'supported_devices' => $data['supported_devices'] ?? ['android', 'ios'],
             'tags' => $data['tags'] ?? [],
-            'completion_window_hours' => $data['completion_window_hours'] ?? 24,
-            'submission_limit' => $data['submission_limit'] ?? 3,
-            'review_deadline_hours' => $data['review_deadline_hours'] ?? 48,
-            'appeal_deadline_days' => $data['appeal_deadline_days'] ?? 7,
-            'appeal_limit' => $data['appeal_limit'] ?? 1,
+            'completion_window_hours' => $data['completion_window_hours'] ?? $this->integerSetting($settings, 'tasks.default_completion_window_hours', 24),
+            'submission_limit' => $data['submission_limit'] ?? $this->integerSetting($settings, 'tasks.default_submission_limit', 3),
+            'review_deadline_hours' => $data['review_deadline_hours'] ?? $this->integerSetting($settings, 'tasks.default_review_hours', 48),
+            'appeal_deadline_days' => $data['appeal_deadline_days'] ?? $this->integerSetting($settings, 'tasks.default_appeal_days', 7),
+            'appeal_limit' => $data['appeal_limit'] ?? $this->integerSetting($settings, 'tasks.default_appeal_limit', 1),
+            'progress_target' => $data['progress_target'] ?? 1,
+            'progress_event_type' => $data['progress_event_type'] ?? null,
             'rules' => $data['rules'] ?? [],
             'steps' => $data['steps'] ?? [],
         ];
+    }
+
+    private function integerSetting(SystemSettingService $settings, string $key, int $legacyFallback): int
+    {
+        try {
+            return (int) $settings->read($key)['value'];
+        } catch (SettingException) {
+            return $legacyFallback;
+        }
     }
 
     private function key(Request $request): string

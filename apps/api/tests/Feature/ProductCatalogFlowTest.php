@@ -126,6 +126,47 @@ class ProductCatalogFlowTest extends TestCase
         $version->update(['changed_fields' => ['tampered']]);
     }
 
+    public function test_categories_support_crud_sort_status_and_public_product_filtering(): void
+    {
+        $token = $this->adminToken('product-category-root');
+        $daily = $this->category($token, 'daily-products');
+        $digital = $this->withToken($token)->postJson('/api/v1/admin/product-categories', [
+            'name' => '数字权益', 'slug' => 'digital-products', 'status' => 'active', 'sort_order' => 20,
+        ])->assertCreated()->json('data.id');
+        $unused = $this->withToken($token)->postJson('/api/v1/admin/product-categories', [
+            'name' => '待删除分类', 'slug' => 'unused-products', 'status' => 'inactive', 'sort_order' => 99,
+        ])->assertCreated()->json('data.id');
+
+        $this->withToken($token)->putJson('/api/v1/admin/product-categories/'.$daily, [
+            'parent_id' => null, 'name' => '生活补给', 'slug' => 'daily-products', 'status' => 'active', 'sort_order' => 10,
+        ])->assertOk()->assertJsonPath('data.name', '生活补给')->assertJsonPath('data.sort_order', 10);
+        $this->withToken($token)->getJson('/api/v1/admin/product-categories')->assertOk()
+            ->assertJsonCount(3, 'data.items')->assertJsonPath('data.items.0.id', $daily);
+
+        $template = $this->shippingTemplate($token);
+        $dailyProduct = $this->createProduct($token, $daily, 'CATEGORY-DAILY-001', 'category-daily-product-01', $template);
+        $digitalProduct = $this->createProduct($token, $digital, 'CATEGORY-DIGITAL-001', 'category-digital-product-1', $template);
+        foreach ([$dailyProduct, $digitalProduct] as $index => $product) {
+            $this->withToken($token)->withHeaders(['Idempotency-Key' => 'category-product-publish-'.$index])
+                ->postJson('/api/v1/admin/products/'.$product['id'].'/status', ['action' => 'publish', 'reason' => '分类与商品资料已复核。'])
+                ->assertOk();
+        }
+
+        $this->getJson('/api/v1/product-categories')->assertOk()->assertJsonCount(2, 'data.items')
+            ->assertJsonPath('data.items.0.id', $daily)->assertJsonPath('data.items.0.product_count', 1);
+        $this->getJson('/api/v1/products?category_id='.$daily)->assertOk()->assertJsonCount(1, 'data.items')
+            ->assertJsonPath('data.items.0.id', $dailyProduct['id'])->assertJsonPath('data.items.0.category.name', '生活补给');
+
+        $this->withToken($token)->putJson('/api/v1/admin/product-categories/'.$daily, [
+            'parent_id' => null, 'name' => '生活补给', 'slug' => 'daily-products', 'status' => 'inactive', 'sort_order' => 10,
+        ])->assertOk()->assertJsonPath('data.status', 'inactive');
+        $this->getJson('/api/v1/products?category_id='.$daily)->assertOk()->assertJsonCount(0, 'data.items');
+        $this->getJson('/api/v1/products/'.$dailyProduct['id'])->assertNotFound();
+        $this->withToken($token)->deleteJson('/api/v1/admin/product-categories/'.$daily)->assertUnprocessable();
+        $this->withToken($token)->deleteJson('/api/v1/admin/product-categories/'.$unused)->assertNoContent();
+        $this->assertDatabaseMissing('product_categories', ['public_id' => $unused]);
+    }
+
     private function category(string $token, string $slug = 'daily-goods'): string
     {
         return $this->withToken($token)->postJson('/api/v1/admin/product-categories', ['name' => '日用好物', 'slug' => $slug])

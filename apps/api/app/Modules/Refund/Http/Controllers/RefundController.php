@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Order\Models\Order;
 use App\Modules\Refund\Models\Refund;
+use App\Modules\Refund\Models\ReturnShippingCompensation;
 use App\Modules\Refund\Services\RefundService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +25,7 @@ class RefundController extends Controller
             'evidence_file_ids' => ['nullable', 'array', 'max:9'],
             'evidence_file_ids.*' => ['string', 'size:26'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.order_item_id' => ['required', 'string', 'size:26'],
+            'items.*.order_item_id' => ['required', 'string', 'size:26', 'distinct'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
         ]);
         $o = Order::query()->where('public_id', $d['order_id'])->firstOrFail();
@@ -62,8 +63,7 @@ class RefundController extends Controller
         ]); /** @var AdminUser $a */
         $a = $q->user();
         if ($d['decision'] === 'reject') {
-            $refund->update(['status' => 'rejected', 'reviewed_by_admin_id' => $a->id, 'review_note' => $d['note']]);
-            $r = $refund;
+            $r = $s->reject($a, $refund, $d['note']);
         } else {
             $r = $s->approve($a, $refund, $d['note'], $d);
         }
@@ -93,8 +93,16 @@ class RefundController extends Controller
         return ApiResponse::success($this->data($service->receiveReturn($admin, $refund, $data['note'])));
     }
 
+    public function syncProvider(Refund $refund, RefundService $service): JsonResponse
+    {
+        return ApiResponse::success($this->data($service->syncProviderRefund($refund)));
+    }
+
     private function data(Refund $r): array
     {
-        return ['id' => $r->public_id, 'refund_no' => $r->refund_no, 'service_type' => $r->service_type, 'reason_code' => $r->reason_code, 'reason_name' => $r->reason_name_snapshot, 'status' => $r->status, 'refund_cash_amount' => $r->refund_cash_amount, 'refund_wallet_amount' => $r->refund_wallet_amount, 'refund_external_amount' => $r->refund_external_amount, 'refund_points' => $r->refund_points, 'responsibility_party' => $r->responsibility_party, 'return_shipping_payer' => $r->return_shipping_payer, 'return_method' => $r->return_method, 'user_action_deadline_at' => $r->user_action_deadline_at?->toIso8601String(), 'original_shipping_refunded' => $r->original_shipping_refunded, 'created_at' => $r->created_at->toIso8601String()];
+        $shipment = $r->returnShipment()->first();
+        $compensation = $shipment ? ReturnShippingCompensation::query()->where('source_type', 'refund_return')->where('source_id', $shipment->id)->first() : null;
+
+        return ['id' => $r->public_id, 'refund_no' => $r->refund_no, 'service_type' => $r->service_type, 'reason_code' => $r->reason_code, 'reason_name' => $r->reason_name_snapshot, 'status' => $r->status, 'refund_cash_amount' => $r->refund_cash_amount, 'refund_wallet_amount' => $r->refund_wallet_amount, 'refund_external_amount' => $r->refund_external_amount, 'refund_points' => $r->refund_points, 'responsibility_party' => $r->responsibility_party, 'return_shipping_payer' => $r->return_shipping_payer, 'return_method' => $r->return_method, 'review_note' => $r->review_note, 'user_action_deadline_at' => $r->user_action_deadline_at?->toIso8601String(), 'original_shipping_refunded' => $r->original_shipping_refunded, 'return_shipment' => $shipment ? ['carrier_code' => $shipment->carrier_code, 'tracking_no' => $shipment->tracking_no, 'paid_shipping_amount' => $shipment->paid_shipping_amount, 'status' => $shipment->status, 'submitted_at' => $shipment->submitted_at?->toIso8601String()] : null, 'compensation' => $compensation ? ReturnShippingCompensationController::data($compensation) : null, 'created_at' => $r->created_at->toIso8601String()];
     }
 }

@@ -6,7 +6,10 @@ use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
+use App\Modules\Settings\Exceptions\SettingException;
+use App\Modules\Settings\Services\SystemSettingService;
 use App\Modules\Task\Models\Task;
+use App\Modules\Task\Services\TaskDataBatchService;
 use App\Modules\Task\Services\TaskDefinitionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,9 +28,9 @@ class AdminTaskController extends Controller
         return ApiResponse::success($tasks->present($task));
     }
 
-    public function store(Request $request, TaskDefinitionService $tasks, AuditLogger $audit): JsonResponse
+    public function store(Request $request, TaskDefinitionService $tasks, AuditLogger $audit, SystemSettingService $settings, TaskDataBatchService $batches): JsonResponse
     {
-        $content = $this->definition($request);
+        $content = $this->definition($request, $settings, $batches);
         /** @var AdminUser $admin */ $admin = $request->user();
         $task = $tasks->create($admin, $content, $this->key($request));
         $presented = $tasks->present($task);
@@ -36,9 +39,9 @@ class AdminTaskController extends Controller
         return ApiResponse::success($presented, 201);
     }
 
-    public function update(Request $request, Task $task, TaskDefinitionService $tasks, AuditLogger $audit): JsonResponse
+    public function update(Request $request, Task $task, TaskDefinitionService $tasks, AuditLogger $audit, SystemSettingService $settings, TaskDataBatchService $batches): JsonResponse
     {
-        $content = $this->definition($request);
+        $content = $this->definition($request, $settings, $batches);
         $version = $request->validate(['version' => ['required', 'integer', 'min:1']])['version'];
         /** @var AdminUser $admin */ $admin = $request->user();
         $before = $tasks->present($task);
@@ -96,7 +99,7 @@ class AdminTaskController extends Controller
     }
 
     /** @return array<string,mixed> */
-    private function definition(Request $request): array
+    private function definition(Request $request, SystemSettingService $settings, TaskDataBatchService $batches): array
     {
         $data = $request->validate([
             'business_scenario' => ['sometimes', 'in:platform_task,user_bounty,growth_challenge,referral_milestone'],
@@ -105,12 +108,14 @@ class AdminTaskController extends Controller
             'supported_devices' => ['sometimes', 'array', 'min:1', 'max:2'],
             'supported_devices.*' => ['in:android,ios'],
             'visibility' => ['required', 'in:public,targeted_private'], 'category' => ['required', 'in:onboarding,daily,community,commerce,research,campaign'],
-            'task_type' => ['required', 'in:one_time,daily,weekly,repeatable'], 'participation_mode' => ['required', 'in:claim_and_submit,claim_and_auto_verify,auto_enroll'],
+            'task_type' => ['required', 'in:one_time,daily,weekly,monthly,milestone,repeatable'], 'participation_mode' => ['required', 'in:claim_and_submit,claim_and_auto_verify,auto_enroll'],
+            'progress_target' => ['sometimes', 'integer', 'min:1'], 'progress_event_type' => ['sometimes', 'nullable', 'string', 'max:64'],
             'verification_mode' => ['required', 'in:manual,automatic'], 'title' => ['required', 'string', 'min:1', 'max:160'], 'description' => ['required', 'string', 'min:1', 'max:200000'],
             'tags' => ['sometimes', 'array', 'max:10'], 'tags.*' => ['string', 'min:1', 'max:30'],
             'rewards' => ['required', 'array', 'min:1'], 'rewards.*.type' => ['required', 'in:points,coupon,wallet_balance'],
             'rewards.*.points' => ['sometimes', 'integer', 'min:1'], 'rewards.*.balance_amount' => ['sometimes', 'integer', 'min:1'],
             'rewards.*.coupon_template_id' => ['sometimes', 'string', 'size:26'],
+            'rewards.*.quantity' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'reward_budgets' => ['required', 'array', 'min:1'], 'reward_budgets.*.reward_sequence' => ['required', 'integer', 'min:1'],
             'reward_budgets.*.budget_pool_id' => ['required', 'string', 'size:26'], 'reward_quota_total' => ['required', 'integer', 'min:1'],
             'reward_quota_per_cycle' => ['sometimes', 'nullable', 'integer', 'min:1'], 'completion_window_hours' => ['sometimes', 'integer', 'min:1'],
@@ -128,24 +133,42 @@ class AdminTaskController extends Controller
             'steps.*.min_files' => ['sometimes', 'integer', 'min:1', 'max:9'], 'steps.*.max_files' => ['sometimes', 'integer', 'min:1', 'max:9'],
             'claim_starts_at' => ['required', 'date'], 'claim_ends_at' => ['required', 'date'],
             'submit_ends_at' => ['required', 'date'], 'rules' => ['sometimes', 'array'],
+            'data_batch_id' => ['sometimes', 'nullable', 'string', 'size:26'],
         ]);
 
-        return [
+        $content = [
             ...$data,
             'business_scenario' => $data['business_scenario'] ?? 'platform_task',
             'project_name' => $data['project_name'] ?? null,
             'cover_image_url' => $data['cover_image_url'] ?? null,
             'supported_devices' => $data['supported_devices'] ?? ['android', 'ios'],
             'tags' => $data['tags'] ?? [],
-            'completion_window_hours' => $data['completion_window_hours'] ?? 24,
-            'submission_limit' => $data['submission_limit'] ?? 3,
-            'review_deadline_hours' => $data['review_deadline_hours'] ?? 48,
-            'appeal_deadline_days' => $data['appeal_deadline_days'] ?? 7,
-            'appeal_limit' => $data['appeal_limit'] ?? 1,
+            'completion_window_hours' => $data['completion_window_hours'] ?? $this->integerSetting($settings, 'tasks.default_completion_window_hours', 24),
+            'submission_limit' => $data['submission_limit'] ?? $this->integerSetting($settings, 'tasks.default_submission_limit', 3),
+            'review_deadline_hours' => $data['review_deadline_hours'] ?? $this->integerSetting($settings, 'tasks.default_review_hours', 48),
+            'appeal_deadline_days' => $data['appeal_deadline_days'] ?? $this->integerSetting($settings, 'tasks.default_appeal_days', 7),
+            'appeal_limit' => $data['appeal_limit'] ?? $this->integerSetting($settings, 'tasks.default_appeal_limit', 1),
             'virtual_view_count' => $data['virtual_view_count'] ?? 0,
+            'progress_target' => $data['progress_target'] ?? 1,
+            'progress_event_type' => $data['progress_event_type'] ?? null,
             'rules' => $data['rules'] ?? [],
             'steps' => $data['steps'] ?? [],
         ];
+        unset($content['data_batch_id']);
+        if (! empty($data['data_batch_id'])) {
+            $content['data_batch'] = $batches->reference($data['data_batch_id']);
+        }
+
+        return $content;
+    }
+
+    private function integerSetting(SystemSettingService $settings, string $key, int $legacyFallback): int
+    {
+        try {
+            return (int) $settings->read($key)['value'];
+        } catch (SettingException) {
+            return $legacyFallback;
+        }
     }
 
     private function key(Request $request): string

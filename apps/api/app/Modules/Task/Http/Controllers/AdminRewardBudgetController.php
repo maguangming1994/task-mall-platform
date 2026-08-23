@@ -5,6 +5,7 @@ namespace App\Modules\Task\Http\Controllers;
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Assets\Models\CouponTemplate;
 use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Task\Models\RewardBudgetPool;
 use App\Modules\Task\Services\RewardBudgetService;
@@ -13,6 +14,27 @@ use Illuminate\Http\Request;
 
 class AdminRewardBudgetController extends Controller
 {
+    public function couponTemplates(): JsonResponse
+    {
+        $items = CouponTemplate::query()->where('status', 'active')->orderBy('name')->get()->map(fn (CouponTemplate $template): array => [
+            'id' => $template->public_id,
+            'name' => $template->name,
+            'cash_discount_cents' => $template->cash_discount_cents,
+            'points_discount' => $template->points_discount,
+            'minimum_cash_cents' => $template->minimum_cash_cents,
+            'minimum_points' => $template->minimum_points,
+            'valid_days' => $template->valid_days,
+            'total_quantity' => $template->total_quantity,
+            'issued_quantity' => $template->issued_quantity,
+            'remaining_quantity' => max(0, $template->total_quantity - $template->issued_quantity),
+            'status' => $template->status,
+            'version' => $template->version,
+            'created_at' => $template->created_at?->toIso8601String(),
+        ]);
+
+        return ApiResponse::success(['items' => $items]);
+    }
+
     public function index(Request $request, RewardBudgetService $service): JsonResponse
     {
         $items = RewardBudgetPool::query()->latest('id')->get()->map(fn ($pool) => $service->present($pool));

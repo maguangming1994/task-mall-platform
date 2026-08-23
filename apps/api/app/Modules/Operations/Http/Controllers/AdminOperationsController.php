@@ -5,6 +5,7 @@ namespace App\Modules\Operations\Http\Controllers;
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Notification\Models\NotificationCampaign;
 use App\Modules\Notification\Models\NotificationTemplate;
 use App\Modules\Notification\Services\NotificationService;
@@ -74,36 +75,141 @@ class AdminOperationsController extends Controller
 
     public function templates(): JsonResponse
     {
-        return ApiResponse::success(['items' => NotificationTemplate::query()->latest()->get()->map(fn (NotificationTemplate $template) => ['id' => $template->public_id, 'scene_code' => $template->scene_code, 'channel' => $template->channel, 'status' => $template->status, 'current_version_no' => $template->current_version_no])]);
+        return ApiResponse::success(['items' => NotificationTemplate::query()->latest()->get()->map(fn (NotificationTemplate $template) => $this->templateData($template))]);
     }
 
-    public function saveTemplate(Request $request, NotificationService $service): JsonResponse
+    public function template(NotificationTemplate $notificationTemplate): JsonResponse
     {
-        $data = $request->validate(['scene_code' => ['required', 'string', 'max:64'], 'channel' => ['required', 'in:in_app,wechat,sms'], 'subject' => ['required', 'string', 'max:160'], 'body' => ['required', 'string', 'max:2000'], 'allowed_variables' => ['required', 'array', 'max:20'], 'allowed_variables.*' => ['string', 'regex:/^[a-zA-Z0-9_]+$/'], 'provider_template_id' => ['nullable', 'string', 'max:160'], 'publish' => ['required', 'boolean']]); /** @var AdminUser $admin */
-        $admin = $request->user();
-        $template = $service->saveTemplate($admin, $data);
+        return ApiResponse::success($this->templateData($notificationTemplate, true));
+    }
 
-        return ApiResponse::success(['id' => $template->public_id, 'scene_code' => $template->scene_code, 'channel' => $template->channel, 'status' => $template->status, 'current_version_no' => $template->current_version_no], 201);
+    public function saveTemplate(Request $request, NotificationService $service, AuditLogger $audit): JsonResponse
+    {
+        $data = $request->validate(['scene_code' => ['required', 'string', 'max:64'], 'channel' => ['required', 'in:in_app,wechat,sms'], 'subject' => ['required', 'string', 'max:160'], 'body' => ['required', 'string', 'max:2000'], 'allowed_variables' => ['present', 'array', 'max:20'], 'allowed_variables.*' => ['string', 'regex:/^[a-zA-Z0-9_]+$/'], 'provider_template_id' => ['nullable', 'string', 'max:160'], 'publish' => ['required', 'boolean']]); /** @var AdminUser $admin */
+        $admin = $request->user();
+        $existing = NotificationTemplate::query()->where('scene_code', $data['scene_code'])->where('channel', $data['channel'])->where('locale', 'zh-CN')->first();
+        $before = $existing ? $this->templateData($existing, true) : null;
+        $template = $service->saveTemplate($admin, $data);
+        $after = $this->templateData($template, true);
+        $audit->record($admin, $data['publish'] ? 'notification_template.version.publish' : 'notification_template.version.create', 'notification_template', $template->public_id, $before, $after);
+
+        return ApiResponse::success($after, 201);
     }
 
     public function campaigns(): JsonResponse
     {
-        return ApiResponse::success(['items' => NotificationCampaign::query()->latest()->get()->map(fn (NotificationCampaign $campaign) => ['id' => $campaign->public_id, 'name' => $campaign->name, 'title' => $campaign->title, 'channels' => $campaign->channels, 'status' => $campaign->status, 'recipient_count' => $campaign->recipient_count, 'sent_count' => $campaign->sent_count, 'scheduled_at' => $campaign->scheduled_at?->toIso8601String()])]);
+        return ApiResponse::success(['items' => NotificationCampaign::query()->latest()->get()->map(fn (NotificationCampaign $campaign) => $this->campaignData($campaign))]);
     }
 
-    public function createCampaign(Request $request, NotificationService $service): JsonResponse
+    public function createCampaign(Request $request, NotificationService $service, AuditLogger $audit): JsonResponse
     {
         $data = $request->validate(['name' => ['required', 'string', 'max:120'], 'title' => ['required', 'string', 'max:160'], 'body' => ['required', 'string', 'max:2000'], 'channels' => ['required', 'array', 'min:1'], 'channels.*' => ['in:in_app,wechat,sms'], 'scheduled_at' => ['nullable', 'date']]);
         $key = (string) $request->header('Idempotency-Key');
         abort_unless(strlen($key) >= 12, 422); /** @var AdminUser $admin */
         $admin = $request->user();
+        $existing = NotificationCampaign::query()->where('idempotency_key_hash', hash('sha256', $key))->first();
         $campaign = $service->createCampaign($admin, $data, $key);
+        $after = $this->campaignData($campaign);
+        if (! $existing) {
+            $audit->record($admin, 'notification_campaign.create', 'notification_campaign', $campaign->public_id, null, $after);
+        }
 
-        return ApiResponse::success(['id' => $campaign->public_id, 'status' => $campaign->status, 'scheduled_at' => $campaign->scheduled_at?->toIso8601String()], 201);
+        return ApiResponse::success($after, 201);
+    }
+
+    public function cancelCampaign(Request $request, NotificationCampaign $notificationCampaign, NotificationService $service, AuditLogger $audit): JsonResponse
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:500']]);
+        /** @var AdminUser $admin */
+        $admin = $request->user();
+        $before = $this->campaignData($notificationCampaign);
+        $campaign = $service->cancelCampaign($notificationCampaign);
+        $after = $this->campaignData($campaign);
+        if ($before['status'] !== $after['status']) {
+            $audit->record($admin, 'notification_campaign.cancel', 'notification_campaign', $campaign->public_id, $before, $after, $data['reason']);
+        }
+
+        return ApiResponse::success($after);
     }
 
     public function deliveries(): JsonResponse
     {
-        return ApiResponse::success(['items' => DB::table('notification_deliveries')->whereIn('status', ['retrying', 'failed'])->latest()->limit(100)->get()]);
+        $items = DB::table('notification_deliveries as deliveries')
+            ->join('notifications', 'notifications.id', '=', 'deliveries.notification_id')
+            ->whereIn('deliveries.status', ['retrying', 'failed'])
+            ->latest('deliveries.id')
+            ->limit(100)
+            ->get([
+                'deliveries.id', 'notifications.public_id as notification_id', 'notifications.title', 'notifications.scene_code',
+                'deliveries.channel', 'deliveries.status', 'deliveries.retry_count', 'deliveries.next_retry_at',
+                'deliveries.error_code', 'deliveries.error_message', 'deliveries.updated_at',
+            ]);
+
+        return ApiResponse::success(['items' => $items]);
+    }
+
+    public function retryDelivery(Request $request, int $delivery, NotificationService $service, AuditLogger $audit): JsonResponse
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:500']]);
+        $before = DB::table('notification_deliveries')->find($delivery);
+        abort_if($before === null, 404);
+        /** @var AdminUser $admin */
+        $admin = $request->user();
+        $after = $service->retryDelivery($delivery);
+        if ($before->status !== $after->status) {
+            $audit->record($admin, 'notification_delivery.retry', 'notification_delivery', (string) $delivery, (array) $before, (array) $after, $data['reason']);
+        }
+
+        return ApiResponse::success($after);
+    }
+
+    private function templateData(NotificationTemplate $template, bool $includeVersions = false): array
+    {
+        $versions = DB::table('notification_template_versions')
+            ->where('notification_template_id', $template->id)
+            ->orderByDesc('version_no')
+            ->get()
+            ->map(fn ($version) => [
+                'version_no' => (int) $version->version_no,
+                'subject' => $version->subject,
+                'body' => $version->body,
+                'allowed_variables' => json_decode($version->allowed_variables, true) ?: [],
+                'provider_template_id' => $version->provider_template_id,
+                'status' => $version->status,
+                'published_at' => $version->published_at,
+                'created_at' => $version->created_at,
+            ]);
+        $current = $versions->firstWhere('version_no', $template->current_version_no);
+        $data = [
+            'id' => $template->public_id,
+            'scene_code' => $template->scene_code,
+            'channel' => $template->channel,
+            'status' => $template->status,
+            'current_version_no' => $template->current_version_no,
+            'current_version' => $current,
+            'updated_at' => $template->updated_at?->toIso8601String(),
+        ];
+        if ($includeVersions) {
+            $data['versions'] = $versions->values();
+        }
+
+        return $data;
+    }
+
+    private function campaignData(NotificationCampaign $campaign): array
+    {
+        return [
+            'id' => $campaign->public_id,
+            'name' => $campaign->name,
+            'title' => $campaign->title,
+            'body' => $campaign->body,
+            'channels' => $campaign->channels,
+            'status' => $campaign->status,
+            'recipient_count' => $campaign->recipient_count,
+            'sent_count' => $campaign->sent_count,
+            'scheduled_at' => $campaign->scheduled_at?->toIso8601String(),
+            'completed_at' => $campaign->completed_at?->toIso8601String(),
+            'created_at' => $campaign->created_at?->toIso8601String(),
+        ];
     }
 }

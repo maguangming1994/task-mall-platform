@@ -20,6 +20,13 @@ use Illuminate\Validation\ValidationException;
 
 class AssetLedgerService
 {
+    /**
+     * An expired coupon that is restored after a refund receives a short,
+     * deterministic grace period instead of silently becoming unusable or
+     * receiving the template's potentially very long original lifetime.
+     */
+    private const REFUND_RETURN_GRACE_DAYS = 7;
+
     public function __construct(private readonly SystemSettingService $settings) {}
 
     public function grantPoints(User $user, int $points, string $sourceCode, ?string $businessId, string $reason, string $eventKey, ?AdminUser $admin = null): UserAssetAccount
@@ -203,6 +210,11 @@ class AssetLedgerService
         return $this->moveWallet($user, $cents, -$cents, 'unfreeze', $reason, $eventKey, $admin);
     }
 
+    public function consumeFrozenWallet(User $user, int $cents, string $reason, string $eventKey, ?AdminUser $admin = null): UserAssetAccount
+    {
+        return $this->moveWallet($user, 0, -$cents, 'withdrawal', $reason, $eventKey, $admin);
+    }
+
     /** @return array<int,UserCoupon> */
     public function issueCoupons(User $user, CouponTemplate $template, int $quantity, string $reason, string $eventKey, ?AdminUser $admin = null): array
     {
@@ -267,6 +279,67 @@ class AssetLedgerService
             ]);
 
             return $locked->fresh();
+        });
+    }
+
+    /**
+     * Restore an order coupon after a completed refund.
+     *
+     * The coupon must still be in the used state. A non-expired coupon keeps
+     * its original validity window; an already expired coupon receives a
+     * seven-day grace window starting at the refund settlement time. The
+     * append-only transaction makes retries safe and auditable.
+     */
+    public function returnUsedCoupon(
+        UserCoupon $coupon,
+        string $refundPublicId,
+        string $eventKey,
+        ?AdminUser $admin = null,
+    ): bool {
+        $hash = $this->fingerprint('coupon-return:'.$eventKey);
+
+        return DB::transaction(function () use ($coupon, $refundPublicId, $hash, $admin): bool {
+            $locked = UserCoupon::query()->lockForUpdate()->findOrFail($coupon->id);
+            if (CouponTransaction::query()->where('event_key_hash', $hash)->exists()) {
+                return true;
+            }
+            if ($locked->status !== 'used') {
+                return false;
+            }
+
+            $now = CarbonImmutable::now('Asia/Shanghai');
+            $validFrom = $locked->valid_from;
+            $validTo = $locked->valid_to;
+            if ($validTo === null || $validTo->lessThanOrEqualTo($now)) {
+                $validFrom = $now;
+                $validTo = $now->addDays(self::REFUND_RETURN_GRACE_DAYS)->endOfDay();
+            }
+
+            $account = $this->lockedAccount(User::query()->findOrFail($locked->user_id));
+            $locked->update([
+                'status' => 'unused',
+                'valid_from' => $validFrom,
+                'valid_to' => $validTo,
+                'used_at' => null,
+            ]);
+            $account->update([
+                'coupon_available' => $account->coupon_available + 1,
+                'version' => $account->version + 1,
+            ]);
+            CouponTransaction::query()->create([
+                'user_id' => $locked->user_id,
+                'user_coupon_id' => $locked->id,
+                'transaction_type' => 'return',
+                'status_before' => 'used',
+                'status_after' => 'unused',
+                'business_type' => 'refund',
+                'business_id' => $refundPublicId,
+                'event_key_hash' => $hash,
+                'admin_user_id' => $admin?->id,
+                'reason' => '退款结算完成后按配置返还原订单优惠券。',
+            ]);
+
+            return true;
         });
     }
 

@@ -3,11 +3,14 @@
 namespace App\Modules\Refund\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class Refund extends Model
 {
-    protected $fillable = ['public_id', 'refund_no', 'order_id', 'user_id', 'service_type', 'reason_code', 'reason_name_snapshot', 'description', 'status', 'refund_cash_amount', 'refund_wallet_amount', 'refund_external_amount', 'refund_points', 'coupon_returned', 'idempotency_key_hash', 'reviewed_by_admin_id', 'review_note', 'responsibility_party', 'return_shipping_payer', 'return_method', 'reason_rule_snapshot', 'evidence_file_ids', 'user_action_deadline_at', 'original_shipping_refunded', 'completed_at'];
+    protected $fillable = ['public_id', 'refund_no', 'order_id', 'user_id', 'service_type', 'reason_code', 'reason_name_snapshot', 'description', 'status', 'refund_cash_amount', 'refund_wallet_amount', 'refund_external_amount', 'refund_points', 'coupon_returned', 'idempotency_key_hash', 'request_fingerprint_hash', 'reviewed_by_admin_id', 'review_note', 'responsibility_party', 'return_shipping_payer', 'return_method', 'reason_rule_snapshot', 'evidence_file_ids', 'user_action_deadline_at', 'original_shipping_refunded', 'completed_at'];
+
+    protected $hidden = ['idempotency_key_hash', 'request_fingerprint_hash'];
 
     protected static function booted(): void
     {
@@ -22,5 +25,10 @@ class Refund extends Model
     public function getRouteKeyName(): string
     {
         return 'public_id';
+    }
+
+    public function returnShipment(): HasOne
+    {
+        return $this->hasOne(ReturnShipment::class);
     }
 }

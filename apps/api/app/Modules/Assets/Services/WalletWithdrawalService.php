@@ -2,8 +2,12 @@
 
 namespace App\Modules\Assets\Services;
 
+use App\Common\Exceptions\IdempotencyConflictException;
 use App\Models\User;
+use App\Modules\Account\Models\UserAssetAccount;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Assets\Contracts\PayoutProvider;
+use App\Modules\Assets\Models\WalletPayout;
 use App\Modules\Assets\Models\WalletWithdrawal;
 use App\Modules\Settings\Services\SystemSettingService;
 use Carbon\CarbonImmutable;
@@ -13,31 +17,56 @@ use Illuminate\Validation\ValidationException;
 
 class WalletWithdrawalService
 {
-    public function __construct(private readonly AssetLedgerService $ledger, private readonly SystemSettingService $settings) {}
+    public function __construct(
+        private readonly AssetLedgerService $ledger,
+        private readonly SystemSettingService $settings,
+        private readonly PayoutProvider $provider,
+    ) {}
 
     public function create(User $user, int $amount, string $channel, string $idempotencyKey): WalletWithdrawal
     {
-        $quote = $this->quote($amount);
         $hash = $this->fingerprint('withdrawal:'.$user->id.':'.$idempotencyKey);
-        $existing = WalletWithdrawal::query()->where('idempotency_key_hash', $hash)->first();
-        if ($existing !== null) {
-            return $existing;
-        }
-        $today = CarbonImmutable::now('Asia/Shanghai')->startOfDay();
-        $daily = WalletWithdrawal::query()->where('user_id', $user->id)->where('created_at', '>=', $today)->whereNotIn('status', ['rejected', 'failed', 'cancelled']);
-        $countLimit = (int) $this->settings->read('wallet.daily_withdrawal_count')['value'];
-        $amountLimit = (int) $this->settings->read('wallet.daily_withdrawal_cents')['value'];
-        if ((clone $daily)->count() >= $countLimit || (clone $daily)->sum('requested_amount_cents') + $amount > $amountLimit) {
-            throw ValidationException::withMessages(['amount' => ['已超过当日提现次数或金额上限。']]);
-        }
-        $ratePpm = $quote['fee_rate'];
-        $fee = $quote['fee_amount'];
+        $payloadHash = $this->requestPayloadFingerprint($amount, $channel);
 
-        return DB::transaction(function () use ($user, $amount, $channel, $hash, $ratePpm, $fee): WalletWithdrawal {
+        return DB::transaction(function () use ($user, $amount, $channel, $hash, $payloadHash): WalletWithdrawal {
+            // Every withdrawal for a user serializes on the wallet account before
+            // limits are read, so a concurrent request cannot pass stale totals.
+            $this->lockedWalletAccount($user);
+            // The wallet-account lock serializes all create attempts for this
+            // user, so the unique-key lookup does not need to take a second
+            // lock (which would invert the lock order used by review).
+            $existing = WalletWithdrawal::query()->where('idempotency_key_hash', $hash)->first();
+            if ($existing !== null) {
+                if (! $this->matchesRequestPayload($existing, $payloadHash)) {
+                    throw new IdempotencyConflictException('相同幂等键已绑定不同的提现请求，请更换幂等键。');
+                }
+
+                return $existing->fresh();
+            }
+
+            $quote = $this->quote($amount);
+            $today = CarbonImmutable::now('Asia/Shanghai')->startOfDay();
+            $daily = WalletWithdrawal::query()
+                ->where('user_id', $user->id)
+                ->where('created_at', '>=', $today)
+                ->whereNotIn('status', ['rejected', 'failed', 'cancelled']);
+            $countLimit = (int) $this->settings->read('wallet.daily_withdrawal_count')['value'];
+            $amountLimit = (int) $this->settings->read('wallet.daily_withdrawal_cents')['value'];
+            if ($daily->count() >= $countLimit || $daily->sum('requested_amount_cents') + $amount > $amountLimit) {
+                throw ValidationException::withMessages(['amount' => ['已超过当日提现次数或金额上限。']]);
+            }
+
             $withdrawal = WalletWithdrawal::query()->create([
-                'withdrawal_no' => 'WD'.now()->format('Ymd').Str::upper(Str::random(12)), 'user_id' => $user->id,
-                'requested_amount_cents' => $amount, 'fee_rate_ppm' => $ratePpm, 'fee_amount_cents' => $fee,
-                'received_amount_cents' => $amount - $fee, 'channel' => $channel, 'status' => 'reviewing', 'idempotency_key_hash' => $hash,
+                'withdrawal_no' => 'WD'.now()->format('Ymd').Str::upper(Str::random(12)),
+                'user_id' => $user->id,
+                'requested_amount_cents' => $amount,
+                'fee_rate_ppm' => $quote['fee_rate'],
+                'fee_amount_cents' => $quote['fee_amount'],
+                'received_amount_cents' => $quote['received_amount'],
+                'channel' => $channel,
+                'status' => 'reviewing',
+                'idempotency_key_hash' => $hash,
+                'request_payload_hash' => $payloadHash,
             ]);
             $this->ledger->freezeWallet($user, $amount, '提交提现申请并冻结余额。', 'withdrawal-freeze:'.$withdrawal->public_id);
 
@@ -63,8 +92,12 @@ class WalletWithdrawalService
         }
 
         return [
-            'requested_amount' => $amount, 'fee_rate' => $ratePpm, 'fee_amount' => $fee,
-            'received_amount' => $amount - $fee, 'minimum_amount' => $minimum, 'maximum_amount' => $maximum,
+            'requested_amount' => $amount,
+            'fee_rate' => $ratePpm,
+            'fee_amount' => $fee,
+            'received_amount' => $amount - $fee,
+            'minimum_amount' => $minimum,
+            'maximum_amount' => $maximum,
         ];
     }
 
@@ -75,15 +108,18 @@ class WalletWithdrawalService
             return $withdrawal->fresh();
         }
 
-        return DB::transaction(function () use ($admin, $withdrawal, $decision, $note, $hash): WalletWithdrawal {
+        $result = DB::transaction(function () use ($admin, $withdrawal, $decision, $note, $hash): WalletWithdrawal {
             $locked = WalletWithdrawal::query()->lockForUpdate()->findOrFail($withdrawal->id);
             if ($locked->status !== 'reviewing') {
                 throw ValidationException::withMessages(['decision' => ['当前提现单不在待审核状态。']]);
             }
             $approved = $decision === 'approve';
             $locked->update([
-                'status' => $approved ? 'processing' : 'rejected', 'reviewed_by_admin_id' => $admin->id,
-                'review_note' => $note, 'review_idempotency_key_hash' => $hash, 'reviewed_at' => now(),
+                'status' => $approved ? 'processing' : 'rejected',
+                'reviewed_by_admin_id' => $admin->id,
+                'review_note' => $note,
+                'review_idempotency_key_hash' => $hash,
+                'reviewed_at' => now(),
                 'completed_at' => $approved ? null : now(),
             ]);
             if (! $approved) {
@@ -93,19 +129,289 @@ class WalletWithdrawalService
 
             return $locked->fresh();
         });
+
+        return $result->status === 'processing' ? $this->dispatch($result) : $result;
+    }
+
+    public function dispatch(WalletWithdrawal $withdrawal): WalletWithdrawal
+    {
+        $withdrawal = WalletWithdrawal::query()->findOrFail($withdrawal->id);
+        if ($withdrawal->status === 'succeeded') {
+            return $withdrawal;
+        }
+        if ($withdrawal->status !== 'processing') {
+            throw ValidationException::withMessages(['withdrawal' => '只有处理中的提现单可以提交出款。']);
+        }
+        $payout = WalletPayout::query()->firstOrCreate(
+            ['wallet_withdrawal_id' => $withdrawal->id],
+            [
+                'payout_no' => $withdrawal->withdrawal_no,
+                'provider' => $this->provider->name(),
+                'amount_cents' => $withdrawal->received_amount_cents,
+                'status' => 'pending',
+            ],
+        );
+        if (in_array($payout->status, ['succeeded', 'failed'], true)) {
+            return $withdrawal->fresh();
+        }
+
+        try {
+            $this->processProviderResult($this->provider->submit($withdrawal));
+        } catch (\Throwable $exception) {
+            $payout->update([
+                'retry_count' => $payout->retry_count + 1,
+                'last_error' => mb_substr($exception->getMessage(), 0, 500),
+            ]);
+            $this->recordProviderFailure($payout, 'submit', $exception);
+            throw $exception;
+        }
+
+        return $withdrawal->fresh();
+    }
+
+    /** @param array<string,string|null> $headers */
+    public function handleProviderNotification(array $headers, string $body): void
+    {
+        $this->processProviderResult($this->provider->parseNotification($headers, $body));
+    }
+
+    public function sync(WalletWithdrawal $withdrawal): WalletWithdrawal
+    {
+        if ($withdrawal->status === 'succeeded') {
+            return $withdrawal->fresh();
+        }
+        if ($withdrawal->status !== 'processing') {
+            throw ValidationException::withMessages(['withdrawal' => '只有处理中的提现单可以主动查询。']);
+        }
+        $payout = WalletPayout::query()->where('wallet_withdrawal_id', $withdrawal->id)->first();
+        if ($payout === null) {
+            return $this->dispatch($withdrawal);
+        }
+        try {
+            $this->processProviderResult($this->provider->query($withdrawal));
+            $payout->update(['last_queried_at' => now()]);
+        } catch (\Throwable $exception) {
+            $payout->update([
+                'retry_count' => $payout->retry_count + 1,
+                'last_error' => mb_substr($exception->getMessage(), 0, 500),
+                'last_queried_at' => now(),
+            ]);
+            $this->recordProviderFailure($payout, 'query', $exception);
+            throw $exception;
+        }
+
+        return $withdrawal->fresh();
+    }
+
+    public function syncPending(int $limit = 100): int
+    {
+        $count = 0;
+        WalletWithdrawal::query()->where('status', 'processing')->orderBy('id')->limit($limit)->get()
+            ->each(function (WalletWithdrawal $withdrawal) use (&$count): void {
+                try {
+                    $this->sync($withdrawal);
+                    $count++;
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
+            });
+
+        return $count;
+    }
+
+    /** @param array<string,mixed> $result */
+    public function processProviderResult(array $result): void
+    {
+        $eventId = trim((string) ($result['event_id'] ?? ''));
+        if ($eventId === '') {
+            throw ValidationException::withMessages(['payout' => '出款渠道结果缺少事件编号。']);
+        }
+        $withdrawal = WalletWithdrawal::query()->where('withdrawal_no', (string) ($result['withdrawal_no'] ?? ''))->first();
+        if ($withdrawal === null) {
+            throw ValidationException::withMessages(['payout' => '出款渠道结果对应的提现单不存在。']);
+        }
+        $payout = WalletPayout::query()->where('wallet_withdrawal_id', $withdrawal->id)->firstOrFail();
+        $event = [
+            'provider' => $this->provider->name(),
+            'event_id' => $eventId,
+            'wallet_payout_id' => $payout->id,
+            'event_type' => (string) ($result['event_type'] ?? ''),
+            'provider_state' => strtoupper((string) ($result['state'] ?? '')),
+            'provider_reference' => $result['provider_reference'] ?? null,
+            'resource_hash' => hash('sha256', json_encode($result['raw_resource'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+            'status' => 'received',
+            'occurred_at' => $result['occurred_at'] ?? null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+        if (DB::table('wallet_payout_events')->insertOrIgnore($event) === 0) {
+            $existing = DB::table('wallet_payout_events')->where(['provider' => $this->provider->name(), 'event_id' => $eventId])->first();
+            if ($existing?->status === 'processed') {
+                return;
+            }
+            DB::table('wallet_payout_events')->where('id', $existing->id)->update(['status' => 'received', 'error_message' => null, 'updated_at' => now()]);
+        }
+        $eventDbId = DB::table('wallet_payout_events')->where(['provider' => $this->provider->name(), 'event_id' => $eventId])->value('id');
+
+        try {
+            $amount = (int) ($result['amount_cents'] ?? 0);
+            if ($amount > 0 && $amount !== $withdrawal->received_amount_cents) {
+                throw ValidationException::withMessages(['payout' => '出款渠道返回金额与提现实收金额不一致。']);
+            }
+            $this->applyProviderState($withdrawal, $payout, strtoupper((string) ($result['state'] ?? '')), trim((string) ($result['provider_reference'] ?? '')));
+            DB::table('wallet_payout_events')->where('id', $eventDbId)->update(['status' => 'processed', 'processed_at' => now(), 'updated_at' => now()]);
+        } catch (\Throwable $exception) {
+            DB::table('wallet_payout_events')->where('id', $eventDbId)->update(['status' => 'rejected', 'error_message' => mb_substr($exception->getMessage(), 0, 500), 'processed_at' => now(), 'updated_at' => now()]);
+            throw $exception;
+        }
+    }
+
+    private function applyProviderState(WalletWithdrawal $withdrawal, WalletPayout $payout, string $state, string $reference): void
+    {
+        DB::transaction(function () use ($withdrawal, $payout, $state, $reference): void {
+            $lockedWithdrawal = WalletWithdrawal::query()->lockForUpdate()->findOrFail($withdrawal->id);
+            $lockedPayout = WalletPayout::query()->lockForUpdate()->findOrFail($payout->id);
+            if ($lockedPayout->provider_reference !== null && $reference !== '' && $lockedPayout->provider_reference !== $reference) {
+                throw ValidationException::withMessages(['payout' => '出款渠道流水号与已记录结果冲突。']);
+            }
+            $providerReference = $reference !== '' ? $reference : $lockedPayout->provider_reference;
+            if (in_array($state, ['PROCESSING', 'PENDING', 'ACCEPTED'], true)) {
+                if ($lockedWithdrawal->status === 'processing') {
+                    $lockedPayout->update(['status' => 'processing', 'provider_reference' => $providerReference, 'submitted_at' => $lockedPayout->submitted_at ?? now(), 'last_error' => null]);
+                    $lockedWithdrawal->update(['channel_reference' => $providerReference]);
+                }
+
+                return;
+            }
+            if (in_array($state, ['SUCCESS', 'SUCCEEDED'], true)) {
+                if ($lockedWithdrawal->status === 'succeeded') {
+                    return;
+                }
+                if ($lockedWithdrawal->status !== 'processing') {
+                    throw ValidationException::withMessages(['payout' => '非处理中的提现单不能变更为出款成功。']);
+                }
+                if ($providerReference === null || $providerReference === '') {
+                    throw ValidationException::withMessages(['payout' => '出款成功结果缺少渠道流水号，已阻止本地扣账。']);
+                }
+                $user = User::query()->findOrFail($lockedWithdrawal->user_id);
+                $admin = $lockedWithdrawal->reviewed_by_admin_id ? AdminUser::query()->find($lockedWithdrawal->reviewed_by_admin_id) : null;
+                $this->ledger->consumeFrozenWallet($user, $lockedWithdrawal->requested_amount_cents, '提现渠道确认成功，扣减冻结余额。', 'withdrawal-success:'.$lockedWithdrawal->public_id, $admin);
+                $lockedWithdrawal->update(['status' => 'succeeded', 'channel_reference' => $providerReference, 'failure_message' => null, 'completed_at' => now()]);
+                $lockedPayout->update(['status' => 'succeeded', 'provider_reference' => $providerReference, 'last_error' => null, 'completed_at' => now()]);
+
+                return;
+            }
+            if (in_array($state, ['FAILED', 'CLOSED', 'REJECTED'], true)) {
+                if ($lockedWithdrawal->status === 'failed') {
+                    return;
+                }
+                if ($lockedWithdrawal->status !== 'processing') {
+                    throw ValidationException::withMessages(['payout' => '非处理中的提现单不能变更为出款失败。']);
+                }
+                $user = User::query()->findOrFail($lockedWithdrawal->user_id);
+                $admin = $lockedWithdrawal->reviewed_by_admin_id ? AdminUser::query()->find($lockedWithdrawal->reviewed_by_admin_id) : null;
+                $this->ledger->unfreezeWallet($user, $lockedWithdrawal->requested_amount_cents, '提现渠道终态失败，解冻原申请金额。', 'withdrawal-failed:'.$lockedWithdrawal->public_id, $admin);
+                $message = '出款渠道返回终态失败：'.$state;
+                $lockedWithdrawal->update(['status' => 'failed', 'channel_reference' => $providerReference, 'failure_message' => $message, 'completed_at' => now()]);
+                $lockedPayout->update(['status' => 'failed', 'provider_reference' => $providerReference, 'last_error' => $message, 'completed_at' => now()]);
+
+                return;
+            }
+
+            throw ValidationException::withMessages(['payout' => '出款渠道返回了无法识别的状态。']);
+        });
     }
 
     /** @return array<string,mixed> */
     public function present(WalletWithdrawal $withdrawal): array
     {
+        $payout = WalletPayout::query()->where('wallet_withdrawal_id', $withdrawal->id)->first();
+        $workflow = $this->workflow($withdrawal->status);
+
         return [
-            'id' => $withdrawal->public_id, 'withdrawal_no' => $withdrawal->withdrawal_no,
-            'requested_amount' => $withdrawal->requested_amount_cents, 'fee_rate' => $withdrawal->fee_rate_ppm,
-            'fee_amount' => $withdrawal->fee_amount_cents, 'received_amount' => $withdrawal->received_amount_cents,
-            'channel' => $withdrawal->channel, 'status' => $withdrawal->status, 'review_note' => $withdrawal->review_note,
-            'failure_message' => $withdrawal->failure_message, 'created_at' => $withdrawal->created_at?->toIso8601String(),
+            'id' => $withdrawal->public_id,
+            'withdrawal_no' => $withdrawal->withdrawal_no,
+            'requested_amount' => $withdrawal->requested_amount_cents,
+            'fee_rate' => $withdrawal->fee_rate_ppm,
+            'fee_amount' => $withdrawal->fee_amount_cents,
+            'received_amount' => $withdrawal->received_amount_cents,
+            'channel' => $withdrawal->channel,
+            'status' => $withdrawal->status,
+            'workflow' => $workflow,
+            'review_note' => $withdrawal->review_note,
+            'channel_reference' => $withdrawal->channel_reference,
+            'failure_message' => $withdrawal->failure_message,
+            'payout' => $payout ? ['provider' => $payout->provider, 'status' => $payout->status, 'retry_count' => $payout->retry_count, 'last_queried_at' => $payout->last_queried_at?->toIso8601String()] : null,
+            'created_at' => $withdrawal->created_at?->toIso8601String(),
             'completed_at' => $withdrawal->completed_at?->toIso8601String(),
         ];
+    }
+
+    /** @return array{status_label:string,next_action:string,is_terminal:bool} */
+    private function workflow(string $status): array
+    {
+        return match ($status) {
+            'reviewing', 'submitted' => ['status_label' => '审核中', 'next_action' => '平台正在核对提现资格和金额，请留意审核结果。', 'is_terminal' => false],
+            'approved', 'processing' => ['status_label' => '打款处理中', 'next_action' => '申请已通过，出款渠道正在处理，无需重复提交。', 'is_terminal' => false],
+            'succeeded', 'completed' => ['status_label' => '已到账', 'next_action' => '提现已完成，可在微信钱包或收款渠道核对到账记录。', 'is_terminal' => true],
+            'rejected' => ['status_label' => '审核未通过', 'next_action' => '原申请金额已解冻，请查看审核说明后重新提交。', 'is_terminal' => true],
+            'failed' => ['status_label' => '打款失败', 'next_action' => '原申请金额已解冻；如仍需提现，请确认收款信息后重新提交。', 'is_terminal' => true],
+            'cancelled' => ['status_label' => '已取消', 'next_action' => '原申请金额已解冻，可重新发起提现。', 'is_terminal' => true],
+            default => ['status_label' => '状态同步中', 'next_action' => '请稍后刷新，若长时间未更新可联系校园客服。', 'is_terminal' => false],
+        };
+    }
+
+    private function recordProviderFailure(WalletPayout $payout, string $operation, \Throwable $exception): void
+    {
+        DB::table('wallet_payout_events')->insertOrIgnore([
+            'provider' => $this->provider->name(),
+            'event_id' => "{$operation}-error-{$payout->payout_no}-{$payout->retry_count}",
+            'wallet_payout_id' => $payout->id,
+            'event_type' => 'PAYOUT.'.strtoupper($operation).'.ERROR',
+            'provider_state' => null,
+            'provider_reference' => null,
+            'resource_hash' => hash('sha256', get_class($exception).':'.$exception->getCode()),
+            'status' => 'rejected',
+            'error_message' => mb_substr($exception->getMessage(), 0, 500),
+            'processed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function lockedWalletAccount(User $user): UserAssetAccount
+    {
+        // Locking the user row also serializes first-time account creation; the
+        // account row is then locked for the remainder of the withdrawal tx.
+        User::query()->lockForUpdate()->findOrFail($user->id);
+        UserAssetAccount::query()->firstOrCreate(['user_id' => $user->id]);
+
+        return UserAssetAccount::query()->where('user_id', $user->id)->lockForUpdate()->firstOrFail();
+    }
+
+    private function requestPayloadFingerprint(int $amount, string $channel): string
+    {
+        $payload = [
+            'amount' => $amount,
+            'channel' => mb_strtolower(trim($channel), 'UTF-8'),
+        ];
+
+        return $this->fingerprint('withdrawal-payload:'.json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+    }
+
+    private function matchesRequestPayload(WalletWithdrawal $withdrawal, string $payloadHash): bool
+    {
+        $storedHash = $withdrawal->request_payload_hash;
+        if (! is_string($storedHash) || $storedHash === '') {
+            // Rows created before the additive migration have no stored hash;
+            // derive it from their immutable request fields for compatibility.
+            $storedHash = $this->requestPayloadFingerprint(
+                (int) $withdrawal->requested_amount_cents,
+                (string) $withdrawal->channel,
+            );
+        }
+
+        return hash_equals($storedHash, $payloadHash);
     }
 
     private function fingerprint(string $value): string

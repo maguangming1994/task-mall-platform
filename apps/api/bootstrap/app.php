@@ -3,13 +3,16 @@
 use App\Common\Middleware\AddSecurityHeaders;
 use App\Common\Middleware\AttachRequestId;
 use App\Common\Middleware\MeasureRequestPerformance;
+use App\Common\Exceptions\IdempotencyConflictException;
 use App\Common\Support\ApiResponse;
 use App\Modules\Admin\Http\Middleware\AuthenticateAdminAccessToken;
 use App\Modules\Admin\Http\Middleware\RequireAdminPermission;
 use App\Modules\Admin\Http\Middleware\RequireRecentAdminVerification;
 use App\Modules\Auth\Http\Middleware\AuthenticateAccessToken;
+use App\Modules\Auth\Http\Middleware\AuthenticateOptionalAccessToken;
 use App\Modules\Legal\Http\Middleware\RequireLegalConsent;
 use App\Modules\Privacy\Exceptions\PrivacyException;
+use App\Modules\Refund\Exceptions\RefundException;
 use App\Modules\Settings\Exceptions\SettingException;
 use App\Modules\Task\Http\Middleware\AuthenticateTaskPublisher;
 use App\Modules\Upload\Exceptions\UploadException;
@@ -34,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(MeasureRequestPerformance::class);
         $middleware->alias([
             'auth.access' => AuthenticateAccessToken::class,
+            'auth.optional' => AuthenticateOptionalAccessToken::class,
             'auth.admin' => AuthenticateAdminAccessToken::class,
             'admin.permission' => RequireAdminPermission::class,
             'admin.recent_verification' => RequireRecentAdminVerification::class,
@@ -42,6 +46,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (IdempotencyConflictException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return ApiResponse::error(
+                IdempotencyConflictException::ERROR_CODE,
+                $exception->getMessage(),
+                IdempotencyConflictException::STATUS,
+            );
+        });
         $exceptions->render(function (PrivacyException $exception, Request $request) {
             if (! $request->is('api/*')) {
                 return null;
@@ -67,6 +82,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 $exception->status,
                 $exception->details,
             );
+        });
+        $exceptions->render(function (RefundException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return ApiResponse::error($exception->errorCode, $exception->getMessage(), $exception->status, $exception->details);
         });
         $exceptions->render(function (ValidationException $exception, Request $request) {
             if (! $request->is('api/*')) {

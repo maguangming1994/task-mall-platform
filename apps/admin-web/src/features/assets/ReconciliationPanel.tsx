@@ -1,6 +1,8 @@
-import { Alert, Button, Card, Form, Input, Modal, Select, Table, Tag, Typography, message } from 'antd'
+import { Alert, Button, Card, Form, Input, Modal, Select, Table, Typography, message } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import { ApiError, importReconciliationRun, listReconciliationRuns, resolveReconciliationEntry, type ReconciliationEntry, type ReconciliationRun } from '../../api/admin'
+import { BusinessStatusTag } from '../../components/BusinessStatusTag'
+import { businessLabel, reconciliationResolutionLabels, reconciliationResultLabels, reconciliationStatusLabels } from '../../constants/businessLabels'
 
 interface ImportForm { business_date: string; rows_json: string }
 interface ResolveForm { action: 'confirmed_channel_truth' | 'confirmed_local_truth' | 'ignored_with_reason'; reason: string }
@@ -39,12 +41,12 @@ export function ReconciliationPanel() {
     {contextHolder}
     <Card bordered={false} style={{ marginTop: 16 }} title="微信支付日对账" extra={<Button type="primary" onClick={() => setImportOpen(true)}>导入标准账单</Button>}>
       <Alert showIcon type="info" message="渠道成功记录与本地成功支付按支付单号、金额和状态逐笔匹配；差异只能追加处置记录，不能直接覆盖支付事实。" />
-      <Table style={{ marginTop: 16 }} rowKey="id" dataSource={runs} pagination={false} expandable={{ expandedRowRender: (run) => <Table rowKey="id" dataSource={run.entries} pagination={false} size="small" columns={[
+      <Table style={{ marginTop: 16 }} rowKey="id" dataSource={runs} pagination={false} scroll={{ x: 860 }} expandable={{ expandedRowRender: (run) => <Table rowKey="id" dataSource={run.entries} pagination={false} size="small" scroll={{ x: 760 }} columns={[
         { title: '支付单', dataIndex: 'payment_no' }, { title: '渠道/本地金额', render: (_: unknown, entry: ReconciliationEntry) => `${entry.provider_amount ?? '-'} / ${entry.local_amount ?? '-'}` },
-        { title: '结果', dataIndex: 'result', render: (value: string) => <Tag color={value === 'matched' ? 'success' : 'error'}>{value}</Tag> }, { title: '处置', dataIndex: 'resolution_status' },
+        { title: '结果', dataIndex: 'result', render: (value: string) => <BusinessStatusTag status={value === 'matched' ? 'completed' : 'failed'} label={businessLabel(reconciliationResultLabels, value)} /> }, { title: '处置', dataIndex: 'resolution_status', render: (value: string) => businessLabel(reconciliationResolutionLabels, value) },
         { title: '操作', render: (_: unknown, entry: ReconciliationEntry) => entry.resolution_status === 'open' ? <Button onClick={() => setResolveTarget(entry)}>处置差异</Button> : null },
       ]} /> }} columns={[
-        { title: '账期', dataIndex: 'business_date' }, { title: '状态', dataIndex: 'status', render: (value: string) => <Tag color={value === 'matched' ? 'success' : 'warning'}>{value}</Tag> },
+        { title: '账期', dataIndex: 'business_date' }, { title: '状态', dataIndex: 'status', render: (value: string) => <BusinessStatusTag status={value === 'matched' ? 'completed' : value === 'processing' ? 'processing' : 'pending'} label={businessLabel(reconciliationStatusLabels, value)} /> },
         { title: '渠道笔数/金额', render: (_: unknown, run: ReconciliationRun) => `${run.provider_count} / ${run.provider_amount}` }, { title: '本地笔数/金额', render: (_: unknown, run: ReconciliationRun) => `${run.local_count} / ${run.local_amount}` }, { title: '差异', dataIndex: 'difference_count' },
       ]} />
     </Card>

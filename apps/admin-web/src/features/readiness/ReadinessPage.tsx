@@ -22,12 +22,13 @@ export function ReadinessPage() {
   useEffect(() => { void load() }, [load])
 
   const percent = result ? Math.round((result.summary.passed / result.summary.total) * 100) : 0
+  const groupName = (code: string) => ({ runtime: '运行环境', security: '安全基线', infra: '基础设施', wechat: '微信渠道', payment: '支付渠道', sms: '短信渠道', notification: '消息渠道', upload: '文件与存储', compliance: '合规资料' } as Record<string, string>)[code.split('.')[0]] ?? '其他'
   return (
     <>
       {contextHolder}
       <div className="page-heading">
         <div>
-          <Typography.Text className="eyebrow">PRODUCTION READINESS</Typography.Text>
+          <Typography.Text className="eyebrow">上线准备检查</Typography.Text>
           <Typography.Title level={2}>上线准备检查</Typography.Title>
           <Typography.Paragraph type="secondary">只显示配置是否就绪，不回传密钥值。发布流水线应执行严格检查并在未通过时停止。</Typography.Paragraph>
         </div>
@@ -44,6 +45,7 @@ export function ReadinessPage() {
           <Table
             rowKey="code" loading={loading} dataSource={result?.checks ?? []} pagination={false}
             columns={[
+              { title: '验收分组', dataIndex: 'code', width: 130, render: (code: string) => <Tag>{groupName(code)}</Tag> },
               { title: '检查项', dataIndex: 'label' },
               { title: '状态', dataIndex: 'ready', width: 120, render: (ready: boolean) => ready
                 ? <Tag color="success" icon={<CheckCircleOutlined />}>通过</Tag>

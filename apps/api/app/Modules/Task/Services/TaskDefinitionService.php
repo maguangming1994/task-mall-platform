@@ -4,11 +4,13 @@ namespace App\Modules\Task\Services;
 
 use App\Common\Support\RichTextSanitizer;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Assets\Models\CouponTemplate;
 use App\Modules\Settings\Services\SystemSettingService;
 use App\Modules\Task\Models\RewardBudgetPool;
 use App\Modules\Task\Models\Task;
 use App\Modules\Task\Models\TaskPublishApproval;
 use App\Modules\Task\Models\TaskRewardBudget;
+use App\Modules\Task\Models\TaskTemplate;
 use App\Modules\Task\Models\TaskVersion;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +22,7 @@ class TaskDefinitionService
         private readonly RewardBudgetService $budgets,
         private readonly SystemSettingService $settings,
         private readonly RichTextSanitizer $richText,
+        private readonly TaskDataBatchService $dataBatches,
     ) {}
 
     public function create(AdminUser $admin, array $content, string $idempotencyKey, string $channel = 'admin_web'): Task
@@ -71,7 +74,19 @@ class TaskDefinitionService
                 'changed_fields' => $changed, 'content' => $content, 'created_by_admin_id' => $admin->id,
             ]);
             $this->withdrawPendingApproval($locked);
-            $locked->update(['current_version_no' => $versionNo, 'status' => 'draft', 'lock_version' => $locked->lock_version + 1]);
+            // Editing a live task creates an unpublished snapshot, but must not
+            // take the already published snapshot offline. New claims continue
+            // to use published_version_no while the publisher reviews the draft.
+            $keepLiveStatus = $locked->published_version_no !== null
+                && in_array($locked->status, ['published', 'scheduled', 'paused'], true);
+            $attributes = [
+                'current_version_no' => $versionNo,
+                'lock_version' => $locked->lock_version + 1,
+            ];
+            if (! $keepLiveStatus) {
+                $attributes['status'] = 'draft';
+            }
+            $locked->update($attributes);
 
             return $locked->fresh();
         });
@@ -142,6 +157,7 @@ class TaskDefinitionService
                 }
             }
 
+            $this->dataBatches->lockForPublish($lockedTask, $version);
             $budgetBindings = collect($content['reward_budgets'])->keyBy('reward_sequence');
             $poolIds = $budgetBindings->pluck('budget_pool_id')->unique()->values();
             $pools = RewardBudgetPool::query()->whereIn('public_id', $poolIds)->orderBy('id')->lockForUpdate()->get()->keyBy('public_id');
@@ -161,6 +177,19 @@ class TaskDefinitionService
                 }
                 $unit = $this->unitAmount($reward);
                 $required = $unit * $content['reward_quota_total'];
+                if ($assetType === 'coupon') {
+                    $templateId = (string) ($reward['coupon_template_id'] ?? '');
+                    if ($templateId === '' || $pool->coupon_template_public_id !== $templateId) {
+                        throw ValidationException::withMessages(['reward_budgets' => ["奖励组件 {$sequence} 的优惠券模板与预算池绑定不一致。"]]);
+                    }
+                    $template = CouponTemplate::query()->where('public_id', $templateId)->lockForUpdate()->first();
+                    if ($template === null || $template->status !== 'active') {
+                        throw ValidationException::withMessages(['rewards' => ["奖励组件 {$sequence} 的优惠券模板不存在或未启用。"]]);
+                    }
+                    if ($template->total_quantity - $template->issued_quantity < $required) {
+                        throw ValidationException::withMessages(['rewards' => ["奖励组件 {$sequence} 的优惠券模板剩余发行量不足。"]]);
+                    }
+                }
                 $available = $pool->total_amount - $pool->locked_amount - $pool->issued_amount;
                 if ($available < $required) {
                     throw ValidationException::withMessages(['reward_budgets' => ["奖励组件 {$sequence} 预算不足。"]]);
@@ -276,7 +305,23 @@ class TaskDefinitionService
     {
         $version = TaskVersion::query()->where('task_id', $task->id)->where('version_no', $task->current_version_no)->firstOrFail();
         $approval = TaskPublishApproval::query()->where('task_version_id', $version->id)->first();
-        $budgets = TaskRewardBudget::query()->where('task_version_id', $version->id)->get()->map(fn (TaskRewardBudget $budget) => [
+        $budgetVersionId = $version->id;
+        $budgets = TaskRewardBudget::query()->where('task_version_id', $budgetVersionId)->get();
+        // A live task can have a newer, unpublished editor snapshot. Its
+        // budget rows are intentionally not locked yet, so show the currently
+        // published budget facts in the management view until that snapshot is
+        // approved and published.
+        if ($budgets->isEmpty() && $task->published_version_no !== null && $task->published_version_no !== $version->version_no) {
+            $publishedVersion = TaskVersion::query()
+                ->where('task_id', $task->id)
+                ->where('version_no', $task->published_version_no)
+                ->first();
+            if ($publishedVersion !== null) {
+                $budgetVersionId = $publishedVersion->id;
+                $budgets = TaskRewardBudget::query()->where('task_version_id', $budgetVersionId)->get();
+            }
+        }
+        $budgets = $budgets->map(fn (TaskRewardBudget $budget) => [
             'id' => $budget->public_id, 'reward_sequence' => $budget->reward_sequence, 'asset_type' => $budget->asset_type,
             'max_deliveries_total' => $budget->max_deliveries_total, 'max_deliveries_per_cycle' => $budget->max_deliveries_per_cycle,
             'locked_amount' => $budget->locked_amount, 'reserved_amount' => $budget->reserved_amount, 'issued_amount' => $budget->issued_amount,
@@ -291,11 +336,16 @@ class TaskDefinitionService
             'description_format' => $version->content['description_format'] ?? 'rich_text_html',
             'description_schema_version' => $version->content['description_schema_version'] ?? 1,
             'creation_channel' => $task->creation_channel,
+            'source_task_template' => $task->source_task_template_id === null ? null : [
+                'id' => TaskTemplate::query()->whereKey($task->source_task_template_id)->value('public_id'),
+                'version_no' => $task->source_task_template_version_no,
+            ],
             'publisher' => [
                 'id' => AdminUser::query()->whereKey($task->created_by_admin_id)->value('public_id'),
                 'publisher_type' => 'platform_admin', 'display_name' => '平台任务运营', 'verification_status' => 'verified', 'publisher_badge' => '平台发布',
             ],
             'status' => $task->status, 'version' => $task->lock_version, 'current_published_version' => $task->published_version_no,
+            'has_unpublished_changes' => $task->published_version_no !== null && $task->current_version_no !== $task->published_version_no,
             'historical_claim_count' => 0, 'active_reservation_count' => 0, 'successful_reward_count' => 0,
             'remaining_reward_slots' => $version->content['reward_quota_total'],
             'eligibility' => ['status' => 'eligible', 'message' => '后台预览'], 'can_claim' => $task->status === 'published', 'can_report' => $task->status === 'published',
@@ -311,6 +361,7 @@ class TaskDefinitionService
                 'review_note' => $approval->review_note,
                 'reviewed_at' => $approval->reviewed_at?->toIso8601String(),
             ],
+            'reward_budget_bindings' => $version->content['reward_budgets'] ?? [],
             'reward_budgets' => $budgets, 'reward_budget_summaries' => $budgets,
         ];
     }
@@ -322,6 +373,21 @@ class TaskDefinitionService
             'status' => $version->status, 'changed_fields' => $version->changed_fields, 'created_at' => $version->created_at?->toIso8601String(),
             'published_at' => $version->published_at?->toIso8601String(),
         ])->all();
+    }
+
+    /** @param array<string,mixed> $content */
+    public function validateTemplateContent(array $content): void
+    {
+        $runtime = [
+            'reward_budgets' => collect($content['rewards'] ?? [])->values()->map(fn ($reward, int $index) => [
+                'reward_sequence' => $index + 1,
+                'budget_pool_id' => str_repeat('0', 26),
+            ])->all(),
+            'claim_starts_at' => now()->addMinute()->toIso8601String(),
+            'claim_ends_at' => now()->addDays(2)->toIso8601String(),
+            'submit_ends_at' => now()->addDays(3)->toIso8601String(),
+        ];
+        $this->validateDefinition(array_replace($content, $runtime));
     }
 
     private function validateDefinition(array $content): void
@@ -336,13 +402,16 @@ class TaskDefinitionService
         if (($manual && $content['verification_mode'] !== 'manual') || (! $manual && $content['verification_mode'] !== 'automatic')) {
             throw ValidationException::withMessages(['verification_mode' => ['参与方式与核验方式不匹配。']]);
         }
-        if (in_array($content['task_type'], ['daily', 'weekly', 'repeatable'], true) && empty($content['reward_quota_per_cycle'])) {
+        if (in_array($content['task_type'], ['daily', 'weekly', 'monthly', 'repeatable'], true) && empty($content['reward_quota_per_cycle'])) {
             throw ValidationException::withMessages(['reward_quota_per_cycle' => ['周期任务必须设置每周期奖励上限。']]);
         }
         if (count($content['rewards']) !== count($content['reward_budgets'])) {
             throw ValidationException::withMessages(['reward_budgets' => ['每个奖励组件必须且只能绑定一个预算池。']]);
         }
         foreach ($content['rewards'] as $reward) {
+            if (($reward['type'] ?? null) === 'coupon' && empty($reward['coupon_template_id'])) {
+                throw ValidationException::withMessages(['rewards' => ['优惠券奖励必须指定优惠券模板。']]);
+            }
             $this->unitAmount($reward);
         }
         $this->validateSteps($content['steps'] ?? []);
@@ -490,7 +559,7 @@ class TaskDefinitionService
         $amount = match ($reward['type']) {
             'points' => $reward['points'] ?? 0,
             'wallet_balance' => $reward['balance_amount'] ?? 0,
-            'coupon' => 1,
+            'coupon' => $reward['quantity'] ?? 1,
             default => 0,
         };
         if (! is_int($amount) || $amount < 1) {
@@ -512,7 +581,7 @@ class TaskDefinitionService
 
     private function changeType(array $fields): string
     {
-        $major = ['business_scenario', 'supported_devices', 'description', 'steps', 'attachment_rules', 'rewards', 'reward_budgets', 'reward_quota_total', 'reward_quota_per_cycle', 'participation_mode', 'verification_mode', 'rules', 'claim_starts_at', 'claim_ends_at', 'submit_ends_at', 'completion_window_hours', 'submission_limit', 'review_deadline_hours', 'appeal_deadline_days'];
+        $major = ['business_scenario', 'supported_devices', 'description', 'steps', 'attachment_rules', 'rewards', 'reward_budgets', 'reward_quota_total', 'reward_quota_per_cycle', 'participation_mode', 'verification_mode', 'progress_target', 'progress_event_type', 'rules', 'claim_starts_at', 'claim_ends_at', 'submit_ends_at', 'completion_window_hours', 'submission_limit', 'review_deadline_hours', 'appeal_deadline_days'];
 
         return array_intersect($major, $fields) === [] ? 'minor' : 'major';
     }

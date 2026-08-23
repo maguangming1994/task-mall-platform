@@ -9,7 +9,7 @@
 		{
 			"path": "pages/login/index",
 			"style": {
-				"navigationBarTitleText": "登录"
+				"navigationStyle": "custom"
 			}
 		},
 		{
@@ -27,7 +27,7 @@
     {
       "path": "pages/account/index",
       "style": {
-        "navigationBarTitleText": "账户中心"
+        "navigationStyle": "custom"
       }
     },
     {
@@ -37,27 +37,51 @@
       }
     },
     {
+      "path": "pages/wallet-recharge/index",
+      "style": {
+        "navigationBarTitleText": "余额充值"
+      }
+    },
+    {
+      "path": "pages/withdraw/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/tasks/index",
       "style": {
-				"navigationBarTitleText": "任务大厅",
+				"navigationStyle": "custom",
 				"enablePullDownRefresh": true
       }
     },
-    {
-      "path": "pages/task-detail/index",
-      "style": {
-        "navigationBarTitleText": "任务详情"
-      }
-    },
-    {
-      "path": "pages/task-claim/index",
-      "style": {
-        "navigationBarTitleText": "任务提交"
-      }
-    },
+      {
+        "path": "pages/task-detail/index",
+        "style": {
+          "navigationBarTitleText": "任务详情",
+          "navigationStyle": "custom",
+          "enableShareAppMessage": true,
+          "enableShareTimeline": true
+        }
+      },
+      {
+        "path": "pages/task-claim/index",
+        "style": {
+          "navigationBarTitleText": "任务提交",
+          "navigationStyle": "custom"
+        }
+      },
     {
       "path": "pages/referrals/index",
       "style": { "navigationBarTitleText": "我的推荐" }
+    },
+    {
+      "path": "pages/referral-poster/index",
+      "style": { "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/check-in/index",
+      "style": { "navigationBarTitleText": "每日签到" }
     },
     {
       "path": "pages/publisher/index",
@@ -65,34 +89,94 @@
     },
     {
       "path": "pages/products/index",
-      "style": { "navigationBarTitleText": "精选商城", "enablePullDownRefresh": true }
+      "style": { "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/product-detail/index",
+      "style": { "navigationBarTitleText": "商品详情" }
     },
     {
       "path": "pages/cart/index",
       "style": { "navigationBarTitleText": "购物车" }
     },
     {
+      "path": "pages/checkout/index",
+      "style": { "navigationBarTitleText": "确认订单" }
+    },
+    {
       "path": "pages/orders/index",
       "style": { "navigationBarTitleText": "我的订单" }
+    },
+    {
+      "path": "pages/order-detail/index",
+      "style": { "navigationBarTitleText": "订单详情" }
+    },
+    {
+      "path": "pages/payment-result/index",
+      "style": { "navigationBarTitleText": "支付结果" }
     },
     {
       "path": "pages/after-sales/index",
       "style": { "navigationBarTitleText": "售后服务" }
     },
     {
+      "path": "pages/after-sale-apply/index",
+      "style": { "navigationBarTitleText": "申请售后" }
+    },
+    {
+      "path": "pages/after-sale-detail/index",
+      "style": { "navigationBarTitleText": "售后进度" }
+    },
+    {
       "path": "pages/community/index",
-      "style": { "navigationBarTitleText": "成长社区", "enablePullDownRefresh": true }
+      "style": { "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/community-compose/index",
+      "style": { "navigationBarTitleText": "发布帖子" }
+    },
+    {
+      "path": "pages/community-detail/index",
+      "style": { "navigationBarTitleText": "校园动态", "enableShareAppMessage": true, "enableShareTimeline": true }
+    },
+    {
+      "path": "pages/publisher-task-detail/index",
+      "style": { "navigationBarTitleText": "发布任务详情" }
+    },
+    {
+      "path": "pages/community-activities/index",
+      "style": { "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/community-activity-compose/index",
+      "style": { "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/community-activity-detail/index",
+      "style": { "navigationStyle": "custom" }
     },
     {
       "path": "pages/notifications/index",
       "style": { "navigationBarTitleText": "消息中心" }
+    },
+    {
+      "path": "pages/addresses/index",
+      "style": { "navigationBarTitleText": "收货地址" }
+    },
+    {
+      "path": "pages/legal/index",
+      "style": { "navigationBarTitleText": "协议与隐私" }
+    },
+    {
+      "path": "pages/support/index",
+      "style": { "navigationStyle": "custom" }
     }
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "任务商城",
 		"navigationBarBackgroundColor": "#FFFFFF",
-		"backgroundColor": "#F6F8FC",
+		"backgroundColor": "#F6F9F9",
 		"backgroundTextStyle": "dark"
 	}
 }

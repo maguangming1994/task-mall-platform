@@ -12,9 +12,7 @@ class ReferralController extends Controller
 {
     public function index(Request $request, ReferralService $referrals): JsonResponse
     {
-        $items = $referrals->progress($request->user());
-
-        return ApiResponse::success(['referral_code' => $referrals->code($request->user()), 'items' => $items, 'pagination' => ['page' => 1, 'page_size' => count($items), 'total' => count($items)]]);
+        return ApiResponse::success($referrals->dashboard($request->user()));
     }
 
     public function bind(Request $request, ReferralService $referrals): JsonResponse

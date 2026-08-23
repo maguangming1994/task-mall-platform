@@ -99,6 +99,26 @@ class AdminAssetAdjustmentController extends Controller
         return ApiResponse::success($presented);
     }
 
+    public function syncWithdrawal(Request $request, WalletWithdrawal $walletWithdrawal, WalletWithdrawalService $withdrawals, AuditLogger $audit): JsonResponse
+    {
+        /** @var AdminUser $admin */ $admin = $request->user();
+        $result = $withdrawals->sync($walletWithdrawal);
+        $presented = $withdrawals->present($result);
+        $audit->record($admin, 'wallet_withdrawal.sync', 'wallet_withdrawal', $result->public_id, null, $presented, '管理员主动查询出款渠道状态。');
+
+        return ApiResponse::success($presented);
+    }
+
+    public function dispatchWithdrawal(Request $request, WalletWithdrawal $walletWithdrawal, WalletWithdrawalService $withdrawals, AuditLogger $audit): JsonResponse
+    {
+        /** @var AdminUser $admin */ $admin = $request->user();
+        $result = $withdrawals->dispatch($walletWithdrawal);
+        $presented = $withdrawals->present($result);
+        $audit->record($admin, 'wallet_withdrawal.dispatch', 'wallet_withdrawal', $result->public_id, null, $presented, '管理员重试提交出款渠道。');
+
+        return ApiResponse::success($presented);
+    }
+
     private function key(Request $request): string
     {
         $key = (string) $request->header('Idempotency-Key');

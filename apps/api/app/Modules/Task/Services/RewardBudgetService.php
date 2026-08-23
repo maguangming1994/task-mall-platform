@@ -4,6 +4,7 @@ namespace App\Modules\Task\Services;
 
 use App\Common\Support\ApiResponse;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Assets\Models\CouponTemplate;
 use App\Modules\Task\Models\RewardBudgetPool;
 use App\Modules\Task\Models\RewardBudgetTransaction;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,13 @@ class RewardBudgetService
         }
 
         return DB::transaction(function () use ($admin, $data, $hash): RewardBudgetPool {
+            if ($data['asset_type'] === 'coupon') {
+                $template = CouponTemplate::query()->where('public_id', $data['coupon_template_id'])->lockForUpdate()->first();
+                if ($template === null || $template->status !== 'active') {
+                    throw ValidationException::withMessages(['coupon_template_id' => ['优惠券模板不存在或未启用。']]);
+                }
+                $this->assertCouponCapacity($template, (int) $data['total_amount']);
+            }
             $pool = RewardBudgetPool::query()->create([
                 'name' => $data['name'], 'asset_type' => $data['asset_type'], 'coupon_template_public_id' => $data['coupon_template_id'] ?? null,
                 'total_amount' => $data['total_amount'], 'created_by_admin_id' => $admin->id, 'idempotency_key_hash' => $hash,
@@ -50,6 +58,13 @@ class RewardBudgetService
             $newTotal = $locked->total_amount + $change;
             if ($newTotal < $locked->locked_amount + $locked->issued_amount) {
                 throw ValidationException::withMessages(['amount' => ['减少后的总预算不能低于已锁定与已发放金额。']]);
+            }
+            if ($locked->asset_type === 'coupon' && $change > 0) {
+                $template = CouponTemplate::query()->where('public_id', $locked->coupon_template_public_id)->lockForUpdate()->first();
+                if ($template === null || $template->status !== 'active') {
+                    throw ValidationException::withMessages(['amount' => ['绑定的优惠券模板不存在或未启用，不能增加预算。']]);
+                }
+                $this->assertCouponCapacity($template, max(0, $newTotal - $locked->issued_amount), $locked->id);
             }
             $locked->update(['total_amount' => $newTotal, 'version' => $locked->version + 1]);
             $this->record($locked->fresh(), null, null, 'adjust_'.$data['action'], $change, $key, $admin, $data['reason']);
@@ -82,5 +97,22 @@ class RewardBudgetService
     private function fingerprint(string $value): string
     {
         return hash_hmac('sha256', $value, hash('sha256', (string) config('admin_auth.hash_secret')));
+    }
+
+    private function assertCouponCapacity(CouponTemplate $template, int $requestedOutstanding, ?int $excludePoolId = null): void
+    {
+        $otherOutstanding = RewardBudgetPool::query()
+            ->where('asset_type', 'coupon')
+            ->where('coupon_template_public_id', $template->public_id)
+            ->where('status', 'active')
+            ->when($excludePoolId !== null, fn ($query) => $query->where('id', '!=', $excludePoolId))
+            ->get()
+            ->sum(fn (RewardBudgetPool $pool): int => max(0, $pool->total_amount - $pool->issued_amount));
+        $remaining = max(0, $template->total_quantity - $template->issued_quantity);
+        if ($otherOutstanding + $requestedOutstanding > $remaining) {
+            throw ValidationException::withMessages([
+                'total_amount' => ['优惠券模板剩余发行量不足，需同时扣除其他预算池已占用但尚未发放的数量。'],
+            ]);
+        }
     }
 }

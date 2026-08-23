@@ -46,7 +46,7 @@ import navTasks from '../../../../user-app/src/static/tabbar/tasks.png'
 
 const groupNames: Record<string, string> = {
   accounts: '账号', after_sales: '售后', community: '社区', coupons: '优惠券', notifications: '通知', orders: '订单',
-  payment: '支付', points: '积分', risk: '风控', tasks: '任务', wallet: '钱包', homepage: '首页装修', navigation: '导航装修',
+  payment: '支付', points: '积分', risk: '风控', tasks: '任务', wallet: '钱包', mall: '商城装修', homepage: '首页装修', navigation: '导航装修',
 }
 
 function displayValue(setting: SystemSetting, value: SettingValue) {
@@ -58,7 +58,11 @@ function displayValue(setting: SystemSetting, value: SettingValue) {
     if (setting.key === 'homepage.carousel') return `${Array.isArray(value.items) ? value.items.length : 0} 张轮播图`
     if (setting.key === 'homepage.announcement') return value.enabled ? String(value.title || '公告已启用') : '已停用'
     if (setting.key === 'homepage.popup') return value.enabled ? `${value.mode === 'poster' ? '海报' : '公告'}弹窗` : '已停用'
+    if (setting.key === 'homepage.floating_support') return value.enabled ? `${String(value.label || '客服二维码')} · ${value.qr_code_url ? '已上传二维码' : '待上传二维码'}` : '已停用'
     if (setting.key === 'homepage.modules') return `${Array.isArray(value.quick_entries) ? value.quick_entries.length : 0} 个快捷入口 · ${Array.isArray((value.product_section as Record<string, unknown> | undefined)?.cards) ? ((value.product_section as Record<string, unknown>).cards as unknown[]).length : 0} 个商城推荐位`
+    if (setting.key === 'community.homepage') return `${Array.isArray(value.quick_entries) ? value.quick_entries.length : 0} 个社区入口 · 品牌图标可更换`
+    if (setting.key === 'mall.appearance') return `${Array.isArray(value.assurances) ? value.assurances.length : 0} 个服务图标 · 商城 Logo 可更换`
+    if (setting.key === 'accounts.appearance') return `${Array.isArray(value.service_icons) ? value.service_icons.length : 0} 个账户服务图标`
     if (setting.key === 'navigation.bottom_tabs') return `${Array.isArray(value.items) ? (value.items as Array<Record<string, unknown>>).filter((item) => item.enabled).length : 0} 个显示入口 · 支持排序与跳转配置`
     return JSON.stringify(value)
   }
@@ -68,7 +72,7 @@ function displayValue(setting: SystemSetting, value: SettingValue) {
 function editorInitialValue(setting: SystemSetting) {
   const value = setting.draft?.value ?? setting.current_value
   if (setting.value_type === 'money' && typeof value === 'number') return value / 100
-  if (setting.value_type === 'object' && !setting.key.startsWith('homepage.') && !setting.key.startsWith('navigation.')) return JSON.stringify(value, null, 2)
+  if (setting.value_type === 'object' && !setting.key.startsWith('homepage.') && !setting.key.startsWith('navigation.') && !['community.homepage', 'mall.appearance', 'accounts.appearance'].includes(setting.key)) return JSON.stringify(value, null, 2)
   return value
 }
 
@@ -218,6 +222,8 @@ function HomeSettingEditor({ setting, value, onChange }: ValueEditorProps) {
 
   if (setting.key === 'homepage.announcement') return <Space direction="vertical" style={{ width: '100%' }}>
     <Space><Switch checked={Boolean(current.enabled)} onChange={(checked) => update('enabled', checked)} /><span>显示首页公告栏</span></Space>
+    <Typography.Text strong>公告图标</Typography.Text>
+    <HomeImageInput url={String(current.icon_url ?? '')} defaultUrl={defaultHomePreview(String(current.icon_text || '公'), '公告图标', '#FFF2B8', '#8A5C00')} label="公告图标" onChange={(url) => update('icon_url', url)} />
     {textField('icon_text', '公告图标文字，例如 公')}
     {textField('title', '公告标题')}
     <Typography.Text strong>公告内容</Typography.Text>
@@ -237,6 +243,24 @@ function HomeSettingEditor({ setting, value, onChange }: ValueEditorProps) {
     <HomeImageInput url={String(current.image_url ?? '')} defaultUrl={defaultHomePreview(current.mode === 'poster' ? '报' : '公', current.mode === 'poster' ? '默认海报' : '公告弹窗', '#FFF1E4', '#E56A16')} label="弹窗海报" onChange={(url) => update('image_url', url)} />
     {textField('button_text', '按钮文字')}
     <Select value={String(current.link_type ?? 'none')} options={linkOptions} onChange={(next) => update('link_type', next)} />
+  </Space>
+
+  if (setting.key === 'homepage.floating_support') return <Space direction="vertical" style={{ width: '100%' }} size="middle">
+    <Alert showIcon type="info" message="此入口仅用于展示客服小程序二维码。移动端首页悬浮按钮和“我的—联系客服”都会进入同一个二维码页面。" />
+    <Space><Switch checked={Boolean(current.enabled)} onChange={(checked) => update('enabled', checked)} /><span>显示首页悬浮客服二维码</span></Space>
+    <Space><Switch checked={Boolean(current.show_label)} onChange={(checked) => update('show_label', checked)} /><span>显示客服名称与副标题</span></Space>
+    <Typography.Text strong>客服悬浮图标</Typography.Text>
+    <HomeImageInput url={String(current.icon_url ?? '')} defaultUrl={defaultHomePreview(String(current.icon_text || '服'), '悬浮客服图标', '#DFF8EF', '#087A53')} label="悬浮客服图标" onChange={(url) => update('icon_url', url)} />
+    {textField('icon_text', '未上传图片时显示的图标文字，例如 服')}
+    {textField('label', '按钮与二维码页标题，例如 客服二维码')}
+    {textField('subtitle', '按钮副标题，例如 扫码联系校园客服')}
+    <Typography.Text strong>客服小程序二维码</Typography.Text>
+    <HomeImageInput url={String(current.qr_code_url ?? '')} defaultUrl={defaultHomePreview('码', '客服小程序二维码', '#F3FBFF', '#147CB1')} label="客服小程序二维码" onChange={(url) => update('qr_code_url', url)} />
+    {textField('qr_code_tip', '扫码说明，例如 长按二维码识别，或使用微信扫一扫')}
+    <Space wrap>
+      <Select style={{ width: 180 }} value={String(current.position ?? 'right')} options={[{ value: 'right', label: '悬浮在右侧' }, { value: 'left', label: '悬浮在左侧' }]} onChange={(next) => update('position', next)} />
+      <InputNumber min={130} max={400} step={10} addonBefore="距底部" addonAfter="rpx" value={Number(current.bottom_offset_rpx ?? 170)} onChange={(next) => update('bottom_offset_rpx', next ?? 170)} />
+    </Space>
   </Space>
 
   if (setting.key === 'homepage.carousel') {
@@ -264,11 +288,15 @@ function HomeSettingEditor({ setting, value, onChange }: ValueEditorProps) {
 
   if (setting.key === 'homepage.modules') {
     const quickEntries = Array.isArray(current.quick_entries) ? current.quick_entries as Record<string, unknown>[] : []
+    const priorityEntries = Array.isArray(current.priority_entries) && current.priority_entries.length > 0
+      ? current.priority_entries as Record<string, unknown>[]
+      : [{ id: 'assets', mark: '资', icon_url: '' }, { id: 'referrals', mark: '邀', icon_url: '' }]
     const recommendation = typeof current.recommendation === 'object' && current.recommendation !== null ? current.recommendation as Record<string, unknown> : {}
     const productSection = typeof current.product_section === 'object' && current.product_section !== null ? current.product_section as Record<string, unknown> : {}
     const productCards = Array.isArray(productSection.cards) ? productSection.cards as Record<string, unknown>[] : []
     const trust = typeof current.trust === 'object' && current.trust !== null ? current.trust as Record<string, unknown> : {}
     const updateQuick = (index: number, key: string, next: unknown) => update('quick_entries', quickEntries.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: next } : item))
+    const updatePriority = (index: number, key: string, next: unknown) => update('priority_entries', priorityEntries.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: next } : item))
     const updateRecommendation = (key: string, next: unknown) => update('recommendation', { ...recommendation, [key]: next })
     const updateProductSection = (key: string, next: unknown) => update('product_section', { ...productSection, [key]: next })
     const updateProductCard = (index: number, key: string, next: unknown) => updateProductSection('cards', productCards.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: next } : item))
@@ -293,6 +321,16 @@ function HomeSettingEditor({ setting, value, onChange }: ValueEditorProps) {
               <Input value={String(item.note ?? '')} placeholder="入口说明" onChange={(event) => updateQuick(index, 'note', event.target.value)} />
               <Input value={String(item.mark ?? '')} placeholder="未上传图标时显示的文字" onChange={(event) => updateQuick(index, 'mark', event.target.value)} />
               <Select value={String(item.link_type ?? 'none')} options={linkOptions} onChange={(next) => updateQuick(index, 'link_type', next)} />
+            </Space>
+          </Card>)}
+        </div>
+      </Card>
+      <Card size="small" title="公告下方资产与邀请图标">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 12 }}>
+          {priorityEntries.map((item, index) => <Card key={String(item.id ?? index)} size="small" title={String(item.id) === 'assets' ? '资产中心' : '邀请成长'}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <HomeImageInput url={String(item.icon_url ?? '')} defaultUrl={defaultHomePreview(String(item.mark || (index ? '邀' : '资')), index ? '邀请成长图标' : '资产中心图标', index ? '#FFF2B8' : '#DFF8EC', index ? '#8A5C00' : '#0C7B4B')} label={index ? '邀请成长图标' : '资产中心图标'} onChange={(url) => updatePriority(index, 'icon_url', url)} />
+              <Input value={String(item.mark ?? '')} placeholder="未上传图片时显示的文字" onChange={(event) => updatePriority(index, 'mark', event.target.value)} />
             </Space>
           </Card>)}
         </div>
@@ -336,9 +374,58 @@ function HomeSettingEditor({ setting, value, onChange }: ValueEditorProps) {
   return <Input.TextArea value={JSON.stringify(current, null, 2)} autoSize={{ minRows: 5, maxRows: 12 }} onChange={(event) => onChange?.(event.target.value)} />
 }
 
+function AppearanceSettingEditor({ setting, value, onChange }: ValueEditorProps) {
+  const current = typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {}
+  const update = (key: string, next: unknown) => onChange?.({ ...current, [key]: next })
+  const renderBrand = (brand: Record<string, unknown>, title: string, defaultMark: string, onBrandChange: (key: string, value: unknown) => void) => <Card size="small" title={title}>
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <HomeImageInput url={String(brand.logo_url ?? '')} defaultUrl={defaultHomePreview(String(brand.logo_text || defaultMark), title)} label={title} onChange={(url) => onBrandChange('logo_url', url)} />
+      <Input value={String(brand.logo_text ?? '')} placeholder="未上传图片时显示的文字" onChange={(event) => onBrandChange('logo_text', event.target.value)} />
+      <Input value={String(brand.name ?? '')} placeholder="品牌名称" onChange={(event) => onBrandChange('name', event.target.value)} />
+      <Input value={String(brand.caption ?? '')} placeholder="品牌副标题" onChange={(event) => onBrandChange('caption', event.target.value)} />
+    </Space>
+  </Card>
+
+  if (setting.key === 'community.homepage') {
+    const brand = typeof current.brand === 'object' && current.brand !== null ? current.brand as Record<string, unknown> : {}
+    const banner = typeof current.banner === 'object' && current.banner !== null ? current.banner as Record<string, unknown> : {}
+    const entries = Array.isArray(current.quick_entries) ? current.quick_entries as Record<string, unknown>[] : []
+    const updateBrand = (key: string, next: unknown) => update('brand', { ...brand, [key]: next })
+    const updateBanner = (key: string, next: unknown) => update('banner', { ...banner, [key]: next })
+    const updateEntry = (index: number, key: string, next: unknown) => update('quick_entries', entries.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: next } : item))
+    return <Space direction="vertical" style={{ width: '100%' }} size="middle">
+      <Alert showIcon type="info" message="社区 Logo、头图和快捷入口图标均支持本地上传、图片网址导入及恢复系统默认。" />
+      {renderBrand(brand, '社区顶部 Logo', '校', updateBrand)}
+      <Card size="small" title="社区主视觉"><HomeImageInput url={String(banner.image_url ?? '')} defaultUrl={defaultHomePreview('社', String(banner.title || '校园互助社区'), '#DFF8FF', '#0C7A91')} label="社区主视觉背景" onChange={(url) => updateBanner('image_url', url)} /></Card>
+      <Card size="small" title="社区快捷入口图标"><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 12 }}>{entries.map((item, index) => <Card key={String(item.id ?? index)} size="small" title={String(item.label || `入口 ${index + 1}`)}><Space direction="vertical" style={{ width: '100%' }}><HomeImageInput url={String(item.icon_url ?? '')} defaultUrl={defaultHomePreview(['助', '团', '任', '帖'][index] || '社', String(item.label || '社区入口'))} label={`${String(item.label || '社区入口')}图标`} onChange={(url) => updateEntry(index, 'icon_url', url)} /><Input value={String(item.label ?? '')} onChange={(event) => updateEntry(index, 'label', event.target.value)} /><Input value={String(item.description ?? '')} onChange={(event) => updateEntry(index, 'description', event.target.value)} /></Space></Card>)}</div></Card>
+    </Space>
+  }
+
+  if (setting.key === 'mall.appearance') {
+    const brand = typeof current.brand === 'object' && current.brand !== null ? current.brand as Record<string, unknown> : {}
+    const assurances = Array.isArray(current.assurances) ? current.assurances as Record<string, unknown>[] : []
+    const updateBrand = (key: string, next: unknown) => update('brand', { ...brand, [key]: next })
+    const updateAssurance = (index: number, key: string, next: unknown) => update('assurances', assurances.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: next } : item))
+    return <Space direction="vertical" style={{ width: '100%' }} size="middle">
+      {renderBrand(brand, '商城顶部 Logo', 'L', updateBrand)}
+      <Card size="small" title="商城服务保障图标"><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 12 }}>{assurances.map((item, index) => <Card key={String(item.id ?? index)} size="small" title={String(item.label || `服务 ${index + 1}`)}><Space direction="vertical" style={{ width: '100%' }}><HomeImageInput url={String(item.icon_url ?? '')} defaultUrl={defaultHomePreview(String(item.mark || index + 1), String(item.label || '商城服务'))} label={`${String(item.label || '商城服务')}图标`} onChange={(url) => updateAssurance(index, 'icon_url', url)} /><Input value={String(item.mark ?? '')} placeholder="默认文字图标" onChange={(event) => updateAssurance(index, 'mark', event.target.value)} /><Input value={String(item.label ?? '')} placeholder="标题" onChange={(event) => updateAssurance(index, 'label', event.target.value)} /><Input value={String(item.description ?? '')} placeholder="说明" onChange={(event) => updateAssurance(index, 'description', event.target.value)} /></Space></Card>)}</div></Card>
+    </Space>
+  }
+
+  const serviceIcons = Array.isArray(current.service_icons) ? current.service_icons as Record<string, unknown>[] : []
+  const labels: Record<string, string> = { tasks: '我的任务', orders: '我的订单', after_sales: '售后服务', referrals: '邀请好友', check_in: '每日签到', notifications: '消息中心', addresses: '收货地址', legal: '协议隐私', security: '账号安全', support: '联系客服' }
+  const updateService = (index: number, key: string, next: unknown) => update('service_icons', serviceIcons.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: next } : item))
+  return <Space direction="vertical" style={{ width: '100%' }} size="middle">
+    <Alert showIcon type="info" message="账户中心头像占位图和全部服务入口图标均可独立替换；业务名称与跳转仍由系统固定，避免误配。" />
+    <Card size="small" title="账户头像占位图"><HomeImageInput url={String(current.profile_icon_url ?? '')} defaultUrl={defaultHomePreview('用', '账户头像占位图')} label="账户头像占位图" onChange={(url) => update('profile_icon_url', url)} /></Card>
+    <Card size="small" title="账户服务图标"><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 12 }}>{serviceIcons.map((item, index) => <Card key={String(item.id ?? index)} size="small" title={labels[String(item.id)] || String(item.id)}><Space direction="vertical" style={{ width: '100%' }}><HomeImageInput url={String(item.icon_url ?? '')} defaultUrl={defaultHomePreview(String(item.mark || index + 1), labels[String(item.id)] || '账户服务')} label={`${labels[String(item.id)] || '账户服务'}图标`} onChange={(url) => updateService(index, 'icon_url', url)} /><Input value={String(item.mark ?? '')} placeholder="未上传图片时显示的文字" onChange={(event) => updateService(index, 'mark', event.target.value)} /></Space></Card>)}</div></Card>
+  </Space>
+}
+
 function ValueEditor({ setting, value, onChange }: ValueEditorProps) {
   if (setting.key === 'navigation.bottom_tabs') return <BottomNavigationSettingEditor setting={setting} value={value} onChange={onChange} />
   if (setting.key.startsWith('homepage.')) return <HomeSettingEditor setting={setting} value={value} onChange={onChange} />
+  if (['community.homepage', 'mall.appearance', 'accounts.appearance'].includes(setting.key)) return <AppearanceSettingEditor setting={setting} value={value} onChange={onChange} />
   if (setting.value_type === 'boolean') return <Switch checked={Boolean(value)} onChange={onChange} checkedChildren="启用" unCheckedChildren="停用" />
   if (['integer', 'money', 'decimal'].includes(setting.value_type)) {
     const rules = setting.validation_rules ?? {}
@@ -460,7 +547,7 @@ export function SettingsPage() {
     <>
       {contextHolder}
       <div className="page-heading">
-        <div><Typography.Text className="eyebrow">GOVERNED CONFIGURATION</Typography.Text><Typography.Title level={2}>配置中心</Typography.Title><Typography.Paragraph type="secondary">草稿与线上版本隔离；高风险配置必须由另一位管理员复核。</Typography.Paragraph></div>
+        <div><Typography.Text className="eyebrow">平台配置治理</Typography.Text><Typography.Title level={2}>配置中心</Typography.Title><Typography.Paragraph type="secondary">草稿与线上版本隔离；高风险配置必须由另一位管理员复核。</Typography.Paragraph></div>
         <Select allowClear placeholder="全部分类" value={group} onChange={setGroup} style={{ width: 180 }} options={groups.map((value) => ({ value, label: groupNames[value] ?? value }))} />
       </div>
       <Alert showIcon type="info" message="金额编辑时使用元，服务端和数据库统一保存为分；发布只影响后续新业务，历史订单与资产事实不重算。" />

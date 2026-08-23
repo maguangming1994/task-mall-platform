@@ -22,6 +22,7 @@ export interface HomeCarouselItem {
 export interface HomeAnnouncement {
   enabled: boolean
   icon_text: string
+  icon_url: string
   title: string
   content: string
   link_type: HomeLinkType
@@ -39,11 +40,25 @@ export interface HomePopup {
   link_type: HomeLinkType
 }
 
+export interface HomeFloatingSupport {
+  enabled: boolean
+  show_label: boolean
+  icon_text: string
+  icon_url: string
+  label: string
+  subtitle: string
+  qr_code_url: string
+  qr_code_tip: string
+  position: 'left' | 'right'
+  bottom_offset_rpx: number
+}
+
 export interface HomeModules {
   page_background_url: string
   notification_icon_url: string
   quick_grid_background_url: string
   quick_entries: Array<{ id: string; label: string; note: string; mark: string; tone: string; icon_url: string; link_type: HomeLinkType }>
+  priority_entries: Array<{ id: 'assets' | 'referrals'; mark: string; icon_url: string }>
   recommendation: { section_title: string; section_subtitle: string; title: string; description: string; tag: string; reward_text: string; time_text: string; icon_text: string; icon_url: string; background_url: string; link_type: HomeLinkType }
   product_section: { section_title: string; section_subtitle: string; cards: Array<{ id: string; eyebrow: string; title: string; price_text: string; tone: string; image_url: string; background_url: string; link_type: HomeLinkType }> }
   trust: { title: string; description: string; icon_url: string; background_url: string; link_type: HomeLinkType }
@@ -54,6 +69,7 @@ export interface HomeContent {
   carousel: { autoplay: boolean; interval_ms: number; items: HomeCarouselItem[] }
   announcement: HomeAnnouncement
   popup: HomePopup
+  floating_support: HomeFloatingSupport
   modules: HomeModules
   versions: Record<string, number | null>
 }

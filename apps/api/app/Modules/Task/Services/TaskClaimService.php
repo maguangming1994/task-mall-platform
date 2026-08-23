@@ -5,10 +5,14 @@ namespace App\Modules\Task\Services;
 use App\Models\User;
 use App\Modules\Task\Models\Task;
 use App\Modules\Task\Models\TaskClaim;
+use App\Modules\Task\Models\TaskDataItem;
 use App\Modules\Task\Models\TaskReview;
 use App\Modules\Task\Models\TaskRewardBudget;
 use App\Modules\Task\Models\TaskRewardReservation;
+use App\Modules\Task\Models\TaskSubmission;
 use App\Modules\Task\Models\TaskVersion;
+use App\Modules\Task\Support\TaskClaimState;
+use App\Modules\Task\Support\TaskCycle;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -17,6 +21,8 @@ use Illuminate\Validation\ValidationException;
 
 class TaskClaimService
 {
+    public function __construct(private readonly TaskDataBatchService $dataBatches) {}
+
     /** @return array<int,array<string,mixed>> */
     public function hall(array $filters = []): array
     {
@@ -66,6 +72,10 @@ class TaskClaimService
         }
         $budgets = TaskRewardBudget::query()->where('task_version_id', $version->id)->get();
         $remaining = $this->remainingSlots($budgets);
+        $batchRemaining = $this->dataBatches->availableCount($version);
+        if ($batchRemaining !== null) {
+            $remaining = min($remaining, $batchRemaining);
+        }
         $active = TaskClaim::query()->where('task_id', $task->id)->where('slot_status', 'reserved')->count();
         $successful = TaskClaim::query()->where('task_id', $task->id)->where('slot_status', 'consumed')->count();
         $completedClaims = TaskClaim::query()->where('task_id', $task->id)->whereNotNull('approved_at')->with('submissions')->get();
@@ -91,6 +101,7 @@ class TaskClaimService
             ->distinct('task_reviews.task_claim_id')
             ->count('task_reviews.task_claim_id');
         $now = CarbonImmutable::now();
+        $cycle = TaskCycle::resolve((string) $content['task_type'], $now);
         $started = CarbonImmutable::parse($content['claim_starts_at'])->lte($now);
         $notEnded = CarbonImmutable::parse($content['claim_ends_at'])->gte($now);
         $userClaimable = $content['participation_mode'] !== 'auto_enroll';
@@ -105,6 +116,13 @@ class TaskClaimService
             'average_completion_minutes' => $completionSamples->isEmpty() ? null : (int) round($completionSamples->average()),
             'average_review_minutes' => $reviewSamples->isEmpty() ? null : (int) round($reviewSamples->average()),
             'view_count' => $viewCount + $virtualViewCount,
+            'current_cycle' => [
+                'key' => $cycle['key'],
+                'starts_at' => $cycle['starts_at']?->toIso8601String(),
+                'ends_at' => $cycle['ends_at']?->toIso8601String(),
+                'progress_target' => max(1, (int) ($content['progress_target'] ?? 1)),
+                'progress_event_type' => $content['progress_event_type'] ?? null,
+            ],
             'eligibility' => ['status' => 'eligible', 'message' => '领取时将重新校验账号、周期、名额和全部奖励预算。'],
             'can_claim' => $started && $notEnded && $remaining > 0 && $userClaimable,
             'claim_unavailable_reason' => ! $started ? 'not_started' : (! $notEnded ? 'ended' : ($remaining < 1 ? 'quota_exhausted' : (! $userClaimable ? 'ineligible' : null))),
@@ -138,7 +156,8 @@ class TaskClaimService
             if (CarbonImmutable::parse($content['claim_starts_at'])->gt($now) || CarbonImmutable::parse($content['claim_ends_at'])->lt($now)) {
                 throw ValidationException::withMessages(['task' => ['当前不在领取时间内。']]);
             }
-            $cycleKey = $this->cycleKey($content['task_type'], $now);
+            $cycle = TaskCycle::resolve((string) $content['task_type'], $now);
+            $cycleKey = $cycle['key'];
             $sameCycle = TaskClaim::query()->where('task_id', $lockedTask->id)->where('user_id', $user->id)->where('cycle_key', $cycleKey)->first();
             if ($sameCycle !== null) {
                 throw ValidationException::withMessages(['task' => ['本周期已经领取过，取消后也不能重新领取。']]);
@@ -156,12 +175,19 @@ class TaskClaimService
             if ($globalDeadline->lt($deadline)) {
                 $deadline = $globalDeadline;
             }
+            if ($cycle['ends_at'] !== null && $cycle['ends_at']->lt($deadline)) {
+                $deadline = $cycle['ends_at'];
+            }
             $claim = TaskClaim::query()->create([
                 'task_id' => $lockedTask->id, 'task_version_id' => $version->id, 'user_id' => $user->id,
                 'enrollment_source' => $source, 'cycle_key' => $cycleKey,
+                'cycle_starts_at' => $cycle['starts_at'], 'cycle_ends_at' => $cycle['ends_at'],
                 'task_snapshot' => ['task_id' => $lockedTask->public_id, 'version_no' => $version->version_no, ...$content],
+                'execution_status' => TaskClaimState::EXECUTION_RESERVED, 'review_status' => null,
+                'progress_current' => 0, 'progress_target' => max(1, (int) ($content['progress_target'] ?? 1)),
                 'completion_deadline_at' => $deadline, 'claim_idempotency_key_hash' => $hash,
             ]);
+            $this->dataBatches->allocateForClaim($claim, $version);
             foreach ($budgets as $budget) {
                 $available = $budget->locked_amount - $budget->reserved_amount - $budget->issued_amount - $budget->released_amount;
                 if ($available < $budget->unit_amount) {
@@ -193,7 +219,8 @@ class TaskClaimService
                 throw ValidationException::withMessages(['claim' => ['当前用户任务不能取消。']]);
             }
             $this->releaseReservations($locked);
-            $locked->update(['status' => 'cancelled', 'slot_status' => 'released', 'cancel_count' => $locked->cancel_count + 1, 'cancelled_at' => now()]);
+            $this->dataBatches->releaseForClaim($locked);
+            $locked->update(['status' => 'cancelled', 'execution_status' => TaskClaimState::EXECUTION_ABANDONED, 'review_status' => TaskClaimState::REVIEW_VOIDED, 'slot_status' => 'released', 'cancel_count' => $locked->cancel_count + 1, 'cancelled_at' => now()]);
             $this->recordChange($locked, 'claimed', 'cancelled', 'cancel', $reason, 'user', $user->id, $hash);
 
             return $locked->fresh('reservations');
@@ -211,7 +238,8 @@ class TaskClaimService
                 }
                 $hash = $this->fingerprint('task-claim-expire:'.$locked->id);
                 $this->releaseReservations($locked);
-                $locked->update(['status' => 'expired', 'slot_status' => 'released']);
+                $this->dataBatches->releaseForClaim($locked);
+                $locked->update(['status' => 'expired', 'execution_status' => TaskClaimState::EXECUTION_EXPIRED, 'review_status' => TaskClaimState::REVIEW_VOIDED, 'slot_status' => 'released']);
                 $this->recordChange($locked, 'claimed', 'expired', 'expire', '超过实际完成期限，系统释放名额和奖励预留。', 'system', null, $hash);
                 $count++;
             });
@@ -231,8 +259,9 @@ class TaskClaimService
                 throw ValidationException::withMessages(['claim' => ['只有最终驳回的任务可以释放预留。']]);
             }
             $this->releaseReservations($locked);
+            $this->dataBatches->releaseForClaim($locked);
             $from = $locked->status;
-            $locked->update(['status' => 'appeal_rejected', 'slot_status' => 'released']);
+            $locked->update(['status' => 'appeal_rejected', 'execution_status' => TaskClaimState::EXECUTION_TERMINATED, 'review_status' => TaskClaimState::REVIEW_REJECTED, 'slot_status' => 'released']);
             $this->recordChange($locked, $from, 'appeal_rejected', 'final_rejection', $reason, 'system', null, $this->fingerprint('final-reject:'.$locked->id.':'.$eventKey));
 
             return $locked->fresh('reservations');
@@ -244,6 +273,8 @@ class TaskClaimService
     {
         $latestSubmission = $claim->submissions()->latest('submission_no')->first();
         $latestReview = $claim->reviews()->latest('reviewed_at')->first();
+        $dataItem = TaskDataItem::query()->where('allocated_task_claim_id', $claim->id)->first();
+        $workflow = $this->claimWorkflow($claim, $latestSubmission);
 
         return [
             'id' => $claim->public_id, 'task_id' => $claim->task_snapshot['task_id'], 'title' => $claim->task_snapshot['title'],
@@ -257,21 +288,99 @@ class TaskClaimService
             'tags' => $claim->task_snapshot['tags'] ?? [], 'steps' => $claim->task_snapshot['steps'] ?? [], 'rules' => $claim->task_snapshot['rules'] ?? [],
             'attachment_rules' => $claim->task_snapshot['attachment_rules'] ?? [],
             'enrollment_source' => $claim->enrollment_source, 'cycle_key' => $claim->cycle_key,
-            'status' => $claim->status, 'slot_status' => $claim->slot_status, 'cancel_count' => $claim->cancel_count,
+            'cycle_starts_at' => $claim->cycle_starts_at?->toIso8601String(),
+            'cycle_ends_at' => $claim->cycle_ends_at?->toIso8601String(),
+            'progress' => [
+                'current' => (int) $claim->progress_current,
+                'target' => max(1, (int) $claim->progress_target),
+                'percent' => min(100, (int) floor(((int) $claim->progress_current / max(1, (int) $claim->progress_target)) * 100)),
+                'last_progress_at' => $claim->last_progress_at?->toIso8601String(),
+            ],
+            'status' => $claim->status,
+            'execution_status' => $claim->execution_status, 'execution_status_label' => TaskClaimState::executionLabel($claim->execution_status),
+            'review_status' => $claim->review_status, 'review_status_label' => TaskClaimState::reviewLabel($claim->review_status),
+            'workflow' => $workflow,
+            'slot_status' => $claim->slot_status, 'cancel_count' => $claim->cancel_count,
             'submission_count' => $claim->submission_count, 'submission_limit' => $claim->task_snapshot['submission_limit'],
             'appeal_count' => $claim->appeal_count, 'appeal_limit' => $claim->task_snapshot['appeal_limit'], 'reward_status' => $claim->reward_status,
             'completion_deadline_at' => $claim->completion_deadline_at?->toIso8601String(),
             'progress_started_at' => $claim->progress_started_at?->toIso8601String(),
             'rewards' => $claim->task_snapshot['rewards'], 'created_at' => $claim->created_at?->toIso8601String(),
+            'data_item' => $dataItem === null ? null : [
+                'id' => $dataItem->public_id,
+                'row_no' => $dataItem->row_no,
+                'payload' => $dataItem->mapped_payload,
+            ],
             'current_submission' => $latestSubmission === null ? null : [
                 'id' => $latestSubmission->public_id, 'submission_no' => $latestSubmission->submission_no, 'status' => $latestSubmission->status,
                 'submitted_at' => $latestSubmission->submitted_at?->toIso8601String(), 'review_due_at' => $latestSubmission->review_due_at?->toIso8601String(),
                 'review_started_at' => $latestSubmission->review_started_at?->toIso8601String(),
+                'revision_step_ids' => $latestSubmission->revision_step_ids ?? [],
             ],
             'last_review' => $latestReview === null ? null : [
                 'decision' => $latestReview->decision, 'reason_code' => $latestReview->reason_code, 'note' => $latestReview->note,
                 'reviewed_at' => $latestReview->reviewed_at?->toIso8601String(),
+                'step_results' => $latestReview->stepReviews()->orderBy('id')->get()->map(fn ($step) => [
+                    'step_id' => $step->step_id, 'step_title' => $step->step_title, 'decision' => $step->decision,
+                    'reason_code' => $step->reason_code, 'note' => $step->note,
+                ])->values()->all(),
             ],
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private function claimWorkflow(TaskClaim $claim, ?TaskSubmission $latestSubmission): array
+    {
+        $allStepIds = collect($claim->task_snapshot['steps'] ?? [])->pluck('id')->filter()->values()->all();
+        $revisionStepIds = array_values(array_unique($latestSubmission?->revision_step_ids ?? []));
+        $submissionLimit = (int) ($claim->task_snapshot['submission_limit'] ?? 3);
+        $deadlineActive = $claim->completion_deadline_at?->isFuture() ?? false;
+        $canSubmit = in_array($claim->status, ['claimed', 'withdrawn', 'rejected'], true)
+            && $claim->submission_count < $submissionLimit
+            && $deadlineActive;
+        $canWithdraw = $claim->status === 'submitted'
+            && $latestSubmission !== null
+            && $latestSubmission->review_started_at === null;
+        $appealLimit = (int) ($claim->task_snapshot['appeal_limit'] ?? 1);
+        $canAppeal = $claim->status === 'rejected'
+            && ! $canSubmit
+            && $claim->appeal_count < $appealLimit;
+        $canCancel = $claim->status === 'claimed'
+            && $claim->progress_started_at === null
+            && $claim->submission_count === 0
+            && $claim->cancel_count < 1;
+
+        $primaryAction = match (true) {
+            $canSubmit && $revisionStepIds !== [] => ['code' => 'resubmit_failed_steps', 'label' => '补交未通过步骤'],
+            $canSubmit => ['code' => 'submit', 'label' => '提交审核'],
+            $canWithdraw => ['code' => 'withdraw', 'label' => '撤回本次提交'],
+            $canAppeal => ['code' => 'appeal', 'label' => '申请复核'],
+            $claim->status === 'approved' => ['code' => 'view_rewards', 'label' => '查看奖励到账'],
+            default => ['code' => 'wait', 'label' => '等待处理'],
+        };
+
+        $message = match ($primaryAction['code']) {
+            'resubmit_failed_steps' => '只需补交未通过步骤；已通过材料会由系统沿用，请勿重复提交。',
+            'submit' => '按步骤完成材料后提交，审核开始前可以撤回，但不会返还提交次数。',
+            'withdraw' => '材料正在排队，审核员接单前仍可撤回修改。',
+            'appeal' => '提交次数已用完，如对审核结果有异议可以申请异人复核。',
+            'view_rewards' => '任务已通过，奖励组件将分别发放并显示到账结果。',
+            default => in_array($claim->status, ['submitted', 'reviewing'], true) ? '材料已提交，请等待审核结果。' : '当前任务暂无可执行操作。',
+        };
+
+        return [
+            'primary_action' => $primaryAction,
+            'allowed_actions' => array_values(array_filter([
+                $canSubmit ? ($revisionStepIds === [] ? 'submit' : 'resubmit_failed_steps') : null,
+                $canWithdraw ? 'withdraw' : null,
+                $canAppeal ? 'appeal' : null,
+                $canCancel ? 'cancel' : null,
+                $claim->status === 'approved' ? 'view_rewards' : null,
+            ])),
+            'editable_step_ids' => $canSubmit ? ($revisionStepIds === [] ? $allStepIds : $revisionStepIds) : [],
+            'locked_step_ids' => $revisionStepIds === [] ? [] : array_values(array_diff($allStepIds, $revisionStepIds)),
+            'revision_only' => $canSubmit && $revisionStepIds !== [],
+            'message' => $message,
         ];
     }
 
@@ -297,7 +406,9 @@ class TaskClaimService
 
         return match ($taskType) {
             'one_time' => 'once',
+            'milestone' => 'milestone',
             'weekly' => $cn->format('o-\WW'),
+            'monthly' => $cn->format('Y-m'),
             'daily' => $cn->format('Y-m-d'),
             'repeatable' => 'repeat-'.$cn->format('Y-m-d'),
             default => throw ValidationException::withMessages(['task' => ['任务周期类型无效。']]),
@@ -319,8 +430,12 @@ class TaskClaimService
 
     private function recordChange(TaskClaim $claim, ?string $from, string $to, string $action, string $reason, string $actorType, ?int $actorId, string $hash): void
     {
+        $fromStates = $from === null ? ['execution_status' => null, 'review_status' => null] : TaskClaimState::fromLegacy($from);
+        $toStates = TaskClaimState::fromLegacy($to);
         DB::table('task_claim_status_changes')->insert([
             'task_claim_id' => $claim->id, 'from_status' => $from, 'to_status' => $to, 'action' => $action,
+            'from_execution_status' => $fromStates['execution_status'], 'to_execution_status' => $toStates['execution_status'],
+            'from_review_status' => $fromStates['review_status'], 'to_review_status' => $toStates['review_status'],
             'reason' => $reason, 'actor_type' => $actorType, 'actor_id' => $actorId, 'idempotency_key_hash' => $hash,
             'created_at' => now(), 'updated_at' => now(),
         ]);

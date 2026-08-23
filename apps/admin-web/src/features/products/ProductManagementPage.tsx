@@ -1,9 +1,13 @@
 import { CopyOutlined, DeleteOutlined, EditOutlined, PlusOutlined, StopOutlined, UploadOutlined } from '@ant-design/icons'
 import { Alert, Button, Card, Checkbox, Divider, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, Typography, message } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
-import { ApiError, adjustInventory, changeManagedProductStatus, createManagedProduct, createShippingTemplate, listInventories, listManagedProducts, listShippingTemplates, updateManagedProduct, type ManagedInventory, type ManagedProduct, type ManagedProductSku, type ManagedShippingTemplate } from '../../api/admin'
+import { ApiError, adjustInventory, changeManagedProductStatus, createManagedProduct, listInventories, listManagedProducts, listShippingTemplates, updateManagedProduct, type ManagedInventory, type ManagedProduct, type ManagedProductSku, type ManagedShippingTemplate } from '../../api/admin'
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { MediaGalleryInput, type GalleryImageValue } from '../../components/MediaGalleryInput'
+import { CouponTemplateManagementPanel } from './CouponTemplateManagementPanel'
+import { ProductCategoryManagementPanel } from './ProductCategoryManagementPanel'
+import { ShippingTemplateManagementPanel } from './ShippingTemplateManagementPanel'
+import { listProductCategories, type ManagedProductCategory } from '../../api/product-categories'
 
 interface ProductSkuForm {
   sku_code: string; name: string; specs: Array<{ name: string; value: string }>;
@@ -11,11 +15,11 @@ interface ProductSkuForm {
   modes: Array<'cash' | 'points' | 'cash_points'>; cash_price: number; points_price: number; mixed_cash_price: number; mixed_points_price: number
 }
 interface ProductForm {
-  name: string; subtitle?: string; description: string;
+  category_id: string; name: string; subtitle?: string; description: string;
   gallery_images: GalleryImageValue[];
   skus: ProductSkuForm[]
 }
-interface ShippingForm { name: string; fixed_amount: number }
+type CategorizedProduct = ManagedProduct & { category: { id: string; name: string } | null }
 interface InventoryForm { action: 'increase' | 'decrease' | 'set'; quantity: number; reason: string }
 
 const modeName = { cash: '现金', points: '积分', cash_points: '现金 + 积分' }
@@ -27,13 +31,14 @@ const productStatusMeta: Record<string, { label: string; color: string }> = {
   deleted: { label: '已删除', color: 'default' },
 }
 const emptyProductForm: ProductForm = {
-  name: '', subtitle: '', description: '', gallery_images: [],
+  category_id: '', name: '', subtitle: '', description: '', gallery_images: [],
   skus: [{ sku_code: '', name: '', specs: [{ name: '', value: '' }], fulfillment_type: 'logistics', modes: ['cash', 'points', 'cash_points'], cash_price: 1990, points_price: 2600, mixed_cash_price: 990, mixed_points_price: 1200 }],
 }
 
-function productToForm(product: ManagedProduct, copy = false): ProductForm {
+function productToForm(product: CategorizedProduct, copy = false): ProductForm {
   const copySuffix = Date.now().toString().slice(-6)
   return {
+    category_id: product.category?.id ?? '',
     name: copy ? `${product.name}（副本）` : product.name,
     subtitle: product.subtitle ?? '',
     description: product.description,
@@ -57,24 +62,23 @@ function productToForm(product: ManagedProduct, copy = false): ProductForm {
 }
 
 export function ProductManagementPage() {
-  const [products, setProducts] = useState<ManagedProduct[]>([])
+  const [products, setProducts] = useState<CategorizedProduct[]>([])
+  const [categories, setCategories] = useState<ManagedProductCategory[]>([])
   const [templates, setTemplates] = useState<ManagedShippingTemplate[]>([])
   const [inventories, setInventories] = useState<ManagedInventory[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<ManagedProduct | null>(null)
+  const [editingProduct, setEditingProduct] = useState<CategorizedProduct | null>(null)
   const [copyingProduct, setCopyingProduct] = useState(false)
-  const [shippingOpen, setShippingOpen] = useState(false)
   const [inventoryItem, setInventoryItem] = useState<ManagedInventory | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm<ProductForm>()
-  const [shippingForm] = Form.useForm<ShippingForm>()
   const [inventoryForm] = Form.useForm<InventoryForm>()
   const [messageApi, contextHolder] = message.useMessage()
-  const load = useCallback(async () => { setLoading(true); try { const [productResult, templateResult, inventoryResult] = await Promise.all([listManagedProducts(), listShippingTemplates(), listInventories()]); setProducts(productResult.items); setTemplates(templateResult.items); setInventories(inventoryResult.items) } catch (error) { messageApi.error(error instanceof ApiError ? error.message : '商城数据加载失败。') } finally { setLoading(false) } }, [messageApi])
+  const load = useCallback(async () => { setLoading(true); try { const [productResult, templateResult, inventoryResult, categoryResult] = await Promise.all([listManagedProducts(), listShippingTemplates(), listInventories(), listProductCategories()]); setProducts(productResult.items as CategorizedProduct[]); setTemplates(templateResult.items); setInventories(inventoryResult.items); setCategories(categoryResult.items) } catch (error) { messageApi.error(error instanceof ApiError ? error.message : '商城数据加载失败。') } finally { setLoading(false) } }, [messageApi])
   useEffect(() => { void load() }, [load])
 
-  const openProductEditor = (product?: ManagedProduct, copy = false) => {
+  const openProductEditor = (product?: CategorizedProduct, copy = false) => {
     setEditingProduct(product && !copy ? product : null)
     setCopyingProduct(copy)
     form.resetFields()
@@ -86,6 +90,7 @@ export function ProductManagementPage() {
     setSubmitting(true)
     try {
       const payload = {
+        category_id: values.category_id,
         name: values.name,
         subtitle: values.subtitle,
         description: values.description,
@@ -112,7 +117,6 @@ export function ProductManagementPage() {
     } catch (error) { messageApi.error(error instanceof ApiError ? error.message : editingProduct ? '商品编辑失败。' : '商品创建失败。') } finally { setSubmitting(false) }
   }
 
-  const createShipping = async (values: ShippingForm) => { setSubmitting(true); try { await createShippingTemplate({ name: values.name, charge_type: 'fixed', fixed_amount: values.fixed_amount, regions: [{ region_codes: ['*'], deliverable: true, remote_surcharge_amount: 0 }], free_rules: [], enabled: true }); setShippingOpen(false); shippingForm.resetFields(); await load(); messageApi.success('全国固定运费模板已创建。') } catch (error) { messageApi.error(error instanceof ApiError ? error.message : '运费模板创建失败。') } finally { setSubmitting(false) } }
   const submitInventory = async (values: InventoryForm) => { if (!inventoryItem) return; setSubmitting(true); try { await adjustInventory(inventoryItem.sku_id, { ...values, version: inventoryItem.version }); setInventoryItem(null); inventoryForm.resetFields(); await load(); messageApi.success('库存已调整并写入不可变流水。') } catch (error) { messageApi.error(error instanceof ApiError ? error.message : '库存调整失败。') } finally { setSubmitting(false) } }
 
   const transition = (product: ManagedProduct, action: 'publish' | 'off_shelf') => Modal.confirm({
@@ -123,14 +127,17 @@ export function ProductManagementPage() {
 
   return <>
     {contextHolder}
-    <div className="page-heading"><div><Typography.Text className="eyebrow">SPU · SKU · STOCK · SHIPPING</Typography.Text><Typography.Title level={2}>商品、库存与运费</Typography.Title><Typography.Paragraph type="secondary">三个首发端共享价格；购物车不占库存，所有库存调整只追加流水。</Typography.Paragraph></div><Space><Button onClick={() => setShippingOpen(true)}>新建运费模板</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => openProductEditor()}>新建商品</Button></Space></div>
+    <div className="page-heading"><div><Typography.Text className="eyebrow">校园商城商品管理</Typography.Text><Typography.Title level={2}>商品、库存与运费</Typography.Title><Typography.Paragraph type="secondary">三个首发端共享价格；购物车不占库存，所有库存调整只追加流水。</Typography.Paragraph></div><Button type="primary" icon={<PlusOutlined />} onClick={() => openProductEditor()}>新建商品</Button></div>
     <Alert showIcon type="info" message="同一 SKU 可选择一种、两种或全部三种购买方式；运费不在商品价中抵扣，后续始终以现金结算。" />
+    <ProductCategoryManagementPanel categories={categories} loading={loading} onChanged={load} />
+    <ShippingTemplateManagementPanel templates={templates} loading={loading} onChanged={load} />
+    <CouponTemplateManagementPanel />
     <Card bordered={false} style={{ marginTop: 16 }}>
       <Table rowKey="id" loading={loading} dataSource={products} pagination={false} columns={[
-        { title: '商品', render: (_: unknown, item: ManagedProduct) => <Space direction="vertical" size={0}><strong>{item.name}</strong><Typography.Text type="secondary">定义 v{item.definition_version}</Typography.Text></Space> },
-        { title: 'SKU / 购买方式', render: (_: unknown, item: ManagedProduct) => <Space direction="vertical">{item.skus.map((sku) => <span key={sku.id}>{sku.name} · {sku.purchase_options.filter((option) => option.enabled).map((option) => <Tag key={option.id}>{modeName[option.purchase_mode]}</Tag>)}</span>)}</Space> },
-        { title: '状态', dataIndex: 'status', render: (status: string) => { const meta = productStatusMeta[status] ?? { label: status, color: 'default' }; return <Tag color={meta.color}>{meta.label}</Tag> } },
-        { title: '操作', width: 300, render: (_: unknown, item: ManagedProduct) => <Space wrap><Button icon={<EditOutlined />} onClick={() => openProductEditor(item)}>编辑</Button><Button icon={<CopyOutlined />} onClick={() => openProductEditor(item, true)}>复制</Button>{item.status === 'on_sale' ? <Button danger icon={<StopOutlined />} onClick={() => transition(item, 'off_shelf')}>下架</Button> : <Button icon={<UploadOutlined />} onClick={() => transition(item, 'publish')}>上架</Button>}</Space> },
+        { title: '商品', render: (_: unknown, item: CategorizedProduct) => <Space direction="vertical" size={0}><strong>{item.name}</strong><Typography.Text type="secondary">{item.category?.name ?? '未分类'} · 定义 v{item.definition_version}</Typography.Text></Space> },
+        { title: 'SKU / 购买方式', render: (_: unknown, item: CategorizedProduct) => <Space direction="vertical">{item.skus.map((sku) => <span key={sku.id}>{sku.name} · {sku.purchase_options.filter((option) => option.enabled).map((option) => <Tag key={option.id}>{modeName[option.purchase_mode]}</Tag>)}</span>)}</Space> },
+        { title: '状态', dataIndex: 'status', render: (status: string) => { const meta = productStatusMeta[status] ?? { label: '未识别状态', color: 'default' }; return <Tag color={meta.color}>{meta.label}</Tag> } },
+        { title: '操作', width: 300, render: (_: unknown, item: CategorizedProduct) => <Space wrap><Button icon={<EditOutlined />} onClick={() => openProductEditor(item)}>编辑</Button><Button icon={<CopyOutlined />} onClick={() => openProductEditor(item, true)}>复制</Button>{item.status === 'on_sale' ? <Button danger icon={<StopOutlined />} onClick={() => transition(item, 'off_shelf')}>下架</Button> : <Button icon={<UploadOutlined />} onClick={() => transition(item, 'publish')}>上架</Button>}</Space> },
       ]} />
     </Card>
     <Card bordered={false} style={{ marginTop: 16 }} title="库存与低库存预警">
@@ -145,7 +152,7 @@ export function ProductManagementPage() {
       <Form form={form} layout="vertical" onFinish={saveProduct} initialValues={emptyProductForm}>
         {editingProduct?.status === 'on_sale' && <Alert showIcon type="warning" message="当前商品正在销售。保存后生成新的商品定义版本，只影响后续新订单；历史订单继续使用下单时的价格和商品快照。" style={{ marginBottom: 16 }} />}
         <Typography.Title level={5}>一、商品基础信息</Typography.Title>
-        <Space align="start" style={{ display: 'flex' }}><Form.Item name="name" label="商品名称" rules={[{ required: true }]} style={{ flex: 1 }}><Input /></Form.Item><Form.Item name="subtitle" label="副标题" style={{ flex: 1 }}><Input /></Form.Item></Space>
+        <Space align="start" style={{ display: 'flex' }}><Form.Item name="category_id" label="商品分类" rules={[{ required: true, message: '请选择商品分类' }]} style={{ width: 220 }}><Select placeholder="请选择分类" options={categories.filter(item => item.status === 'active' || item.id === editingProduct?.category?.id).map(item => ({ value: item.id, label: item.status === 'active' ? item.name : `${item.name}（已停用）` }))} /></Form.Item><Form.Item name="name" label="商品名称" rules={[{ required: true }]} style={{ flex: 1 }}><Input /></Form.Item><Form.Item name="subtitle" label="副标题" style={{ flex: 1 }}><Input /></Form.Item></Space>
 
         <Form.Item name="gallery_images" label="商品主图与轮播图" required extra="支持电脑本地文件和图片网址两种导入方式；网址图片也会下载并转存到当前存储。" rules={[{ validator: async (_, images) => { if (!images?.length) throw new Error('至少添加一张商品图片') } }]}><MediaGalleryInput /></Form.Item>
 
@@ -184,7 +191,6 @@ export function ProductManagementPage() {
         </Form.List>
       </Form>
     </Modal>
-    <Modal title="新建固定运费模板" open={shippingOpen} onCancel={() => setShippingOpen(false)} onOk={() => shippingForm.submit()} confirmLoading={submitting}><Form form={shippingForm} layout="vertical" onFinish={createShipping} initialValues={{ fixed_amount: 600 }}><Form.Item name="name" label="模板名称" rules={[{ required: true }]}><Input placeholder="全国固定运费" /></Form.Item><Form.Item name="fixed_amount" label="运费（人民币分）" rules={[{ required: true }]}><InputNumber min={0} /></Form.Item><Alert type="info" showIcon message="快速模板默认全国可配送；区域、偏远附加费、按件/重量和包邮规则可继续通过接口版本化维护。" /></Form></Modal>
     <Modal title="库存调整" open={!!inventoryItem} onCancel={() => setInventoryItem(null)} onOk={() => inventoryForm.submit()} confirmLoading={submitting}><Form form={inventoryForm} layout="vertical" onFinish={submitInventory}><Form.Item name="action" label="调整方式" rules={[{ required: true }]}><Select options={[{ value: 'increase', label: '入库增加' }, { value: 'decrease', label: '盘点减少' }, { value: 'set', label: '设置在库总数' }]} /></Form.Item><Form.Item name="quantity" label="数量" rules={[{ required: true }]}><InputNumber min={0} /></Form.Item><Form.Item name="reason" label="调整原因" rules={[{ required: true }]}><Input.TextArea /></Form.Item><Alert type="warning" showIcon message="减少或设置库存不能侵占已预占数量，提交后会生成不可删除流水。" /></Form></Modal>
   </>
 }

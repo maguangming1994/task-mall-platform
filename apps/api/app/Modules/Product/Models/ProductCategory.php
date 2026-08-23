@@ -3,6 +3,8 @@
 namespace App\Modules\Product\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class ProductCategory extends Model
@@ -19,5 +21,20 @@ class ProductCategory extends Model
     public function getRouteKeyName(): string
     {
         return 'public_id';
+    }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'product_category_id');
     }
 }

@@ -1,4 +1,5 @@
 import { clientPlatform } from './runtime'
+import { readQueryString } from '@/utils/query'
 
 export interface WechatLoginCode {
   channel: 'mini' | 'h5'
@@ -33,11 +34,10 @@ function miniLoginCode(): Promise<string> {
 }
 
 function h5LoginCode(): string | null {
-  const params = new URLSearchParams(window.location.search)
-  const code = params.get('code')
+  const code = readQueryString(window.location.search, 'code')
   if (code) {
     const expectedState = uni.getStorageSync(oauthStateKey)
-    const returnedState = params.get('state')
+    const returnedState = readQueryString(window.location.search, 'state')
     uni.removeStorageSync(oauthStateKey)
     if (!import.meta.env.DEV && (!expectedState || expectedState !== returnedState)) {
       throw new Error('微信授权状态校验失败，请重新发起登录。')

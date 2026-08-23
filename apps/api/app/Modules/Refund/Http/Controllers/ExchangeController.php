@@ -6,12 +6,18 @@ use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Refund\Models\Exchange;
+use App\Modules\Refund\Models\ReturnShippingCompensation;
 use App\Modules\Refund\Services\ExchangeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ExchangeController extends Controller
 {
+    public function index(Request $request): JsonResponse
+    {
+        return ApiResponse::success(['items' => Exchange::query()->where('user_id', $request->user()->id)->latest()->get()->map(fn (Exchange $exchange) => $this->data($exchange))]);
+    }
+
     public function store(Request $request, ExchangeService $service): JsonResponse
     {
         $data = $request->validate([
@@ -86,6 +92,18 @@ class ExchangeController extends Controller
         return ApiResponse::success($this->data($service->fulfillReplacement($admin, $exchange, $data, $this->key($request))));
     }
 
+    public function receiveReturn(Request $request, Exchange $exchange, ExchangeService $service): JsonResponse
+    {
+        $data = $request->validate(['note' => ['required', 'string', 'max:500']]);
+
+        return ApiResponse::success($this->data($service->receiveReturn($exchange, $data['note'])));
+    }
+
+    public function complete(Request $request, Exchange $exchange, ExchangeService $service): JsonResponse
+    {
+        return ApiResponse::success($this->data($service->confirmReplacement($request->user(), $exchange)));
+    }
+
     private function key(Request $request): string
     {
         $key = (string) $request->header('Idempotency-Key');
@@ -96,6 +114,12 @@ class ExchangeController extends Controller
 
     private function data(Exchange $exchange): array
     {
-        return ['id' => $exchange->public_id, 'exchange_no' => $exchange->exchange_no, 'order_item_id' => $exchange->order_item_id, 'quantity' => $exchange->quantity, 'reason_code' => $exchange->reason_code, 'reason_name' => $exchange->reason_name_snapshot, 'status' => $exchange->status, 'responsibility_party' => $exchange->responsibility_party, 'return_shipping_payer' => $exchange->return_shipping_payer, 'replacement_shipping_payer' => $exchange->replacement_shipping_payer, 'return_method' => $exchange->return_method, 'return_deadline_at' => $exchange->return_deadline_at?->toIso8601String(), 'created_at' => $exchange->created_at->toIso8601String()];
+        $shipments = $exchange->shipments()->orderBy('id')->get()->map(function ($shipment) {
+            $compensation = ReturnShippingCompensation::query()->where('source_type', 'exchange_return')->where('source_id', $shipment->id)->first();
+
+            return ['id' => $shipment->public_id, 'direction' => $shipment->direction, 'method' => $shipment->method, 'carrier_code' => $shipment->carrier_code, 'tracking_no' => $shipment->tracking_no, 'no_logistics_note' => $shipment->no_logistics_note, 'paid_shipping_amount' => $shipment->paid_shipping_amount, 'status' => $shipment->status, 'shipped_at' => $shipment->shipped_at?->toIso8601String(), 'received_at' => $shipment->received_at?->toIso8601String(), 'compensation' => $compensation ? ReturnShippingCompensationController::data($compensation) : null];
+        });
+
+        return ['id' => $exchange->public_id, 'exchange_no' => $exchange->exchange_no, 'order_item_id' => $exchange->order_item_id, 'quantity' => $exchange->quantity, 'reason_code' => $exchange->reason_code, 'reason_name' => $exchange->reason_name_snapshot, 'status' => $exchange->status, 'responsibility_party' => $exchange->responsibility_party, 'return_shipping_payer' => $exchange->return_shipping_payer, 'replacement_shipping_payer' => $exchange->replacement_shipping_payer, 'return_method' => $exchange->return_method, 'review_note' => $exchange->review_note, 'return_deadline_at' => $exchange->return_deadline_at?->toIso8601String(), 'replacement_auto_complete_at' => $exchange->replacement_auto_complete_at?->toIso8601String(), 'shipments' => $shipments, 'created_at' => $exchange->created_at->toIso8601String()];
     }
 }

@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Modules\Assets\Contracts\PayoutProvider;
+use App\Modules\Assets\Services\HttpPayoutProvider;
+use App\Modules\Assets\Services\LocalPayoutProvider;
 use App\Modules\Payment\Contracts\WechatPaymentGateway;
 use App\Modules\Payment\Services\LocalWechatPaymentGateway;
 use App\Modules\Payment\Services\WechatPayV3Gateway;
@@ -20,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(WechatPaymentGateway::class, fn () => config('wechat_payment.driver') === 'wechat'
             ? app(WechatPayV3Gateway::class)
             : app(LocalWechatPaymentGateway::class));
+        $this->app->bind(PayoutProvider::class, fn () => config('payout.driver') === 'http'
+            ? app(HttpPayoutProvider::class)
+            : app(LocalPayoutProvider::class));
     }
 
     /**

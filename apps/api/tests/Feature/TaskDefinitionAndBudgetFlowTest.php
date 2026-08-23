@@ -4,12 +4,15 @@ namespace Tests\Feature;
 
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Admin\Models\Role;
+use App\Modules\Settings\Models\SystemSettingDefinition;
+use App\Modules\Settings\Models\SystemSettingVersion;
 use App\Modules\Task\Models\RewardBudgetPool;
 use App\Modules\Task\Models\RewardBudgetTransaction;
 use App\Modules\Task\Models\TaskVersion;
 use Database\Seeders\RbacSeeder;
 use Database\Seeders\SystemSettingDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class TaskDefinitionAndBudgetFlowTest extends TestCase
@@ -206,6 +209,51 @@ class TaskDefinitionAndBudgetFlowTest extends TestCase
         $this->assertDatabaseCount('task_reward_budgets', 2);
     }
 
+    public function test_admin_and_frontend_publisher_use_configured_task_defaults_while_explicit_values_win(): void
+    {
+        $adminToken = $this->adminToken('configured-defaults-admin');
+        $points = $this->pool($adminToken, '默认值积分池', 'points', 10000, 'defaults-points-pool-01');
+        $wallet = $this->pool($adminToken, '默认值余额池', 'wallet_cash', 100000, 'defaults-wallet-pool-01');
+        $this->publishSetting('tasks.default_completion_window_hours', 36);
+        $this->publishSetting('tasks.default_submission_limit', 5);
+        $this->publishSetting('tasks.default_review_hours', 72);
+        $this->publishSetting('tasks.default_appeal_days', 9);
+        $this->publishSetting('tasks.default_appeal_limit', 2);
+
+        $payload = $this->task([$points['id'], $wallet['id']], 5);
+        foreach (['completion_window_hours', 'submission_limit', 'review_deadline_hours', 'appeal_deadline_days', 'appeal_limit'] as $field) {
+            unset($payload[$field]);
+        }
+        $this->withToken($adminToken)->withHeaders(['Idempotency-Key' => 'configured-admin-task-001'])
+            ->postJson('/api/v1/admin/tasks', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.completion_window_hours', 36)
+            ->assertJsonPath('data.submission_limit', 5)
+            ->assertJsonPath('data.review_deadline_hours', 72)
+            ->assertJsonPath('data.appeal_deadline_days', 9)
+            ->assertJsonPath('data.appeal_limit', 2);
+
+        $publisher = AdminUser::query()->create([
+            'account' => 'configured-front-publisher',
+            'display_name' => '前台发布管理员',
+            'password' => 'AdminPassword12345!',
+        ]);
+        $publisher->roles()->attach(Role::query()->where('code', 'platform_admin')->value('id'));
+        $publisherToken = $this->postJson('/api/v1/task-publisher/session', [
+            'account' => 'configured-front-publisher',
+            'password' => 'AdminPassword12345!',
+        ])->assertCreated()->json('data.access_token');
+        $payload['submission_limit'] = 8;
+        $this->withToken($publisherToken)->withHeaders(['Idempotency-Key' => 'configured-front-task-01'])
+            ->postJson('/api/v1/task-publisher/tasks', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.completion_window_hours', 36)
+            ->assertJsonPath('data.submission_limit', 8)
+            ->assertJsonPath('data.review_deadline_hours', 72)
+            ->assertJsonPath('data.appeal_deadline_days', 9)
+            ->assertJsonPath('data.appeal_limit', 2);
+    }
+
     /** @return array<string,mixed> */
     private function pool(string $token, string $name, string $type, int $amount, string $key): array
     {
@@ -238,5 +286,20 @@ class TaskDefinitionAndBudgetFlowTest extends TestCase
         $admin->roles()->attach(Role::query()->where('code', 'super_admin')->value('id'));
 
         return $this->postJson('/api/v1/admin/auth/login', ['account' => $account, 'password' => 'AdminPassword12345!'])->assertOk()->json('data.access_token');
+    }
+
+    private function publishSetting(string $key, mixed $value): void
+    {
+        $definition = SystemSettingDefinition::query()->where('setting_key', $key)->firstOrFail();
+        SystemSettingVersion::query()->create([
+            'setting_definition_id' => $definition->id,
+            'version' => 1,
+            'value' => $value,
+            'source' => 'publish',
+            'reason' => '测试任务发布默认参数。',
+            'published_at' => now(),
+        ]);
+        Cache::forget('system-setting:active:'.$key);
+        Cache::forget('system-setting:last-good:'.$key);
     }
 }

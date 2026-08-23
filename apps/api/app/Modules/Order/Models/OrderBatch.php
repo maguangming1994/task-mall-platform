@@ -8,9 +8,9 @@ use Illuminate\Support\Str;
 
 class OrderBatch extends Model
 {
-    protected $fillable = ['public_id', 'batch_no', 'user_id', 'client_platform', 'capability_version', 'status', 'idempotency_key_hash', 'checkout_preview_id', 'items_cash_amount', 'items_points', 'cash_discount_amount', 'points_discount', 'shipping_amount', 'payable_cash_amount', 'payable_points'];
+    protected $fillable = ['public_id', 'batch_no', 'user_id', 'client_platform', 'capability_version', 'status', 'idempotency_key_hash', 'request_fingerprint_hash', 'checkout_preview_id', 'items_cash_amount', 'items_points', 'cash_discount_amount', 'points_discount', 'shipping_amount', 'payable_cash_amount', 'payable_points'];
 
-    protected $hidden = ['idempotency_key_hash'];
+    protected $hidden = ['idempotency_key_hash', 'request_fingerprint_hash'];
 
     protected static function booted(): void
     {

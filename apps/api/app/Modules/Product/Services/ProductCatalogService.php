@@ -293,7 +293,10 @@ class ProductCatalogService
 
     private function assertPublishable(Product $product): void
     {
-        $product->load('skus.purchaseOptions');
+        $product->load(['category', 'skus.purchaseOptions']);
+        if (! $product->category || $product->category->status !== 'active') {
+            throw ValidationException::withMessages(['category_id' => '商品必须绑定一个已启用的分类后才能上架。']);
+        }
         if ($product->skus->isEmpty() || $product->skus->contains(fn ($sku) => $sku->status === 'active' && ! $sku->purchaseOptions->contains('enabled', true))) {
             throw ValidationException::withMessages(['skus' => '每个启用 SKU 至少需要一种已启用购买方式。']);
         }

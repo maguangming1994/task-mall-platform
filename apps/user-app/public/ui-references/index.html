@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub 同类项目 UI 参考板</title>
+    <style>
+      :root {
+        --ink: #16251f;
+        --muted: #64736c;
+        --line: #dfe7e2;
+        --paper: #fbfcfa;
+        --canvas: #edf3ef;
+        --green: #0d8b68;
+        --green-soft: #dff5eb;
+        --blue: #2e78e8;
+        --yellow: #ffca3a;
+        --coral: #ff725e;
+        --radius: 24px;
+        --shadow: 0 18px 48px rgba(21, 43, 34, 0.09);
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 8% 0%, rgba(255, 202, 58, 0.18), transparent 24rem),
+          radial-gradient(circle at 92% 6%, rgba(46, 120, 232, 0.12), transparent 28rem),
+          var(--canvas);
+        font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      }
+
+      a { color: inherit; }
+      button { font: inherit; }
+
+      .shell { width: min(1480px, calc(100% - 40px)); margin: 0 auto; padding: 36px 0 80px; }
+      .hero {
+        display: grid;
+        grid-template-columns: 1.35fr 0.65fr;
+        gap: 24px;
+        padding: 36px;
+        border: 1px solid rgba(255,255,255,.8);
+        border-radius: 32px;
+        background: rgba(251,252,250,.88);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+      }
+      .eyebrow { margin: 0 0 12px; color: var(--green); font-size: 13px; font-weight: 800; letter-spacing: .16em; }
+      h1 { max-width: 880px; margin: 0; font-size: clamp(34px, 5vw, 64px); line-height: 1.04; letter-spacing: -.045em; }
+      .lede { max-width: 820px; margin: 18px 0 0; color: var(--muted); font-size: 17px; line-height: 1.8; }
+      .hero-note {
+        align-self: stretch;
+        padding: 26px;
+        border-radius: 24px;
+        color: #fff;
+        background: linear-gradient(145deg, #173f32, #0d8b68);
+      }
+      .hero-note strong { display: block; font-size: 22px; line-height: 1.35; }
+      .hero-note p { margin: 14px 0 0; color: rgba(255,255,255,.78); line-height: 1.75; }
+
+      .toolbar {
+        position: sticky;
+        z-index: 10;
+        top: 14px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 24px 0;
+        padding: 10px;
+        border: 1px solid rgba(255,255,255,.9);
+        border-radius: 18px;
+        background: rgba(251,252,250,.86);
+        box-shadow: 0 10px 30px rgba(21,43,34,.07);
+        backdrop-filter: blur(16px);
+      }
+      .filter {
+        border: 0;
+        border-radius: 12px;
+        padding: 10px 16px;
+        color: var(--muted);
+        background: transparent;
+        cursor: pointer;
+        transition: .2s ease;
+      }
+      .filter:hover, .filter.active { color: #fff; background: var(--ink); transform: translateY(-1px); }
+
+      .section-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 54px 0 20px; }
+      .section-head h2 { margin: 0; font-size: clamp(26px, 3vw, 40px); letter-spacing: -.03em; }
+      .section-head p { max-width: 680px; margin: 0; color: var(--muted); line-height: 1.7; }
+
+      .routes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      .route {
+        position: relative;
+        min-height: 290px;
+        overflow: hidden;
+        padding: 26px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--paper);
+        box-shadow: 0 12px 36px rgba(21,43,34,.06);
+      }
+      .route.recommended { color: #fff; border: 0; background: linear-gradient(145deg, #173f32, #0d8b68 70%, #31ad85); }
+      .route-label { display: inline-flex; padding: 7px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; background: rgba(13,139,104,.11); color: var(--green); }
+      .recommended .route-label { color: #123629; background: var(--yellow); }
+      .route h3 { margin: 22px 0 10px; font-size: 26px; }
+      .route p { color: var(--muted); line-height: 1.75; }
+      .recommended p { color: rgba(255,255,255,.78); }
+      .palette { display: flex; gap: 8px; margin-top: 24px; }
+      .swatch { width: 42px; height: 42px; border: 4px solid rgba(255,255,255,.75); border-radius: 50%; box-shadow: 0 3px 12px rgba(0,0,0,.08); }
+      .route ul { padding-left: 20px; color: var(--muted); line-height: 1.8; }
+      .recommended ul { color: rgba(255,255,255,.86); }
+
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+      .project {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: var(--paper);
+        box-shadow: 0 14px 44px rgba(21,43,34,.07);
+        transition: transform .24s ease, box-shadow .24s ease;
+      }
+      .project:hover { transform: translateY(-4px); box-shadow: 0 22px 58px rgba(21,43,34,.12); }
+      .project.hidden { display: none; }
+      .project-head { padding: 24px 24px 16px; }
+      .title-row { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
+      .project h3 { margin: 0; font-size: 24px; }
+      .repo-link { flex: none; padding: 9px 12px; border-radius: 12px; color: #fff; text-decoration: none; background: var(--ink); }
+      .meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 0; }
+      .tag { padding: 6px 9px; border-radius: 999px; color: #405048; font-size: 12px; background: #edf2ef; }
+      .tag.good { color: #08785a; background: var(--green-soft); }
+      .tag.warn { color: #945400; background: #fff0cb; }
+      .summary { margin: 16px 0 0; color: var(--muted); line-height: 1.72; }
+
+      .shots {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(190px, 36%);
+        gap: 12px;
+        overflow-x: auto;
+        padding: 8px 24px 22px;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: thin;
+      }
+      .shots img {
+        width: 100%;
+        height: 360px;
+        object-fit: cover;
+        object-position: top;
+        scroll-snap-align: start;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: #fff;
+        cursor: zoom-in;
+      }
+      .shots img.composite { object-fit: contain; }
+      .takeaway { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 24px 24px; }
+      .takeaway div { padding: 15px; border-radius: 16px; background: #f0f5f2; }
+      .takeaway strong { display: block; margin-bottom: 7px; font-size: 13px; }
+      .takeaway span { color: var(--muted); font-size: 13px; line-height: 1.65; }
+      .takeaway .avoid { background: #fff1ee; }
+
+      .matrix-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 24px; background: var(--paper); }
+      table { width: 100%; border-collapse: collapse; min-width: 900px; }
+      th, td { padding: 18px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+      th { color: var(--muted); font-size: 12px; letter-spacing: .08em; background: #f3f6f4; }
+      td { line-height: 1.65; }
+      tr:last-child td { border-bottom: 0; }
+
+      .decision {
+        display: grid;
+        grid-template-columns: .8fr 1.2fr;
+        gap: 24px;
+        margin-top: 54px;
+        padding: 34px;
+        border-radius: 30px;
+        color: #fff;
+        background: #17231f;
+      }
+      .decision h2 { margin: 0; font-size: 34px; }
+      .decision p { color: rgba(255,255,255,.72); line-height: 1.8; }
+      .decision ol { margin: 0; padding-left: 22px; line-height: 2; }
+      .legal { margin-top: 18px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+
+      .lightbox {
+        position: fixed;
+        z-index: 30;
+        inset: 0;
+        display: none;
+        place-items: center;
+        padding: 30px;
+        background: rgba(10,18,15,.88);
+        backdrop-filter: blur(12px);
+      }
+      .lightbox.open { display: grid; }
+      .lightbox img { max-width: min(1100px, 95vw); max-height: 90vh; border-radius: 20px; box-shadow: 0 28px 80px rgba(0,0,0,.35); }
+      .lightbox button { position: absolute; top: 20px; right: 24px; width: 46px; height: 46px; border: 0; border-radius: 50%; color: #fff; font-size: 24px; background: rgba(255,255,255,.14); cursor: pointer; }
+
+      @media (max-width: 980px) {
+        .hero, .decision { grid-template-columns: 1fr; }
+        .routes, .grid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 620px) {
+        .shell { width: min(100% - 20px, 1480px); padding-top: 12px; }
+        .hero { padding: 24px; border-radius: 24px; }
+        .section-head { display: block; }
+        .section-head p { margin-top: 10px; }
+        .shots { grid-auto-columns: 72%; padding-inline: 16px; }
+        .project-head, .takeaway { padding-left: 16px; padding-right: 16px; }
+        .takeaway { grid-template-columns: 1fr; }
+        .decision { padding: 24px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">GITHUB UI REFERENCE BOARD · 2026.08</p>
+          <h1>校园任务商城<br />同类项目 UI 参考</h1>
+          <p class="lede">不找一个项目整套照搬，而是按模块选最成熟的模式：商城交易看企业级零售模板，校园归属感看校园项目，任务与即时服务看本地生活产品，社区内容看圈子产品。</p>
+        </div>
+        <aside class="hero-note">
+          <strong>本轮推荐：柔和校园生活服务型</strong>
+          <p>用 TDesign 的秩序感打底，用校园项目的身份与分区强化场景，再加入本地服务产品的状态反馈。保留当前绿色，但降低大面积高饱和。</p>
+        </aside>
+      </section>
+
+      <nav class="toolbar" aria-label="项目筛选">
+        <button class="filter active" data-filter="all">全部</button>
+        <button class="filter" data-filter="visual">视觉成熟</button>
+        <button class="filter" data-filter="campus">校园场景</button>
+        <button class="filter" data-filter="commerce">商城交易</button>
+        <button class="filter" data-filter="community">社区内容</button>
+        <button class="filter" data-filter="service">任务 / 服务</button>
+      </nav>
+
+      <div class="section-head">
+        <div><p class="eyebrow">STYLE DIRECTIONS</p><h2>三条可替换当前 UI 的方向</h2></div>
+        <p>三条路线都不改变项目业务，只改变视觉密度、组件组织和动效语气。第一条最适合现在的校园任务＋商城组合。</p>
+      </div>
+      <section class="routes">
+        <article class="route recommended">
+          <span class="route-label">推荐路线</span>
+          <h3>柔和校园生活服务</h3>
+          <p>克制底色、校园绿主色、小面积暖黄强调；卡片层级清晰，状态变化连续，真实校园图片只出现在关键入口。</p>
+          <ul><li>适合：任务大厅、商城、社区、资产中心统一</li><li>关键词：可信、年轻、清爽、有温度</li></ul>
+          <div class="palette"><i class="swatch" style="background:#0d8b68"></i><i class="swatch" style="background:#edf3ef"></i><i class="swatch" style="background:#ffca3a"></i><i class="swatch" style="background:#173f32"></i></div>
+        </article>
+        <article class="route">
+          <span class="route-label">内容优先</span>
+          <h3>清爽校园社区</h3>
+          <p>头像、学院身份、话题标签和内容成为主角，弱化装饰卡片。更像成熟内容社区，商城作为独立频道。</p>
+          <ul><li>适合：希望社区成为第一增长入口</li><li>风险：任务与财务状态容易被内容流稀释</li></ul>
+          <div class="palette"><i class="swatch" style="background:#2e78e8"></i><i class="swatch" style="background:#f7f9fc"></i><i class="swatch" style="background:#ff725e"></i><i class="swatch" style="background:#1c2733"></i></div>
+        </article>
+        <article class="route">
+          <span class="route-label">活力优先</span>
+          <h3>高饱和校园活动</h3>
+          <p>ColorUI 式亮色模块、活动入口和强识别图标，氛围鲜明，但只应用在活动、签到与增长页面。</p>
+          <ul><li>适合：迎新、校园活动、拉新运营</li><li>风险：全局使用会显廉价并抢夺信息层级</li></ul>
+          <div class="palette"><i class="swatch" style="background:#17c784"></i><i class="swatch" style="background:#ffca3a"></i><i class="swatch" style="background:#ff4d6d"></i><i class="swatch" style="background:#7357ff"></i></div>
+        </article>
+      </section>
+
+      <div class="section-head" id="projects">
+        <div><p class="eyebrow">REPOSITORY PATTERN BOARD</p><h2>GitHub 项目与真实界面</h2></div>
+        <p>点击图片可放大。星标与许可证仅用于筛选成熟度；最终应重组模式并建立自己的校园设计系统，不复制品牌资产。</p>
+      </div>
+
+      <section class="grid">
+        <article class="project" data-type="visual commerce">
+          <div class="project-head">
+            <div class="title-row"><div><h3>TDesign 零售小程序</h3><div class="meta"><span class="tag good">视觉成熟度 A</span><span class="tag">847 Stars</span><span class="tag">MIT</span><span class="tag">28 页面</span></div></div><a class="repo-link" href="https://github.com/Tencent/tdesign-miniprogram-starter-retail" target="_blank" rel="noreferrer">GitHub ↗</a></div>
+            <p class="summary">腾讯企业级移动设计体系的完整零售样板，商品—购物车—结算—订单—售后链路齐全。最适合成为商城视觉、组件尺寸和状态规范的基线。</p>
+          </div>
+          <div class="shots">
+            <img src="https://tdesign.gtimg.com/miniprogram/template/retail/example/v1/home.png" alt="TDesign 首页" />
+            <img src="https://tdesign.gtimg.com/miniprogram/template/retail/example/v2/sort.png" alt="TDesign 分类" />
+            <img src="https://tdesign.gtimg.com/miniprogram/template/retail/example/v1/goods-detail.png" alt="TDesign 商品详情" />
+            <img src="https://tdesign.gtimg.com/miniprogram/template/retail/example/v1/cart.png" alt="TDesign 购物车" />
+            <img src="https://tdesign.gtimg.com/miniprogram/template/retail/example/v1/pay.png" alt="TDesign 结算" />
+            <img src="https://tdesign.gtimg.com/miniprogram/template/retail/example/v1/order.png" alt="TDesign 订单" />
+          </div>
+          <div class="takeaway"><div><strong>建议借鉴</strong><span>底部操作区、规格弹层、结算层级、订单状态、个人中心分组。</span></div><div class="avoid"><strong>不要照搬</strong><span>默认红色零售品牌感；应替换为校园绿与任务状态色。</span></div></div>
+        </article>
+
+        <article class="project" data-type="commerce service">
+          <div class="project-head">
+            <div class="title-row"><div><h3>芋道商城 UniApp</h3><div class="meta"><span class="tag good">业务完整度 A</span><span class="tag">1.3k Stars</span><span class="tag">MIT</span><span class="tag">Vue3 + UniApp</span></div></div><a class="repo-link" href="https://github.com/yudaocode/yudao-mall-uniapp" target="_blank" rel="noreferrer">GitHub ↗</a></div>
+            <p class="summary">多端商城、积分、优惠券、会员、营销和页面 DIY 都比较完整。它更适合参考信息架构与后台可配置思路，而不是直接沿用视觉皮肤。</p>
+          </div>
+          <div class="shots"><img class="composite" src="https://raw.githubusercontent.com/yudaocode/yudao-mall-uniapp/master/.image/common/mall-preview.png" alt="芋道商城移动端总览" /><img class="composite" src="https://raw.githubusercontent.com/yudaocode/yudao-mall-uniapp/master/.image/mall/%E5%95%86%E5%93%81%E8%AF%A6%E6%83%85.png" alt="芋道商品详情" /><img class="composite" src="https://raw.githubusercontent.com/yudaocode/yudao-mall-uniapp/master/.image/mall/%E8%AE%A2%E5%8D%95%E8%AF%A6%E6%83%85.png" alt="芋道订单详情" /></div>
+          <div class="takeaway"><div><strong>建议借鉴</strong><span>积分与现金并行信息、优惠券、会员资产、页面装修的数据结构。</span></div><div class="avoid"><strong>不要照搬</strong><span>模块堆叠和强营销首页；校园项目需要减少首屏促销噪音。</span></div></div>
+        </article>
+
+        <article class="project" data-type="campus commerce service">
+          <div class="project-head">
+            <div class="title-row"><div><h3>校园二手交易小程序</h3><div class="meta"><span class="tag">539 Stars</span><span class="tag warn">未标许可证</span><span class="tag">校园身份</span><span class="tag">兼职入口</span></div></div><a class="repo-link" href="https://github.com/zhuyuzhu/Secondhand-goods-on-campus" target="_blank" rel="noreferrer">GitHub ↗</a></div>
+            <p class="summary">视觉较旧，但校园选择、身份认证、发布、订单、兼职和二手交易的场景组合与本项目高度接近。适合验证校园信息架构，不适合作为高保真视觉标杆。</p>
+          </div>
+          <div class="shots">
+            <img src="https://raw.githubusercontent.com/zhuyuzhu/images/master/pictures/1.png" alt="校园二手首页" />
+            <img src="https://raw.githubusercontent.com/zhuyuzhu/images/master/pictures/release.jpg" alt="校园二手发布" />
+            <img src="https://raw.githubusercontent.com/zhuyuzhu/images/master/pictures/goodsDetail.jpg" alt="校园二手详情" />
+            <img src="https://raw.githubusercontent.com/zhuyuzhu/images/master/pictures/partTimeJob.jpg" alt="校园兼职" />
+            <img src="https://raw.githubusercontent.com/zhuyuzhu/images/master/pictures/identityVerify.jpg" alt="校园认证" />
+          </div>
+          <div class="takeaway"><div><strong>建议借鉴</strong><span>学校切换、校园认证、发布入口、二手与兼职并列的频道逻辑。</span></div><div class="avoid"><strong>不要照搬</strong><span>旧式九宫格、弱排版和通用占位图；仓库未标许可证，仅作研究。</span></div></div>
+        </article>
+
+        <article class="project" data-type="service commerce">
+          <div class="project-head">
+            <div class="title-row"><div><h3>暹罗点餐 / 本地服务</h3><div class="meta"><span class="tag">498 Stars</span><span class="tag">Apache-2.0</span><span class="tag">UniApp</span><span class="tag">用户/商家/配送</span></div></div><a class="repo-link" href="https://github.com/siam1026/siam-server" target="_blank" rel="noreferrer">GitHub ↗</a></div>
+            <p class="summary">包含用户、商家、配送和管理后台，多角色订单、优惠券、积分商城、会员与邀请返现齐全。可转译为校园任务的接单者—发布者—平台三方状态模型。</p>
+          </div>
+          <div class="shots">
+            <img src="https://raw.githubusercontent.com/siam1026/siam-server/master/doc/images/wxapplet-user/home.jpg" alt="本地服务首页" />
+            <img src="https://raw.githubusercontent.com/siam1026/siam-server/master/doc/images/wxapplet-user/shop.jpg" alt="店铺详情" />
+            <img src="https://raw.githubusercontent.com/siam1026/siam-server/master/doc/images/wxapplet-user/order_takeout.jpg" alt="配送订单" />
+            <img src="https://raw.githubusercontent.com/siam1026/siam-server/master/doc/images/wxapplet-user/points_mall_home.jpg" alt="积分商城" />
+            <img src="https://raw.githubusercontent.com/siam1026/siam-server/master/doc/images/wxapplet-user/my.jpg" alt="会员中心" />
+          </div>
+          <div class="takeaway"><div><strong>建议借鉴</strong><span>多角色订单状态、履约时间、邀请奖励、积分商城与资产中心。</span></div><div class="avoid"><strong>不要照搬</strong><span>餐饮商品密度和促销语气；任务卡应更强调可信度与时限。</span></div></div>
+        </article>
+
+        <article class="project" data-type="visual service commerce">
+          <div class="project-head">
+            <div class="title-row"><div><h3>Fleetbase Storefront</h3><div class="meta"><span class="tag good">动线清晰</span><span class="tag">178 Stars</span><span class="tag warn">AGPL-3.0</span><span class="tag">本地生活</span></div></div><a class="repo-link" href="https://github.com/fleetbase/storefront-app" target="_blank" rel="noreferrer">GitHub ↗</a></div>
+            <p class="summary">本地商店与服务预约 App，搜索—详情—购物车—地址—履约跟踪路径紧凑。适合参考校园跑腿、到校服务和状态时间轴。</p>
+          </div>
+          <div class="shots">
+            <img src="https://user-images.githubusercontent.com/816371/131815361-ba85b208-e92b-4470-bba3-f87dde747a40.png" alt="本地服务搜索" />
+            <img src="https://user-images.githubusercontent.com/816371/131815370-a1fbde68-4ecd-4d06-a097-5ad20fb45933.png" alt="本地服务详情" />
+            <img src="https://user-images.githubusercontent.com/816371/131815221-b704d013-cc5d-41c3-9fde-36ca7af21a57.png" alt="结算" />
+            <img src="https://user-images.githubusercontent.com/816371/131815168-52341b30-750b-459b-ad7d-4801a151b3b7.png" alt="履约跟踪" />
+          </div>
+          <div class="takeaway"><div><strong>建议借鉴</strong><span>搜索、服务卡、结算、地址与履约跟踪的单任务聚焦。</span></div><div class="avoid"><strong>不要照搬</strong><span>AGPL 代码不能直接混入；只研究模式与信息结构。</span></div></div>
+        </article>
+
+        <article class="project" data-type="community visual">
+          <div class="project-head">
+            <div class="title-row"><div><h3>IceCMS 社区圈子</h3><div class="meta"><span class="tag">1.9k Stars</span><span class="tag warn">AGPL-3.0</span><span class="tag">社区/圈子</span><span class="tag">移动端</span></div></div><a class="repo-link" href="https://github.com/Thecosy/IceCMS" target="_blank" rel="noreferrer">GitHub ↗</a></div>
+            <p class="summary">内容、图片、视频、圈子、聊天与商城混合的社区 CMS。适合参考内容详情、圈子导航和创作者身份，但视觉应重新规范。</p>
+          </div>
+          <div class="shots">
+            <img class="composite" src="https://res.cloudinary.com/dxl1idlr5/image/upload/v1689828922/63d19ee5a6c55_xu7ex3.png" alt="IceCMS 社区界面" />
+            <img class="composite" src="https://res.cloudinary.com/dxl1idlr5/image/upload/v1689829049/63d19ee456c4b_fhibyf.png" alt="IceCMS 内容界面" />
+            <img class="composite" src="https://res.cloudinary.com/dxl1idlr5/image/upload/v1689829099/63d19ee6e070e_meudqj.png" alt="IceCMS 圈子界面" />
+          </div>
+          <div class="takeaway"><div><strong>建议借鉴</strong><span>圈子、内容类型切换、作者身份、媒体内容和互动入口。</span></div><div class="avoid"><strong>不要照搬</strong><span>AGPL 代码与品牌视觉；社区模块需和任务状态语言统一。</span></div></div>
+        </article>
+
+        <article class="project" data-type="visual campus community">
+          <div class="project-head">
+            <div class="title-row"><div><h3>ColorUI</h3><div class="meta"><span class="tag">12.3k Stars</span><span class="tag">MIT</span><span class="tag">高饱和</span><span class="tag warn">局部使用</span></div></div><a class="repo-link" href="https://github.com/weilanwl/coloruicss" target="_blank" rel="noreferrer">GitHub ↗</a></div>
+            <p class="summary">高饱和小程序组件库，识别度强、活动氛围足。它适合活动、签到、迎新和奖励模块，不适合整套任务与商城都铺满亮色。</p>
+          </div>
+          <div class="shots"><img class="composite" src="https://raw.githubusercontent.com/weilanwl/coloruicss/master/Colorui-UniApp/static/BasicsBg.png" alt="ColorUI 基础组件视觉" /><img class="composite" src="https://raw.githubusercontent.com/weilanwl/coloruicss/master/Colorui-UniApp/static/componentBg.png" alt="ColorUI 组件视觉" /><img class="composite" src="https://raw.githubusercontent.com/weilanwl/coloruicss/master/demo/images/share.jpg" alt="ColorUI 分享视觉" /></div>
+          <div class="takeaway"><div><strong>建议借鉴</strong><span>活动标签、状态色、插画入口和校园运营专题页。</span></div><div class="avoid"><strong>不要照搬</strong><span>大面积彩色块和多色并列；会削弱可信度与资产信息清晰度。</span></div></div>
+        </article>
+      </section>
+
+      <div class="section-head"><div><p class="eyebrow">COMMON PATTERNS</p><h2>最终建议采用的共同模式</h2></div></div>
+      <div class="matrix-wrap">
+        <table>
+          <thead><tr><th>模式</th><th>来源</th><th>适用页面</th><th>采用方式</th><th>风险控制</th></tr></thead>
+          <tbody>
+            <tr><td>一页一个主任务</td><td>TDesign / Fleetbase</td><td>任务详情、结算、提交凭证</td><td>底部固定单主按钮，次操作收进更多菜单</td><td>避免同屏 3 个同权重按钮</td></tr>
+            <tr><td>校园身份作为信任层</td><td>校园二手</td><td>社区、任务卡、个人主页</td><td>学校＋学院/年级＋认证状态，按隐私设置脱敏</td><td>不公开敏感学籍信息</td></tr>
+            <tr><td>交易状态连续可见</td><td>TDesign / 暹罗 / Fleetbase</td><td>我的任务、订单、售后</td><td>状态标签＋下一动作＋倒计时＋时间轴</td><td>颜色只辅助，文字必须完整</td></tr>
+            <tr><td>资产统一入口</td><td>芋道 / 暹罗</td><td>我的、支付、退款</td><td>余额、积分、优惠券分账展示，明示支付互斥规则</td><td>避免把余额做成充值诱导</td></tr>
+            <tr><td>内容与交易分层</td><td>IceCMS / TDesign</td><td>社区首页、商城首页</td><td>社区用内容流，商城用商品与履约流，底层视觉 Token 统一</td><td>不要把所有模块塞在一个首页</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <section class="decision">
+        <div><p class="eyebrow" style="color:#7fe0bd">RECOMMENDED FUSION</p><h2>建议的新整体风格</h2><p>不是继续在旧稿上换颜色，而是重做层级：从“每块都像活动卡片”改成“内容面、状态面、行动面”三层。</p></div>
+        <ol>
+          <li>基础组件与商城链路：参考 TDesign，建立统一圆角、间距、表单、弹层和状态规范。</li>
+          <li>校园身份与频道：参考校园二手项目，只保留学校、认证、校内服务和发布逻辑。</li>
+          <li>任务履约：参考 Fleetbase 和暹罗，把接单、提交、审核、奖励做成连续时间轴。</li>
+          <li>社区：参考 IceCMS 的内容结构，但采用更克制的列表、头像、话题和互动层级。</li>
+          <li>高饱和色：仅用于活动、签到、奖励与重要状态；首页和资产页面保持柔和。</li>
+        </ol>
+      </section>
+      <p class="legal">说明：本页面只用于竞品研究与设计评审。外部截图和品牌资产归原项目所有；未标许可证或 AGPL 项目不直接复制代码与素材。</p>
+    </main>
+
+    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="界面截图预览"><button aria-label="关闭">×</button><img alt="放大后的界面截图" /></div>
+    <script>
+      if (new URLSearchParams(window.location.search).get('capture') === 'projects') {
+        const projectHeading = document.getElementById('projects');
+        let reachedProjects = false;
+        Array.from(document.querySelector('.shell').children).forEach((element) => {
+          if (element === projectHeading) reachedProjects = true;
+          if (!reachedProjects) element.style.display = 'none';
+        });
+        document.body.style.background = '#edf3ef';
+      }
+
+      const filters = document.querySelectorAll('.filter');
+      const projects = document.querySelectorAll('.project');
+      filters.forEach((button) => button.addEventListener('click', () => {
+        filters.forEach((item) => item.classList.remove('active'));
+        button.classList.add('active');
+        const value = button.dataset.filter;
+        projects.forEach((project) => project.classList.toggle('hidden', value !== 'all' && !project.dataset.type.includes(value)));
+      }));
+
+      const lightbox = document.getElementById('lightbox');
+      const preview = lightbox.querySelector('img');
+      document.querySelectorAll('.shots img').forEach((image) => image.addEventListener('click', () => {
+        preview.src = image.src;
+        preview.alt = image.alt;
+        lightbox.classList.add('open');
+      }));
+      const closeLightbox = () => lightbox.classList.remove('open');
+      lightbox.querySelector('button').addEventListener('click', closeLightbox);
+      lightbox.addEventListener('click', (event) => { if (event.target === lightbox) closeLightbox(); });
+      document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeLightbox(); });
+    </script>
+  </body>
+</html>

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Auth\Models\UserIdentity;
 use App\Modules\Payment\Contracts\WechatPaymentGateway;
 use App\Modules\Payment\Models\Payment;
+use App\Modules\Refund\Models\Refund;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
@@ -20,7 +21,7 @@ class WechatPayV3Gateway implements WechatPaymentGateway
         $appId = $payment->scene === 'wechat-mini' ? config('wechat_payment.mini_app_id') : config('wechat_payment.official_account_app_id');
         $body = [
             'appid' => $appId, 'mchid' => config('wechat_payment.merchant_id'),
-            'description' => '任务商城订单 '.$payment->order->order_no,
+            'description' => $payment->order_id ? '任务商城订单 '.$payment->order->order_no : '任务商城余额充值 '.$payment->walletRecharge->recharge_no,
             'out_trade_no' => $payment->payment_no, 'notify_url' => config('wechat_payment.notify_url'),
             'amount' => ['total' => $payment->cash_amount, 'currency' => 'CNY'],
         ];
@@ -107,6 +108,127 @@ class WechatPayV3Gateway implements WechatPaymentGateway
         abort_unless($response->successful() || $response->status() === 204, 503, 'WeChat Pay close failed.');
     }
 
+    public function refund(Payment $payment, Refund $refund): array
+    {
+        $this->ensureRefundConfigured();
+        $path = '/v3/refund/domestic/refunds';
+        $payload = [
+            'out_refund_no' => $refund->refund_no,
+            'reason' => mb_substr('订单退款 '.$refund->refund_no, 0, 80),
+            'notify_url' => config('wechat_payment.refund_notify_url'),
+            'amount' => [
+                'refund' => $refund->refund_external_amount,
+                'total' => $payment->cash_amount,
+                'currency' => 'CNY',
+            ],
+        ];
+        if (filled($payment->provider_trade_no)) {
+            $payload['transaction_id'] = $payment->provider_trade_no;
+        } else {
+            $payload['out_trade_no'] = $payment->payment_no;
+        }
+        $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+        try {
+            $response = Http::acceptJson()->withHeaders([
+                'Authorization' => $this->authorization('POST', $path, $json),
+                'User-Agent' => 'task-mall-api/1.0',
+            ])->withBody($json, 'application/json')->timeout((int) config('wechat_payment.timeout_seconds'))
+                ->post('https://api.mch.weixin.qq.com'.$path);
+        } catch (ConnectionException) {
+            throw ValidationException::withMessages(['refund' => '微信退款渠道连接失败，退款仍保持处理中，请稍后主动查询。']);
+        }
+        if (! $response->successful()) {
+            throw ValidationException::withMessages(['refund' => '微信退款请求未被渠道接受，退款仍保持处理中，请核对商户证书和退款配置。']);
+        }
+
+        return $this->normalizeRefund((array) $response->json(), 'REFUND.SUBMIT');
+    }
+
+    public function queryRefund(Refund $refund): array
+    {
+        $this->ensureRefundConfigured();
+        $path = '/v3/refund/domestic/refunds/out-refund-no/'.rawurlencode($refund->refund_no);
+        try {
+            $response = Http::acceptJson()->withHeaders([
+                'Authorization' => $this->authorization('GET', $path, ''),
+                'User-Agent' => 'task-mall-api/1.0',
+            ])->timeout((int) config('wechat_payment.timeout_seconds'))->get('https://api.mch.weixin.qq.com'.$path);
+        } catch (ConnectionException) {
+            throw ValidationException::withMessages(['refund' => '微信退款查询连接失败，未改变本地退款状态。']);
+        }
+        if (! $response->successful()) {
+            throw ValidationException::withMessages(['refund' => '微信退款主动查询失败，未改变本地退款状态。']);
+        }
+
+        return $this->normalizeRefund((array) $response->json(), 'REFUND.QUERY');
+    }
+
+    public function parseRefundNotification(array $headers, string $body): array
+    {
+        $this->ensureRefundConfigured();
+        [$envelope, $resource] = $this->decryptNotification($headers, $body);
+
+        return [
+            'notification_id' => (string) ($envelope['id'] ?? ''),
+            'event_type' => (string) ($envelope['event_type'] ?? ''),
+            'refund_no' => (string) ($resource['out_refund_no'] ?? ''),
+            'provider_refund_no' => $resource['refund_id'] ?? null,
+            'refund_state' => strtoupper((string) ($resource['refund_status'] ?? '')),
+            'refund_amount' => (int) ($resource['amount']['refund'] ?? 0),
+            'total_amount' => (int) ($resource['amount']['total'] ?? 0),
+            'success_time' => $resource['success_time'] ?? null,
+            'raw_resource' => $resource,
+        ];
+    }
+
+    /** @param array<string,mixed> $resource
+     * @return array<string,mixed>
+     */
+    private function normalizeRefund(array $resource, string $eventType): array
+    {
+        $state = strtoupper((string) ($resource['status'] ?? $resource['refund_status'] ?? ''));
+        $refundNo = (string) ($resource['out_refund_no'] ?? '');
+        $providerNo = $resource['refund_id'] ?? null;
+
+        return [
+            'notification_id' => 'query-'.$refundNo.'-'.$state.'-'.($providerNo ?: 'none'),
+            'event_type' => $eventType,
+            'refund_no' => $refundNo,
+            'provider_refund_no' => $providerNo,
+            'refund_state' => $state,
+            'refund_amount' => (int) ($resource['amount']['refund'] ?? 0),
+            'total_amount' => (int) ($resource['amount']['total'] ?? 0),
+            'success_time' => $resource['success_time'] ?? null,
+            'raw_resource' => $resource,
+        ];
+    }
+
+    /** @param array<string,string|null> $headers
+     * @return array{0:array<string,mixed>,1:array<string,mixed>}
+     */
+    private function decryptNotification(array $headers, string $body): array
+    {
+        $timestamp = (string) ($headers['timestamp'] ?? '');
+        $nonce = (string) ($headers['nonce'] ?? '');
+        $signature = base64_decode((string) ($headers['signature'] ?? ''), true);
+        $certificatePath = (string) config('wechat_payment.platform_certificate_path');
+        $certificate = is_file($certificatePath) ? file_get_contents($certificatePath) : false;
+        if (! ctype_digit($timestamp) || abs(time() - (int) $timestamp) > 300 || ! $signature || ! $certificate || openssl_verify("{$timestamp}\n{$nonce}\n{$body}\n", $signature, $certificate, OPENSSL_ALGO_SHA256) !== 1) {
+            abort(401, 'Invalid WeChat Pay signature.');
+        }
+        $envelope = json_decode($body, true);
+        $encrypted = $envelope['resource'] ?? null;
+        abort_unless(is_array($envelope) && is_array($encrypted), 400, 'Invalid WeChat Pay notification.');
+        $cipher = base64_decode((string) ($encrypted['ciphertext'] ?? ''), true);
+        abort_unless($cipher !== false && strlen($cipher) > 16, 400, 'Invalid WeChat Pay ciphertext.');
+        $plain = openssl_decrypt(substr($cipher, 0, -16), 'aes-256-gcm', (string) config('wechat_payment.api_v3_key'), OPENSSL_RAW_DATA, (string) ($encrypted['nonce'] ?? ''), substr($cipher, -16), (string) ($encrypted['associated_data'] ?? ''));
+        $resource = $plain === false ? null : json_decode($plain, true);
+        abort_unless(is_array($resource), 400, 'WeChat Pay notification decryption failed.');
+
+        return [$envelope, $resource];
+    }
+
     private function clientPayload(string $appId, string $prepayId, string $scene): array
     {
         $timestamp = (string) time();
@@ -142,6 +264,22 @@ class WechatPayV3Gateway implements WechatPaymentGateway
             if (! filled(config('wechat_payment.'.$key))) {
                 throw ValidationException::withMessages(['payment' => '微信支付生产参数尚未配置完整。']);
             }
+        }
+    }
+
+    private function ensureRefundConfigured(): void
+    {
+        foreach (['merchant_id', 'merchant_certificate_serial', 'merchant_private_key_path', 'api_v3_key', 'platform_certificate_path', 'refund_notify_url'] as $key) {
+            $value = config('wechat_payment.'.$key);
+            if (! filled($value)) {
+                throw ValidationException::withMessages(['refund' => '微信退款生产参数尚未配置完整，已阻止退款，未伪造成功结果。']);
+            }
+        }
+        if (! is_file((string) config('wechat_payment.merchant_private_key_path')) || ! is_file((string) config('wechat_payment.platform_certificate_path'))) {
+            throw ValidationException::withMessages(['refund' => '微信退款商户私钥或平台证书不可用，已阻止退款，未伪造成功结果。']);
+        }
+        if (strlen((string) config('wechat_payment.api_v3_key')) !== 32) {
+            throw ValidationException::withMessages(['refund' => '微信支付 API V3 密钥必须为 32 字节，已阻止退款。']);
         }
     }
 }

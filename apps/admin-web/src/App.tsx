@@ -3,6 +3,7 @@ import {
   AuditOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  CustomerServiceOutlined,
   DashboardOutlined,
   FileDoneOutlined,
   LockOutlined,
@@ -43,6 +44,7 @@ import {
   Typography,
   message,
 } from 'antd'
+import zhCN from 'antd/locale/zh_CN'
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { ApiError, changeAdminPassword, getOperationsDashboard, type AdminMfaChallenge, type NavigationItem, type OperationsMetrics } from './api/admin'
 import { useAdminAuth } from './features/auth/AdminAuthContext'
@@ -60,6 +62,7 @@ const AfterSaleManagementPage = lazy(() => import('./features/after-sales/AfterS
 const CommunityManagementPage = lazy(() => import('./features/community/CommunityManagementPage').then((module) => ({ default: module.CommunityManagementPage })))
 const OperationsPage = lazy(() => import('./features/operations/OperationsPage').then((module) => ({ default: module.OperationsPage })))
 const UserOperationsPage = lazy(() => import('./features/users/UserOperationsPage').then((module) => ({ default: module.UserOperationsPage })))
+const SupportTicketPage = lazy(() => import('./features/support/SupportTicketPage').then((module) => ({ default: module.SupportTicketPage })))
 
 const iconMap: Record<string, ReactNode> = {
   DashboardOutlined: <DashboardOutlined />,
@@ -72,6 +75,7 @@ const iconMap: Record<string, ReactNode> = {
   NotificationOutlined: <NotificationOutlined />,
   SettingOutlined: <SettingOutlined />,
   SafetyCertificateOutlined: <SafetyCertificateOutlined />,
+  CustomerServiceOutlined: <CustomerServiceOutlined />,
 }
 
 const roleNames: Record<string, string> = {
@@ -112,10 +116,10 @@ function LoginPage() {
     <main className="login-page">
       <section className="login-story">
         <div className="brand-mark"><AppstoreOutlined /></div>
-        <Typography.Text className="eyebrow">TASK MALL · OPERATIONS</Typography.Text>
-        <Typography.Title>一处管理任务、商城与用户资产</Typography.Title>
+        <Typography.Text className="eyebrow">校园任务商城 · 运营管理平台</Typography.Text>
+        <Typography.Title>一处管理校园任务、社区与商城</Typography.Title>
         <Typography.Paragraph>
-          面向微信小程序与多端 H5 的统一运营后台。关键操作均由服务端权限校验并进入审计记录。
+          面向校园微信小程序与多端 H5 的统一运营后台。任务、组团、社区内容和关键资产操作均进入审计记录。
         </Typography.Paragraph>
         <div className="security-note"><SafetyCertificateOutlined /> 独立后台会话 · 最小权限 · 全程审计</div>
       </section>
@@ -145,11 +149,39 @@ function LoginPage() {
 }
 
 function Workbench() {
+  const { admin } = useAdminAuth()
   const [metrics, setMetrics] = useState<OperationsMetrics | null>(null)
+  const canViewOperations = admin?.permissions.includes('operations.manage') ?? false
 
   useEffect(() => {
+    if (!canViewOperations) {
+      setMetrics(null)
+      return
+    }
     void getOperationsDashboard().then(setMetrics).catch(() => setMetrics(null))
-  }, [])
+  }, [canViewOperations])
+
+  if (!canViewOperations) {
+    return (
+      <>
+        <div className="page-heading workbench-heading">
+          <div>
+            <Typography.Text className="eyebrow">岗位权限视图</Typography.Text>
+            <Typography.Title level={2}>角色工作台</Typography.Title>
+            <Typography.Paragraph type="secondary">当前后台已按岗位最小权限加载，仅显示允许访问的业务模块。</Typography.Paragraph>
+          </div>
+          <Tag color="processing"><SafetyCertificateOutlined /> 权限已加载</Tag>
+        </div>
+        <Card bordered={false}>
+          <Result
+            status="info"
+            title="请选择左侧已授权的业务模块"
+            subTitle="平台运营汇总仅向具备运营管理权限的角色展示；未授权数据不会请求，也不会以零值代替。"
+          />
+        </Card>
+      </>
+    )
+  }
 
   const pending = [
     { label: '任务待审核', value: metrics?.tasks.pending_reviews ?? 0, icon: <AuditOutlined /> },
@@ -162,7 +194,7 @@ function Workbench() {
     <>
       <div className="page-heading workbench-heading">
         <div>
-          <Typography.Text className="eyebrow">OPERATIONS OVERVIEW</Typography.Text>
+          <Typography.Text className="eyebrow">校园运营总览</Typography.Text>
           <Typography.Title level={2}>运营工作台</Typography.Title>
           <Typography.Paragraph type="secondary">集中查看任务、商城、售后和资金风险。</Typography.Paragraph>
         </div>
@@ -204,6 +236,7 @@ function Workspace({ item }: { item: NavigationItem }) {
   if (item.code === 'orders') return <AfterSaleManagementPage />
   if (item.code === 'community') return <CommunityManagementPage />
   if (item.code === 'operations') return <OperationsPage />
+  if (item.code === 'support') return <SupportTicketPage />
   if (item.code !== 'workbench') {
     return (
       <Result
@@ -260,7 +293,7 @@ function AdminShell() {
     <Layout className="admin-layout">
       {contextHolder}
       <Layout.Sider width={248} collapsedWidth={76} collapsed={collapsed} className="admin-sider">
-        <div className="sider-brand"><AppstoreOutlined /><span>任务商城</span></div>
+        <div className="sider-brand"><AppstoreOutlined /><span>校园任务商城</span></div>
         <Menu
           theme="dark"
           mode="inline"
@@ -287,20 +320,22 @@ function AdminShell() {
           />
           <Dropdown
             trigger={['click']}
+            placement="bottomRight"
+            arrow
             menu={{ items: [
               { key: 'password', icon: <KeyOutlined />, label: '修改密码', onClick: () => setPasswordOpen(true) },
               { type: 'divider' },
               { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', danger: true, onClick: signOut },
             ] }}
           >
-            <Button type="text" className="profile-button">
+            <Button type="text" className="profile-button" aria-label="打开管理员账号菜单">
               <Avatar>{admin?.display_name.slice(0, 1)}</Avatar>
               <span><strong>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
             </Button>
           </Dropdown>
         </Layout.Header>
         <Layout.Content className="admin-content">
-          {activeItem && <Suspense fallback={<Skeleton active paragraph={{ rows: 5 }} />}><Workspace item={activeItem} /></Suspense>}
+          {activeItem && <div className="workspace-stage" key={activeItem.code}><Suspense fallback={<Skeleton active paragraph={{ rows: 5 }} />}><Workspace item={activeItem} /></Suspense></div>}
         </Layout.Content>
       </Layout>
       <Drawer
@@ -309,7 +344,7 @@ function AdminShell() {
         width={300}
         open={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
-        title={<span className="mobile-navigation-title"><AppstoreOutlined />任务商城</span>}
+        title={<span className="mobile-navigation-title"><AppstoreOutlined />校园任务商城</span>}
       >
         <Menu
           theme="dark"
@@ -319,8 +354,14 @@ function AdminShell() {
           onClick={({ key }) => selectNavigation(key)}
         />
         <div className="mobile-navigation-footer">
-          <Avatar>{admin?.display_name.slice(0, 1)}</Avatar>
-          <span><strong>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
+          <div className="mobile-navigation-identity">
+            <Avatar>{admin?.display_name.slice(0, 1)}</Avatar>
+            <span><strong>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
+          </div>
+          <div className="mobile-navigation-actions">
+            <Button icon={<KeyOutlined />} onClick={() => { setMobileNavOpen(false); setPasswordOpen(true) }}>修改密码</Button>
+            <Button danger icon={<LogoutOutlined />} onClick={() => { setMobileNavOpen(false); void signOut() }}>退出登录</Button>
+          </div>
         </div>
       </Drawer>
       <Modal
@@ -362,7 +403,7 @@ function AppContent() {
 
 function App() {
   return (
-    <ConfigProvider theme={{ token: { colorPrimary: '#2f67df', colorSuccess: '#15966a', colorWarning: '#e56a16', colorError: '#d14343', borderRadius: 12, fontFamily: 'Inter, "PingFang SC", "Microsoft YaHei", sans-serif' } }}>
+    <ConfigProvider locale={zhCN} theme={{ token: { colorPrimary: '#1769ff', colorInfo: '#1769ff', colorSuccess: '#00a86b', colorWarning: '#f08a24', colorError: '#e5484d', colorText: '#101828', colorTextSecondary: '#667085', colorBgLayout: '#fffaf0', colorBgContainer: '#ffffff', colorBorder: '#d8dee9', colorBorderSecondary: '#e8e4d8', borderRadius: 11, borderRadiusLG: 18, controlHeight: 40, boxShadowTertiary: '0 10px 30px rgba(16, 24, 40, .06)', fontFamily: 'Inter, "PingFang SC", "Microsoft YaHei", sans-serif' }, components: { Menu: { darkItemBg: '#071a33', darkSubMenuItemBg: '#071a33', darkItemSelectedBg: '#1769ff', darkItemSelectedColor: '#ffffff', darkItemHoverBg: '#12335b' }, Button: { primaryShadow: '0 3px 0 rgba(7,61,159,.24)' }, Table: { headerBg: '#fff8d8', headerColor: '#26324a' }, Tabs: { itemSelectedColor: '#1769ff', inkBarColor: '#ffbf1f' } } }}>
       <AdminAuthProvider><AppContent /></AdminAuthProvider>
     </ConfigProvider>
   )

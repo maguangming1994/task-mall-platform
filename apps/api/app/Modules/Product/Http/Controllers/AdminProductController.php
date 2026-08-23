@@ -12,20 +12,71 @@ use App\Modules\Product\Models\ProductSku;
 use App\Modules\Product\Services\ProductCatalogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class AdminProductController extends Controller
 {
     public function categories(ProductCatalogService $catalog): JsonResponse
     {
-        return ApiResponse::success(ProductCategory::query()->orderBy('sort_order')->get()->map(fn ($item) => ['id' => $item->public_id, 'name' => $item->name, 'slug' => $item->slug, 'status' => $item->status]));
+        $items = ProductCategory::query()->with('parent')->withCount(['products', 'children'])
+            ->orderBy('sort_order')->orderBy('id')->get()->map(fn (ProductCategory $item) => $this->categoryData($item));
+
+        return ApiResponse::success(['items' => $items]);
     }
 
     public function storeCategory(Request $request, ProductCatalogService $catalog): JsonResponse
     {
-        $data = $request->validate(['parent_id' => ['nullable', 'string', 'size:26'], 'name' => ['required', 'string', 'max:80'], 'slug' => ['required', 'alpha_dash', 'max:80', 'unique:product_categories,slug'], 'status' => ['sometimes', 'in:active,inactive'], 'sort_order' => ['sometimes', 'integer', 'min:0']]);
+        $data = $request->validate(['parent_id' => ['nullable', 'string', 'size:26', 'exists:product_categories,public_id'], 'name' => ['required', 'string', 'max:80'], 'slug' => ['required', 'alpha_dash', 'max:80', 'unique:product_categories,slug'], 'status' => ['sometimes', 'in:active,inactive'], 'sort_order' => ['sometimes', 'integer', 'min:0']]);
         $category = $catalog->createCategory($data);
 
-        return ApiResponse::success(['id' => $category->public_id, 'name' => $category->name, 'slug' => $category->slug, 'status' => $category->status], 201);
+        return ApiResponse::success($this->categoryData($category->load('parent')->loadCount(['products', 'children'])), 201);
+    }
+
+    public function updateCategory(Request $request, ProductCategory $category): JsonResponse
+    {
+        $data = $request->validate([
+            'parent_id' => ['nullable', 'string', 'size:26'],
+            'name' => ['required', 'string', 'max:80'],
+            'slug' => ['required', 'alpha_dash', 'max:80', Rule::unique('product_categories', 'slug')->ignore($category->id)],
+            'status' => ['required', 'in:active,inactive'],
+            'sort_order' => ['required', 'integer', 'min:0'],
+        ]);
+        if (($data['parent_id'] ?? null) === $category->public_id) {
+            throw ValidationException::withMessages(['parent_id' => '商品分类不能选择自身作为上级分类。']);
+        }
+        $parentId = filled($data['parent_id'] ?? null)
+            ? ProductCategory::query()->where('public_id', $data['parent_id'])->value('id')
+            : null;
+        if (filled($data['parent_id'] ?? null) && ! $parentId) {
+            throw ValidationException::withMessages(['parent_id' => '选择的上级分类不存在。']);
+        }
+        $ancestorId = $parentId;
+        while ($ancestorId) {
+            if ($ancestorId === $category->id) {
+                throw ValidationException::withMessages(['parent_id' => '不能把当前分类的下级分类设为上级分类。']);
+            }
+            $ancestorId = ProductCategory::query()->whereKey($ancestorId)->value('parent_id');
+        }
+        $category->update([
+            'parent_id' => $parentId,
+            'name' => $data['name'],
+            'slug' => $data['slug'],
+            'status' => $data['status'],
+            'sort_order' => $data['sort_order'],
+        ]);
+
+        return ApiResponse::success($this->categoryData($category->fresh('parent')->loadCount(['products', 'children'])));
+    }
+
+    public function destroyCategory(ProductCategory $category): JsonResponse
+    {
+        if ($category->products()->exists() || $category->children()->exists()) {
+            throw ValidationException::withMessages(['category' => '该分类仍有关联商品或下级分类，请先转移后再删除。']);
+        }
+        $category->delete();
+
+        return response()->json(null, 204);
     }
 
     public function index(ProductCatalogService $catalog): JsonResponse
@@ -84,7 +135,7 @@ class AdminProductController extends Controller
     private function definition(Request $request): array
     {
         return $request->validate([
-            'category_id' => ['nullable', 'string', 'size:26'], 'name' => ['required', 'string', 'max:160'], 'subtitle' => ['nullable', 'string', 'max:255'],
+            'category_id' => ['required', 'string', 'size:26', 'exists:product_categories,public_id'], 'name' => ['required', 'string', 'max:160'], 'subtitle' => ['nullable', 'string', 'max:255'],
             'description' => ['required', 'string', 'min:1', 'max:200000'], 'cover_file_id' => ['nullable', 'string', 'size:26'],
             'gallery_images' => ['sometimes', 'array', 'min:1', 'max:9'],
             'gallery_images.*.url' => ['required', 'url:http,https', 'max:2048'],
@@ -111,5 +162,20 @@ class AdminProductController extends Controller
         abort_unless(strlen($key) >= 12 && strlen($key) <= 128, 422, 'Idempotency-Key is required.');
 
         return $key;
+    }
+
+    private function categoryData(ProductCategory $category): array
+    {
+        return [
+            'id' => $category->public_id,
+            'parent_id' => $category->parent?->public_id,
+            'parent_name' => $category->parent?->name,
+            'name' => $category->name,
+            'slug' => $category->slug,
+            'status' => $category->status,
+            'sort_order' => (int) $category->sort_order,
+            'product_count' => (int) ($category->products_count ?? $category->products()->count()),
+            'children_count' => (int) ($category->children_count ?? $category->children()->count()),
+        ];
     }
 }

@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 
 class Task extends Model
 {
-    protected $fillable = ['public_id', 'created_by_admin_id', 'creation_channel', 'status', 'current_version_no', 'published_version_no', 'lock_version', 'view_count', 'idempotency_key_hash', 'scheduled_at', 'published_at', 'closed_at'];
+    protected $fillable = ['public_id', 'created_by_admin_id', 'creation_channel', 'source_task_template_id', 'source_task_template_version_no', 'status', 'current_version_no', 'published_version_no', 'lock_version', 'view_count', 'idempotency_key_hash', 'scheduled_at', 'published_at', 'closed_at'];
 
     protected $hidden = ['idempotency_key_hash'];
 
@@ -19,7 +19,7 @@ class Task extends Model
 
     protected function casts(): array
     {
-        return ['scheduled_at' => 'datetime', 'published_at' => 'datetime', 'closed_at' => 'datetime', 'current_version_no' => 'integer', 'published_version_no' => 'integer', 'lock_version' => 'integer', 'view_count' => 'integer'];
+        return ['scheduled_at' => 'datetime', 'published_at' => 'datetime', 'closed_at' => 'datetime', 'source_task_template_version_no' => 'integer', 'current_version_no' => 'integer', 'published_version_no' => 'integer', 'lock_version' => 'integer', 'view_count' => 'integer'];
     }
 
     public function getRouteKeyName(): string

@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Assets\Services\WalletWithdrawalService;
 use App\Modules\Notification\Services\NotificationService;
 use App\Modules\Operations\Models\DeploymentRelease;
 use App\Modules\Operations\Services\ProductionReadinessService;
@@ -77,6 +78,14 @@ Artisan::command('after-sales:close-expired {--limit=100}', function (RefundServ
     $this->info('Closed expired exchanges: '.$exchanges->closeExpired($limit));
 })->purpose('Close return and exchange requests whose user logistics deadline expired');
 
+Artisan::command('refunds:sync-provider {--limit=100}', function (RefundService $service) {
+    $this->info('Synced provider refunds: '.$service->syncPendingProviderRefunds((int) $this->option('limit')));
+})->purpose('Query processing WeChat refunds and apply authoritative provider states');
+
+Artisan::command('withdrawals:sync-payouts {--limit=100}', function (WalletWithdrawalService $service) {
+    $this->info('Synced wallet payouts: '.$service->syncPending((int) $this->option('limit')));
+})->purpose('Query processing wallet payouts and apply authoritative provider states');
+
 Artisan::command('notifications:deliver {--limit=100}', function (NotificationService $service) {
     $this->info('Delivered notifications: '.$service->deliverPending((int) $this->option('limit')));
 })->purpose('Deliver due external notification channel jobs with retry policy');
@@ -130,6 +139,8 @@ Schedule::command('payments:sync-pending --limit=100')->everyFiveMinutes()->with
 Schedule::command('orders:close-expired-payments --limit=100')->everyMinute()->withoutOverlapping();
 Schedule::command('growth:scan-first-cash-orders --limit=500')->everyTenMinutes()->withoutOverlapping();
 Schedule::command('after-sales:close-expired --limit=500')->hourly()->withoutOverlapping();
+Schedule::command('refunds:sync-provider --limit=100')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('withdrawals:sync-payouts --limit=100')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('notifications:deliver --limit=500')->everyMinute()->withoutOverlapping();
 Schedule::command('notifications:run-campaigns --limit=20')->everyMinute()->withoutOverlapping();
 Schedule::command('system:consistency-audit --strict')->dailyAt('04:10')->withoutOverlapping();

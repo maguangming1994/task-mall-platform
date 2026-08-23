@@ -20,7 +20,7 @@ class UploadController extends Controller
             'filename' => ['required', 'string', 'max:255'],
             'content_type' => ['required', 'string', 'max:100'],
             'size' => ['required', 'integer', 'min:1'],
-            'purpose' => ['required', 'in:avatar,task_submission,task_report,community,refund_evidence,return_shipping'],
+            'purpose' => ['required', 'in:avatar,task_submission,task_report,community,refund_evidence,return_shipping,offline_recharge'],
         ]);
         $idempotencyKey = (string) $request->header('Idempotency-Key');
         if (strlen($idempotencyKey) < 12 || strlen($idempotencyKey) > 128) {

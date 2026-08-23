@@ -40,6 +40,78 @@ class NotificationOperationsFlowTest extends TestCase
         $this->assertDatabaseHas('notification_deliveries', ['notification_id' => $essential->id, 'channel' => 'wechat', 'status' => 'sent']);
     }
 
+    public function test_user_notification_list_is_scoped_filterable_paginated_and_returns_unread_summary_with_payload(): void
+    {
+        [$user, $token] = $this->loginAndConsent('13800002001');
+        $other = User::factory()->create(['status' => 'active']);
+        $service = app(NotificationService::class);
+        $readTask = $service->create($user, 'task', 'task_reviewed', '任务审核完成', '第一条任务消息。', 'notification-list-task-read', false, ['in_app'], ['task_id' => 'task-public-read']);
+        $readTask->update(['read_at' => now()]);
+        $service->create($user, 'task', 'task_claim_expiring', '任务即将到期', '请尽快提交任务材料。', 'notification-list-task-unread', false, ['in_app'], ['task_claim_id' => 'claim-public-001']);
+        $service->create($user, 'order', 'payment_succeeded', '订单支付成功', '订单已进入履约流程。', 'notification-list-order-unread', false, ['in_app'], ['order_id' => 'order-public-001']);
+        $service->create($other, 'task', 'task_reviewed', '其他用户消息', '不应出现在当前用户列表。', 'notification-list-other-user');
+
+        $this->withToken($token)->getJson('/api/v1/notifications?category=task&page=1&page_size=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.items')
+            ->assertJsonPath('data.items.0.category', 'task')
+            ->assertJsonPath('data.items.0.data.task_claim_id', 'claim-public-001')
+            ->assertJsonPath('data.pagination.page', 1)
+            ->assertJsonPath('data.pagination.page_size', 1)
+            ->assertJsonPath('data.pagination.total', 2)
+            ->assertJsonPath('data.pagination.has_more', true)
+            ->assertJsonPath('data.unread_total', 2)
+            ->assertJsonPath('data.category_unread_counts.task', 1)
+            ->assertJsonPath('data.category_unread_counts.order', 1)
+            ->assertJsonPath('data.category_unread_counts.asset', 0);
+
+        $this->withToken($token)->getJson('/api/v1/notifications?unread_only=1&page_size=100')
+            ->assertOk()
+            ->assertJsonCount(2, 'data.items')
+            ->assertJsonPath('data.pagination.total', 2);
+
+        $preference = $this->withToken($token)->getJson('/api/v1/notification-preferences')
+            ->assertOk()
+            ->assertJsonPath('data.quiet_hours_start', '22:00')
+            ->assertJsonPath('data.quiet_hours_end', '08:00')
+            ->json('data');
+        $this->withToken($token)->putJson('/api/v1/notification-preferences', [
+            ...$preference,
+            'quiet_hours_start' => '21:30',
+            'quiet_hours_end' => '07:15',
+        ])->assertOk()
+            ->assertJsonPath('data.quiet_hours_start', '21:30')
+            ->assertJsonPath('data.quiet_hours_end', '07:15');
+    }
+
+    public function test_mark_all_read_is_scoped_to_authenticated_user_and_optionally_to_category(): void
+    {
+        [$user, $token] = $this->loginAndConsent('13800002002');
+        $other = User::factory()->create(['status' => 'active']);
+        $service = app(NotificationService::class);
+        $firstTask = $service->create($user, 'task', 'task_reviewed', '任务一', '任务消息一。', 'notification-read-all-task-1');
+        $secondTask = $service->create($user, 'task', 'task_reviewed', '任务二', '任务消息二。', 'notification-read-all-task-2');
+        $order = $service->create($user, 'order', 'payment_succeeded', '订单消息', '订单消息。', 'notification-read-all-order');
+        $otherNotification = $service->create($other, 'task', 'task_reviewed', '其他用户任务', '不可被当前用户修改。', 'notification-read-all-other');
+
+        $this->withHeader('Authorization', '')->postJson('/api/v1/notifications/read-all')->assertUnauthorized();
+        $this->withToken($token)->postJson('/api/v1/notifications/read-all', ['category' => 'task'])
+            ->assertOk()
+            ->assertJsonPath('data.updated_count', 2)
+            ->assertJsonPath('data.unread_total', 1);
+        $this->assertNotNull($firstTask->fresh()->read_at);
+        $this->assertNotNull($secondTask->fresh()->read_at);
+        $this->assertNull($order->fresh()->read_at);
+        $this->assertNull($otherNotification->fresh()->read_at);
+
+        $this->withToken($token)->postJson('/api/v1/notifications/read-all')
+            ->assertOk()
+            ->assertJsonPath('data.updated_count', 1)
+            ->assertJsonPath('data.unread_total', 0);
+        $this->withToken($token)->postJson('/api/v1/notifications/'.$otherNotification->public_id.'/read')->assertNotFound();
+        $this->assertNull($otherNotification->fresh()->read_at);
+    }
+
     public function test_marketing_campaign_only_targets_subscribers_and_template_variables_are_whitelisted(): void
     {
         $subscribed = User::factory()->create(['status' => 'active']);
@@ -69,5 +141,23 @@ class NotificationOperationsFlowTest extends TestCase
         $this->assertArrayHasKey('notifications', $metrics);
         $this->assertArrayHasKey('orders', $metrics);
         $this->assertArrayHasKey('community', $metrics);
+    }
+
+    /** @return array{0: User, 1: string} */
+    private function loginAndConsent(string $phone): array
+    {
+        $headers = ['X-Client-Platform' => 'h5-browser', 'X-Device-Id' => 'notifications-'.$phone];
+        $this->postJson('/api/v1/auth/phone/verification-codes', ['phone' => $phone, 'purpose' => 'login'], $headers)->assertAccepted();
+        $login = $this->postJson('/api/v1/auth/phone/login', ['phone' => $phone, 'verification_code' => '246810'], $headers)->assertOk();
+        $token = $login->json('data.access_token');
+        foreach ($this->withToken($token)->getJson('/api/v1/me/legal-consents/pending?scope=account')->json('data') as $index => $document) {
+            $this->withToken($token)->withHeaders(['Idempotency-Key' => 'notification-consent-'.$phone.'-'.$index, 'X-Client-Platform' => 'h5-browser'])->postJson('/api/v1/me/legal-consents', [
+                'legal_document_version_id' => $document['id'],
+                'action' => 'accept',
+                'acknowledge_service_restriction' => false,
+            ])->assertCreated();
+        }
+
+        return [User::query()->where('public_id', $login->json('data.user.id'))->firstOrFail(), $token];
     }
 }

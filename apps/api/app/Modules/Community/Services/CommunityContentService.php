@@ -39,6 +39,7 @@ class CommunityContentService
                 'user_id' => $user->id,
                 'title' => $data['title'],
                 'content' => $data['content'],
+                'category_code' => $data['category_code'] ?? 'experience',
                 'status' => $auto ? 'published' : 'pending_review',
                 'published_version_no' => $auto ? 1 : null,
                 'idempotency_key_hash' => $hash,
@@ -49,6 +50,7 @@ class CommunityContentService
                 'version_no' => 1,
                 'title' => $data['title'],
                 'content' => $data['content'],
+                'category_code' => $data['category_code'] ?? 'experience',
                 'review_status' => $auto ? 'approved' : 'pending',
                 'rule_snapshot' => $rules,
                 'reviewed_at' => $auto ? now() : null,
@@ -68,6 +70,13 @@ class CommunityContentService
         if (in_array($post->status, ['deleted', 'hidden'], true)) {
             throw ValidationException::withMessages(['post' => '当前帖子不可编辑。']);
         }
+        $currentVersion = CommunityPostVersion::query()
+            ->where('community_post_id', $post->id)
+            ->where('version_no', $post->current_version_no)
+            ->first();
+        if ($currentVersion?->review_status === 'pending') {
+            throw ValidationException::withMessages(['post' => '当前已有版本等待审核，请在审核完成后再编辑。']);
+        }
         $rules = $this->postRules();
         $this->validatePostText($data, $rules);
         $files = $this->validateAttachments($user, $data['image_file_ids'] ?? [], $data['video_file_id'] ?? null);
@@ -81,6 +90,7 @@ class CommunityContentService
                 'version_no' => $versionNo,
                 'title' => $data['title'],
                 'content' => $data['content'],
+                'category_code' => $data['category_code'] ?? $locked->category_code,
                 'review_status' => $auto ? 'approved' : 'pending',
                 'rule_snapshot' => $rules,
                 'reviewed_at' => $auto ? now() : null,
@@ -88,7 +98,7 @@ class CommunityContentService
             $this->attach($version, $files);
             $updates = ['current_version_no' => $versionNo];
             if ($auto) {
-                $updates += ['title' => $data['title'], 'content' => $data['content'], 'status' => 'published', 'published_version_no' => $versionNo, 'published_at' => now()];
+                $updates += ['title' => $data['title'], 'content' => $data['content'], 'category_code' => $data['category_code'] ?? $locked->category_code, 'status' => 'published', 'published_version_no' => $versionNo, 'published_at' => now()];
             } elseif ($locked->published_version_no === null) {
                 $updates['status'] = 'pending_review';
             }
@@ -138,6 +148,7 @@ class CommunityContentService
             if ($auto) {
                 CommunityPost::query()->whereKey($post->id)->increment('comment_count');
                 $this->grantCommentReward($comment);
+                $this->notifyPublishedComment($comment);
             }
 
             return $comment->fresh();
@@ -148,18 +159,18 @@ class CommunityContentService
     {
         return DB::transaction(function () use ($admin, $post, $data) {
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
-            $version = CommunityPostVersion::query()->where('community_post_id', $locked->id)->where('review_status', 'pending')->latest('version_no')->lockForUpdate()->firstOrFail();
+            $version = CommunityPostVersion::query()->where('community_post_id', $locked->id)->where('version_no', $locked->current_version_no)->where('review_status', 'pending')->lockForUpdate()->firstOrFail();
             if ($data['decision'] === 'approve') {
                 $version->update(['review_status' => 'approved', 'reviewed_by_admin_id' => $admin->id, 'review_note' => $data['note'], 'reviewed_at' => now()]);
-                $locked->update(['title' => $version->title, 'content' => $version->content, 'status' => 'published', 'published_version_no' => $version->version_no, 'reviewed_by_admin_id' => $admin->id, 'review_note' => $data['note'], 'published_at' => now()]);
+                $locked->update(['title' => $version->title, 'content' => $version->content, 'category_code' => $version->category_code, 'status' => 'published', 'published_version_no' => $version->version_no, 'reviewed_by_admin_id' => $admin->id, 'review_note' => $data['note'], 'published_at' => now()]);
                 $this->grantPostReward($locked);
-                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'post_review_approved', '帖子审核通过', '你的帖子或新版本已通过审核并公开。', 'post-review:'.$version->public_id.':approved');
+                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'post_review_approved', '帖子审核通过', '你的帖子或新版本已通过审核并公开。', 'post-review:'.$version->public_id.':approved', false, ['in_app'], ['post_id' => $locked->public_id]);
             } else {
                 $version->update(['review_status' => 'rejected', 'reviewed_by_admin_id' => $admin->id, 'review_reason_code' => $data['reason_code'], 'review_note' => $data['note'], 'reviewed_at' => now()]);
                 if ($locked->published_version_no === null) {
                     $locked->update(['status' => 'rejected', 'reviewed_by_admin_id' => $admin->id, 'review_reason_code' => $data['reason_code'], 'review_note' => $data['note']]);
                 }
-                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'post_review_rejected', '帖子审核未通过', $data['note'], 'post-review:'.$version->public_id.':rejected');
+                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'post_review_rejected', '帖子审核未通过', $data['note'], 'post-review:'.$version->public_id.':rejected', false, ['in_app'], ['post_id' => $locked->public_id]);
             }
 
             return $locked->fresh();
@@ -177,10 +188,13 @@ class CommunityContentService
                 $locked->update(['status' => 'published', 'reviewed_by_admin_id' => $admin->id, 'review_note' => $data['note'], 'published_at' => now()]);
                 CommunityPost::query()->whereKey($locked->community_post_id)->increment('comment_count');
                 $this->grantCommentReward($locked);
-                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'comment_review_approved', '评论审核通过', '你的评论已通过审核并公开。', 'comment-review:'.$locked->public_id.':approved');
+                $this->notifyPublishedComment($locked);
+                $postPublicId = CommunityPost::query()->whereKey($locked->community_post_id)->value('public_id');
+                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'comment_review_approved', '评论审核通过', '你的评论已通过审核并公开。', 'comment-review:'.$locked->public_id.':approved', false, ['in_app'], ['post_id' => $postPublicId, 'comment_id' => $locked->public_id]);
             } else {
                 $locked->update(['status' => 'rejected', 'reviewed_by_admin_id' => $admin->id, 'review_reason_code' => $data['reason_code'], 'review_note' => $data['note']]);
-                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'comment_review_rejected', '评论审核未通过', $data['note'], 'comment-review:'.$locked->public_id.':rejected');
+                $postPublicId = CommunityPost::query()->whereKey($locked->community_post_id)->value('public_id');
+                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'comment_review_rejected', '评论审核未通过', $data['note'], 'comment-review:'.$locked->public_id.':rejected', false, ['in_app'], ['post_id' => $postPublicId, 'comment_id' => $locked->public_id]);
             }
 
             return $locked->fresh();
@@ -227,6 +241,46 @@ class CommunityContentService
             $this->assets->grantPoints(User::query()->findOrFail($comment->user_id), $points, 'comment', $comment->public_id, '有效评论奖励。', 'community-comment:'.$comment->public_id);
         }
         $comment->update(['reward_granted' => true]);
+    }
+
+    private function notifyPublishedComment(CommunityComment $comment): void
+    {
+        $post = CommunityPost::query()->findOrFail($comment->community_post_id);
+        $actor = User::query()->findOrFail($comment->user_id);
+        $parent = $comment->parent_comment_id
+            ? CommunityComment::query()->find($comment->parent_comment_id)
+            : null;
+        $data = ['post_id' => $post->public_id, 'comment_id' => $comment->public_id];
+
+        if ($parent !== null && $parent->user_id !== $actor->id) {
+            $recipient = User::query()->findOrFail($parent->user_id);
+            $this->notifications->create(
+                $recipient,
+                'community',
+                'community_comment_replied',
+                '收到新回复',
+                ($actor->nickname ?: '一位同学').'回复了你在《'.$post->title.'》下的评论。',
+                'community-comment:'.$comment->public_id.':reply:'.$recipient->public_id,
+                false,
+                ['in_app'],
+                $data + ['parent_comment_id' => $parent->public_id],
+            );
+        }
+
+        if (($parent === null || $parent->user_id !== $post->user_id) && $post->user_id !== $actor->id) {
+            $recipient = User::query()->findOrFail($post->user_id);
+            $this->notifications->create(
+                $recipient,
+                'community',
+                'community_post_commented',
+                '帖子收到新评论',
+                ($actor->nickname ?: '一位同学').'评论了你的帖子《'.$post->title.'》。',
+                'community-comment:'.$comment->public_id.':post:'.$recipient->public_id,
+                false,
+                ['in_app'],
+                $data,
+            );
+        }
     }
 
     private function validateAttachments(User $user, array $imageIds, ?string $videoId): array

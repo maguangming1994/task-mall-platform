@@ -20,14 +20,46 @@ class UserAssetLedgerController extends Controller
     public function pointAccount(Request $request, AssetLedgerService $ledger): JsonResponse
     {
         $account = $ledger->account($request->user());
-        $expiring = $request->user()->id;
-        $next = PointBatch::query()->where('user_id', $expiring)->where('status', 'available')->where('expires_at', '>', now())->orderBy('expires_at')->first();
+        $userId = $request->user()->id;
+        $activeBatches = PointBatch::query()
+            ->where('user_id', $userId)
+            ->where('status', 'available')
+            ->where('remaining_points', '>', 0)
+            ->where('expires_at', '>', now());
+        $next = (clone $activeBatches)->orderBy('expires_at')->first();
 
         return ApiResponse::success([
             'available_points' => $account->points_available, 'frozen_points' => $account->points_frozen,
             'debt_points' => $account->points_debt, 'spendable' => $account->points_debt === 0,
             'expiring_points' => $next?->remaining_points ?? 0, 'next_expiration_at' => $next?->expires_at?->toIso8601String(),
+            'expiring_7_days' => (clone $activeBatches)->where('expires_at', '<=', now()->addDays(7))->sum('remaining_points'),
+            'expiring_30_days' => (clone $activeBatches)->where('expires_at', '<=', now()->addDays(30))->sum('remaining_points'),
         ]);
+    }
+
+    public function pointBatches(Request $request): JsonResponse
+    {
+        $items = PointBatch::query()
+            ->where('user_id', $request->user()->id)
+            ->where('remaining_points', '>', 0)
+            ->orderByRaw('expires_at is null')
+            ->orderBy('expires_at')
+            ->latest('id')
+            ->limit(100)
+            ->get()
+            ->map(fn (PointBatch $batch) => [
+                'id' => $batch->public_id,
+                'source_code' => $batch->source_code,
+                'issued_points' => $batch->issued_points,
+                'remaining_points' => $batch->remaining_points,
+                'frozen_points' => $batch->frozen_points,
+                'status' => $batch->status,
+                'issued_at' => $batch->issued_at?->toIso8601String(),
+                'expires_at' => $batch->expires_at?->toIso8601String(),
+                'days_remaining' => $batch->expires_at === null ? null : max(0, now()->startOfDay()->diffInDays($batch->expires_at->startOfDay(), false)),
+            ]);
+
+        return ApiResponse::success(['items' => $items]);
     }
 
     public function pointTransactions(Request $request): JsonResponse

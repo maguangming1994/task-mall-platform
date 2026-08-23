@@ -16,7 +16,7 @@ class OrderController extends Controller
     public function index(Request $request, CheckoutOrderService $service): JsonResponse
     {
         /** @var User $user */ $user = $request->user();
-        $orders = Order::query()->where('user_id', $user->id)->with(['batch', 'items'])->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))->latest('id')->get()->map(fn ($order) => $service->presentOrder($order));
+        $orders = Order::query()->where('user_id', $user->id)->with(['batch', 'items', 'fulfillments'])->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))->latest('id')->get()->map(fn ($order) => $service->presentOrder($order));
 
         return ApiResponse::success(['items' => $orders, 'pagination' => ['page' => 1, 'page_size' => $orders->count(), 'total' => $orders->count()]]);
     }

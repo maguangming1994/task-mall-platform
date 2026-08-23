@@ -18,7 +18,7 @@ class TaskHallController extends Controller
         $filters = $request->validate([
             'keyword' => ['sometimes', 'string', 'max:100'], 'category' => ['sometimes', 'in:onboarding,daily,community,commerce,research,campaign'],
             'participation_mode' => ['sometimes', 'in:claim_and_submit,claim_and_auto_verify,auto_enroll'],
-            'reward_type' => ['sometimes', 'in:points,coupon,wallet_balance'], 'task_type' => ['sometimes', 'in:one_time,daily,weekly,repeatable'],
+            'reward_type' => ['sometimes', 'in:points,coupon,wallet_balance'], 'task_type' => ['sometimes', 'in:one_time,daily,weekly,monthly,milestone,repeatable'],
             'claimable_only' => ['sometimes', 'boolean'],
         ]);
         $items = collect($claims->hall($filters));

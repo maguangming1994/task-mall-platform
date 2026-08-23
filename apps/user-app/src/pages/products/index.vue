@@ -1,61 +1,162 @@
 <template>
-  <view class="page">
-    <view class="hero"><text class="eyebrow">SELECTED MALL</text><text class="title">把每份收获，换成喜欢的生活</text><text class="subtitle">现金、积分、现金＋积分三种方式，同一商品各端价格一致。</text></view>
-    <view v-for="product in products" :key="product.id" class="card">
-      <swiper v-if="product.gallery_images?.length" class="product-gallery" circular :indicator-dots="product.gallery_images.length > 1" :autoplay="product.gallery_images.length > 1" :interval="4000">
-        <swiper-item v-for="image in product.gallery_images" :key="image.url"><image class="gallery-image" :src="image.url" mode="aspectFill" :alt="image.alt || product.name" /></swiper-item>
-      </swiper>
-      <view class="product-head"><view class="product-mark">{{ product.name.slice(0, 1) }}</view><view><text class="name">{{ product.name }}</text><text class="sub">{{ product.subtitle || product.description_text || plainTextFromRich(product.description) }}</text></view></view>
-      <view v-for="sku in product.skus" :key="sku.id" class="sku">
-        <view class="sku-head"><text>{{ sku.name }}</text><text class="delivery">{{ deliveryText(sku.fulfillment_type) }}</text></view>
-        <view class="specs"><text v-for="(value, key) in sku.specs" :key="key" class="spec">{{ key }}：{{ value }}</text></view>
-        <view class="prices">
-          <view v-for="option in sku.purchase_options" :key="option.id" class="price-row">
-            <view><text>{{ modeText(option.purchase_mode) }}</text><text class="price">{{ priceText(option) }}</text></view><button class="add" :disabled="sku.stock < 1" @click="add(sku.id, option.purchase_mode)">{{ sku.stock > 0 ? '加入购物车' : '暂时缺货' }}</button>
-          </view>
-        </view>
-        <text class="stock">可售库存 {{ sku.stock }}</text>
+  <view class="page tm-page-shell">
+    <view class="page-nav">
+      <view class="nav-back" aria-label="返回" @click="goBack">‹</view>
+      <text>精选商城</text>
+      <view class="nav-placeholder" />
+    </view>
+
+    <view class="mall-head">
+      <view class="brand-lockup">
+        <image v-if="mallAppearance.brand.logo_url" class="brand-logo" :src="mallAppearance.brand.logo_url" mode="aspectFit" />
+        <view v-else class="brand-logo brand-logo-fallback">{{ mallAppearance.brand.logo_text || 'L' }}</view>
+        <view><text class="brand-name">{{ mallAppearance.brand.name || '任务商城' }}</text><text class="brand-sub">{{ mallAppearance.brand.caption || 'TASK · REWARD · LIFE' }}</text></view>
+      </view>
+      <button class="cart-button" @click="openCart"><text class="cart-glyph">⌑</text>购物车 <text class="cart-count">{{ cartItemCount }}</text></button>
+    </view>
+
+    <view class="search-box">
+      <text class="search-mark">⌕</text>
+      <input v-model="keyword" confirm-type="search" placeholder="搜索商品、课程或数字权益" />
+    </view>
+
+    <view class="hero">
+      <image class="hero-image" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
+      <view class="hero-shade" />
+      <view class="hero-content">
+        <text class="hero-title">把努力兑换成\n更好的日常</text>
+        <text class="hero-copy">现金、积分或组合购买，价格清晰一致</text>
+        <view class="hero-action" @click="scrollToProducts">查看本周好物 <text>›</text></view>
       </view>
     </view>
-    <button v-if="auth.isAuthenticated" class="cart-entry" @click="openCart">查看购物车</button>
-    <text v-if="products.length === 0 && !loading" class="empty">暂无在售商品</text>
-    <text v-if="loading" class="empty">正在加载商品…</text>
+
+    <view class="mall-assurance tm-card-strong tm-campus-grid">
+      <view class="assurance-head"><view><text class="tm-section-kicker">CAMPUS SELECT</text><strong>校园严选服务</strong></view><text>{{ products.length }} 件好物</text></view>
+      <view class="assurance-grid">
+        <view v-for="item in mallAppearance.assurances" :key="item.id">
+          <view :class="['assurance-icon', `tone-${item.tone || 'cyan'}`]"><image v-if="item.icon_url" :src="item.icon_url" mode="aspectFit" /><text v-else>{{ item.mark }}</text></view>
+          <strong>{{ item.label }}</strong><small>{{ item.description }}</small>
+        </view>
+      </view>
+    </view>
+
+    <scroll-view class="category-scroll" scroll-x :show-scrollbar="false">
+      <view class="categories">
+        <view class="category" :class="{ active: categoryId === '' }" @click="selectCategory('')">推荐</view>
+        <view v-for="item in categories" :key="item.id" class="category" :class="{ active: categoryId === item.id }" @click="selectCategory(item.id)">{{ item.name }}</view>
+      </view>
+    </scroll-view>
+
+    <view id="product-list" class="section-head"><text>本周精选</text><text>{{ filteredProducts.length }} 件在售</text></view>
+    <view v-if="loading" class="product-grid">
+      <view v-for="index in 4" :key="index" class="product-card tm-panel"><view class="cover tm-skeleton" /><view class="skeleton-line tm-skeleton" /><view class="skeleton-line short tm-skeleton" /></view>
+    </view>
+    <view v-else-if="loadError" class="load-error tm-panel"><text class="empty-title">商品列表加载失败</text><text>{{ loadError }}</text><button @click="load">重新加载</button></view>
+    <view v-else-if="filteredProducts.length" class="product-grid">
+      <view v-for="product in filteredProducts" :key="product.id" class="product-card tm-panel" @click="openProduct(product.id)">
+        <image v-if="cover(product)" class="cover" :src="cover(product)" mode="aspectFill" />
+        <view v-else class="cover placeholder"><text>{{ product.name.slice(0, 1) }}</text><small>精选好物</small></view>
+        <view class="product-body">
+          <text class="product-name">{{ product.name }}</text>
+          <text class="product-sub">{{ product.subtitle || product.description_text || plainTextFromRich(product.description) }}</text>
+          <text class="product-modes">{{ purchaseModesText(product) }} · 运费仅现金</text><view class="product-foot"><text class="price">{{ lowestPrice(product) }}</text><text class="arrow">→</text></view>
+        </view>
+      </view>
+    </view>
+    <view v-else class="empty tm-panel"><text class="empty-title">没有找到匹配商品</text><text>换个关键词或分类试试</text></view>
+
     <AppTabBar current-target="products" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import AppTabBar from '@/components/AppTabBar.vue'
-import { listProducts, type MallProduct, type PurchaseMode, type PurchaseOption } from '@/api/products'
-import { addCartItem } from '@/api/cart'
-import { useAuthStore } from '@/stores/auth'
+import { loadAppearanceContent, type MallAppearance } from '@/api/appearance'
+import { getCart } from '@/api/cart'
+import { listProductCategories, listProducts, type MallProduct, type ProductCategory, type PurchaseOption } from '@/api/products'
 import { plainTextFromRich } from '@/utils/richText'
+import { useAuthStore } from '@/stores/auth'
 
 const products = ref<MallProduct[]>([])
+const categories = ref<ProductCategory[]>([])
 const loading = ref(false)
+const loadError = ref('')
+const keyword = ref('')
+const categoryId = ref('')
+const cartItemCount = ref(0)
 const auth = useAuthStore()
-async function load() { loading.value = true; try { products.value = (await listProducts()).items } finally { loading.value = false } }
+const mallAppearance = ref<MallAppearance>({
+  brand: { logo_url: '', logo_text: 'L', name: '任务商城', caption: 'TASK · REWARD · LIFE' },
+  assurances: [
+    { id: 'same_price', label: '同端同价', description: '各端价格保持一致', mark: '价', icon_url: '', tone: 'yellow' },
+    { id: 'payments', label: '三种支付', description: '现金、积分、混合', mark: '付', icon_url: '', tone: 'cyan' },
+    { id: 'after_sales', label: '售后可查', description: '退款进度完整留痕', mark: '退', icon_url: '', tone: 'green' },
+  ],
+})
+
+const filteredProducts = computed(() => {
+  const query = keyword.value.trim().toLowerCase()
+  return products.value.filter((product) => {
+    if (query && !`${product.name} ${product.subtitle || ''} ${product.description_text || ''}`.toLowerCase().includes(query)) return false
+    return true
+  })
+})
+
 onShow(load)
 onPullDownRefresh(async () => { try { await load() } finally { uni.stopPullDownRefresh() } })
-function modeText(mode: PurchaseMode) { return ({ cash: '现金购买', points: '积分兑换', cash_points: '现金 + 积分' } as const)[mode] }
-function deliveryText(type: string) { return ({ logistics: '物流配送', no_logistics: '无需物流', virtual_delivery: '虚拟交付' } as Record<string, string>)[type] || type }
-function priceText(option: PurchaseOption) {
-  if (option.purchase_mode === 'cash') return `¥${(option.cash_amount / 100).toFixed(2)}`
-  if (option.purchase_mode === 'points') return `${option.points} 积分`
-  return `¥${(option.cash_amount / 100).toFixed(2)} + ${option.points} 积分`
+
+async function load() {
+  loading.value = true
+  loadError.value = ''
+  try {
+    const [productResult, categoryResult, appearanceResult, cartResult] = await Promise.all([
+      listProducts(categoryId.value || undefined),
+      listProductCategories(),
+      loadAppearanceContent().catch(() => null),
+      auth.accessToken ? getCart(auth.accessToken).catch(() => null) : Promise.resolve(null),
+    ])
+    products.value = productResult.items
+    categories.value = categoryResult.items
+    if (appearanceResult) mallAppearance.value = appearanceResult.mall
+    cartItemCount.value = cartResult?.items.reduce((count, item) => count + item.quantity, 0) || 0
+  }
+  catch (error) { loadError.value = error instanceof Error ? error.message : '请稍后重试。'; uni.showToast({ title: loadError.value, icon: 'none' }) }
+  finally { loading.value = false }
 }
-async function add(skuId: string, mode: PurchaseMode) { if (!auth.accessToken) return uni.navigateTo({ url: '/pages/login/index' }); try { await addCartItem(auth.accessToken, skuId, mode); uni.showToast({ title: '已加入购物车', icon: 'success' }) } catch (error) { uni.showToast({ title: error instanceof Error ? error.message : '加入失败', icon: 'none' }) } }
+
+function allOptions(product: MallProduct) { return product.skus.flatMap((sku) => sku.purchase_options.filter((option) => option.enabled)) }
+async function selectCategory(id: string) { if (categoryId.value === id) return; categoryId.value = id; await load() }
+function cover(product: MallProduct) { return product.gallery_images?.[0]?.url || '' }
+function optionPrice(option: PurchaseOption) {
+  if (option.purchase_mode === 'cash') return `¥${(option.cash_amount / 100).toFixed(2)}`
+  if (option.purchase_mode === 'points') return `${option.points.toLocaleString()} 积分`
+  return `¥${(option.cash_amount / 100).toFixed(2)} + ${option.points.toLocaleString()}积分`
+}
+function lowestPrice(product: MallProduct) {
+  const options = allOptions(product)
+  if (!options.length) return '暂未定价'
+  const cash = options.filter((option) => option.purchase_mode === 'cash').sort((a, b) => a.cash_amount - b.cash_amount)[0]
+  return optionPrice(cash || options[0])
+}
+function purchaseModesText(product: MallProduct) {
+  const labels: Record<string, string> = { cash: '现金', points: '积分', cash_points: '现金 + 积分' }
+  const modes = [...new Set(allOptions(product).map((option) => labels[option.purchase_mode] || option.purchase_mode))]
+  return modes.length ? modes.join(' / ') : '暂无可购买方式'
+}
+function openProduct(id: string) { uni.navigateTo({ url: `/pages/product-detail/index?id=${encodeURIComponent(id)}` }) }
 function openCart() { uni.navigateTo({ url: '/pages/cart/index' }) }
+function scrollToProducts() { uni.pageScrollTo({ selector: '#product-list', duration: 260 }) }
+function goBack() {
+  const pages = getCurrentPages()
+  if (pages.length > 1) uni.navigateBack()
+  else uni.reLaunch({ url: '/pages/index/index' })
+}
 </script>
 
 <style scoped>
-.page { min-height: 100vh; padding: 32rpx; background: #f5f7fb; box-sizing: border-box; }
-.hero { padding: 40rpx; color: #fff; border-radius: 28rpx; background: linear-gradient(135deg, #ef6c35, #ff9b4b); }
-.eyebrow,.title,.subtitle,.name,.sub,.empty { display: block; }.eyebrow { font-size: 22rpx; opacity: .8; }.title { margin-top: 12rpx; font-size: 44rpx; font-weight: 750; }.subtitle { margin-top: 14rpx; font-size: 26rpx; line-height: 1.6; }
-.card { margin-top: 24rpx; padding: 30rpx; background: #fff; border-radius: 24rpx; }.name { font-size: 34rpx; font-weight: 700; }.sub { margin-top: 8rpx; color: #667085; font-size: 25rpx; }.sku { margin-top: 24rpx; padding-top: 24rpx; border-top: 1rpx solid #eee; }.sku-head,.price-row { display: flex; justify-content: space-between; align-items:center }.sku-head { font-weight: 650; }.delivery { color: #ef6c35; font-size: 24rpx; }.specs { margin-top: 12rpx; }.spec { margin-right: 16rpx; color: #667085; font-size: 24rpx; }.prices { margin-top: 18rpx; padding: 16rpx 20rpx; border-radius: 16rpx; background: #fff8f3; }.price-row { padding: 8rpx 0; font-size: 26rpx; }.price { display:block;color: #d94b17; font-weight: 700; }.add{margin:0;padding:0 20rpx;height:56rpx;line-height:56rpx;font-size:23rpx;background:#ef6c35;color:#fff}.add::after{border:0}.stock{display:block;margin-top:12rpx;color:#667085;font-size:23rpx}.cart-entry{position:sticky;bottom:24rpx;margin-top:26rpx;background:#1d2939;color:#fff}.empty { padding: 80rpx 0; text-align: center; color: #98a2b3; }
-.page{padding:32rpx 28rpx 90rpx;background:var(--tm-canvas)}.hero{position:relative;overflow:hidden;padding:38rpx 34rpx;border-radius:32rpx;background:linear-gradient(135deg,#172f68,#315fd0 65%,#507fe8);box-shadow:0 20rpx 44rpx rgba(37,83,185,.18)}.hero::after{content:'';position:absolute;right:-75rpx;bottom:-115rpx;width:260rpx;height:260rpx;border:45rpx solid rgba(255,255,255,.08);border-radius:50%}.eyebrow{color:#cbdcff;font-size:19rpx;font-weight:750;letter-spacing:2rpx}.title{position:relative;max-width:560rpx;font-size:39rpx;font-weight:850;line-height:1.35}.subtitle{position:relative;color:rgba(255,255,255,.75);font-size:23rpx}.card{padding:27rpx;border:1rpx solid var(--tm-line);border-radius:28rpx;box-shadow:0 10rpx 26rpx rgba(35,49,80,.04)}.product-head{display:flex;align-items:center;gap:18rpx}.product-head>view:last-child{min-width:0}.product-mark{display:flex;align-items:center;justify-content:center;width:76rpx;height:76rpx;flex:none;border-radius:23rpx;background:var(--tm-reward-100);color:var(--tm-reward-600);font-size:27rpx;font-weight:850}.name{font-size:31rpx;font-weight:800}.sub{overflow:hidden;color:var(--tm-ink-500);font-size:23rpx;text-overflow:ellipsis;white-space:nowrap}.sku{border-color:var(--tm-line)}.delivery{padding:5rpx 10rpx;border-radius:9rpx;background:var(--tm-brand-100);color:var(--tm-brand-700);font-size:20rpx}.prices{background:#fafbfe}.price{color:var(--tm-reward-600);font-weight:800}.add{border-radius:15rpx;background:var(--tm-brand-600)}.cart-entry{height:82rpx;border-radius:22rpx;background:var(--tm-ink-900);font-size:25rpx;font-weight:750;line-height:82rpx;box-shadow:0 14rpx 30rpx rgba(23,32,51,.2)}
-.product-gallery{height:360rpx;margin:-27rpx -27rpx 24rpx;overflow:hidden;border-radius:28rpx 28rpx 0 0}.gallery-image{display:block;width:100%;height:360rpx}
-@media screen and (min-width:768px){.page{width:750rpx;margin:0 auto}}
+.page{min-height:100vh;padding-top:0;background:linear-gradient(180deg,#fff 0,#f5fbff 430rpx,#f5faff 100%);color:#10264a}.page-nav{position:relative;display:flex;align-items:center;justify-content:center;height:88rpx;margin:0 -24rpx 8rpx;background:rgba(255,255,255,.96);font-size:30rpx;font-weight:900}.nav-back{position:absolute;left:20rpx;top:10rpx;display:flex;width:68rpx;height:68rpx;align-items:center;justify-content:center;color:#0e2142;font-size:58rpx;font-weight:400}.nav-placeholder{width:68rpx;height:68rpx}.mall-head,.brand-lockup,.product-foot{display:flex;align-items:center}.mall-head{justify-content:space-between;padding:18rpx 8rpx 4rpx}.brand-lockup{gap:16rpx}.brand-logo{width:60rpx;height:60rpx;border-radius:18rpx;box-shadow:0 10rpx 24rpx rgba(17,177,119,.14)}.brand-logo-fallback{display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#20c77f,#00a864);color:#fff;font-size:28rpx;font-weight:950}.brand-name,.brand-sub,.hero-title,.hero-copy,.product-name,.product-sub,.empty text{display:block}.brand-name{color:#10264a;font-size:31rpx;font-weight:900}.brand-sub{margin-top:3rpx;color:#7988a5;font-size:15rpx;letter-spacing:1.2rpx}.cart-button{display:flex;align-items:center;gap:8rpx;height:64rpx;margin:0;padding:0 22rpx;border:1rpx solid #dce8f2;border-radius:999rpx;background:#fff;color:#173354;font-size:21rpx;line-height:62rpx;box-shadow:0 10rpx 26rpx rgba(35,72,110,.08)}.cart-button::after{border:0}.cart-glyph{font-size:28rpx;transform:rotate(-8deg)}.cart-count{min-width:22rpx;text-align:center;color:#0aa76f;font-size:20rpx;font-weight:900}.search-box{display:flex;align-items:center;gap:12rpx;height:76rpx;margin-top:20rpx;padding:0 24rpx;border:1rpx solid #dce8f2;border-radius:999rpx;background:#fff;box-shadow:0 12rpx 30rpx rgba(36,75,112,.07)}.search-box input{height:76rpx;flex:1;color:#173354;font-size:23rpx}.search-mark{color:#71819e;font-size:34rpx}.hero{position:relative;height:330rpx;overflow:hidden;margin-top:22rpx;border-radius:30rpx;background:#21c7c3;box-shadow:0 18rpx 40rpx rgba(25,119,154,.15)}.hero-image,.hero-shade{position:absolute;inset:0;width:100%;height:100%}.hero-shade{background:linear-gradient(90deg,rgba(4,139,155,.95) 0,rgba(15,179,178,.8) 46%,rgba(40,193,194,.06) 73%)}.hero-content{position:relative;z-index:1;width:61%;padding:54rpx 0 0 34rpx;color:#fff}.hero-title{white-space:pre-line;font-size:42rpx;font-weight:950;line-height:1.22;text-shadow:0 2rpx 8rpx rgba(8,79,100,.12)}.hero-copy{margin-top:17rpx;color:rgba(255,255,255,.94);font-size:21rpx;line-height:1.5}.hero-action{display:inline-flex;align-items:center;gap:12rpx;margin-top:25rpx;padding:14rpx 25rpx;border-radius:999rpx;background:#fff;color:#143254;font-size:21rpx;font-weight:850;box-shadow:0 8rpx 18rpx rgba(4,94,113,.12)}.hero-action text{font-size:28rpx}.mall-assurance{margin-top:24rpx;padding:24rpx;border:1rpx solid #dce8f2;border-radius:28rpx;background:rgba(255,255,255,.96);box-shadow:0 14rpx 36rpx rgba(39,74,108,.07)}.assurance-head{display:flex;align-items:flex-start;justify-content:space-between}.assurance-head>view strong{display:block;margin-top:9rpx;color:#10264a;font-size:28rpx;font-weight:950}.assurance-head>text{padding-top:7rpx;color:#7d8ba3;font-size:18rpx}.assurance-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;margin-top:20rpx}.assurance-grid>view{min-width:0;padding:16rpx 13rpx;border:1rpx solid #dce8f2;border-radius:20rpx;background:#fff}.assurance-grid strong,.assurance-grid small{display:block}.assurance-grid strong{margin-top:10rpx;color:#10264a;font-size:19rpx;font-weight:900}.assurance-grid small{margin-top:5rpx;color:#7b8aa2;font-size:15rpx;line-height:1.35}.assurance-icon{display:flex;width:43rpx;height:43rpx;align-items:center;justify-content:center;border-radius:14rpx;color:#fff;font-size:18rpx;font-weight:950;box-shadow:0 7rpx 15rpx rgba(45,101,128,.1)}.assurance-icon image{width:100%;height:100%;border-radius:14rpx}.tone-yellow{background:linear-gradient(145deg,#ffca3d,#ffad1f)}.tone-cyan{background:linear-gradient(145deg,#15c9d0,#0ea5b2)}.tone-green{background:linear-gradient(145deg,#61d84c,#24b948)}.category-scroll{margin-top:22rpx;white-space:nowrap}.categories{display:inline-flex;gap:12rpx}.category{padding:13rpx 24rpx;border:1rpx solid #d9e6ef;border-radius:999rpx;background:#fff;color:#53657f;font-size:21rpx}.category.active{border-color:#0bb478;background:#0bb478;color:#fff;font-weight:850;box-shadow:0 8rpx 18rpx rgba(11,180,120,.18)}.section-head{display:flex;justify-content:space-between;align-items:flex-end;margin:34rpx 2rpx 18rpx}.section-head text:first-child{color:#10264a;font-size:32rpx;font-weight:950}.section-head text:last-child{color:#7b8aa3;font-size:20rpx}.product-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16rpx}.product-card{overflow:hidden;border:1rpx solid #dce8f2;border-radius:24rpx;background:#fff;box-shadow:0 12rpx 30rpx rgba(36,75,112,.07)}.cover{display:block;width:100%;height:224rpx;background:#edf5f7}.cover.placeholder{display:flex;align-items:center;justify-content:center;flex-direction:column;background:linear-gradient(145deg,#e4f8ee,#eef8ff);color:#0a936a}.cover.placeholder text{font-size:50rpx;font-weight:900}.cover.placeholder small{margin-top:8rpx;font-size:18rpx}.product-body{padding:20rpx}.product-name{overflow:hidden;color:#10264a;font-size:25rpx;font-weight:900;text-overflow:ellipsis;white-space:nowrap}.product-sub{height:58rpx;margin-top:7rpx;overflow:hidden;color:#7b8aa3;font-size:19rpx;line-height:1.45}.product-modes{display:block;margin-top:8rpx;color:#60728c;font-size:17rpx;line-height:1.4}.product-foot{justify-content:space-between;margin-top:14rpx}.price{color:#ff6a31;font-size:24rpx;font-weight:950}.arrow{display:flex;align-items:center;justify-content:center;width:42rpx;height:42rpx;border-radius:50%;background:#e8fbf3;color:#08a971;font-weight:950}.empty{padding:78rpx 30rpx;text-align:center;border:1rpx solid #dce8f2;border-radius:28rpx;background:rgba(255,255,255,.9);color:#7b8aa3;box-shadow:0 12rpx 30rpx rgba(36,75,112,.06)}.empty::before{content:'⌕';display:flex;align-items:center;justify-content:center;width:90rpx;height:90rpx;margin:0 auto 22rpx;border-radius:28rpx;background:linear-gradient(145deg,#e6f8ef,#e8f5ff);color:#20b87e;font-size:48rpx}.empty-title{margin-bottom:10rpx;color:#10264a;font-size:27rpx;font-weight:900}.skeleton-line{height:22rpx;margin:20rpx 18rpx 0;border-radius:8rpx}.skeleton-line.short{width:54%;margin-bottom:22rpx}.load-error{margin-top:25rpx;padding:50rpx 30rpx;text-align:center;border:1rpx solid #ffc9c1;border-radius:24rpx;background:#fff7f5;color:#b42318}.load-error button{height:68rpx;margin:22rpx auto 0;padding:0 28rpx;border:1rpx solid #e7a79f;border-radius:16rpx;background:#fff;color:#b42318;line-height:66rpx}.load-error button::after{border:0}@media screen and (min-width:768px){.page{max-width:750rpx;margin:0 auto}.hero{height:350rpx}}
+.page-nav{height:88rpx;padding-top:calc(env(safe-area-inset-top) + 4rpx);box-sizing:content-box}
+.nav-back{top:auto;bottom:10rpx}
 </style>

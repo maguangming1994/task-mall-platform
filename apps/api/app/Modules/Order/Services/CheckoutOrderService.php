@@ -2,6 +2,7 @@
 
 namespace App\Modules\Order\Services;
 
+use App\Common\Exceptions\IdempotencyConflictException;
 use App\Models\User;
 use App\Modules\Account\Models\UserAddress;
 use App\Modules\Account\Models\UserAssetAccount;
@@ -14,6 +15,7 @@ use App\Modules\Inventory\Models\InventoryTransaction;
 use App\Modules\Order\Models\CheckoutPreview;
 use App\Modules\Order\Models\Order;
 use App\Modules\Order\Models\OrderBatch;
+use App\Modules\Payment\Services\PaymentCapabilityService;
 use App\Modules\Product\Models\ProductSku;
 use App\Modules\Settings\Services\SystemSettingService;
 use Illuminate\Support\Collection;
@@ -23,12 +25,15 @@ use Illuminate\Validation\ValidationException;
 
 class CheckoutOrderService
 {
-    public function __construct(private readonly SystemSettingService $settings) {}
+    public function __construct(
+        private readonly SystemSettingService $settings,
+        private readonly PaymentCapabilityService $paymentCapabilities,
+    ) {}
 
     public function preview(User $user, array $request, string $platform): array
     {
         $request = $this->canonicalRequest($request);
-        $pricing = $this->price($user, $request);
+        $pricing = $this->price($user, $request, $platform);
         $token = bin2hex(random_bytes(32));
         $expiresAt = now()->addMinutes(5);
         CheckoutPreview::query()->create([
@@ -37,25 +42,31 @@ class CheckoutOrderService
             'pricing_snapshot' => $pricing, 'expires_at' => $expiresAt,
         ]);
 
-        return ['preview_token' => $token, 'capability_version' => 1, ...$this->publicPricing($pricing), 'expires_at' => $expiresAt->toIso8601String()];
+        return ['preview_token' => $token, 'capability_version' => 1, ...$this->publicPricing($user, $pricing), 'expires_at' => $expiresAt->toIso8601String()];
     }
 
     public function create(User $user, array $request, string $platform, string $idempotencyKey): OrderBatch
     {
-        $idempotencyHash = hash('sha256', $idempotencyKey);
-        $existing = OrderBatch::query()->where('idempotency_key_hash', $idempotencyHash)->first();
-        if ($existing) {
-            abort_unless($existing->user_id === $user->id, 404);
-
-            return $existing;
-        }
         $token = (string) ($request['preview_token'] ?? '');
+        $request = $this->canonicalRequest($request);
+        $idempotencyHash = $this->idempotencyKeyHash($user->id, 'checkout.create', $idempotencyKey);
+        $legacyIdempotencyHash = hash('sha256', $idempotencyKey);
+        $requestFingerprint = $this->requestFingerprint($request, $platform);
         if (strlen($token) !== 64) {
             throw ValidationException::withMessages(['preview_token' => '预结算令牌无效。']);
         }
-        $request = $this->canonicalRequest($request);
 
-        return DB::transaction(function () use ($user, $request, $platform, $token, $idempotencyHash) {
+        return DB::transaction(function () use ($user, $request, $platform, $token, $idempotencyHash, $legacyIdempotencyHash, $requestFingerprint) {
+            // Serialize retries for the same actor before checking the unique
+            // idempotency key. This also makes first-request races deterministic.
+            User::query()->lockForUpdate()->findOrFail($user->id);
+            $existing = $this->existingBatch($user, $idempotencyHash, $legacyIdempotencyHash);
+            if ($existing !== null) {
+                $this->assertBatchFingerprint($existing, $requestFingerprint);
+
+                return $existing->fresh();
+            }
+
             $preview = CheckoutPreview::query()->where('token_hash', hash('sha256', $token))->lockForUpdate()->first();
             if (! $preview || $preview->user_id !== $user->id || $preview->consumed_at || $preview->expires_at->isPast()) {
                 throw ValidationException::withMessages(['preview_token' => '预结算已失效，请重新预览。']);
@@ -63,13 +74,14 @@ class CheckoutOrderService
             if (! hash_equals($preview->request_hash, $this->hash($request))) {
                 throw ValidationException::withMessages(['preview_token' => '下单内容与预结算不一致。']);
             }
-            $pricing = $this->price($user, $request);
+            $pricing = $this->price($user, $request, $platform);
             if (! hash_equals($this->hash($preview->pricing_snapshot), $this->hash($pricing))) {
                 throw ValidationException::withMessages(['checkout' => '价格、库存、优惠或运费规则已变化，请重新预览。']);
             }
             $batch = OrderBatch::query()->create([
                 'batch_no' => $this->number('B'), 'user_id' => $user->id, 'client_platform' => $platform,
                 'capability_version' => 1, 'status' => 'active', 'idempotency_key_hash' => $idempotencyHash,
+                'request_fingerprint_hash' => $requestFingerprint,
                 'checkout_preview_id' => $preview->id, ...$this->totals($pricing),
             ]);
             foreach ($pricing['groups'] as $group) {
@@ -94,7 +106,21 @@ class CheckoutOrderService
 
     public function presentOrder(Order $order): array
     {
-        $order->loadMissing('items');
+        $order->loadMissing(['items', 'fulfillments']);
+        $itemIds = $order->items->pluck('id');
+        $pendingRefunds = DB::table('refund_items')->join('refunds', 'refunds.id', '=', 'refund_items.refund_id')
+            ->whereIn('refund_items.order_item_id', $itemIds)
+            ->whereIn('refunds.status', ['submitted', 'awaiting_return', 'return_in_transit', 'processing'])
+            ->selectRaw('refund_items.order_item_id, SUM(refund_items.quantity) AS quantity, SUM(refund_items.refund_cash_amount) AS cash_amount, SUM(refund_items.refund_points) AS points')
+            ->groupBy('refund_items.order_item_id')->get()->keyBy('order_item_id');
+        $activeExchanges = DB::table('exchanges')->whereIn('order_item_id', $itemIds)
+            ->whereNotIn('status', ['rejected', 'closed', 'cancelled'])
+            ->selectRaw('order_item_id, SUM(quantity) AS quantity')->groupBy('order_item_id')->pluck('quantity', 'order_item_id');
+        $allRefundReservations = DB::table('refund_items')->join('refunds', 'refunds.id', '=', 'refund_items.refund_id')
+            ->whereIn('refund_items.order_item_id', $itemIds)
+            ->whereIn('refunds.status', ['submitted', 'awaiting_return', 'return_in_transit', 'processing', 'succeeded'])
+            ->selectRaw('refund_items.order_item_id, SUM(refund_items.quantity) AS quantity')
+            ->groupBy('refund_items.order_item_id')->pluck('quantity', 'order_item_id');
 
         return [
             'id' => $order->public_id, 'order_batch_id' => $order->batch?->public_id ?? $order->batch()->value('public_id'),
@@ -105,20 +131,89 @@ class CheckoutOrderService
             'shipping_amount' => $order->shipping_amount, 'shipping_breakdown' => $order->shipping_rule_snapshot,
             'payable_cash_amount' => $order->payable_cash_amount, 'payable_points' => $order->payable_points,
             'paid_wallet_amount' => $order->paid_wallet_amount, 'paid_external_amount' => $order->paid_external_amount, 'paid_points' => $order->paid_points,
-            'items' => $order->items->map(fn ($item) => [
-                'id' => $item->public_id, 'product_name' => $item->product_name, 'sku_name' => $item->sku_name,
-                'sku_description' => collect($item->specs_snapshot)
-                    ->map(fn ($value, $key) => sprintf('%s: %s', $key, $value))
-                    ->implode(', '),
-                'purchase_mode' => $item->purchase_mode, 'fulfillment_type' => $item->fulfillment_type,
-                'quantity' => $item->quantity, 'unit_cash_amount' => $item->unit_cash_amount, 'unit_points' => $item->unit_points,
-                'paid_cash_amount' => $item->paid_cash_amount, 'paid_points' => $item->paid_points, 'refunded_quantity' => $item->refunded_quantity,
+            'items' => $order->items->map(function ($item) use ($order, $pendingRefunds, $activeExchanges, $allRefundReservations) {
+                $pending = $pendingRefunds->get($item->id);
+                $pendingQuantity = (int) ($pending->quantity ?? 0);
+                $activeExchangeQuantity = (int) ($activeExchanges->get($item->id) ?? 0);
+                $remainingRefundableQuantity = max(0, (int) $item->quantity - (int) $item->refunded_quantity - $pendingQuantity - $activeExchangeQuantity);
+                $remainingCash = max(0, (int) $item->paid_cash_amount - (int) $item->refunded_cash_amount - (int) ($pending->cash_amount ?? 0));
+                $remainingPoints = max(0, (int) $item->paid_points - (int) $item->refunded_points - (int) ($pending->points ?? 0));
+                $refundableCash = $activeExchangeQuantity === 0
+                    ? $remainingCash
+                    : min($remainingCash, intdiv((int) $item->paid_cash_amount * $remainingRefundableQuantity, (int) $item->quantity));
+                $refundablePoints = $activeExchangeQuantity === 0
+                    ? $remainingPoints
+                    : min($remainingPoints, intdiv((int) $item->paid_points * $remainingRefundableQuantity, (int) $item->quantity));
+                $refundStatusAllowed = in_array($order->status, ['pending_fulfillment', 'fulfilled', 'completed', 'partially_refunded'], true);
+                $exchangeStatusAllowed = in_array($order->status, ['fulfilled', 'completed'], true);
+                $serviceTypes = [];
+                if ($refundStatusAllowed && $remainingRefundableQuantity > 0) {
+                    $serviceTypes[] = 'refund_only';
+                    if ($order->shipped_at !== null) {
+                        $serviceTypes[] = 'return_and_refund';
+                    }
+                }
+                if ($exchangeStatusAllowed && max(0, (int) $item->quantity - (int) ($allRefundReservations->get($item->id) ?? 0) - $activeExchangeQuantity) > 0) {
+                    $serviceTypes[] = 'exchange';
+                }
+                $returnMethod = $item->fulfillment_type === 'logistics' ? 'logistics' : 'no_logistics';
+                $hasActiveAfterSale = $pendingQuantity > 0 || $activeExchangeQuantity > 0;
+                $afterSaleSummary = match (true) {
+                    $serviceTypes !== [] && $hasActiveAfterSale => '部分数量售后处理中，剩余数量仍可申请',
+                    $serviceTypes !== [] && $order->shipped_at === null => '未发货可申请仅退款，无需填写退货物流',
+                    $serviceTypes !== [] && $returnMethod === 'no_logistics' => '支持仅退款、退货退款或换货，商品无需寄回物流',
+                    $serviceTypes !== [] => '支持按剩余数量申请退款、退货退款或换货',
+                    $hasActiveAfterSale => '当前数量已进入售后处理',
+                    ! $refundStatusAllowed => '订单当前状态暂不支持售后申请',
+                    default => '该商品已无剩余可售后数量',
+                };
+
+                return [
+                    'id' => $item->public_id, 'product_name' => $item->product_name, 'sku_name' => $item->sku_name,
+                    'sku_description' => collect($item->specs_snapshot)
+                        ->map(fn ($value, $key) => sprintf('%s: %s', $key, $value))
+                        ->implode(', '),
+                    'purchase_mode' => $item->purchase_mode, 'fulfillment_type' => $item->fulfillment_type,
+                    'quantity' => $item->quantity, 'unit_cash_amount' => $item->unit_cash_amount, 'unit_points' => $item->unit_points,
+                    'paid_cash_amount' => $item->paid_cash_amount, 'paid_points' => $item->paid_points,
+                    'unit_paid_cash_amount' => intdiv((int) $item->paid_cash_amount, (int) $item->quantity),
+                    'unit_paid_points' => intdiv((int) $item->paid_points, (int) $item->quantity),
+                    'refunded_quantity' => (int) $item->refunded_quantity,
+                    'pending_refund_quantity' => $pendingQuantity,
+                    'active_exchange_quantity' => $activeExchangeQuantity,
+                    'remaining_refundable_quantity' => $remainingRefundableQuantity,
+                    'remaining_exchangeable_quantity' => max(0, (int) $item->quantity - (int) ($allRefundReservations->get($item->id) ?? 0) - $activeExchangeQuantity),
+                    'refundable_cash_amount' => $refundableCash,
+                    'refundable_points' => $refundablePoints,
+                    'after_sale_workflow' => [
+                        'allowed' => $serviceTypes !== [],
+                        'available_service_types' => $serviceTypes,
+                        'recommended_service_type' => $serviceTypes[0] ?? null,
+                        'return_method' => $returnMethod,
+                        'requires_return_logistics' => in_array('return_and_refund', $serviceTypes, true) && $returnMethod === 'logistics',
+                        'has_active_after_sale' => $hasActiveAfterSale,
+                        'summary' => $afterSaleSummary,
+                    ],
+                ];
+            }),
+            'fulfillments' => $order->fulfillments->map(fn ($fulfillment) => [
+                'id' => $fulfillment->public_id,
+                'fulfillment_no' => $fulfillment->fulfillment_no,
+                'method' => $fulfillment->method,
+                'status' => $fulfillment->status,
+                'carrier_code' => $fulfillment->carrier_code,
+                'carrier_name' => $fulfillment->carrier_name,
+                'tracking_no' => $fulfillment->tracking_no,
+                'no_logistics_reason' => $fulfillment->no_logistics_reason,
+                'virtual_delivery' => $fulfillment->virtual_delivery_snapshot,
+                'fulfilled_at' => $fulfillment->fulfilled_at?->toIso8601String(),
             ]),
+            'auto_complete_at' => $order->auto_complete_at?->toIso8601String(), 'completed_at' => $order->completed_at?->toIso8601String(),
             'expires_at' => $order->expires_at?->toIso8601String(), 'created_at' => $order->created_at->toIso8601String(),
         ];
     }
 
-    private function price(User $user, array $request): array
+    private function price(User $user, array $request, string $platform): array
     {
         if ((int) $request['capability_version'] !== 1) {
             throw ValidationException::withMessages(['capability_version' => '客户端能力版本已过期。']);
@@ -157,7 +252,8 @@ class CheckoutOrderService
         if (count($couponIds) !== count(array_unique($couponIds))) {
             throw ValidationException::withMessages(['group_options' => '同一张优惠券不能用于多个拆分订单。']);
         }
-        $groups = $items->groupBy(fn ($item) => $item['sku']->fulfillment_type)->map(function (Collection $groupItems, string $fulfillment) use ($user, $options) {
+        $paymentCapabilities = $this->paymentCapabilities->forPlatform($platform);
+        $groups = $items->groupBy(fn ($item) => $item['sku']->fulfillment_type)->map(function (Collection $groupItems, string $fulfillment) use ($user, $options, $paymentCapabilities) {
             $groupOption = $options->get($fulfillment);
             if (! $groupOption) {
                 throw ValidationException::withMessages(['group_options' => "缺少 {$fulfillment} 分组配置。"]);
@@ -180,10 +276,16 @@ class CheckoutOrderService
                 throw ValidationException::withMessages(['group_options' => '有现金应付时必须选择余额全额或微信全额支付。']);
             }
             if ($method === 'wallet') {
+                if (! $paymentCapabilities['wallet']['enabled']) {
+                    throw ValidationException::withMessages(['cash_payment_method' => $paymentCapabilities['wallet']['reason'] ?? '商城余额支付当前不可用。']);
+                }
                 $account = UserAssetAccount::query()->firstOrCreate(['user_id' => $user->id]);
                 if ($account->wallet_available_cents < $payableCash) {
                     throw ValidationException::withMessages(['cash_payment_method' => '余额不足，不能选择余额全额支付。']);
                 }
+            }
+            if ($method === 'wechat' && ! $paymentCapabilities['wechat']['enabled']) {
+                throw ValidationException::withMessages(['cash_payment_method' => $paymentCapabilities['wechat']['reason'] ?? '微信支付当前不可用。']);
             }
 
             return [
@@ -196,6 +298,16 @@ class CheckoutOrderService
         })->values();
         if ($groups->count() !== $options->count()) {
             throw ValidationException::withMessages(['group_options' => '存在没有商品的交付分组。']);
+        }
+        $cashMethods = $groups->where('payable_cash_amount', '>', 0)->pluck('cash_payment_method')->unique()->values();
+        if ($cashMethods->count() > 1) {
+            throw ValidationException::withMessages(['cash_payment_method' => '同一批订单只能统一选择余额全额支付或微信全额支付，不能混合使用。']);
+        }
+        if ($cashMethods->first() === 'wallet') {
+            $account = UserAssetAccount::query()->firstOrCreate(['user_id' => $user->id]);
+            if ($account->wallet_available_cents < $groups->sum('payable_cash_amount')) {
+                throw ValidationException::withMessages(['cash_payment_method' => '余额不足，必须覆盖本批全部订单的现金应付金额。']);
+            }
         }
         $totalPoints = $groups->sum('payable_points');
         $account = UserAssetAccount::query()->firstOrCreate(['user_id' => $user->id]);
@@ -404,22 +516,156 @@ class CheckoutOrderService
 
     private function canonicalRequest(array $request): array
     {
-        $normalized = ['capability_version' => (int) $request['capability_version'], 'items' => array_values($request['items']), 'group_options' => array_values($request['group_options'])];
+        $normalized = [
+            'capability_version' => (int) $request['capability_version'],
+            'items' => array_map(static fn (array $item): array => [
+                'sku_id' => trim((string) ($item['sku_id'] ?? '')),
+                'quantity' => (int) ($item['quantity'] ?? 0),
+                'purchase_mode' => strtolower(trim((string) ($item['purchase_mode'] ?? ''))),
+            ], array_values($request['items'])),
+            'group_options' => array_map(static function (array $option): array {
+                $normalized = [
+                    'fulfillment_type' => strtolower(trim((string) ($option['fulfillment_type'] ?? ''))),
+                    'address_id' => isset($option['address_id']) ? trim((string) $option['address_id']) : null,
+                    'coupon_id' => isset($option['coupon_id']) ? trim((string) $option['coupon_id']) : null,
+                    'cash_payment_method' => isset($option['cash_payment_method']) ? strtolower(trim((string) $option['cash_payment_method'])) : null,
+                ];
+
+                return array_filter($normalized, static fn ($value) => $value !== null && $value !== '');
+            }, array_values($request['group_options'])),
+        ];
         usort($normalized['items'], fn ($a, $b) => [$a['sku_id'], $a['purchase_mode']] <=> [$b['sku_id'], $b['purchase_mode']]);
         usort($normalized['group_options'], fn ($a, $b) => $a['fulfillment_type'] <=> $b['fulfillment_type']);
         foreach ($normalized['group_options'] as &$option) {
-            $option = array_filter($option, fn ($value) => $value !== null && $value !== '');
             ksort($option);
         } unset($option);
 
         return $normalized;
     }
 
-    private function publicPricing(array $pricing): array
+    private function idempotencyKeyHash(int $actorId, string $operation, string $key): string
     {
-        $groups = collect($pricing['groups'])->map(fn ($group) => collect($group)->except(['items', 'address', 'coupon'])->all())->all();
+        return hash('sha256', 'user:'.$actorId.':'.$operation.':'.trim($key));
+    }
+
+    private function requestFingerprint(array $request, string $platform): string
+    {
+        return $this->hash([
+            'operation' => 'checkout.create',
+            'platform' => strtolower(trim($platform)),
+            'request' => $this->canonicalRequest($request),
+        ]);
+    }
+
+    private function existingBatch(User $user, string $idempotencyHash, string $legacyIdempotencyHash): ?OrderBatch
+    {
+        $existing = OrderBatch::query()->where('idempotency_key_hash', $idempotencyHash)->lockForUpdate()->first();
+        if ($existing !== null) {
+            abort_unless($existing->user_id === $user->id, 404);
+
+            return $existing;
+        }
+
+        // Batches written before the scoped key rollout used sha256(key). Only
+        // replay a legacy row when it belongs to this actor; another actor may
+        // safely use the same key under the new scoped hash.
+        if ($legacyIdempotencyHash !== $idempotencyHash) {
+            $legacy = OrderBatch::query()->where('idempotency_key_hash', $legacyIdempotencyHash)->lockForUpdate()->first();
+            if ($legacy?->user_id === $user->id) {
+                return $legacy;
+            }
+        }
+
+        return null;
+    }
+
+    private function assertBatchFingerprint(OrderBatch $batch, string $fingerprint): void
+    {
+        $stored = $batch->request_fingerprint_hash;
+        if (! is_string($stored) || $stored === '') {
+            $snapshot = CheckoutPreview::query()->find($batch->checkout_preview_id)?->request_snapshot;
+            if (is_array($snapshot)) {
+                $stored = $this->requestFingerprint($snapshot, (string) $batch->client_platform);
+            }
+        }
+
+        if (is_string($stored) && $stored !== '' && ! hash_equals($stored, $fingerprint)) {
+            throw new IdempotencyConflictException('相同幂等键已绑定不同的订单请求，请更换幂等键。');
+        }
+
+        if ($batch->request_fingerprint_hash === null || $batch->request_fingerprint_hash === '') {
+            $batch->update(['request_fingerprint_hash' => $fingerprint]);
+        }
+    }
+
+    private function publicPricing(User $user, array $pricing): array
+    {
+        $coupons = UserCoupon::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['unused', 'locked'])
+            ->orderBy('valid_to')
+            ->orderBy('id')
+            ->get();
+        $groups = collect($pricing['groups'])->map(function (array $group) use ($coupons): array {
+            return [
+                ...collect($group)->except(['items', 'address', 'coupon'])->all(),
+                'selected_coupon_id' => $group['coupon']?->public_id,
+                'coupon_options' => $coupons->map(fn (UserCoupon $coupon): array => $this->couponOption(
+                    $coupon,
+                    (int) $group['items_cash_amount'],
+                    (int) $group['items_points'],
+                ))->values()->all(),
+            ];
+        })->all();
 
         return ['groups' => $groups, ...$this->totals($pricing)];
+    }
+
+    /** @return array<string,mixed> */
+    private function couponOption(UserCoupon $coupon, int $cash, int $points): array
+    {
+        $snapshot = $coupon->template_snapshot;
+        $minimumCash = (int) ($snapshot['minimum_cash_cents'] ?? 0);
+        $minimumPoints = (int) ($snapshot['minimum_points'] ?? 0);
+        $cashDiscount = min($cash, (int) ($snapshot['cash_discount_cents'] ?? 0));
+        $pointsDiscount = min($points, (int) ($snapshot['points_discount'] ?? 0));
+        $reason = null;
+
+        if ($coupon->status === 'locked') {
+            $reason = '已被其他订单占用';
+        } elseif ($coupon->status !== 'unused') {
+            $reason = '优惠券状态不可用';
+        } elseif ($coupon->valid_from->isFuture()) {
+            $reason = '尚未生效';
+        } elseif ($coupon->valid_to->isPast()) {
+            $reason = '已过期';
+        } elseif ($cash < $minimumCash || $points < $minimumPoints) {
+            $requirements = [];
+            if ($cash < $minimumCash) {
+                $requirements[] = '现金商品满 ¥'.number_format($minimumCash / 100, 2);
+            }
+            if ($points < $minimumPoints) {
+                $requirements[] = '积分商品满 '.$minimumPoints.' 积分';
+            }
+            $reason = '未满足'.implode('且', $requirements);
+        } elseif ($cashDiscount === 0 && $pointsDiscount === 0) {
+            $reason = '该拆单没有可抵扣的现金或积分';
+        }
+
+        return [
+            'id' => $coupon->public_id,
+            'name' => (string) ($snapshot['name'] ?? '优惠券'),
+            'cash_discount_amount' => (int) ($snapshot['cash_discount_cents'] ?? 0),
+            'points_discount' => (int) ($snapshot['points_discount'] ?? 0),
+            'minimum_cash_amount' => $minimumCash,
+            'minimum_points' => $minimumPoints,
+            'estimated_cash_discount' => $reason === null ? $cashDiscount : 0,
+            'estimated_points_discount' => $reason === null ? $pointsDiscount : 0,
+            'eligible' => $reason === null,
+            'unavailable_reason' => $reason,
+            'valid_from' => $coupon->valid_from?->toIso8601String(),
+            'valid_to' => $coupon->valid_to?->toIso8601String(),
+        ];
     }
 
     private function totals(array $pricing): array

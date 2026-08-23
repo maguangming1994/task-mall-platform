@@ -1,0 +1,403 @@
+/*
+ * Campus Flow V09
+ *
+ * This file is the compatibility layer for pages that still use the historic
+ * flow/card/status class names. The canonical values live in App.vue as
+ * --tm-* tokens. Selectors intentionally stay low-specificity, so a page can
+ * still own a special layout or business state.
+ */
+page {
+  --flow-blue-900: var(--tm-brand-900);
+  --flow-blue-700: var(--tm-brand-700);
+  --flow-blue-600: var(--tm-brand-600);
+  --flow-cyan-500: var(--tm-campus-cyan);
+  --flow-mint-100: var(--tm-growth-100);
+  --flow-blue-100: var(--tm-brand-100);
+  --flow-blue-50: var(--tm-brand-50);
+  --flow-yellow-100: var(--tm-campus-yellow-soft);
+  --flow-coral-100: var(--tm-campus-coral-soft);
+  --flow-purple-100: var(--tm-campus-purple-soft);
+  --flow-canvas: var(--tm-canvas);
+  --flow-surface: var(--tm-surface);
+  --flow-line: var(--tm-line);
+  --flow-line-strong: #c8d8e5;
+  --flow-text: var(--tm-ink-900);
+  --flow-muted: var(--tm-ink-500);
+  --flow-shadow: var(--tm-shadow-card);
+  --flow-shadow-float: var(--tm-shadow-float);
+  --flow-radius: var(--tm-radius-lg);
+  --flow-radius-small: var(--tm-radius-md);
+}
+
+/* Shared surfaces: compatibility only; page-local rules win by specificity. */
+.tm-page-shell,
+.tm-campus-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding-left: var(--tm-space-page);
+  padding-right: var(--tm-space-page);
+  background:
+    radial-gradient(circle at 90% 5%, rgba(26, 170, 189, .10) 0 120rpx, transparent 122rpx),
+    linear-gradient(180deg, #fafdff 0%, var(--tm-canvas) 520rpx, #f6f9fc 100%);
+  color: var(--tm-ink-900);
+}
+
+.tm-panel,
+.tm-card,
+.tm-card-strong,
+.card,
+.panel,
+.form-card,
+.editor-card,
+.media-card,
+.preview-card,
+.detail-card,
+.item-card,
+.checkout-card,
+.coupon-section,
+.record-card,
+.summary,
+.shipment,
+.settings-card,
+.summary-card,
+.state-card,
+.empty-card,
+.address-card,
+.document-list,
+.permission-list,
+.guide-card,
+.qr-card {
+  box-sizing: border-box;
+  border: 1rpx solid var(--tm-line);
+  border-radius: var(--tm-radius-lg);
+  background: rgba(255, 255, 255, .96);
+  box-shadow: var(--tm-shadow-card);
+}
+
+.tm-card-strong {
+  border-color: rgba(16, 33, 58, .11);
+  box-shadow: var(--tm-shadow-pop);
+}
+
+.heading {
+  border-color: var(--tm-line);
+  border-radius: var(--tm-radius-lg);
+  background: linear-gradient(135deg, #fff, var(--tm-brand-50));
+  box-shadow: var(--tm-shadow-card);
+}
+
+.heading .title,
+.title,
+.section-title,
+.form-title,
+.summary-title,
+.state-title {
+  color: var(--tm-ink-900);
+}
+
+.subtitle,
+.section-copy,
+.section-note,
+.state-copy,
+.form-desc,
+.hint,
+.meta,
+.sub {
+  color: var(--tm-ink-500);
+}
+
+.eyebrow,
+.kicker,
+.section-kicker,
+.tm-section-kicker {
+  color: var(--tm-brand-700);
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.tm-section-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34rpx;
+  padding: 0 12rpx;
+  border: 1rpx solid rgba(16, 33, 58, .10);
+  border-radius: 999rpx;
+  background: var(--tm-campus-yellow);
+  color: var(--tm-ink-900);
+  font-size: 17rpx;
+  font-weight: 900;
+}
+
+.tm-campus-grid {
+  background-image:
+    linear-gradient(rgba(16, 33, 58, .035) 1rpx, transparent 1rpx),
+    linear-gradient(90deg, rgba(16, 33, 58, .035) 1rpx, transparent 1rpx);
+  background-size: 34rpx 34rpx;
+}
+
+/* Inputs and buttons retain old class names without forcing page geometry. */
+.input,
+.textarea,
+.title-input,
+.content-input,
+.picker-value,
+.bind-input,
+.search-box,
+.search-panel,
+.field-value {
+  border-color: var(--flow-line-strong);
+  border-radius: var(--flow-radius-small);
+  background: #fbfdff;
+  color: var(--tm-ink-900);
+}
+
+.input:focus,
+.textarea:focus,
+.title-input:focus,
+.content-input:focus {
+  border-color: var(--tm-brand-600);
+  background: #fff;
+  box-shadow: 0 0 0 4rpx rgba(47, 103, 223, .12);
+}
+
+.primary,
+.tm-primary-button,
+.submit,
+.accept-button,
+.save,
+.confirm,
+.share-primary,
+.check-button,
+.publish-primary {
+  border: 0;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, var(--tm-brand-600), var(--tm-campus-cyan));
+  box-shadow: 0 12rpx 28rpx rgba(47, 103, 223, .20);
+  color: #fff;
+  font-weight: 800;
+}
+
+.secondary,
+.tm-secondary-button,
+.share-secondary,
+.retry,
+.empty-action,
+.mini-action,
+.ledger-button,
+.recharge-button,
+.bind-button {
+  border: 1rpx solid var(--tm-line);
+  border-radius: 999rpx;
+  background: #fff;
+  box-shadow: none;
+  color: var(--tm-brand-700);
+  font-weight: 750;
+}
+
+.primary:active,
+.tm-primary-button:active,
+.publish-primary:active,
+.service-item:active,
+.quick-entry:active,
+.quick-item:active,
+.product-card:active,
+.post-card:active {
+  transform: translateY(1rpx) scale(.985);
+  opacity: .94;
+}
+
+.status,
+.status-pill,
+.state-pill,
+.default-tag,
+.category-chip,
+.category-tag,
+.preview-category,
+.dirty-tag,
+.document-status {
+  border-radius: 999rpx;
+  background: var(--tm-brand-100);
+  color: var(--tm-brand-700);
+}
+
+.status-success,
+.enabled,
+.done {
+  background: var(--tm-growth-100);
+  color: var(--tm-growth-700);
+}
+
+.status-pending,
+.pending,
+.warning {
+  background: var(--tm-campus-yellow-soft);
+  color: var(--tm-warning);
+}
+
+.status-danger,
+.danger,
+.error-card,
+.blocked {
+  background: var(--tm-campus-coral-soft);
+  color: var(--tm-danger);
+}
+
+.state-card,
+.empty-card,
+.state {
+  color: var(--tm-ink-500);
+}
+
+/* Community, mall and account accents use the same role colors. */
+.campus-logo,
+.message-button,
+.search-pill,
+.quick-grid,
+.quick-icon,
+.hot-strip,
+.category-tab,
+.post-card,
+.mine-hero,
+.publish-sheet,
+.publish-option,
+.mall-assurance,
+.assurance-grid > view,
+.product-card,
+.sku-pill,
+.mode-pill,
+.coupon-choice,
+.payment-choice,
+.flow-strip,
+.quote-card,
+.account-brief,
+.balance-card,
+.service-item,
+.service-icon {
+  border-color: var(--tm-line);
+  box-shadow: var(--tm-shadow-card);
+}
+
+.campus-logo,
+.brand-logo {
+  background: linear-gradient(145deg, var(--tm-brand-600), var(--tm-campus-cyan));
+  color: #fff;
+}
+
+.hero-card,
+.mall-head ~ .hero,
+.asset.wallet,
+.balance-card,
+.referrals .hero,
+.check-in .hero {
+  background: linear-gradient(135deg, var(--tm-brand-700), var(--tm-campus-cyan));
+  color: #fff;
+  box-shadow: var(--tm-shadow-float);
+}
+
+.category-tab.active,
+.category.active,
+.mode-grid > view.active,
+.sku-pill.active,
+.mode-pill.active,
+.type-tabs > view.active,
+.method-tab.active,
+.amount-option.active,
+.tab.active,
+.coupon-choice.selected,
+.payment-choice.selected {
+  border-color: var(--tm-brand-600);
+  background: var(--tm-brand-50);
+  color: var(--tm-brand-700);
+}
+
+.flow.active,
+.flow.done {
+  color: var(--tm-brand-700);
+}
+
+.product-mark,
+.item-mark,
+.status-icon,
+.success-mark,
+.asset-mark,
+.method-icon,
+.category-mark,
+.service-icon {
+  background: linear-gradient(145deg, var(--tm-brand-100), var(--tm-growth-100));
+  color: var(--tm-brand-700);
+}
+
+.service-icon.tone-orange { background: var(--tm-campus-yellow-soft); color: var(--tm-warning); }
+.service-icon.tone-red { background: var(--tm-campus-coral-soft); color: var(--tm-danger); }
+.service-icon.tone-green { background: var(--tm-growth-100); color: var(--tm-growth-700); }
+.service-icon.tone-violet { background: var(--tm-campus-purple-soft); color: var(--tm-campus-purple); }
+.service-icon.tone-slate { background: #eef3f6; color: #617688; }
+
+.price,
+.current-price,
+.tm-money,
+.total {
+  color: var(--tm-reward-600);
+}
+
+/* Fixed action bars share the same surface and safe-area treatment. */
+.order-tools,
+.bottom-actions,
+.footer,
+.footer-actions {
+  z-index: var(--tm-z-bottom-action);
+  border-top: 1rpx solid var(--tm-line);
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 -12rpx 30rpx rgba(31, 56, 92, .08);
+  backdrop-filter: blur(16rpx);
+}
+
+.bottom-actions,
+.footer,
+.footer-actions {
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+}
+
+.document-content,
+.rich-content {
+  color: var(--tm-ink-700);
+  line-height: 1.75;
+}
+
+.card,
+.tm-card,
+.tm-panel,
+.product-card,
+.post-card,
+.activity-card,
+.service-item,
+.community-shortcut,
+.category-chip,
+.method-tab,
+.amount-option {
+  transition: transform var(--tm-motion-fast) var(--tm-ease), box-shadow var(--tm-motion-base) var(--tm-ease), background-color var(--tm-motion-fast) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .tm-card,
+  .tm-panel,
+  .product-card,
+  .post-card,
+  .activity-card,
+  .service-item,
+  .community-shortcut,
+  .category-chip,
+  .method-tab,
+  .amount-option {
+    transition: none;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .tm-page-shell,
+  .tm-campus-page {
+    width: 750rpx;
+    margin: 0 auto;
+  }
+}

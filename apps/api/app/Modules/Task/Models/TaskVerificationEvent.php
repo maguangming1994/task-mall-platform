@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 
 class TaskVerificationEvent extends Model
 {
-    protected $fillable = ['public_id', 'task_id', 'task_claim_id', 'user_id', 'event_type', 'source', 'event_key_hash', 'payload', 'goal_met', 'status', 'error_message', 'processed_at'];
+    protected $fillable = ['public_id', 'task_id', 'task_claim_id', 'user_id', 'cycle_key', 'event_type', 'source', 'event_key_hash', 'payload', 'goal_met', 'progress_delta', 'progress_after', 'status', 'error_message', 'processed_at'];
 
     protected $hidden = ['event_key_hash'];
 
@@ -18,6 +18,6 @@ class TaskVerificationEvent extends Model
 
     protected function casts(): array
     {
-        return ['payload' => 'array', 'goal_met' => 'boolean', 'processed_at' => 'datetime'];
+        return ['payload' => 'array', 'goal_met' => 'boolean', 'progress_delta' => 'integer', 'progress_after' => 'integer', 'processed_at' => 'datetime'];
     }
 }

@@ -61,6 +61,12 @@ class SystemSettingValidator
             $value = array_values(array_unique($value));
         }
         if ($type === 'object') {
+            // Older admin clients created announcement payloads before icon_url
+            // became configurable. Keep those drafts valid and normalize them to
+            // the current schema instead of forcing an unrelated field error.
+            if ($definition->setting_key === 'homepage.announcement' && ! array_key_exists('icon_url', $value)) {
+                $value['icon_url'] = '';
+            }
             foreach ($rules['required_keys'] ?? [] as $requiredKey) {
                 if (! array_key_exists($requiredKey, $value)) {
                     $this->fail($definition, "缺少必填字段 {$requiredKey}。");
@@ -100,6 +106,9 @@ class SystemSettingValidator
                 if (mb_strlen($plainText) > 2000) {
                     $this->fail($definition, '公告内容不能超过 2000 个文字。');
                 }
+            }
+            if ($definition->setting_key === 'homepage.floating_support') {
+                $this->validateFloatingSupport($definition, $value);
             }
         }
 
@@ -162,6 +171,46 @@ class SystemSettingValidator
             if (! isset($style[$colorKey]) || ! is_string($style[$colorKey]) || ! preg_match('/^#[0-9A-Fa-f]{6}$/', $style[$colorKey])) {
                 $this->fail($definition, "样式字段 {$colorKey} 必须为六位十六进制颜色。");
             }
+        }
+    }
+
+    private function validateFloatingSupport(SystemSettingDefinition $definition, array $value): void
+    {
+        foreach (['enabled', 'show_label'] as $booleanKey) {
+            if (! is_bool($value[$booleanKey] ?? null)) {
+                $this->fail($definition, "字段 {$booleanKey} 必须为布尔值。");
+            }
+        }
+
+        foreach (['icon_text', 'icon_url', 'label', 'subtitle', 'position'] as $stringKey) {
+            if (! is_string($value[$stringKey] ?? null)) {
+                $this->fail($definition, "字段 {$stringKey} 必须为文字。");
+            }
+        }
+
+        foreach (['qr_code_url', 'qr_code_tip'] as $optionalStringKey) {
+            if (array_key_exists($optionalStringKey, $value) && ! is_string($value[$optionalStringKey])) {
+                $this->fail($definition, "字段 {$optionalStringKey} 必须为文字。");
+            }
+        }
+
+        if (mb_strlen(trim($value['label'])) < 1 || mb_strlen(trim($value['label'])) > 8) {
+            $this->fail($definition, '客服按钮名称长度必须为 1 至 8 个字符。');
+        }
+        if (mb_strlen(trim($value['subtitle'])) > 16 || mb_strlen(trim($value['icon_text'])) > 2) {
+            $this->fail($definition, '客服副标题不能超过 16 个字符，图标文字不能超过 2 个字符。');
+        }
+        if (mb_strlen($value['icon_url']) > 2048 || mb_strlen((string) ($value['qr_code_url'] ?? '')) > 2048) {
+            $this->fail($definition, '客服图标或二维码地址不能超过 2048 个字符。');
+        }
+        if (mb_strlen(trim((string) ($value['qr_code_tip'] ?? ''))) > 80) {
+            $this->fail($definition, '二维码扫码说明不能超过 80 个字符。');
+        }
+        if (! in_array($value['position'], ['left', 'right'], true)) {
+            $this->fail($definition, '客服悬浮位置只能选择左侧或右侧。');
+        }
+        if (! is_int($value['bottom_offset_rpx'] ?? null) || $value['bottom_offset_rpx'] < 130 || $value['bottom_offset_rpx'] > 400) {
+            $this->fail($definition, '客服按钮底部距离必须为 130 至 400 rpx 的整数。');
         }
     }
 

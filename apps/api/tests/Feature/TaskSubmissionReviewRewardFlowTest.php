@@ -11,13 +11,13 @@ use App\Modules\Task\Models\TaskClaim;
 use App\Modules\Task\Models\TaskRewardBudget;
 use App\Modules\Task\Models\TaskRewardDelivery;
 use App\Modules\Task\Services\TaskClaimService;
-use App\Modules\Task\Services\TaskRewardDeliveryService;
 use App\Modules\Task\Services\TaskSubmissionService;
 use App\Modules\Task\Services\TaskVerificationService;
 use App\Modules\Upload\Models\UploadedFile;
 use Database\Seeders\RbacSeeder;
 use Database\Seeders\SystemSettingDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -70,8 +70,141 @@ class TaskSubmissionReviewRewardFlowTest extends TestCase
         $this->assertSame(2, $second->submission_no);
         $this->assertSame(2, $claim->fresh()->submission_count);
         $this->assertSame('submitted', $claim->fresh()->status);
+        $this->assertSame('under_review', $claim->fresh()->execution_status);
+        $this->assertSame('queued', $claim->fresh()->review_status);
         $this->assertDatabaseCount('task_submissions', 2);
         $this->assertDatabaseHas('task_submissions', ['id' => $first->id, 'status' => 'withdrawn']);
+    }
+
+    public function test_reviewer_can_preview_only_clean_files_attached_to_the_selected_submission(): void
+    {
+        Storage::fake('local');
+        [$token, , $task] = $this->publishedTask('submission-file-preview', [['type' => 'points', 'points' => 10]]);
+        $user = $this->eligibleUser();
+        $claim = app(TaskClaimService::class)->claim($user, $task, 'submission-file-preview-claim');
+        $file = $this->cleanFile($user, 'submission-file-preview-attached');
+        $unrelated = $this->cleanFile($user, 'submission-file-preview-unrelated');
+        Storage::disk('local')->put($file->quarantine_path, 'clean-image-content');
+        Storage::disk('local')->put($unrelated->quarantine_path, 'unrelated-image-content');
+        $submission = app(TaskSubmissionService::class)->submit($user, $claim, ['text' => '已提交审核凭证', 'fields' => []], [$file->public_id], 'submission-file-preview-submit');
+
+        $this->withToken($token)
+            ->get('/api/v1/admin/task-submissions/'.$submission->public_id.'/files/'.$file->public_id)
+            ->assertOk()
+            ->assertHeader('content-type', 'image/png')
+            ->assertHeader('cache-control', 'no-store, private');
+
+        $this->withToken($token)
+            ->get('/api/v1/admin/task-submissions/'.$submission->public_id.'/files/'.$unrelated->public_id)
+            ->assertNotFound();
+    }
+
+    public function test_opening_a_submission_starts_review_and_the_reviewing_queue_keeps_it_visible(): void
+    {
+        [$token, , $task] = $this->publishedTask('start-review-queue', [['type' => 'points', 'points' => 10]]);
+        $user = $this->eligibleUser();
+        $claim = app(TaskClaimService::class)->claim($user, $task, 'start-review-queue-claim');
+        $submission = app(TaskSubmissionService::class)->submit($user, $claim, ['text' => '等待审核', 'fields' => []], [], 'start-review-queue-submit');
+
+        $this->withToken($token)->withHeaders(['Idempotency-Key' => 'start-review-queue-open'])
+            ->postJson('/api/v1/admin/task-submissions/'.$submission->public_id.'/start-review')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'reviewing');
+
+        $this->assertSame('reviewing', $claim->fresh()->status);
+        $this->assertSame('under_review', $claim->fresh()->execution_status);
+        $this->assertSame('reviewing', $claim->fresh()->review_status);
+        $this->withToken($token)->getJson('/api/v1/admin/task-submissions?status=reviewing')
+            ->assertOk()
+            ->assertJsonPath('data.items.0.id', $submission->public_id)
+            ->assertJsonPath('data.items.0.status', 'reviewing')
+            ->assertJsonPath('data.items.0.execution_status', 'under_review')
+            ->assertJsonPath('data.items.0.execution_status_label', '审核中')
+            ->assertJsonPath('data.items.0.review_status', 'reviewing')
+            ->assertJsonPath('data.items.0.review_status_label', '审核中');
+
+        $this->withToken($token)->getJson('/api/v1/admin/task-submissions?execution_status=under_review&review_status=reviewing')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.items');
+    }
+
+    public function test_review_lock_can_be_released_and_transferred_only_by_its_owner(): void
+    {
+        [$ownerToken, $owner, $task] = $this->publishedTask('review-lock', [['type' => 'points', 'points' => 10]]);
+        [$otherToken, $other] = $this->admin('review-lock-other');
+        $user = $this->eligibleUser();
+        $claim = app(TaskClaimService::class)->claim($user, $task, 'review-lock-claim');
+        $submission = app(TaskSubmissionService::class)->submit($user, $claim, ['text' => '等待审核', 'fields' => []], [], 'review-lock-submit');
+
+        $this->withToken($ownerToken)->withHeaders(['Idempotency-Key' => 'review-lock-owner-start'])
+            ->postJson('/api/v1/admin/task-submissions/'.$submission->public_id.'/start-review')
+            ->assertOk()->assertJsonPath('data.reviewer.id', $owner->public_id);
+
+        $this->withToken($otherToken)->withHeaders(['Idempotency-Key' => 'review-lock-other-start'])
+            ->postJson('/api/v1/admin/task-submissions/'.$submission->public_id.'/start-review')
+            ->assertUnprocessable();
+
+        $this->withToken($ownerToken)->withHeaders(['Idempotency-Key' => 'review-lock-transfer'])
+            ->postJson('/api/v1/admin/task-submissions/'.$submission->public_id.'/transfer-review', [
+                'target_admin_id' => $other->public_id, 'reason' => '交由当班审核员继续处理。',
+            ])->assertOk()->assertJsonPath('data.reviewer.id', $other->public_id);
+
+        $this->withToken($otherToken)->withHeaders(['Idempotency-Key' => 'review-lock-release'])
+            ->postJson('/api/v1/admin/task-submissions/'.$submission->public_id.'/release-review', ['reason' => '暂时释放到公共审核队列。'])
+            ->assertOk()->assertJsonPath('data.status', 'submitted')->assertJsonPath('data.reviewer', null);
+    }
+
+    public function test_step_review_rejects_only_failed_steps_and_resubmission_reuses_approved_material(): void
+    {
+        $steps = [
+            ['id' => 'answer', 'kind' => 'form_input', 'title' => '填写订单号', 'description' => '填写订单号。', 'input_type' => 'text', 'required' => true],
+            ['id' => 'proof', 'kind' => 'verification_image', 'title' => '上传订单截图', 'description' => '上传截图。', 'input_type' => 'image', 'required' => true, 'min_files' => 1, 'max_files' => 2],
+            ['id' => 'confirm', 'kind' => 'confirmation', 'title' => '确认真实', 'description' => '确认材料真实。', 'input_type' => 'none', 'required' => true],
+        ];
+        [$token, , $task] = $this->publishedTask('step-partial-revision', [['type' => 'points', 'points' => 10]], 'claim_and_submit', $steps);
+        $user = $this->eligibleUser();
+        $claim = app(TaskClaimService::class)->claim($user, $task, 'step-partial-claim');
+        $oldProof = $this->cleanFile($user, 'step-partial-old-proof');
+        $first = app(TaskSubmissionService::class)->submit($user, $claim, ['text' => '首次提交', 'fields' => [
+            'steps' => ['answer' => 'ORDER-001'], 'step_files' => ['proof' => [$oldProof->public_id]], 'completed_steps' => ['confirm' => true],
+        ]], [$oldProof->public_id], 'step-partial-first');
+
+        $this->withToken($token)->withHeaders(['Idempotency-Key' => 'step-partial-start'])
+            ->postJson('/api/v1/admin/task-submissions/'.$first->public_id.'/start-review')->assertOk();
+        $this->withToken($token)->withHeaders(['Idempotency-Key' => 'step-partial-reject'])
+            ->postJson('/api/v1/admin/task-submissions/'.$first->public_id.'/review', [
+                'decision' => 'reject', 'reason_code' => 'evidence_unclear', 'note' => '订单截图不清晰，请补交。',
+                'step_results' => [
+                    ['step_id' => 'answer', 'decision' => 'approve'],
+                    ['step_id' => 'proof', 'decision' => 'reject', 'reason_code' => 'evidence_unclear', 'note' => '截图不清晰。'],
+                    ['step_id' => 'confirm', 'decision' => 'approve'],
+                ],
+            ])->assertOk()->assertJsonPath('data.revision_step_ids.0', 'proof')
+            ->assertJsonFragment(['step_id' => 'proof', 'decision' => 'reject', 'reason_code' => 'evidence_unclear']);
+
+        $presentedClaim = app(TaskClaimService::class)->presentClaim($claim->fresh());
+        $this->assertSame('resubmit_failed_steps', $presentedClaim['workflow']['primary_action']['code']);
+        $this->assertSame('补交未通过步骤', $presentedClaim['workflow']['primary_action']['label']);
+        $this->assertSame(['proof'], $presentedClaim['workflow']['editable_step_ids']);
+        $this->assertSame(['answer', 'confirm'], $presentedClaim['workflow']['locked_step_ids']);
+        $this->assertTrue($presentedClaim['workflow']['revision_only']);
+        $this->assertSame('proof', $presentedClaim['last_review']['step_results'][1]['step_id']);
+
+        $newProof = $this->cleanFile($user, 'step-partial-new-proof');
+        $second = app(TaskSubmissionService::class)->submit($user, $claim->fresh(), ['text' => '只补交失败截图', 'fields' => [
+            'step_files' => ['proof' => [$newProof->public_id]],
+        ]], [$newProof->public_id], 'step-partial-second');
+
+        $this->assertSame($first->id, $second->supersedes_submission_id);
+        $this->assertSame(['proof'], $second->revision_step_ids);
+        $this->assertSame('ORDER-001', $second->content_snapshot['fields']['steps']['answer']);
+        $this->assertTrue($second->content_snapshot['fields']['completed_steps']['confirm']);
+        $this->assertSame([$newProof->public_id], $second->content_snapshot['fields']['step_files']['proof']);
+        $this->assertSame([$newProof->public_id], $second->file_public_ids);
+        $this->assertDatabaseCount('task_step_reviews', 3);
+
+        $this->withToken($token)->getJson('/api/v1/admin/task-review-reasons')
+            ->assertOk()->assertJsonFragment(['code' => 'evidence_unclear', 'label' => '证明材料不清晰']);
     }
 
     public function test_approval_delivers_every_reward_and_settles_reservations_and_budgets_once(): void
@@ -88,6 +221,8 @@ class TaskSubmissionReviewRewardFlowTest extends TestCase
 
         $this->assertSame('approved', $reviewed->status);
         $this->assertSame('approved', $claim->fresh()->status);
+        $this->assertSame('completed', $claim->fresh()->execution_status);
+        $this->assertSame('approved', $claim->fresh()->review_status);
         $this->assertSame('consumed', $claim->fresh()->slot_status);
         $this->assertSame('delivered', $claim->fresh()->reward_status);
         $this->assertDatabaseCount('task_reviews', 1);
@@ -114,6 +249,8 @@ class TaskSubmissionReviewRewardFlowTest extends TestCase
         }
 
         $this->assertSame('rejected', $claim->fresh()->status);
+        $this->assertSame('revision_required', $claim->fresh()->execution_status);
+        $this->assertSame('needs_revision', $claim->fresh()->review_status);
         $resubmission = $service->submit($user, $claim->fresh(), ['text' => '已补充清晰截图说明', 'fields' => []], [], 'manual-reject-resubmit');
         $this->assertSame(2, $resubmission->submission_no);
         $this->assertSame('submitted', $claim->fresh()->status);
@@ -143,26 +280,39 @@ class TaskSubmissionReviewRewardFlowTest extends TestCase
         [$token, $admin] = $this->admin('coupon-retry');
         $template = CouponTemplate::query()->create([
             'name' => '任务券', 'cash_discount_cents' => 500, 'points_discount' => 0, 'minimum_cash_cents' => 1000,
-            'minimum_points' => 0, 'valid_days' => 30, 'total_quantity' => 10, 'status' => 'inactive', 'created_by_admin_id' => $admin->id,
+            'minimum_points' => 0, 'valid_days' => 30, 'total_quantity' => 10, 'status' => 'active', 'created_by_admin_id' => $admin->id,
             'idempotency_key_hash' => hash('sha256', 'coupon-retry-template'),
         ]);
-        $pool = $this->pool($token, 'coupon-retry-pool', 'coupon', 5, $template->public_id);
-        $task = $this->createAndPublish($token, 'coupon-retry', [['type' => 'coupon', 'coupon_template_id' => $template->public_id]], [$pool['id']], 'claim_and_submit');
+        $pool = $this->pool($token, 'coupon-retry-pool', 'coupon', 10, $template->public_id);
+        $task = $this->createAndPublish($token, 'coupon-retry', [['type' => 'coupon', 'coupon_template_id' => $template->public_id, 'quantity' => 2]], [$pool['id']], 'claim_and_submit');
+        $this->assertSame(10, TaskRewardBudget::query()->where('task_id', $task->id)->value('locked_amount'));
         $user = $this->eligibleUser();
         $claim = app(TaskClaimService::class)->claim($user, $task, 'coupon-retry-claim');
         $submission = app(TaskSubmissionService::class)->submit($user, $claim, ['text' => '领取优惠券', 'fields' => []], [], 'coupon-retry-submit');
 
+        $template->update(['status' => 'inactive']);
         app(TaskSubmissionService::class)->review($admin, $submission, 'approve', null, '审核通过', 'coupon-retry-review');
         $this->assertSame('approved', $claim->fresh()->status);
         $this->assertSame('delivery_failed', $claim->fresh()->reward_status);
         $this->assertDatabaseHas('task_reward_deliveries', ['status' => 'failed']);
 
-        $template->update(['status' => 'active']);
         $delivery = TaskRewardDelivery::query()->firstOrFail();
-        app(TaskRewardDeliveryService::class)->attempt($delivery);
-        app(TaskRewardDeliveryService::class)->deliverForClaim($claim->fresh());
+        $this->withToken($token)->getJson('/api/v1/admin/task-reward-deliveries?status=failed')
+            ->assertOk()
+            ->assertJsonPath('data.items.0.id', $delivery->public_id)
+            ->assertJsonPath('data.items.0.status', 'failed')
+            ->assertJsonPath('data.items.0.attempt_count', 1)
+            ->assertJsonPath('data.pagination.total', 1);
+
+        $template->update(['status' => 'active']);
+        $this->withToken($token)->withHeaders(['Idempotency-Key' => 'coupon-retry-manual-admin'])
+            ->postJson('/api/v1/admin/task-reward-deliveries/'.$delivery->public_id.'/retry', ['reason' => '优惠券模板已重新启用，执行人工补发。'])
+            ->assertStatus(202)
+            ->assertJsonPath('data.status', 'delivered');
         $this->assertSame('delivered', $claim->fresh()->reward_status);
-        $this->assertDatabaseCount('user_coupons', 1);
+        $this->assertDatabaseCount('user_coupons', 2);
+        $this->assertDatabaseHas('task_reward_deliveries', ['status' => 'delivered', 'amount' => 2]);
+        $this->assertDatabaseHas('task_reward_budgets', ['task_id' => $task->id, 'issued_amount' => 2, 'locked_amount' => 10]);
     }
 
     /** @return array{string,AdminUser,Task} */

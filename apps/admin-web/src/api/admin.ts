@@ -120,12 +120,29 @@ export interface RewardBudgetPool {
   id: string
   name: string
   asset_type: 'points' | 'coupon' | 'wallet_cash'
+  coupon_template_id?: string | null
   total_amount: number
   locked_amount: number
   issued_amount: number
   available_amount: number
   status: string
   version: number
+}
+
+export interface ManagedCouponTemplate {
+  id: string
+  name: string
+  cash_discount_cents: number
+  points_discount: number
+  minimum_cash_cents: number
+  minimum_points: number
+  valid_days: number
+  total_quantity: number
+  issued_quantity: number
+  remaining_quantity: number
+  status: 'active' | 'inactive'
+  version: number
+  created_at: string | null
 }
 
 export type TaskStepKind = 'instruction' | 'link' | 'qr_code' | 'copy_text' | 'image_guide' | 'verification_image' | 'form_input' | 'confirmation'
@@ -147,20 +164,41 @@ export interface ManagedTaskStep {
 
 export interface ManagedTask {
   id: string
+  business_scenario: string
   title: string
   description: string
   category: string
+  tags: string[]
   task_type: string
   project_name?: string | null
   cover_image_url?: string | null
   supported_devices?: string[]
   steps: ManagedTaskStep[]
+  visibility: string
   participation_mode: string
-  rewards: Array<{ type: string; points?: number; balance_amount?: number }>
+  verification_mode: string
+  rewards: Array<{ type: string; points?: number; balance_amount?: number; coupon_template_id?: string; quantity?: number }>
+  reward_budget_bindings: Array<{ reward_sequence: number; budget_pool_id: string }>
   reward_quota_total: number
+  reward_quota_per_cycle?: number | null
+  progress_target?: number
+  progress_event_type?: string | null
+  data_batch?: { id: string; name: string; snapshot_hash: string; field_mapping: Record<string, string>; item_count: number } | null
   virtual_view_count?: number
+  completion_window_hours: number
+  submission_limit: number
+  review_deadline_hours: number
+  appeal_deadline_days: number
+  appeal_limit: number
+  attachment_rules: Record<string, number>
+  claim_starts_at: string
+  claim_ends_at: string
+  submit_ends_at: string
+  rules: string[]
   status: string
   version: number
+  current_published_version?: number | null
+  has_unpublished_changes?: boolean
   task_version: { version_no: number; change_type: string; status: string }
   publish_approval: null | {
     id: string
@@ -175,6 +213,16 @@ export interface ManagedTask {
   reward_budget_summaries: Array<{ asset_type: string; locked_amount: number; available_amount: number }>
 }
 
+export interface ManagedTaskVersionSummary {
+  version_no: number
+  change_type: string
+  source_version_no: number | null
+  status: string
+  changed_fields: string[]
+  created_at: string | null
+  published_at: string | null
+}
+
 export interface ManagedTaskSubmission {
   id: string
   task_claim_id: string
@@ -183,11 +231,64 @@ export interface ManagedTaskSubmission {
   task_steps: ManagedTaskStep[]
   submission_no: number
   status: 'submitted' | 'reviewing' | 'approved' | 'rejected' | 'withdrawn'
+  execution_status?: string | null
+  execution_status_label?: string | null
+  review_status?: string | null
+  review_status_label?: string | null
+  reviewer?: { id: string; display_name: string } | null
+  review_assigned_at?: string | null
+  review_lock_expires_at?: string | null
+  revision_step_ids?: string[]
+  supersedes_submission_id?: string | null
+  latest_review?: {
+    decision: 'approve' | 'reject'
+    reason_code: string | null
+    note: string | null
+    reviewed_at: string | null
+    step_results: Array<{ step_id: string; step_title: string; decision: 'approve' | 'reject'; reason_code: string | null; note: string | null; file_ids: string[] }>
+  } | null
   content: { text?: string | null; fields?: Record<string, unknown> }
   file_ids: string[]
   submitted_at: string
   review_due_at: string
   overdue: boolean
+}
+
+export interface TaskReviewReason { id: string; code: string; label: string; suggested_note: string | null; sort_order: number }
+
+export interface TaskDataBatch {
+  id: string
+  name: string
+  original_filename: string
+  source_format: 'csv'
+  source_headers: string[]
+  field_mapping: Record<string, string>
+  row_count: number
+  valid_count: number
+  invalid_count: number
+  available_count: number
+  allocated_count: number
+  status: 'ready' | 'preflight_failed' | 'locked'
+  snapshot_hash: string
+  locked_at: string | null
+  preview?: Array<{ row_no: number; mapped_payload: Record<string, string>; validation_errors: string[]; status: string }> | null
+}
+
+export interface ManagedTaskRewardDelivery {
+  id: string
+  claim_id: string
+  user_id: string
+  task_title: string
+  asset_type: 'points' | 'wallet_cash' | 'coupon'
+  amount: number
+  reward_snapshot: Record<string, unknown>
+  status: 'pending' | 'failed' | 'delivered'
+  attempt_count: number
+  last_error_code: string | null
+  last_error_message: string | null
+  last_attempted_at: string | null
+  next_retry_at: string | null
+  delivered_at: string | null
 }
 
 export interface ManagedTaskAppeal { id: string; claim_id: string; appeal_no: number; status: string; reason: string; result_reason: string | null; created_at: string }
@@ -196,7 +297,37 @@ export type ProductPurchaseMode = 'cash' | 'points' | 'cash_points'
 export interface ManagedPurchaseOption { id: string; purchase_mode: ProductPurchaseMode; cash_amount: number; points: number; enabled: boolean; channels: string[]; version: number }
 export interface ManagedProductSku { id: string; sku_code: string; name: string; specs: Record<string, string>; fulfillment_type: 'logistics' | 'no_logistics' | 'virtual_delivery'; shipping_template_id: string | null; stock: number; status: string; purchase_options: ManagedPurchaseOption[] }
 export interface ManagedProduct { id: string; name: string; subtitle: string | null; description: string; gallery_images: Array<{ asset_id?: string; url: string; alt?: string | null; sort_order: number }>; status: 'draft' | 'on_sale' | 'off_shelf'; version: number; definition_version: number; skus: ManagedProductSku[] }
-export interface ManagedShippingTemplate { id: string; name: string; status: string; version: number; definition_version: number; charge_type: 'fixed' | 'by_quantity' | 'by_weight'; fixed_amount?: number }
+export type ManagedShippingChargeType = 'fixed' | 'by_quantity' | 'by_weight'
+export type ManagedShippingFreeRuleType = 'product' | 'sku' | 'cash_threshold' | 'quantity_threshold'
+export interface ManagedShippingRegion {
+  region_codes: string[]
+  deliverable: boolean
+  remote_surcharge_amount: number
+}
+export interface ManagedShippingFreeRule {
+  type: ManagedShippingFreeRuleType
+  target_ids?: string[]
+  threshold_amount?: number
+  threshold_quantity?: number
+}
+export interface ManagedShippingTemplateInput {
+  name: string
+  charge_type: ManagedShippingChargeType
+  fixed_amount?: number | null
+  first_unit?: number | null
+  first_amount?: number | null
+  additional_unit?: number | null
+  additional_amount?: number | null
+  regions: ManagedShippingRegion[]
+  free_rules: ManagedShippingFreeRule[]
+  enabled: boolean
+}
+export interface ManagedShippingTemplate extends ManagedShippingTemplateInput {
+  id: string
+  status: 'active' | 'inactive' | 'draft'
+  version: number
+  definition_version: number
+}
 export interface ManagedInventory { sku_id: string; sku_code: string; product_id: string; product_name: string; on_hand_quantity: number; reserved_quantity: number; available_quantity: number; low_stock_threshold: number; low_stock: boolean; version: number }
 export interface MediaAsset { id: string; url: string; name: string; mime_type: string; size_bytes: number; provider: string; status: string }
 export interface MediaStorageProvider {
@@ -249,13 +380,208 @@ export interface WalletWithdrawal {
 export interface ReconciliationEntry { id: string; payment_no: string; provider_trade_no: string | null; provider_amount: number | null; local_amount: number | null; provider_state: string | null; local_state: string | null; result: string; resolution_status: string }
 export interface ReconciliationRun { id: string; provider: string; business_date: string; status: string; provider_count: number; provider_amount: number; local_count: number; local_amount: number; matched_count: number; difference_count: number; entries: ReconciliationEntry[]; completed_at: string | null }
 export interface ManagedAfterSaleReason { id: string; code: string; name: string; service_types: string[]; default_responsibility: string; return_shipping_payer: string; evidence_required: boolean; enabled: boolean; sort_order: number; version: number }
-export interface ManagedRefund { id: string; refund_no: string; service_type: string; reason_name: string; status: string; refund_cash_amount: number; refund_points: number; responsibility_party: string; return_shipping_payer: string; return_method: string | null; user_action_deadline_at: string | null; created_at: string }
-export interface ManagedExchange { id: string; exchange_no: string; reason_name: string; status: string; quantity: number; responsibility_party: string; return_shipping_payer: string; replacement_shipping_payer: string; return_method: string; return_deadline_at: string | null; created_at: string }
+export interface ReturnShippingCompensation { id: string; source_type: string; requested_amount: number; approved_amount: number; status: string; carrier_code: string; tracking_no: string; payment_proof_file_id: string; review_note: string | null; paid_at: string | null; created_at: string }
+export interface AfterSaleShipment { id?: string; direction?: string; method?: string; carrier_code?: string | null; tracking_no?: string | null; no_logistics_note?: string | null; paid_shipping_amount?: number; status?: string; shipped_at?: string | null; received_at?: string | null; compensation?: ReturnShippingCompensation | null }
+export interface ManagedRefund { id: string; refund_no: string; service_type: string; reason_name: string; status: string; refund_cash_amount: number; refund_points: number; responsibility_party: string; return_shipping_payer: string; return_method: string | null; review_note?: string | null; user_action_deadline_at: string | null; return_shipment?: AfterSaleShipment | null; compensation?: ReturnShippingCompensation | null; created_at: string }
+export interface ManagedExchange { id: string; exchange_no: string; reason_name: string; status: string; quantity: number; responsibility_party: string; return_shipping_payer: string; replacement_shipping_payer: string; return_method: string; review_note?: string | null; return_deadline_at: string | null; replacement_auto_complete_at?: string | null; shipments?: AfterSaleShipment[]; created_at: string }
 export interface ManagedCommunityPost { id: string; author: { id: string; nickname: string }; title: string; content: string; status: string; current_version_no: number; published_version_no: number | null; comment_count: number; reward_granted: boolean; created_at: string }
 export interface ManagedCommunityComment { id: string; post_id: string; parent_comment_id: string | null; author: { id: string; nickname: string }; content: string; status: string; reward_granted: boolean; created_at: string }
 export interface ManagedContentReport { id: string; content_type: 'post' | 'comment'; content_id: string; reason_code: string; description: string | null; status: string; created_at: string }
 export interface ManagedContentAppeal { id: string; action_id: string; reason: string; status: string; review_note: string | null; created_at: string }
+export type CommunityActivityStatus = 'pending_review' | 'approved' | 'rejected' | 'closed'
+export interface ManagedCommunityActivityParticipant {
+  participant_id: number | null
+  user_id: string | null
+  nickname: string
+  role: 'creator' | 'participant'
+  status: 'joined' | 'left' | 'removed'
+  joined_at: string | null
+  left_at: string | null
+}
+
+export interface WalletRecharge {
+  id: string
+  recharge_no: string
+  user_id: string
+  method: 'card_code' | 'online' | 'offline'
+  amount_cents: number
+  status: string
+  payer_name: string | null
+  offline_reference: string | null
+  note: string | null
+  offline_proof_file_ids: string[]
+  review_note: string | null
+  created_at: string
+}
+
+export interface WalletRechargeCard {
+  id: string
+  code_mask: string
+  code?: string
+  amount_cents: number
+  status: string
+  expires_at: string | null
+  redeemed_at: string | null
+  created_at: string
+}
+export interface ManagedCommunityActivity {
+  id: string
+  category_code: string
+  category_label: string
+  title: string
+  details: string
+  images: Array<{ file_id: string; url: string | null }>
+  location: string
+  starts_at: string
+  participant_limit: number
+  participant_count: number
+  participants?: ManagedCommunityActivityParticipant[]
+  remaining_slots: number
+  status: CommunityActivityStatus
+  joined_by_me: boolean
+  is_creator: boolean
+  can_join: boolean
+  creator: { id: string | null; nickname: string }
+  review_reason_code?: string | null
+  review_note?: string | null
+  reviewed_at?: string | null
+  created_at: string
+}
+
+export interface ManagedTaskTemplate {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  category: string | null
+  status: 'active' | 'inactive'
+  status_label: string
+  version: number
+  current_version_no: number
+  copied_from_template_id: string | null
+  content?: Record<string, any>
+  created_at: string
+  updated_at: string
+}
+
+export interface ManagedTaskTemplateVersion {
+  version_no: number
+  source_version_no: number | null
+  changed_fields: string[]
+  content: Record<string, any>
+  created_at: string
+}
+export type CommunityHomepageLinkType = 'posts' | 'activities' | 'tasks' | 'none'
+export type CommunityQuickTarget = 'publish_post' | 'activities' | 'tasks' | 'posts' | 'notifications'
+export interface CommunityHomepageBanner {
+  title: string
+  subtitle: string
+  image_url?: string | null
+  link_type: CommunityHomepageLinkType
+  accent_color?: string | null
+}
+export interface CommunityHomepageQuickEntry {
+  id: string
+  label: string
+  description?: string | null
+  icon_url?: string | null
+  target: CommunityQuickTarget
+  enabled: boolean
+  color?: string | null
+  sort_order?: number
+}
+export interface CommunityHomepageHotTopic {
+  id: string
+  label: string
+  target: string
+  enabled: boolean
+  color?: string | null
+}
+export interface CommunityHomepageConfig {
+  banner: CommunityHomepageBanner
+  quick_entries: CommunityHomepageQuickEntry[]
+  hot_topics: CommunityHomepageHotTopic[]
+  version: number | null
+}
+export interface CommunityHomepageConfigInput {
+  banner: CommunityHomepageBanner
+  quick_entries: CommunityHomepageQuickEntry[]
+  hot_topics: CommunityHomepageHotTopic[]
+  expected_version?: number | null
+  reason: string
+}
 export interface OperationsMetrics { users: { active_total: number; new_today: number }; tasks: { published: number; pending_reviews: number }; orders: { paid_today: number; paid_cash_today: number; pending_fulfillment: number }; after_sales: { pending_refunds: number; pending_exchanges: number }; community: { published_posts: number; pending_reviews: number; open_reports: number }; finance: { reconciliation_differences: number; pending_withdrawals: number }; notifications: { unread_total: number; failed_deliveries: number; retrying_deliveries: number }; generated_at: string }
+
+export interface ManagedOrderItem {
+  id: string
+  product_name: string
+  sku_name: string
+  specs: Record<string, string | number>
+  quantity: number
+  refunded_quantity: number
+  pending_refund_quantity: number
+  active_exchange_quantity: number
+  remaining_after_sale_quantity: number
+  fulfilled_quantity: number
+  remaining_fulfillment_quantity: number
+  purchase_mode: string
+  fulfillment_type: string
+  unit_cash_amount: number
+  unit_points: number
+  paid_cash_amount: number
+  paid_points: number
+}
+
+export interface ManagedOrderFulfillment {
+  id: string
+  fulfillment_no: string
+  method: string
+  status: string
+  carrier_name: string | null
+  tracking_no: string | null
+  no_logistics_reason: string | null
+  fulfilled_at: string | null
+}
+
+export interface ManagedOrder {
+  id: string
+  order_no: string
+  status: string
+  fulfillment_type: string
+  cash_payment_method: string
+  payable_cash_amount: number
+  payable_points: number
+  paid_wallet_amount: number
+  paid_external_amount: number
+  paid_points: number
+  refunded_wallet_amount: number
+  refunded_external_amount: number
+  refunded_points: number
+  shipping_amount: number
+  user: { id: string; nickname: string; phone_masked: string | null }
+  items: ManagedOrderItem[]
+  fulfillments: ManagedOrderFulfillment[]
+  address_snapshot?: Record<string, unknown> | null
+  status_changes?: Array<{ from_status: string | null; to_status: string; event: string; reason: string; created_at: string }>
+  created_at: string
+  paid_at: string | null
+  fulfill_by: string | null
+  shipped_at?: string | null
+  completed_at?: string | null
+}
+
+export interface AdminAuditLog {
+  id: string
+  action: string
+  subject_type: string | null
+  subject_id: string | null
+  actor: { id: string | null; display_name: string; account: string | null }
+  before: Record<string, unknown> | null
+  after: Record<string, unknown> | null
+  reason: string | null
+  request_id: string | null
+  created_at: string
+}
 
 export interface UserCenterOverview {
   summary: { new_users_today: number; total_users: number; active_users: number; phone_verified_users: number; profile_completed_users: number; task_claims_today: number; paid_orders_today: number; withdrawn_today_cents: number }
@@ -281,11 +607,32 @@ export interface ManagedAccountVerification {
   user: { id: string; nickname: string; phone_masked: string | null }; phone_verified: boolean; profile_completed: boolean; wechat_bound: boolean
   status: 'verified' | 'partial' | 'unverified'; real_name_status: 'not_collected'; updated_at: string
 }
-export interface ManagedNotificationTemplate { id: string; scene_code: string; channel: string; status: string; current_version_no: number }
-export interface ManagedNotificationCampaign { id: string; name: string; title: string; channels: string[]; status: string; recipient_count: number; sent_count: number; scheduled_at: string }
+export interface ManagedNotificationTemplateVersion {
+  version_no: number; subject: string; body: string; allowed_variables: string[]; provider_template_id: string | null;
+  status: string; published_at: string | null; created_at: string
+}
+export interface ManagedNotificationTemplate {
+  id: string; scene_code: string; channel: string; status: string; current_version_no: number;
+  current_version: ManagedNotificationTemplateVersion | null; versions?: ManagedNotificationTemplateVersion[]; updated_at: string | null
+}
+export interface ManagedNotificationCampaign {
+  id: string; name: string; title: string; body: string; channels: string[]; status: string;
+  recipient_count: number; sent_count: number; scheduled_at: string | null; completed_at: string | null; created_at: string
+}
+export interface ManagedNotificationDelivery {
+  id: number; notification_id: string; title: string; scene_code: string; channel: string; status: 'retrying' | 'failed';
+  retry_count: number; next_retry_at: string | null; error_code: string | null; error_message: string | null; updated_at: string
+}
 export interface RuntimeResilience { readiness: { status: 'ready' | 'not_ready'; checks: Record<string, { ready: boolean; latency_ms: number }>; checked_at: string }; consistency: { healthy: boolean; checks: Record<string, { violations: number; skipped: boolean }>; checked_at: string } }
 export interface UatRun { id: string; release_version: string; environment: string; status: 'passed' | 'passed_local' | 'failed'; summary: { passed: number; failed: number; blocked: number; total: number }; report_hash: string; completed_at: string; cases: Array<{ case_code: string; scope: string; status: string; evidence: Record<string, unknown> }> }
 export interface ManagedFeatureFlag { code: string; name: string; mode: 'disabled' | 'percentage' | 'enabled'; rollout_percentage: number; audience: Record<string, unknown> | null; version: number; updated_at: string }
+export interface ManagedSupportMessage { id: string; sender_type: 'user' | 'admin'; content: string; created_at: string }
+export interface ManagedSupportTicket {
+  id: string; user_id: number; category: string; subject: string
+  status: 'open' | 'processing' | 'waiting_user' | 'waiting_service' | 'resolved' | 'closed'
+  priority: 'low' | 'normal' | 'high' | 'urgent'; related_type: string | null; related_public_id: string | null
+  assigned_admin_id: number | null; created_at: string; updated_at: string; messages: ManagedSupportMessage[]
+}
 export interface ManagedRelease { id: string; release_version: string; environment: string; commit_sha: string; artifact_hash: string; configuration_hash: string; status: string; rollout_percentage: number; deployed_at: string | null; rolled_back_at: string | null }
 
 interface ApiEnvelope<T> {
@@ -437,6 +784,18 @@ async function request<T>(path: string, init: RequestInit = {}, canRetry = true)
   }
 
   return parseResponse<T>(response)
+}
+
+async function requestBlob(path: string, canRetry = true): Promise<Blob> {
+  const accessToken = sessionStorage.getItem(ACCESS_KEY)
+  const headers = new Headers({ Accept: '*/*' })
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
+  const response = await fetch(`/api/v1${path}`, { headers })
+  if (response.status === 401 && canRetry && (await refreshSession())) {
+    return requestBlob(path, false)
+  }
+  if (!response.ok) await parseResponse<never>(response)
+  return response.blob()
 }
 
 export async function login(account: string, password: string): Promise<AdminTokens | AdminMfaChallenge> {
@@ -614,9 +973,35 @@ export async function listRewardBudgetPools(): Promise<{ items: RewardBudgetPool
   return request('/admin/reward-budget-pools')
 }
 
-export async function createRewardBudgetPool(input: { name: string; asset_type: 'points' | 'wallet_cash'; total_amount: number; reason: string }): Promise<RewardBudgetPool> {
+export async function listRewardCouponTemplates(): Promise<{ items: ManagedCouponTemplate[] }> {
+  return request('/admin/reward-coupon-templates')
+}
+
+export async function createRewardBudgetPool(input: { name: string; asset_type: 'points' | 'wallet_cash' | 'coupon'; coupon_template_id?: string; total_amount: number; reason: string }): Promise<RewardBudgetPool> {
   return request('/admin/reward-budget-pools', {
     method: 'POST', headers: { 'Idempotency-Key': `admin-pool-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify(input),
+  })
+}
+
+export async function listCouponTemplates(): Promise<{ items: ManagedCouponTemplate[] }> {
+  return request('/admin/coupon-templates')
+}
+
+export async function createCouponTemplate(input: Omit<ManagedCouponTemplate, 'id' | 'issued_quantity' | 'remaining_quantity' | 'status' | 'version' | 'created_at'>): Promise<ManagedCouponTemplate> {
+  return request('/admin/coupon-templates', {
+    method: 'POST', headers: { 'Idempotency-Key': `admin-coupon-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify(input),
+  })
+}
+
+export async function createCouponTemplateVersion(id: string, input: Omit<ManagedCouponTemplate, 'id' | 'issued_quantity' | 'remaining_quantity' | 'status' | 'version' | 'created_at'> & { reason: string }): Promise<ManagedCouponTemplate> {
+  return request(`/admin/coupon-templates/${id}/versions`, {
+    method: 'POST', headers: { 'Idempotency-Key': `admin-coupon-version-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify(input),
+  })
+}
+
+export async function changeCouponTemplateStatus(id: string, action: 'enable' | 'disable', version: number, reason: string): Promise<ManagedCouponTemplate> {
+  return request(`/admin/coupon-templates/${id}/status`, {
+    method: 'POST', headers: { 'Idempotency-Key': `admin-coupon-status-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify({ action, version, reason }),
   })
 }
 
@@ -630,10 +1015,36 @@ export async function createManagedTask(input: Record<string, unknown>): Promise
   })
 }
 
+export async function updateManagedTask(id: string, input: Record<string, unknown>, version: number): Promise<ManagedTask> {
+  return request(`/admin/tasks/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ ...input, version }),
+  })
+}
+
+export async function listManagedTaskVersions(id: string): Promise<ManagedTaskVersionSummary[]> {
+  return request(`/admin/tasks/${id}/versions`)
+}
+
+export async function rollbackManagedTaskVersion(id: string, versionNo: number, currentVersion: number, reason: string): Promise<ManagedTask> {
+  return request(`/admin/tasks/${id}/versions/${versionNo}/rollback`, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': `admin-task-rollback-${Date.now()}-${crypto.randomUUID()}` },
+    body: JSON.stringify({ current_version: currentVersion, reason }),
+  })
+}
+
 export async function publishManagedTask(id: string, reason: string): Promise<ManagedTask> {
   return request(`/admin/tasks/${id}/status`, {
     method: 'POST', headers: { 'Idempotency-Key': `admin-task-publish-${Date.now()}-${crypto.randomUUID()}` },
     body: JSON.stringify({ action: 'publish', reason }),
+  })
+}
+
+export async function transitionManagedTask(id: string, action: 'pause' | 'resume' | 'close' | 'archive', reason: string, existingClaimPolicy?: 'continue' | 'terminate_without_compensation' | 'terminate_with_compensation'): Promise<ManagedTask> {
+  return request(`/admin/tasks/${id}/status`, {
+    method: 'POST', headers: { 'Idempotency-Key': `admin-task-${action}-${Date.now()}-${crypto.randomUUID()}` },
+    body: JSON.stringify({ action, reason, existing_claim_policy: existingClaimPolicy ?? null }),
   })
 }
 
@@ -648,12 +1059,60 @@ export async function listTaskSubmissions(status = 'submitted'): Promise<{ items
   return request(`/admin/task-submissions?status=${encodeURIComponent(status)}`)
 }
 
-export async function reviewTaskSubmission(id: string, decision: 'approve' | 'reject', reasonCode: string | null, note: string): Promise<ManagedTaskSubmission> {
-  return request(`/admin/task-submissions/${id}/review`, {
-    method: 'POST', headers: { 'Idempotency-Key': `admin-submission-review-${Date.now()}-${crypto.randomUUID()}` },
-    body: JSON.stringify({ decision, reason_code: reasonCode, note }),
+export async function startTaskSubmissionReview(id: string): Promise<ManagedTaskSubmission> {
+  return request(`/admin/task-submissions/${id}/start-review`, {
+    method: 'POST', headers: { 'Idempotency-Key': `admin-submission-start-review-${Date.now()}-${crypto.randomUUID()}` },
   })
 }
+
+export async function listTaskReviewReasons(): Promise<{ items: TaskReviewReason[]; reviewers: Array<{ id: string; account: string; display_name: string }> }> {
+  return request('/admin/task-review-reasons')
+}
+
+export async function releaseTaskSubmissionReview(id: string, reason: string): Promise<ManagedTaskSubmission> {
+  return request(`/admin/task-submissions/${id}/release-review`, {
+    method: 'POST', headers: { 'Idempotency-Key': `admin-submission-release-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify({ reason }),
+  })
+}
+
+export async function transferTaskSubmissionReview(id: string, targetAdminId: string, reason: string): Promise<ManagedTaskSubmission> {
+  return request(`/admin/task-submissions/${id}/transfer-review`, {
+    method: 'POST', headers: { 'Idempotency-Key': `admin-submission-transfer-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify({ target_admin_id: targetAdminId, reason }),
+  })
+}
+
+export async function listTaskRewardDeliveries(status: 'pending' | 'failed' | 'delivered' = 'failed'): Promise<{ items: ManagedTaskRewardDelivery[] }> {
+  return request(`/admin/task-reward-deliveries?status=${encodeURIComponent(status)}`)
+}
+
+export async function retryTaskRewardDelivery(id: string, reason: string): Promise<{ id: string; status: string; attempt_count: number }> {
+  return request(`/admin/task-reward-deliveries/${id}/retry`, {
+    method: 'POST', headers: { 'Idempotency-Key': `admin-task-reward-retry-${Date.now()}-${crypto.randomUUID()}` },
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export async function downloadTaskSubmissionFile(submissionId: string, fileId: string): Promise<Blob> {
+  return requestBlob(`/admin/task-submissions/${encodeURIComponent(submissionId)}/files/${encodeURIComponent(fileId)}`)
+}
+
+export async function reviewTaskSubmission(id: string, decision: 'approve' | 'reject', reasonCode: string | null, note: string, stepResults: Array<{ step_id: string; decision: 'approve' | 'reject'; reason_code?: string | null; note?: string | null }> = []): Promise<ManagedTaskSubmission> {
+  return request(`/admin/task-submissions/${id}/review`, {
+    method: 'POST', headers: { 'Idempotency-Key': `admin-submission-review-${Date.now()}-${crypto.randomUUID()}` },
+    body: JSON.stringify({ decision, reason_code: reasonCode, note, step_results: stepResults }),
+  })
+}
+
+export async function listTaskDataBatches(): Promise<{ items: TaskDataBatch[] }> { return request('/admin/task-data-batches') }
+export async function getTaskDataBatch(id: string): Promise<TaskDataBatch> { return request(`/admin/task-data-batches/${encodeURIComponent(id)}`) }
+export async function importTaskDataBatch(input: { name: string; file: File; field_mapping: Record<string, string> }): Promise<TaskDataBatch> {
+  const body = new FormData()
+  body.append('name', input.name)
+  body.append('file', input.file)
+  body.append('field_mapping', JSON.stringify(input.field_mapping))
+  return request('/admin/task-data-batches', { method: 'POST', body })
+}
+export async function downloadTaskDataBatch(id: string): Promise<Blob> { return requestBlob(`/admin/task-data-batches/${encodeURIComponent(id)}/export`) }
 
 export async function listTaskAppeals(): Promise<{ items: ManagedTaskAppeal[] }> { return request('/admin/task-appeals?status=submitted') }
 export async function reviewTaskAppeal(id: string, decision: 'approve' | 'reject', reason: string): Promise<ManagedTaskAppeal> {
@@ -735,8 +1194,11 @@ export async function changeManagedProductStatus(id: string, action: 'publish' |
   return request(`/admin/products/${id}/status`, { method: 'POST', headers: { 'Idempotency-Key': `admin-product-status-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify({ action, reason }) })
 }
 export async function listShippingTemplates(): Promise<{ items: ManagedShippingTemplate[] }> { return request('/admin/shipping-templates') }
-export async function createShippingTemplate(input: Record<string, unknown>): Promise<ManagedShippingTemplate> {
+export async function createShippingTemplate(input: ManagedShippingTemplateInput): Promise<ManagedShippingTemplate> {
   return request('/admin/shipping-templates', { method: 'POST', headers: { 'Idempotency-Key': `admin-shipping-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify(input) })
+}
+export async function updateShippingTemplate(id: string, input: ManagedShippingTemplateInput & { version: number }): Promise<ManagedShippingTemplate> {
+  return request(`/admin/shipping-templates/${id}`, { method: 'PUT', body: JSON.stringify(input) })
 }
 export async function listInventories(): Promise<{ items: ManagedInventory[] }> { return request('/admin/inventories') }
 export async function adjustInventory(skuId: string, input: { action: 'increase' | 'decrease' | 'set'; quantity: number; version: number; reason: string }): Promise<ManagedInventory> {
@@ -745,10 +1207,45 @@ export async function adjustInventory(skuId: string, input: { action: 'increase'
 export async function listManagedRefunds(): Promise<{ items: ManagedRefund[] }> { return request('/admin/refunds') }
 export async function listManagedExchanges(): Promise<{ items: ManagedExchange[] }> { return request('/admin/exchanges') }
 export async function listManagedAfterSaleReasons(): Promise<{ items: ManagedAfterSaleReason[] }> { return request('/admin/after-sale-reasons') }
-export async function reviewManagedRefund(id: string, decision: 'approve' | 'reject', note: string): Promise<ManagedRefund> { return request(`/admin/refunds/${id}/review`, { method: 'POST', body: JSON.stringify({ decision, note }) }) }
+export async function reviewManagedRefund(id: string, input: { decision: 'approve' | 'reject'; note: string; responsibility_party?: string; return_shipping_payer?: string; return_method?: string }): Promise<ManagedRefund> { return request(`/admin/refunds/${id}/review`, { method: 'POST', body: JSON.stringify(input) }) }
 export async function receiveManagedReturn(id: string, note: string): Promise<ManagedRefund> { return request(`/admin/refunds/${id}/receive-return`, { method: 'POST', body: JSON.stringify({ note }) }) }
-export async function reviewManagedExchange(id: string, decision: 'approve' | 'reject', reason: string): Promise<ManagedExchange> { return request(`/admin/exchanges/${id}/review`, { method: 'POST', body: JSON.stringify({ decision, reason }) }) }
+export async function reviewManagedExchange(id: string, input: { decision: 'approve' | 'reject'; reason: string; responsibility_party?: string; return_shipping_payer?: string; replacement_shipping_payer?: string; return_method?: string }): Promise<ManagedExchange> { return request(`/admin/exchanges/${id}/review`, { method: 'POST', body: JSON.stringify(input) }) }
+export async function receiveManagedExchangeReturn(id: string, note: string): Promise<ManagedExchange> { return request(`/admin/exchanges/${id}/receive-return`, { method: 'POST', body: JSON.stringify({ note }) }) }
+export async function fulfillManagedExchange(id: string, input: { fulfillment_type: 'logistics' | 'no_logistics'; carrier_code?: string; tracking_no?: string; no_logistics_note?: string }): Promise<ManagedExchange> { return request(`/admin/exchanges/${id}/replacement-fulfillment`, { method: 'POST', headers: { 'Idempotency-Key': `exchange-fulfillment-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify(input) }) }
+export async function listReturnShippingCompensations(): Promise<{ items: ReturnShippingCompensation[] }> { return request('/admin/return-shipping-compensations') }
+export async function reviewReturnShippingCompensation(id: string, input: { decision: 'approve' | 'reject'; approved_amount?: number; note: string }): Promise<ReturnShippingCompensation> { return request(`/admin/return-shipping-compensations/${id}/review`, { method: 'POST', headers: { 'Idempotency-Key': `shipping-compensation-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify(input) }) }
+export async function downloadReturnShippingProof(id: string): Promise<Blob> { return requestBlob(`/admin/return-shipping-compensations/${id}/proof`) }
 export async function updateManagedAfterSaleReason(reason: ManagedAfterSaleReason): Promise<ManagedAfterSaleReason> { return request(`/admin/after-sale-reasons/${reason.id}`, { method: 'PUT', body: JSON.stringify(reason) }) }
+export async function listManagedOrders(filters: { keyword?: string; status?: string; fulfillment_type?: string; page?: number; page_size?: number } = {}): Promise<{ items: ManagedOrder[]; pagination: { page: number; page_size: number; total: number; last_page: number }; summary?: Record<string, number> }> {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') query.set(key === 'keyword' ? 'search' : key, String(value))
+  })
+  return request(`/admin/orders${query.size ? `?${query.toString()}` : ''}`)
+}
+export async function getManagedOrder(id: string): Promise<ManagedOrder> { return request(`/admin/orders/${id}`) }
+export async function createManagedFulfillment(orderId: string, input: {
+  method: 'logistics' | 'no_logistics' | 'virtual_delivery'
+  carrier_code?: string
+  carrier_name?: string
+  tracking_no?: string
+  no_logistics_reason?: string
+  virtual_delivery?: Record<string, unknown>
+  items: Array<{ order_item_id: string; quantity: number }>
+}): Promise<ManagedOrderFulfillment> {
+  return request(`/admin/orders/${orderId}/fulfillments`, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': `admin-fulfillment-${Date.now()}-${crypto.randomUUID()}` },
+    body: JSON.stringify(input),
+  })
+}
+export async function listAdminAuditLogs(filters: { keyword?: string; action?: string; subject_type?: string; actor_id?: string; started_at?: string; ended_at?: string; page?: number; page_size?: number } = {}): Promise<{ items: AdminAuditLog[]; pagination: { page: number; page_size: number; total: number; last_page: number }; scope: 'all' | 'own' }> {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  })
+  return request(`/admin/audit-logs${query.size ? `?${query.toString()}` : ''}`)
+}
 export async function listPendingCommunityPosts(): Promise<{ items: ManagedCommunityPost[] }> { return request('/admin/community/posts') }
 export async function listPendingCommunityComments(): Promise<{ items: ManagedCommunityComment[] }> { return request('/admin/community/comments') }
 export async function reviewCommunityPost(id: string, decision: 'approve' | 'reject', note: string): Promise<ManagedCommunityPost> { return request(`/admin/community/posts/${id}/review`, { method: 'POST', body: JSON.stringify({ decision, reason_code: decision === 'reject' ? 'content_not_compliant' : undefined, note }) }) }
@@ -757,7 +1254,65 @@ export async function listCommunityReports(): Promise<{ items: ManagedContentRep
 export async function listCommunityAppeals(): Promise<{ items: ManagedContentAppeal[] }> { return request('/admin/community/appeals') }
 export async function moderateCommunityContent(type: 'post' | 'comment', id: string, decision: 'warning' | 'hide' | 'delete', restrictions: string[] = []): Promise<{ id: string }> { return request(`/admin/community/${type}/${id}/moderate`, { method: 'POST', headers: { 'Idempotency-Key': `moderation-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify({ decision, reason_code: 'other', note: '依据举报材料执行社区治理处置。', restrictions, restriction_days: restrictions.length ? 7 : undefined }) }) }
 export async function reviewCommunityAppeal(id: string, decision: 'approve' | 'reject'): Promise<ManagedContentAppeal> { return request(`/admin/community/appeals/${id}/review`, { method: 'POST', body: JSON.stringify({ decision, note: decision === 'approve' ? '复核确认原处置有误，恢复内容、奖励与限制。' : '复核维持原处置。' }) }) }
+export async function listCommunityActivities(status?: CommunityActivityStatus): Promise<{ items: ManagedCommunityActivity[] }> {
+  const query = status ? `?${new URLSearchParams({ status }).toString()}` : ''
+  return request(`/admin/community/activities${query}`)
+}
+
+export async function listWalletRecharges(status = 'pending_review'): Promise<{ items: WalletRecharge[] }> {
+  return request(`/admin/wallet-recharges?status=${encodeURIComponent(status)}`)
+}
+export async function reviewWalletRecharge(id: string, decision: 'approve' | 'reject', note: string): Promise<WalletRecharge> {
+  return request(`/admin/wallet-recharges/${id}/review`, { method: 'POST', body: JSON.stringify({ decision, note }) })
+}
+export async function downloadWalletRechargeProof(rechargeId: string, fileId: string): Promise<Blob> {
+  return requestBlob(`/admin/wallet-recharges/${encodeURIComponent(rechargeId)}/proofs/${encodeURIComponent(fileId)}`)
+}
+export async function listWalletRechargeCards(status = ''): Promise<{ items: WalletRechargeCard[] }> {
+  return request(`/admin/wallet-recharge-cards?status=${encodeURIComponent(status)}`)
+}
+export async function createWalletRechargeCards(input: { amount_cents: number; quantity: number; expires_at?: string }): Promise<{ cards: WalletRechargeCard[]; warning: string }> {
+  return request('/admin/wallet-recharge-cards', { method: 'POST', body: JSON.stringify(input) })
+}
+export async function listManagedTaskTemplates(): Promise<{ items: ManagedTaskTemplate[] }> { return request('/admin/task-templates') }
+export async function getManagedTaskTemplate(id: string): Promise<ManagedTaskTemplate> { return request(`/admin/task-templates/${id}`) }
+export async function createManagedTaskTemplate(input: Record<string, unknown>): Promise<ManagedTaskTemplate> {
+  return request('/admin/task-templates', { method: 'POST', headers: { 'Idempotency-Key': `task-template-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify(input) })
+}
+export async function copyManagedTaskTemplate(id: string, input: { code: string; name: string }): Promise<ManagedTaskTemplate> {
+  return request(`/admin/task-templates/${id}/copy`, { method: 'POST', headers: { 'Idempotency-Key': `task-template-copy-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify(input) })
+}
+export async function changeManagedTaskTemplateStatus(id: string, input: { action: 'enable' | 'disable'; version: number; reason: string }): Promise<ManagedTaskTemplate> {
+  return request(`/admin/task-templates/${id}/status`, { method: 'POST', body: JSON.stringify(input) })
+}
+export async function listManagedTaskTemplateVersions(id: string): Promise<ManagedTaskTemplateVersion[]> { return request(`/admin/task-templates/${id}/versions`) }
+export async function createTaskFromManagedTemplate(id: string, overrides: Record<string, unknown>): Promise<ManagedTask> {
+  return request(`/admin/task-templates/${id}/create-task`, { method: 'POST', headers: { 'Idempotency-Key': `task-from-template-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify({ overrides }) })
+}
+export async function reviewCommunityActivity(id: string, decision: 'approve' | 'reject', note: string, reasonCode?: string): Promise<ManagedCommunityActivity> {
+  return request(`/admin/community/activities/${id}/review`, { method: 'POST', body: JSON.stringify({ decision, note, reason_code: reasonCode || undefined }) })
+}
+export async function closeCommunityActivity(id: string, reason: string): Promise<ManagedCommunityActivity> {
+  return request(`/admin/community/activities/${id}/close`, { method: 'POST', body: JSON.stringify({ reason }) })
+}
+export async function removeCommunityActivityParticipant(activityId: string, participantId: number, reason: string): Promise<ManagedCommunityActivity> {
+  return request(`/admin/community/activities/${activityId}/participants/${participantId}/remove`, { method: 'POST', body: JSON.stringify({ reason }) })
+}
+export async function getCommunityHomepageConfig(): Promise<CommunityHomepageConfig> { return request('/admin/community/config') }
+export async function updateCommunityHomepageConfig(input: CommunityHomepageConfigInput): Promise<CommunityHomepageConfig> {
+  return request('/admin/community/config', { method: 'PUT', body: JSON.stringify(input) })
+}
 export async function getOperationsDashboard(): Promise<OperationsMetrics> { return request('/admin/operations/dashboard') }
+export async function listManagedSupportTickets(filters: { status?: string; category?: string } = {}): Promise<{ items: ManagedSupportTicket[] }> {
+  const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => Boolean(value)) as Array<[string, string]>)
+  return request(`/admin/support-tickets${query.size ? `?${query.toString()}` : ''}`)
+}
+export async function replyManagedSupportTicket(id: string, content: string, status: 'processing' | 'waiting_user' | 'resolved' = 'waiting_user'): Promise<ManagedSupportTicket> {
+  return request(`/admin/support-tickets/${id}/messages`, { method: 'POST', body: JSON.stringify({ content, status }) })
+}
+export async function updateManagedSupportTicket(id: string, input: { status?: ManagedSupportTicket['status']; priority?: ManagedSupportTicket['priority'] }): Promise<ManagedSupportTicket> {
+  return request(`/admin/support-tickets/${id}`, { method: 'PUT', body: JSON.stringify(input) })
+}
 export async function getUserCenterOverview(): Promise<UserCenterOverview> { return request('/admin/user-center/overview') }
 export async function listManagedEndUsers(filters: { keyword?: string; status?: string; verification?: string; referral?: string } = {}): Promise<{ items: ManagedEndUser[]; pagination: { page: number; page_size: number; total: number; last_page: number }; privacy: Record<string, boolean> }> {
   const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => Boolean(value)) as Array<[string, string]>)
@@ -777,6 +1332,10 @@ export async function listUatRuns(): Promise<{ items: UatRun[] }> { return reque
 export async function getReleaseControl(): Promise<{ feature_flags: ManagedFeatureFlag[]; releases: ManagedRelease[] }> { return request('/admin/operations/release-control') }
 export async function updateFeatureFlag(code: string, input: Record<string, unknown>): Promise<ManagedFeatureFlag> { return request(`/admin/operations/feature-flags/${code}`, { method: 'PUT', body: JSON.stringify(input) }) }
 export async function listNotificationTemplates(): Promise<{ items: ManagedNotificationTemplate[] }> { return request('/admin/notification-templates') }
+export async function getNotificationTemplate(id: string): Promise<ManagedNotificationTemplate> { return request(`/admin/notification-templates/${encodeURIComponent(id)}`) }
 export async function saveNotificationTemplate(input: Record<string, unknown>): Promise<ManagedNotificationTemplate> { return request('/admin/notification-templates', { method: 'POST', body: JSON.stringify(input) }) }
 export async function listNotificationCampaigns(): Promise<{ items: ManagedNotificationCampaign[] }> { return request('/admin/notification-campaigns') }
 export async function createNotificationCampaign(input: Record<string, unknown>): Promise<ManagedNotificationCampaign> { return request('/admin/notification-campaigns', { method: 'POST', headers: { 'Idempotency-Key': `campaign-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify(input) }) }
+export async function cancelNotificationCampaign(id: string, reason: string): Promise<ManagedNotificationCampaign> { return request(`/admin/notification-campaigns/${encodeURIComponent(id)}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) }) }
+export async function listNotificationDeliveries(): Promise<{ items: ManagedNotificationDelivery[] }> { return request('/admin/notification-deliveries') }
+export async function retryNotificationDelivery(id: number, reason: string): Promise<ManagedNotificationDelivery> { return request(`/admin/notification-deliveries/${id}/retry`, { method: 'POST', body: JSON.stringify({ reason }) }) }

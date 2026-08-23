@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Form, Input, Modal, Popconfirm, Result, Select, Space, Table, Tabs, Tag, Typography, message } from 'antd'
+import { Alert, Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tabs, Tag, Typography, message } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ApiError, confirmCurrentAdminMfa, createAdminRole, createManagedAdmin, enrollCurrentAdminMfa, listAdminPermissions, listAdminRoles, listManagedAdmins,
@@ -7,6 +7,7 @@ import {
   type AdminPermission, type AdminRole, type ManagedAdmin,
 } from '../../api/admin'
 import { useAdminAuth } from '../auth/AdminAuthContext'
+import { AuditLogPanel } from './AuditLogPanel'
 
 const permissionGroupColors: Record<string, string> = {
   user: 'blue', task: 'geekblue', community: 'purple', mall: 'cyan', after_sale: 'orange',
@@ -41,6 +42,7 @@ export function SecurityPage() {
   const [verifyForm] = Form.useForm()
   const [messageApi, contextHolder] = message.useMessage()
   const canManage = admin?.permissions.includes('rbac.manage') ?? false
+  const canAudit = admin?.permissions.some((permission) => ['audit.view', 'audit.view_own'].includes(permission)) ?? false
   const permissionOptions = Object.entries(permissions.reduce<Record<string, AdminPermission[]>>((groups, permission) => {
     ;(groups[permission.group] ??= []).push(permission)
     return groups
@@ -128,13 +130,14 @@ export function SecurityPage() {
     { title: '操作', width: 90, render: (_: unknown, role: AdminRole) => <Button size="small" onClick={() => openRoleEditor(role)}>编辑</Button> },
   ]} /></>
 
-  if (!canManage) return <Result status="403" title="审计入口" subTitle="当前角色可以查看审计记录；管理员与角色治理仅向具备 RBAC 管理权限的账号开放，审计列表将在运营批次接入。" />
-
   return <>
     {contextHolder}
-    <div className="page-heading"><div><Typography.Text className="eyebrow">IDENTITY & ACCESS</Typography.Text><Typography.Title level={2}>权限与安全</Typography.Title><Typography.Paragraph type="secondary">账号、角色、会话和二次验证采用服务端强制校验与审计。</Typography.Paragraph></div><Space><Button onClick={() => setVerifying(true)}>刷新近期验证</Button><Button onClick={() => void startMfa()}>为当前账号启用 MFA</Button></Space></div>
-    <Alert showIcon type="warning" message="新增管理员、角色变更、停用、MFA 重置等高风险操作要求近期验证；系统阻止停用自己或移除自己的超级管理员角色。" />
-    <Card bordered={false} className="settings-table-card"><Tabs items={[{ key: 'accounts', label: '管理员账号', children: accountTab }, { key: 'roles', label: '角色权限', children: roleTab }]} /></Card>
+    <div className="page-heading"><div><Typography.Text className="eyebrow">身份、权限与审计</Typography.Text><Typography.Title level={2}>权限、安全与审计</Typography.Title><Typography.Paragraph type="secondary">账号、角色、会话、二次验证和不可篡改审计记录统一治理。</Typography.Paragraph></div>{canManage && <Space><Button onClick={() => setVerifying(true)}>刷新近期验证</Button><Button onClick={() => void startMfa()}>为当前账号启用 MFA</Button></Space>}</div>
+    {canManage && <Alert showIcon type="warning" message="新增管理员、角色变更、停用、MFA 重置等高风险操作要求近期验证；系统阻止停用自己或移除自己的超级管理员角色。" />}
+    <Card bordered={false} className="settings-table-card"><Tabs items={[
+      ...(canManage ? [{ key: 'accounts', label: '管理员账号', children: accountTab }, { key: 'roles', label: '角色权限', children: roleTab }] : []),
+      ...(canAudit ? [{ key: 'audit', label: '操作审计', children: <AuditLogPanel /> }] : []),
+    ]} /></Card>
 
     <Modal title="新增管理员" open={creating} onCancel={() => setCreating(false)} onOk={() => void create()} okText="创建账号">
       <Form form={form} layout="vertical"><Form.Item name="account" label="登录账号" rules={[{ required: true, min: 3 }]}><Input /></Form.Item><Form.Item name="display_name" label="显示名称" rules={[{ required: true }]}><Input /></Form.Item><Form.Item name="email" label="邮箱"><Input /></Form.Item><Form.Item name="password" label="初始密码" rules={[{ required: true, min: 12 }]}><Input.Password /></Form.Item><Form.Item name="role_codes" label="初始角色" rules={[{ required: true }]}><Select mode="multiple" options={roles.map((role) => ({ value: role.code, label: role.name }))} /></Form.Item></Form>

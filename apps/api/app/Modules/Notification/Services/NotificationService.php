@@ -83,6 +83,50 @@ class NotificationService
         return $processed;
     }
 
+    public function cancelCampaign(NotificationCampaign $campaign): NotificationCampaign
+    {
+        return DB::transaction(function () use ($campaign): NotificationCampaign {
+            $locked = NotificationCampaign::query()->lockForUpdate()->findOrFail($campaign->id);
+            if ($locked->status === 'cancelled') {
+                return $locked;
+            }
+            if (! in_array($locked->status, ['draft', 'ready', 'scheduled'], true)) {
+                throw ValidationException::withMessages(['status' => '只有草稿、待发送或计划中的触达可以取消。']);
+            }
+
+            $locked->update(['status' => 'cancelled']);
+
+            return $locked->fresh();
+        });
+    }
+
+    public function retryDelivery(int $deliveryId): object
+    {
+        return DB::transaction(function () use ($deliveryId): object {
+            $delivery = DB::table('notification_deliveries')->lockForUpdate()->find($deliveryId);
+            if (! $delivery) {
+                throw ValidationException::withMessages(['delivery' => '通知投递记录不存在。']);
+            }
+            if ($delivery->status === 'retrying') {
+                return $delivery;
+            }
+            if ($delivery->status !== 'failed') {
+                throw ValidationException::withMessages(['status' => '只有发送失败的通知可以重新投递。']);
+            }
+
+            DB::table('notification_deliveries')->where('id', $deliveryId)->update([
+                'status' => 'retrying',
+                'retry_count' => 0,
+                'next_retry_at' => now(),
+                'error_code' => null,
+                'error_message' => null,
+                'updated_at' => now(),
+            ]);
+
+            return DB::table('notification_deliveries')->find($deliveryId);
+        });
+    }
+
     public function saveTemplate(AdminUser $admin, array $data): NotificationTemplate
     {
         $variables = array_values(array_unique($data['allowed_variables']));
@@ -96,6 +140,7 @@ class NotificationService
 
         return DB::transaction(function () use ($admin, $data, $variables) {
             $template = NotificationTemplate::query()->firstOrCreate(['scene_code' => $data['scene_code'], 'channel' => $data['channel'], 'locale' => 'zh-CN'], ['created_by_admin_id' => $admin->id]);
+            $template = NotificationTemplate::query()->lockForUpdate()->findOrFail($template->id);
             $version = $template->current_version_no + 1;
             DB::table('notification_template_versions')->insert(['notification_template_id' => $template->id, 'version_no' => $version, 'subject' => $data['subject'], 'body' => $data['body'], 'allowed_variables' => json_encode($variables), 'provider_template_id' => $data['provider_template_id'] ?? null, 'status' => $data['publish'] ? 'published' : 'draft', 'created_by_admin_id' => $admin->id, 'published_at' => $data['publish'] ? now() : null, 'created_at' => now(), 'updated_at' => now()]);
             $template->update(['current_version_no' => $version, 'status' => $data['publish'] ? 'published' : 'draft']);

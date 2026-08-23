@@ -11,7 +11,7 @@ class CommunityPost extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['public_id', 'user_id', 'title', 'content', 'status', 'current_version_no', 'published_version_no', 'comment_count', 'reward_granted', 'idempotency_key_hash', 'reviewed_by_admin_id', 'review_reason_code', 'review_note', 'published_at'];
+    protected $fillable = ['public_id', 'user_id', 'title', 'content', 'category_code', 'status', 'current_version_no', 'published_version_no', 'comment_count', 'like_count', 'reward_granted', 'idempotency_key_hash', 'reviewed_by_admin_id', 'review_reason_code', 'review_note', 'published_at'];
 
     protected static function booted(): void
     {
@@ -20,7 +20,7 @@ class CommunityPost extends Model
 
     protected function casts(): array
     {
-        return ['current_version_no' => 'integer', 'published_version_no' => 'integer', 'comment_count' => 'integer', 'reward_granted' => 'boolean', 'published_at' => 'datetime'];
+        return ['current_version_no' => 'integer', 'published_version_no' => 'integer', 'comment_count' => 'integer', 'like_count' => 'integer', 'reward_granted' => 'boolean', 'published_at' => 'datetime'];
     }
 
     public function getRouteKeyName(): string

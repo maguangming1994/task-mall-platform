@@ -4,6 +4,7 @@ interface ImportMetaEnv {
   readonly VITE_API_BASE_URL?: string
   readonly VITE_WECHAT_MINI_REAL_LOGIN?: string
   readonly VITE_WECHAT_OA_APP_ID?: string
+  readonly VITE_H5_PUBLIC_URL?: string
 }
 
 declare module '*.vue' {

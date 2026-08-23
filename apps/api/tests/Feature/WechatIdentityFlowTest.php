@@ -7,7 +7,10 @@ use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Auth\Models\UserIdentity;
 use App\Modules\Auth\Services\IdentityHasher;
+use App\Modules\Settings\Models\SystemSettingDefinition;
+use App\Modules\Settings\Models\SystemSettingVersion;
 use Database\Seeders\RbacSeeder;
+use Database\Seeders\SystemSettingDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -145,7 +148,12 @@ class WechatIdentityFlowTest extends TestCase
     {
         $this->getJson('/api/v1/client-capabilities', $this->headers('wechat-mini', 'cap-mini'))
             ->assertOk()
-            ->assertJsonPath('data.login_methods.0', 'wechat_mini');
+            ->assertJsonPath('data.login_methods.0', 'wechat_mini')
+            ->assertJsonPath('data.wechat_payment_enabled', true)
+            ->assertJsonPath('data.wallet_payment_enabled', true)
+            ->assertJsonPath('data.cash_payment_methods.0', 'wechat')
+            ->assertJsonPath('data.cash_payment_methods.1', 'wallet')
+            ->assertJsonPath('data.payment_methods.0.label', '微信全额支付');
         $this->getJson('/api/v1/client-capabilities', $this->headers('h5-wechat', 'cap-h5'))
             ->assertOk()
             ->assertJsonPath('data.login_methods.0', 'wechat_oa');
@@ -153,6 +161,38 @@ class WechatIdentityFlowTest extends TestCase
             ->assertOk()
             ->assertJsonMissing(['wechat_mini'])
             ->assertJsonMissing(['wechat_oa']);
+    }
+
+    public function test_capabilities_follow_the_published_mall_wallet_payment_switch(): void
+    {
+        $this->seed(SystemSettingDefinitionSeeder::class);
+        $definition = SystemSettingDefinition::query()->where('setting_key', 'mall.wallet_payment_enabled')->firstOrFail();
+        SystemSettingVersion::query()->create([
+            'setting_definition_id' => $definition->id,
+            'version' => 1,
+            'value' => false,
+            'source' => 'publish',
+            'reason' => '测试商城余额支付关闭后的客户端能力。',
+            'published_at' => now(),
+        ]);
+
+        $this->getJson('/api/v1/client-capabilities', $this->headers('h5-browser', 'wallet-disabled-capability'))
+            ->assertOk()
+            ->assertJsonPath('data.wallet_payment_enabled', false)
+            ->assertJsonPath('data.cash_payment_methods', ['wechat'])
+            ->assertJsonPath('data.wallet_payment_unavailable_message', '商城余额支付已由平台关闭，请选择微信支付。');
+    }
+
+    public function test_capabilities_hide_unconfigured_production_wechat_payment_with_a_chinese_reason(): void
+    {
+        config()->set('wechat_payment.driver', 'wechat');
+        config()->set('wechat_payment.merchant_id', null);
+
+        $this->getJson('/api/v1/client-capabilities', $this->headers('h5-browser', 'wechat-unconfigured-capability'))
+            ->assertOk()
+            ->assertJsonPath('data.wechat_payment_enabled', false)
+            ->assertJsonPath('data.cash_payment_methods', ['wallet'])
+            ->assertJsonPath('data.wechat_payment_unavailable_message', '浏览器微信支付尚未配置完成，请改用余额支付或稍后再试。');
     }
 
     private function wechatLogin(string $channel, string $code)

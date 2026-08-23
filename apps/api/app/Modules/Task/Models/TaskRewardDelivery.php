@@ -3,6 +3,7 @@
 namespace App\Modules\Task\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class TaskRewardDelivery extends Model
@@ -22,5 +23,10 @@ class TaskRewardDelivery extends Model
     public function getRouteKeyName(): string
     {
         return 'public_id';
+    }
+
+    public function claim(): BelongsTo
+    {
+        return $this->belongsTo(TaskClaim::class, 'task_claim_id');
     }
 }

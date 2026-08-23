@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 
 class CommunityPostVersion extends Model
 {
-    protected $fillable = ['public_id', 'community_post_id', 'version_no', 'title', 'content', 'review_status', 'rule_snapshot', 'reviewed_by_admin_id', 'review_reason_code', 'review_note', 'reviewed_at'];
+    protected $fillable = ['public_id', 'community_post_id', 'version_no', 'title', 'content', 'category_code', 'review_status', 'rule_snapshot', 'reviewed_by_admin_id', 'review_reason_code', 'review_note', 'reviewed_at'];
 
     protected static function booted(): void
     {

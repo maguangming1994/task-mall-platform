@@ -9,6 +9,7 @@ import {
 } from '../../api/admin'
 import { useAdminAuth } from '../auth/AdminAuthContext'
 import { LegalDocumentManagementPanel } from './LegalDocumentManagementPanel'
+import { businessLabel } from '../../constants/businessLabels'
 
 const typeNames: Record<string, string> = {
   access: '查阅', copy: '数据副本', correction: '更正', deletion: '删除', withdraw_consent: '撤回同意',
@@ -73,7 +74,7 @@ export function PrivacyPage() {
       {contextHolder}
       <div className="page-heading">
         <div>
-          <Typography.Text className="eyebrow">PRIVACY OPERATIONS</Typography.Text>
+          <Typography.Text className="eyebrow">协议与隐私治理</Typography.Text>
           <Typography.Title level={2}>协议、隐私与账号注销</Typography.Title>
           <Typography.Paragraph type="secondary">维护用户协议与隐私政策版本、确认规则，并处理数据权利和账号注销请求。</Typography.Paragraph>
         </div>
@@ -104,9 +105,9 @@ export function PrivacyPage() {
           columns={[
             { title: '申请时间', dataIndex: 'requested_at', render: (value: string) => new Date(value).toLocaleString() },
             { title: '用户', dataIndex: 'user', render: (user: PrivacyRequestItem['user']) => <Space direction="vertical" size={0}><span>{user.nickname}</span><Typography.Text type="secondary" copyable>{user.id}</Typography.Text></Space> },
-            { title: '类型', dataIndex: 'request_type', render: (value: string) => typeNames[value] ?? value },
+            { title: '类型', dataIndex: 'request_type', render: (value: string) => businessLabel(typeNames, value) },
             { title: '范围', dataIndex: 'scope', render: (value: string[]) => value.map((scope) => <Tag key={scope}>{scope}</Tag>) },
-            { title: '状态', dataIndex: 'status', render: (value: string) => <Tag color={value === 'submitted' ? 'orange' : 'default'}>{statusNames[value] ?? value}</Tag> },
+            { title: '状态', dataIndex: 'status', render: (value: string) => <Tag color={value === 'submitted' ? 'orange' : 'default'}>{businessLabel(statusNames, value)}</Tag> },
             { title: '阻断', dataIndex: 'blockers', render: (value: string[]) => value.length ? value.map((blocker) => <Tag color="red" key={blocker}>{blocker}</Tag>) : '-' },
             { title: '操作', render: (_: unknown, item: PrivacyRequestItem) => <Button disabled={!['submitted', 'verifying', 'processing'].includes(item.status)} onClick={() => { setSelected(item); form.setFieldsValue({ decision: item.blockers.length ? 'partially_completed' : 'completed' }) }}>处理</Button> },
           ]}

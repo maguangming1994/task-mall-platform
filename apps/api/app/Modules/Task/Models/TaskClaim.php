@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 class TaskClaim extends Model
 {
-    protected $fillable = ['public_id', 'task_id', 'task_version_id', 'user_id', 'enrollment_source', 'cycle_key', 'task_snapshot', 'status', 'slot_status', 'progress_started_at', 'completion_deadline_at', 'cancel_count', 'submission_count', 'appeal_count', 'reward_status', 'claim_idempotency_key_hash', 'approved_at', 'cancelled_at'];
+    protected $fillable = ['public_id', 'task_id', 'task_version_id', 'user_id', 'enrollment_source', 'cycle_key', 'cycle_starts_at', 'cycle_ends_at', 'task_snapshot', 'status', 'execution_status', 'review_status', 'slot_status', 'progress_started_at', 'progress_current', 'progress_target', 'last_progress_at', 'completion_deadline_at', 'cancel_count', 'submission_count', 'appeal_count', 'reward_status', 'claim_idempotency_key_hash', 'approved_at', 'cancelled_at'];
 
     protected $hidden = ['claim_idempotency_key_hash'];
 
@@ -21,7 +21,7 @@ class TaskClaim extends Model
 
     protected function casts(): array
     {
-        return ['task_snapshot' => 'array', 'progress_started_at' => 'datetime', 'completion_deadline_at' => 'datetime', 'cancel_count' => 'integer', 'submission_count' => 'integer', 'appeal_count' => 'integer', 'approved_at' => 'datetime', 'cancelled_at' => 'datetime'];
+        return ['task_snapshot' => 'array', 'cycle_starts_at' => 'datetime', 'cycle_ends_at' => 'datetime', 'progress_started_at' => 'datetime', 'progress_current' => 'integer', 'progress_target' => 'integer', 'last_progress_at' => 'datetime', 'completion_deadline_at' => 'datetime', 'cancel_count' => 'integer', 'submission_count' => 'integer', 'appeal_count' => 'integer', 'approved_at' => 'datetime', 'cancelled_at' => 'datetime'];
     }
 
     public function getRouteKeyName(): string

@@ -12,6 +12,7 @@ use App\Modules\Assets\Models\UserCoupon;
 use App\Modules\Assets\Models\WalletTransaction;
 use App\Modules\Assets\Services\AssetLedgerService;
 use App\Modules\Assets\Services\WalletWithdrawalService;
+use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\RbacSeeder;
 use Database\Seeders\SystemSettingDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,6 +53,25 @@ class AssetLedgerFlowTest extends TestCase
         $this->assertSame('repaid', PointDebt::query()->where('user_id', $debtor->id)->value('status'));
         $this->assertSame(1, PointBatch::query()->where('user_id', $debtor->id)->count());
         $this->assertSame(2, $debtorAccount->fresh()->version);
+    }
+
+    public function test_point_expiry_account_and_batch_schedule_are_visible_to_the_user(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        [$token, $user] = $this->phoneLoginWithAccountConsent('13800138991');
+        $ledger = app(AssetLedgerService::class);
+        $ledger->grantPoints($user, 30, 'signin', 'signin-1', '签到积分。', 'expiry-signin-1');
+        $ledger->grantPoints($user, 80, 'task_reward', 'task-1', '任务奖励。', 'expiry-task-1');
+        PointBatch::query()->where('user_id', $user->id)->where('source_code', 'signin')->update(['expires_at' => now()->addDays(5)]);
+        PointBatch::query()->where('user_id', $user->id)->where('source_code', 'task_reward')->update(['expires_at' => now()->addDays(20)]);
+
+        $this->withToken($token)->getJson('/api/v1/points/account')->assertOk()
+            ->assertJsonPath('data.expiring_7_days', 30)
+            ->assertJsonPath('data.expiring_30_days', 110);
+        $this->withToken($token)->getJson('/api/v1/points/batches')->assertOk()
+            ->assertJsonCount(2, 'data.items')
+            ->assertJsonPath('data.items.0.source_code', 'signin')
+            ->assertJsonPath('data.items.0.remaining_points', 30);
     }
 
     public function test_wallet_adjustment_threshold_requires_four_eyes_and_is_idempotent(): void
@@ -160,5 +180,22 @@ class AssetLedgerFlowTest extends TestCase
         $admin->roles()->attach(Role::query()->where('code', 'super_admin')->value('id'));
 
         return $this->postJson('/api/v1/admin/auth/login', ['account' => $account, 'password' => 'AdminPassword12345!'])->assertOk()->json('data.access_token');
+    }
+
+    /** @return array{0:string,1:User} */
+    private function phoneLoginWithAccountConsent(string $phone): array
+    {
+        $headers = ['X-Client-Platform' => 'h5-browser', 'X-Device-Id' => 'asset-'.$phone];
+        $this->postJson('/api/v1/auth/phone/verification-codes', ['phone' => $phone, 'purpose' => 'login'], $headers)->assertAccepted();
+        $login = $this->postJson('/api/v1/auth/phone/login', ['phone' => $phone, 'verification_code' => '246810'], $headers)->assertOk();
+        $token = $login->json('data.access_token');
+        $user = User::query()->where('public_id', $login->json('data.user.id'))->firstOrFail();
+        foreach ($this->withToken($token)->getJson('/api/v1/me/legal-consents/pending?scope=account')->assertOk()->json('data') as $index => $document) {
+            $this->withToken($token)->withHeaders(['Idempotency-Key' => "asset-consent-{$phone}-{$index}", 'X-Client-Platform' => 'h5-browser'])
+                ->postJson('/api/v1/me/legal-consents', ['legal_document_version_id' => $document['id'], 'action' => 'accept', 'acknowledge_service_restriction' => false])
+                ->assertCreated();
+        }
+
+        return [$token, $user];
     }
 }

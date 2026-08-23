@@ -4,11 +4,16 @@ namespace App\Modules\Refund\Services;
 
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Assets\Models\UserCoupon;
 use App\Modules\Assets\Services\AssetLedgerService;
 use App\Modules\Order\Models\Order;
+use App\Modules\Payment\Contracts\WechatPaymentGateway;
+use App\Modules\Payment\Models\Payment;
+use App\Modules\Refund\Exceptions\RefundException;
 use App\Modules\Refund\Models\AfterSaleReason;
 use App\Modules\Refund\Models\Refund;
 use App\Modules\Refund\Models\ReturnShipment;
+use App\Modules\Refund\Models\ReturnShippingCompensation;
 use App\Modules\Settings\Services\SystemSettingService;
 use App\Modules\Upload\Models\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -20,21 +25,43 @@ class RefundService
     public function __construct(
         private readonly AssetLedgerService $assets,
         private readonly SystemSettingService $settings,
+        private readonly WechatPaymentGateway $wechat,
     ) {}
 
     public function create(User $user, Order $order, array $data, string $key): Refund
     {
         abort_unless($order->user_id === $user->id, 404);
         $hash = hash('sha256', $key);
-        if ($refund = Refund::query()->where('idempotency_key_hash', $hash)->first()) {
-            abort_unless($refund->user_id === $user->id, 404);
+        $fingerprint = $this->requestFingerprint($order, $data);
 
-            return $refund;
-        }
-
-        return DB::transaction(function () use ($user, $order, $data, $hash) {
+        return DB::transaction(function () use ($user, $order, $data, $hash, $fingerprint): Refund {
             $locked = Order::query()->with('items')->lockForUpdate()->findOrFail($order->id);
-            if (! in_array($locked->status, ['pending_fulfillment', 'fulfilled', 'completed'], true)) {
+
+            // Lock the idempotency row while checking its payload. This keeps
+            // retries deterministic when two requests arrive together and
+            // lets rows created before request fingerprints remain replayable.
+            $existing = Refund::query()->where('idempotency_key_hash', $hash)->lockForUpdate()->first();
+            if ($existing !== null) {
+                abort_unless($existing->user_id === $user->id, 404);
+                if ($existing->request_fingerprint_hash !== null
+                    && ! hash_equals((string) $existing->request_fingerprint_hash, $fingerprint)) {
+                    throw new RefundException(
+                        'REFUND_IDEMPOTENCY_CONFLICT',
+                        '幂等键已用于创建另一笔退款申请，请更换幂等键。',
+                        409,
+                    );
+                }
+                // A nullable fingerprint is intentional for legacy rows. On
+                // their first replay, bind it to the normalized request so
+                // later accidental payload changes are still rejected.
+                if ($existing->request_fingerprint_hash === null) {
+                    $existing->update(['request_fingerprint_hash' => $fingerprint]);
+                }
+
+                return $existing->fresh();
+            }
+
+            if (! in_array($locked->status, ['pending_fulfillment', 'fulfilled', 'completed', 'partially_refunded'], true)) {
                 throw ValidationException::withMessages(['order' => '订单当前不可申请退款。']);
             }
             $serviceType = $data['service_type'] ?? 'refund_only';
@@ -78,6 +105,7 @@ class RefundService
                 'evidence_file_ids' => $evidence,
                 'original_shipping_refunded' => false,
                 'idempotency_key_hash' => $hash,
+                'request_fingerprint_hash' => $fingerprint,
             ]);
             foreach ($rows as [$item, $quantity, $itemCash, $itemPoints, $remaining]) {
                 DB::table('refund_items')->insert([
@@ -96,9 +124,34 @@ class RefundService
         });
     }
 
+    public function reject(AdminUser $admin, Refund $refund, string $note): Refund
+    {
+        return DB::transaction(function () use ($admin, $refund, $note): Refund {
+            $locked = Refund::query()->lockForUpdate()->findOrFail($refund->id);
+
+            // Retrying the same terminal decision is safe and returns the
+            // original audit record without allowing a note/admin overwrite.
+            if ($locked->status === 'rejected') {
+                return $locked;
+            }
+            if ($locked->status !== 'submitted') {
+                throw ValidationException::withMessages(['refund' => '退款当前已进入后续处理，不能驳回或回退状态。']);
+            }
+
+            $locked->update([
+                'status' => 'rejected',
+                'reviewed_by_admin_id' => $admin->id,
+                'review_note' => $note,
+            ]);
+
+            return $locked->fresh();
+        });
+    }
+
     public function approve(AdminUser $admin, Refund $refund, string $note, array $decision = []): Refund
     {
-        return DB::transaction(function () use ($admin, $refund, $note, $decision) {
+        $shouldDispatchProvider = false;
+        $result = DB::transaction(function () use ($admin, $refund, $note, $decision, &$shouldDispatchProvider): Refund {
             $locked = Refund::query()->lockForUpdate()->findOrFail($refund->id);
             if (in_array($locked->status, ['succeeded', 'processing', 'awaiting_return', 'return_in_transit'], true)) {
                 return $locked;
@@ -126,8 +179,13 @@ class RefundService
                 return $locked->fresh();
             }
 
-            return $this->settle($admin, $locked);
+            $settled = $this->settle($admin, $locked);
+            $shouldDispatchProvider = $settled->status === 'processing';
+
+            return $settled;
         });
+
+        return $shouldDispatchProvider ? $this->dispatchProviderRefund($result) : $result;
     }
 
     public function submitReturn(User $user, Refund $refund, array $data, string $key): Refund
@@ -158,7 +216,7 @@ class RefundService
             $compensation = in_array($locked->return_shipping_payer, ['seller', 'carrier', 'negotiated'], true)
                 ? min($paid, $cap)
                 : 0;
-            ReturnShipment::query()->create([
+            $shipment = ReturnShipment::query()->create([
                 'refund_id' => $locked->id,
                 'method' => 'logistics',
                 'carrier_code' => $data['carrier_code'],
@@ -171,6 +229,18 @@ class RefundService
                 'idempotency_key_hash' => $hash,
                 'submitted_at' => now(),
             ]);
+            if ($compensation > 0) {
+                ReturnShippingCompensation::query()->create([
+                    'user_id' => $user->id,
+                    'source_type' => 'refund_return',
+                    'source_id' => $shipment->id,
+                    'requested_amount' => $compensation,
+                    'status' => 'submitted',
+                    'carrier_code' => $data['carrier_code'],
+                    'tracking_no' => $data['tracking_no'],
+                    'payment_proof_file_id' => $proof->id,
+                ]);
+            }
             $locked->update(['status' => 'return_in_transit']);
 
             return $locked->fresh();
@@ -179,16 +249,25 @@ class RefundService
 
     public function receiveReturn(AdminUser $admin, Refund $refund, string $note): Refund
     {
-        return DB::transaction(function () use ($admin, $refund, $note) {
+        $shouldDispatchProvider = false;
+        $result = DB::transaction(function () use ($admin, $refund, $note, &$shouldDispatchProvider): Refund {
             $locked = Refund::query()->lockForUpdate()->findOrFail($refund->id);
+            if (in_array($locked->status, ['succeeded', 'processing'], true)) {
+                return $locked;
+            }
             if ($locked->status !== 'return_in_transit') {
                 throw ValidationException::withMessages(['refund' => '当前没有待确认收货的退货。']);
             }
             ReturnShipment::query()->where('refund_id', $locked->id)->update(['status' => 'received', 'received_at' => now()]);
             $locked->update(['reviewed_by_admin_id' => $admin->id, 'review_note' => $note]);
 
-            return $this->settle($admin, $locked);
+            $settled = $this->settle($admin, $locked);
+            $shouldDispatchProvider = $settled->status === 'processing';
+
+            return $settled;
         });
+
+        return $shouldDispatchProvider ? $this->dispatchProviderRefund($result) : $result;
     }
 
     public function closeExpiredReturns(int $limit = 100): int
@@ -203,10 +282,220 @@ class RefundService
         return $count;
     }
 
+    /** @param array<string,string|null> $headers */
+    public function handleProviderNotification(array $headers, string $body): void
+    {
+        $this->processProviderResult($this->wechat->parseRefundNotification($headers, $body));
+    }
+
+    public function dispatchProviderRefund(Refund $refund): Refund
+    {
+        $refund = Refund::query()->findOrFail($refund->id);
+        if ($refund->status === 'succeeded') {
+            return $refund;
+        }
+        $component = DB::table('refund_components')->where('refund_id', $refund->id)->where('component_type', 'external')->first();
+        if ($refund->status !== 'processing' || $component === null || ! in_array($component->status, ['pending_provider', 'processing', 'failed'], true)) {
+            throw ValidationException::withMessages(['refund' => '退款当前不处于可提交外部渠道的状态。']);
+        }
+        $payment = Payment::query()->where('order_id', $refund->order_id)->where('channel', 'wechat')->where('status', 'succeeded')->latest('id')->first();
+        if ($payment === null) {
+            throw ValidationException::withMessages(['refund' => '没有找到该订单已成功的微信支付单，已阻止外部退款。']);
+        }
+
+        try {
+            $result = $this->wechat->refund($payment, $refund);
+            $this->processProviderResult($result);
+        } catch (\Throwable $exception) {
+            DB::table('refund_components')->where('id', $component->id)->update([
+                'retry_count' => DB::raw('retry_count + 1'),
+                'error_message' => mb_substr($exception->getMessage(), 0, 500),
+                'updated_at' => now(),
+            ]);
+            $this->recordProviderFailure($refund, 'submit', $exception);
+            throw $exception;
+        }
+
+        return $refund->fresh();
+    }
+
+    public function syncProviderRefund(Refund $refund): Refund
+    {
+        if ($refund->status === 'succeeded') {
+            return $refund->fresh();
+        }
+        try {
+            $this->processProviderResult($this->wechat->queryRefund($refund));
+        } catch (\Throwable $exception) {
+            DB::table('refund_components')->where('refund_id', $refund->id)->where('component_type', 'external')->update([
+                'retry_count' => DB::raw('retry_count + 1'),
+                'error_message' => mb_substr($exception->getMessage(), 0, 500),
+                'updated_at' => now(),
+            ]);
+            $this->recordProviderFailure($refund, 'query', $exception);
+            throw $exception;
+        }
+
+        return $refund->fresh();
+    }
+
+    public function syncPendingProviderRefunds(int $limit = 100): int
+    {
+        $count = 0;
+        Refund::query()->where('status', 'processing')->where('refund_external_amount', '>', 0)->orderBy('id')->limit($limit)->get()
+            ->each(function (Refund $refund) use (&$count): void {
+                try {
+                    $this->syncProviderRefund($refund);
+                    $count++;
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
+            });
+
+        return $count;
+    }
+
+    /** @param array<string,mixed> $result */
+    public function processProviderResult(array $result): void
+    {
+        $eventId = trim((string) ($result['notification_id'] ?? ''));
+        if ($eventId === '') {
+            throw ValidationException::withMessages(['refund' => '退款渠道结果缺少事件编号。']);
+        }
+        $refund = Refund::query()->where('refund_no', (string) ($result['refund_no'] ?? ''))->first();
+        if ($refund === null) {
+            throw ValidationException::withMessages(['refund' => '退款渠道结果对应的退款单不存在。']);
+        }
+        $event = [
+            'provider' => 'wechat',
+            'event_id' => $eventId,
+            'refund_id' => $refund->id,
+            'event_type' => (string) ($result['event_type'] ?? ''),
+            'provider_state' => strtoupper((string) ($result['refund_state'] ?? '')),
+            'provider_reference' => $result['provider_refund_no'] ?? null,
+            'resource_hash' => hash('sha256', json_encode($result['raw_resource'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+            'status' => 'received',
+            'occurred_at' => $result['success_time'] ?? null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+        if (DB::table('refund_provider_events')->insertOrIgnore($event) === 0) {
+            $existing = DB::table('refund_provider_events')->where(['provider' => 'wechat', 'event_id' => $eventId])->first();
+            if ($existing?->status === 'processed') {
+                return;
+            }
+            DB::table('refund_provider_events')->where('id', $existing->id)->update(['status' => 'received', 'error_message' => null, 'updated_at' => now()]);
+        }
+        $eventDbId = DB::table('refund_provider_events')->where(['provider' => 'wechat', 'event_id' => $eventId])->value('id');
+
+        try {
+            $amount = (int) ($result['refund_amount'] ?? 0);
+            if ($amount > 0 && $amount !== $refund->refund_external_amount) {
+                throw ValidationException::withMessages(['refund' => '退款渠道返回金额与本地退款单不一致。']);
+            }
+            $state = strtoupper((string) ($result['refund_state'] ?? ''));
+            $reference = trim((string) ($result['provider_refund_no'] ?? ''));
+            if ($state === 'SUCCESS') {
+                $this->completeProviderRefund($refund, $reference);
+            } elseif (in_array($state, ['PROCESSING', 'ACCEPTED'], true)) {
+                DB::transaction(function () use ($refund, $reference): void {
+                    $component = DB::table('refund_components')->where('refund_id', $refund->id)->where('component_type', 'external')->lockForUpdate()->first();
+                    if ($component === null) {
+                        throw ValidationException::withMessages(['refund' => '外部退款组成项不存在。']);
+                    }
+                    if ($component->provider_refund_no !== null && $reference !== '' && $component->provider_refund_no !== $reference) {
+                        throw ValidationException::withMessages(['refund' => '退款渠道流水号发生冲突。']);
+                    }
+                    DB::table('refund_components')->where('id', $component->id)->update([
+                        'status' => 'processing',
+                        'provider_refund_no' => $reference !== '' ? $reference : $component->provider_refund_no,
+                        'error_message' => null,
+                        'updated_at' => now(),
+                    ]);
+                });
+            } elseif (in_array($state, ['ABNORMAL', 'CLOSED', 'FAILED'], true)) {
+                DB::table('refund_components')->where('refund_id', $refund->id)->where('component_type', 'external')->update([
+                    'status' => 'failed',
+                    'provider_refund_no' => $reference !== '' ? $reference : null,
+                    'error_message' => '退款渠道返回终态失败：'.$state,
+                    'updated_at' => now(),
+                ]);
+            } elseif ($state !== 'PENDING') {
+                throw ValidationException::withMessages(['refund' => '退款渠道返回了无法识别的状态。']);
+            }
+            DB::table('refund_provider_events')->where('id', $eventDbId)->update(['status' => 'processed', 'processed_at' => now(), 'updated_at' => now()]);
+        } catch (\Throwable $exception) {
+            DB::table('refund_provider_events')->where('id', $eventDbId)->update(['status' => 'rejected', 'error_message' => mb_substr($exception->getMessage(), 0, 500), 'processed_at' => now(), 'updated_at' => now()]);
+            throw $exception;
+        }
+    }
+
+    private function recordProviderFailure(Refund $refund, string $operation, \Throwable $exception): void
+    {
+        $attempt = (int) DB::table('refund_components')->where('refund_id', $refund->id)->where('component_type', 'external')->value('retry_count');
+        DB::table('refund_provider_events')->insertOrIgnore([
+            'provider' => 'wechat',
+            'event_id' => "{$operation}-error-{$refund->refund_no}-{$attempt}",
+            'refund_id' => $refund->id,
+            'event_type' => 'REFUND.'.strtoupper($operation).'.ERROR',
+            'provider_state' => null,
+            'provider_reference' => null,
+            'resource_hash' => hash('sha256', get_class($exception).':'.$exception->getCode()),
+            'status' => 'rejected',
+            'error_message' => mb_substr($exception->getMessage(), 0, 500),
+            'processed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * Complete local settlement only after the external refund provider has
+     * confirmed success. Retries with the same provider refund number are
+     * idempotent; a conflicting provider result is rejected.
+     */
+    public function completeProviderRefund(Refund $refund, string $providerRefundNo): Refund
+    {
+        if (trim($providerRefundNo) === '') {
+            throw ValidationException::withMessages(['provider_refund_no' => '外部退款流水号不能为空。']);
+        }
+
+        return DB::transaction(function () use ($refund, $providerRefundNo): Refund {
+            $locked = Refund::query()->lockForUpdate()->findOrFail($refund->id);
+            $component = DB::table('refund_components')
+                ->where('refund_id', $locked->id)
+                ->where('component_type', 'external')
+                ->lockForUpdate()
+                ->first();
+            if ($component === null) {
+                throw ValidationException::withMessages(['refund' => '该退款没有待处理的外部退款组成项。']);
+            }
+            if ($component->provider_refund_no !== null && $component->provider_refund_no !== $providerRefundNo) {
+                throw ValidationException::withMessages(['provider_refund_no' => '外部退款流水号与已记录结果不一致。']);
+            }
+            if ($locked->status === 'succeeded' && $component->status === 'succeeded') {
+                return $locked;
+            }
+            if ($locked->status !== 'processing' || ! in_array($component->status, ['pending_provider', 'processing', 'failed'], true)) {
+                throw ValidationException::withMessages(['refund' => '退款当前不处于等待外部渠道确认的状态。']);
+            }
+
+            DB::table('refund_components')->where('id', $component->id)->update([
+                'status' => 'succeeded',
+                'provider_refund_no' => $providerRefundNo,
+                'error_message' => null,
+                'updated_at' => now(),
+            ]);
+            $admin = $locked->reviewed_by_admin_id
+                ? AdminUser::query()->find($locked->reviewed_by_admin_id)
+                : null;
+
+            return $this->finalizeSettlement($locked, $admin);
+        });
+    }
+
     private function settle(AdminUser $admin, Refund $refund): Refund
     {
-        $order = Order::query()->lockForUpdate()->findOrFail($refund->order_id);
-        $user = User::query()->findOrFail($refund->user_id);
         if ($refund->refund_external_amount > 0) {
             DB::table('refund_components')->updateOrInsert(
                 ['refund_id' => $refund->id, 'component_type' => 'external'],
@@ -216,6 +505,19 @@ class RefundService
 
             return $refund->fresh();
         }
+
+        return $this->finalizeSettlement($refund, $admin);
+    }
+
+    private function finalizeSettlement(Refund $refund, ?AdminUser $admin): Refund
+    {
+        $refund = Refund::query()->lockForUpdate()->findOrFail($refund->id);
+        if ($refund->status === 'succeeded') {
+            return $refund;
+        }
+
+        $order = Order::query()->lockForUpdate()->findOrFail($refund->order_id);
+        $user = User::query()->findOrFail($refund->user_id);
         if ($refund->refund_wallet_amount > 0) {
             $this->assets->changeWallet($user, $refund->refund_wallet_amount, '订单退款退回余额。', 'refund-wallet:'.$refund->public_id, $admin, 'refund');
         }
@@ -230,17 +532,83 @@ class RefundService
             ]);
         }
         $newWallet = $order->refunded_wallet_amount + $refund->refund_wallet_amount;
+        $newExternal = $order->refunded_external_amount + $refund->refund_external_amount;
         $newPoints = $order->refunded_points + $refund->refund_points;
-        $fullyRefunded = $newWallet + $order->refunded_external_amount >= $order->paid_wallet_amount + $order->paid_external_amount
+        $fullyRefunded = $newWallet + $newExternal >= $order->paid_wallet_amount + $order->paid_external_amount
             && $newPoints >= $order->paid_points;
         $order->update([
             'refunded_wallet_amount' => $newWallet,
+            'refunded_external_amount' => $newExternal,
             'refunded_points' => $newPoints,
             'status' => $fullyRefunded ? 'refunded' : 'partially_refunded',
         ]);
-        $refund->update(['status' => 'succeeded', 'completed_at' => now()]);
+
+        $couponReturned = false;
+        if ($order->user_coupon_id !== null && $this->couponReturnEnabled($fullyRefunded)) {
+            $coupon = UserCoupon::query()->find($order->user_coupon_id);
+            if ($coupon !== null) {
+                $couponReturned = $this->assets->returnUsedCoupon(
+                    $coupon,
+                    $refund->public_id,
+                    'refund:'.$refund->public_id,
+                    $admin,
+                );
+            }
+        }
+        $refund->update([
+            'status' => 'succeeded',
+            'coupon_returned' => $couponReturned,
+            'completed_at' => now(),
+        ]);
 
         return $refund->fresh();
+    }
+
+    private function couponReturnEnabled(bool $fullyRefunded): bool
+    {
+        $setting = $fullyRefunded
+            ? 'coupons.full_refund_returns_coupon'
+            : 'coupons.partial_refund_returns_coupon';
+
+        return (bool) $this->settings->read($setting)['value'];
+    }
+
+    /**
+     * Build a stable fingerprint from the effective refund request rather than
+     * PHP array insertion order. Item order and evidence order are not
+     * meaningful, while the effective service/return method is.
+     *
+     * @param array<string,mixed> $data
+     */
+    private function requestFingerprint(Order $order, array $data): string
+    {
+        $serviceType = (string) ($data['service_type'] ?? 'refund_only');
+        $returnMethod = $serviceType === 'return_and_refund'
+            ? (string) ($data['return_method'] ?? ($order->fulfillment_type === 'logistics' ? 'logistics' : 'no_logistics'))
+            : null;
+        $items = array_map(static fn (array $row): array => [
+            'order_item_id' => trim((string) ($row['order_item_id'] ?? '')),
+            'quantity' => (int) ($row['quantity'] ?? 0),
+        ], array_values((array) ($data['items'] ?? [])));
+        usort($items, static function (array $left, array $right): int {
+            $idComparison = strcmp($left['order_item_id'], $right['order_item_id']);
+
+            return $idComparison !== 0 ? $idComparison : $left['quantity'] <=> $right['quantity'];
+        });
+        $evidence = array_values(array_unique(array_map('strval', (array) ($data['evidence_file_ids'] ?? []))));
+        sort($evidence, SORT_STRING);
+        $description = trim((string) ($data['description'] ?? ''));
+        $payload = [
+            'order_id' => (string) $order->public_id,
+            'service_type' => $serviceType,
+            'reason_code' => trim((string) ($data['reason_code'] ?? '')),
+            'return_method' => $returnMethod,
+            'description' => $description === '' ? null : $description,
+            'evidence_file_ids' => $evidence,
+            'items' => $items,
+        ];
+
+        return hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
     private function reason(string $code, string $serviceType): AfterSaleReason
@@ -297,16 +665,27 @@ class RefundService
             if (! $item) {
                 throw ValidationException::withMessages(['items' => '订单项不存在。']);
             }
-            $pending = DB::table('refund_items')->join('refunds', 'refunds.id', '=', 'refund_items.refund_id')
+            $pendingQuery = DB::table('refund_items')->join('refunds', 'refunds.id', '=', 'refund_items.refund_id')
                 ->where('order_item_id', $item->id)
-                ->whereIn('refunds.status', ['submitted', 'awaiting_return', 'return_in_transit', 'processing', 'succeeded'])
-                ->sum('quantity');
-            $remaining = $item->quantity - $item->refunded_quantity - $pending;
+                ->whereIn('refunds.status', ['submitted', 'awaiting_return', 'return_in_transit', 'processing']);
+            $pendingQuantity = (clone $pendingQuery)->sum('quantity');
+            $pendingCash = (clone $pendingQuery)->sum('refund_items.refund_cash_amount');
+            $pendingPoints = (clone $pendingQuery)->sum('refund_items.refund_points');
+            $activeExchangeQuantity = DB::table('exchanges')->where('order_item_id', $item->id)
+                ->whereNotIn('status', ['rejected', 'closed', 'cancelled'])->sum('quantity');
+            $remaining = $item->quantity - $item->refunded_quantity - $pendingQuantity - $activeExchangeQuantity;
             if ($row['quantity'] > $remaining) {
                 throw ValidationException::withMessages(['quantity' => '退货/退款数量超过剩余可退数量。']);
             }
-            $itemCash = intdiv($item->paid_cash_amount * $row['quantity'], $item->quantity);
-            $itemPoints = intdiv($item->paid_points * $row['quantity'], $item->quantity);
+            $remainingCash = $item->paid_cash_amount - $item->refunded_cash_amount - $pendingCash;
+            $remainingPoints = $item->paid_points - $item->refunded_points - $pendingPoints;
+            $isFinalQuantity = $activeExchangeQuantity === 0 && $row['quantity'] === $remaining;
+            $itemCash = $isFinalQuantity
+                ? $remainingCash
+                : min($remainingCash, intdiv($item->paid_cash_amount * $row['quantity'], $item->quantity));
+            $itemPoints = $isFinalQuantity
+                ? $remainingPoints
+                : min($remainingPoints, intdiv($item->paid_points * $row['quantity'], $item->quantity));
             $cash += $itemCash;
             $points += $itemPoints;
             $rows[] = [$item, $row['quantity'], $itemCash, $itemPoints, $remaining];

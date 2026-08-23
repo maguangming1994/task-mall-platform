@@ -7,7 +7,9 @@ use Illuminate\Support\Str;
 
 class ExchangeShipment extends Model
 {
-    protected $fillable = ['public_id', 'exchange_id', 'direction', 'method', 'carrier_code', 'tracking_no', 'no_logistics_note', 'payment_proof_file_id', 'paid_shipping_amount', 'compensation_amount', 'status', 'idempotency_key_hash', 'shipped_at', 'received_at'];
+    protected $fillable = ['public_id', 'exchange_id', 'direction', 'method', 'carrier_code', 'tracking_no', 'no_logistics_note', 'payment_proof_file_id', 'paid_shipping_amount', 'compensation_amount', 'status', 'idempotency_key_hash', 'request_fingerprint_hash', 'shipped_at', 'received_at'];
+
+    protected $hidden = ['idempotency_key_hash', 'request_fingerprint_hash'];
 
     protected static function booted(): void
     {

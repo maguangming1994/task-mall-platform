@@ -1,6 +1,25 @@
 import { apiRequest } from '@/api/http'
+import { buildQueryString } from '@/utils/query'
 
-export interface TaskReward { type: 'points' | 'coupon' | 'wallet_balance'; points?: number; balance_amount?: number }
+export interface TaskReward { type: 'points' | 'coupon' | 'wallet_balance'; points?: number; balance_amount?: number; quantity?: number; coupon_template_id?: string }
+export interface TaskRewardDelivery {
+  id: string
+  asset_type: 'points' | 'wallet_cash' | 'coupon'
+  amount: number
+  status: 'pending' | 'failed' | 'delivered'
+  attempt_count: number
+  delivered_at: string | null
+}
+export interface TaskClaimRewardSummary { reward_status: string; items: TaskRewardDelivery[] }
+export interface TaskClaimWorkflow {
+  primary_action: { code: 'submit' | 'resubmit_failed_steps' | 'withdraw' | 'appeal' | 'view_rewards' | 'wait'; label: string }
+  allowed_actions: string[]
+  editable_step_ids: string[]
+  locked_step_ids: string[]
+  revision_only: boolean
+  message: string
+}
+export interface TaskStepReviewResult { step_id: string; step_title: string; decision: 'approve' | 'reject'; reason_code: string | null; note: string | null }
 export type TaskStepKind = 'instruction' | 'link' | 'qr_code' | 'copy_text' | 'image_guide' | 'verification_image' | 'form_input' | 'confirmation'
 export interface TaskStep { id: string; kind?: TaskStepKind; title: string; description?: string | null; input_type: 'none' | 'text' | 'image' | 'text_image' | 'link'; required: boolean; link_url?: string | null; copy_text?: string | null; example_image_url?: string | null; button_text?: string | null; placeholder?: string | null; min_files?: number; max_files?: number }
 export interface HallTask {
@@ -47,7 +66,16 @@ export interface TaskClaim {
   attachment_rules: Record<string, unknown>
   enrollment_source: string
   cycle_key: string
+  cycle_starts_at?: string | null
+  cycle_ends_at?: string | null
+  current_cycle?: { key: string; starts_at: string | null; ends_at: string | null; progress_target: number; progress_event_type: string | null }
+  progress?: { current: number; target: number; percent: number; last_progress_at: string | null }
   status: string
+  execution_status: string
+  execution_status_label: string
+  review_status: string | null
+  review_status_label: string | null
+  workflow: TaskClaimWorkflow
   slot_status: string
   cancel_count: number
   submission_count: number
@@ -58,15 +86,15 @@ export interface TaskClaim {
   completion_deadline_at: string
   rewards: TaskReward[]
   created_at: string
-  current_submission: { id: string; submission_no: number; status: string; submitted_at: string; review_due_at: string; review_started_at: string | null } | null
-  last_review: { decision: string; reason_code: string | null; note: string | null; reviewed_at: string } | null
+  current_submission: { id: string; submission_no: number; status: string; submitted_at: string; review_due_at: string; review_started_at: string | null; revision_step_ids: string[] } | null
+  last_review: { decision: string; reason_code: string | null; note: string | null; reviewed_at: string; step_results: TaskStepReviewResult[] } | null
 }
 
 export function listHallTasks(filters: { category?: string; claimable_only?: boolean } = {}) {
-  const query = new URLSearchParams()
-  if (filters.category) query.set('category', filters.category)
-  if (filters.claimable_only) query.set('claimable_only', '1')
-  const suffix = query.toString()
+  const suffix = buildQueryString({
+    category: filters.category,
+    claimable_only: filters.claimable_only ? 1 : undefined,
+  })
   return apiRequest<{ items: HallTask[]; withdrawal_notices: WithdrawalNotice[] }>({ path: `/tasks${suffix ? `?${suffix}` : ''}` })
 }
 export function getHallTask(taskId: string) { return apiRequest<HallTask>({ path: `/tasks/${taskId}` }) }
@@ -113,7 +141,7 @@ export function withdrawTaskSubmission(token: string, submissionId: string) {
 }
 
 export function getTaskClaimRewards(token: string, claimId: string) {
-  return apiRequest<{ reward_status: string; items: Array<{ id: string; asset_type: string; amount: number; status: string }> }>({ path: `/task-claims/${claimId}/rewards`, accessToken: token })
+  return apiRequest<TaskClaimRewardSummary>({ path: `/task-claims/${claimId}/rewards`, accessToken: token })
 }
 
 export function appealTaskClaim(token: string, claimId: string, reason: string, evidenceFileIds: string[] = []) {

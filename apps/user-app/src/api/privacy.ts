@@ -28,7 +28,7 @@ export interface CancellationRequest {
   cancel_reason?: string | null
 }
 
-function idempotencyKey(prefix: string) {
+export function createPrivacyIdempotencyKey(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
 }
 
@@ -36,10 +36,10 @@ export function listPrivacyRequests(token: string) {
   return apiRequest<{ items: PrivacyRequestItem[] }>({ path: '/me/privacy-requests', accessToken: token })
 }
 
-export function createPrivacyCopy(token: string) {
+export function createPrivacyCopy(token: string, idempotencyKey = createPrivacyIdempotencyKey('privacy-copy')) {
   return apiRequest<PrivacyRequestItem>({
     path: '/me/privacy-requests', method: 'POST', accessToken: token,
-    headers: { 'Idempotency-Key': idempotencyKey('privacy-copy') },
+    headers: { 'Idempotency-Key': idempotencyKey },
     data: { request_type: 'copy', scope: ['all_available'], description: '用户从隐私中心申请个人数据副本。' },
   })
 }
@@ -53,10 +53,10 @@ export async function loadCancellation(token: string) {
   catch { return null }
 }
 
-export function requestCancellation(token: string) {
+export function requestCancellation(token: string, idempotencyKey = createPrivacyIdempotencyKey('account-cancel')) {
   return apiRequest<CancellationRequest>({
     path: '/me/account-cancellation', method: 'POST', accessToken: token,
-    headers: { 'Idempotency-Key': idempotencyKey('account-cancel') },
+    headers: { 'Idempotency-Key': idempotencyKey },
     data: { forfeit_points_and_coupons: true, confirmation: 'CONFIRM_ACCOUNT_CANCELLATION' },
   })
 }

@@ -37,5 +37,5 @@ export function loadBottomNavigation() {
 }
 
 export function openPrimaryNavigation(target: NavigationTarget) {
-  uni.reLaunch({ url: navigationRoutes[target] })
+  uni.reLaunch({ url: navigationRoutes[target] || navigationRoutes.home })
 }

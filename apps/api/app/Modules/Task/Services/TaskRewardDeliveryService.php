@@ -145,10 +145,16 @@ class TaskRewardDeliveryService
             'admin_user_id' => $admin->id, 'reason' => $reason, 'created_at' => now(), 'updated_at' => now(),
         ]);
         if ($inserted === 0) {
-            return $delivery->fresh();
+            $current = $delivery->fresh();
+            $this->syncClaimRewardStatus(TaskClaim::query()->findOrFail($current->task_claim_id));
+
+            return $current;
         }
 
-        return $this->attempt($delivery);
+        $retried = $this->attempt($delivery);
+        $this->syncClaimRewardStatus(TaskClaim::query()->findOrFail($retried->task_claim_id));
+
+        return $retried;
     }
 
     private function syncClaimRewardStatus(TaskClaim $claim): void
