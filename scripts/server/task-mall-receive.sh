@@ -145,7 +145,7 @@ while IFS= read -r -d '' release_path; do
       ;;
     .env|*/.env|.env.*|*/.env.*)
       case "$lower_path" in
-        .env.example|*/.env.example) ;;
+        *.example) ;;
         *) fail "目标提交包含禁止进入生产包的环境文件：$normalized_path" ;;
       esac
       ;;
