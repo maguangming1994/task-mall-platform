@@ -16,6 +16,8 @@ readonly MIN_FREE_KB=5242880
 readonly INCOMING_REF="refs/task-mall/incoming"
 readonly RELEASE_RECORD="$APP_DIR/.git/task-mall-production-release"
 
+export PUBLIC_BASE_URL
+
 fail() {
   echo "部署拒绝：$*" >&2
   exit 1
@@ -248,7 +250,7 @@ rollback_application() {
 }
 
 echo "[server 4/5] 构建、迁移并更新服务"
-if ! RELEASE_VERSION="$RELEASE_SHA" PRODUCTION_ENV_FILE="$ENV_FILE" PUBLIC_BASE_URL="$PUBLIC_BASE_URL" \
+if ! RELEASE_VERSION="$RELEASE_SHA" PRODUCTION_ENV_FILE="$ENV_FILE" \
   bash "$release_dir/scripts/deploy-production.sh"; then
   if rollback_application; then
     echo "新版本部署失败，应用已恢复到 $previous_release；数据库保持前向迁移状态。" >&2
