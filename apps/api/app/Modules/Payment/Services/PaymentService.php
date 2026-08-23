@@ -93,15 +93,20 @@ class PaymentService
             $existing = Payment::query()->where('idempotency_key_hash', $hash)->first();
             if ($existing) {
                 abort_unless($existing->user_id === $user->id && $existing->wallet_recharge_id === $locked->id, 404);
+
                 return $existing;
             }
             if ($locked->method !== 'online' || $locked->status !== 'pending_payment' || $locked->expires_at?->isPast()) {
                 throw ValidationException::withMessages(['recharge' => '充值单已过期或当前不可支付。']);
             }
             $capability = $this->capabilities->forPlatform($scene)['wechat'];
-            if (! $capability['enabled']) throw ValidationException::withMessages(['payment' => $capability['reason'] ?? '当前线上支付不可用。']);
+            if (! $capability['enabled']) {
+                throw ValidationException::withMessages(['payment' => $capability['reason'] ?? '当前线上支付不可用。']);
+            }
             $active = Payment::query()->where('wallet_recharge_id', $locked->id)->whereIn('status', ['pending', 'processing'])->latest('id')->first();
-            if ($active) return $active;
+            if ($active) {
+                return $active;
+            }
             $payment = Payment::query()->create(['payment_no' => 'P'.now()->format('YmdHis').strtoupper(Str::random(10)), 'wallet_recharge_id' => $locked->id, 'user_id' => $user->id, 'channel' => 'wechat', 'scene' => $scene, 'cash_amount' => $locked->amount_cents, 'status' => 'pending', 'idempotency_key_hash' => $hash, 'expires_at' => $locked->expires_at]);
             try {
                 $payload = $this->wechat->prepare($payment->load('walletRecharge'), $user);
@@ -112,6 +117,7 @@ class PaymentService
                 $this->attempt($payment, 'failed', ['scene' => $scene, 'recharge_no' => $locked->recharge_no], null, $exception);
                 throw $exception;
             }
+
             return $payment->fresh();
         });
     }

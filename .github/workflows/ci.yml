@@ -4,15 +4,18 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 11.9.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24.19.0
           cache: pnpm
@@ -27,8 +30,8 @@ jobs:
       run:
         working-directory: apps/api
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5'
           extensions: curl, fileinfo, intl, mbstring, openssl, pdo_pgsql, pdo_sqlite, sodium, sqlite3, zip
@@ -38,3 +41,118 @@ jobs:
       - run: php artisan key:generate
       - run: php artisan test
       - run: php vendor/bin/pint --test
+
+  deployment-config:
+    name: Validate deployment configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Validate Bash syntax
+        run: |
+          bash -n scripts/deploy-production.sh
+          bash -n scripts/server/task-mall-receive.sh
+      - name: Validate PowerShell syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/release.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | Format-List
+            exit 1
+          }
+      - name: Validate production Compose
+        run: |
+          install -d "$RUNNER_TEMP/task-mall-ci-secrets"
+          touch "$RUNNER_TEMP/task-mall-ci-secrets/merchant.pem"
+          touch "$RUNNER_TEMP/task-mall-ci-secrets/platform.pem"
+          cat > "$RUNNER_TEMP/task-mall-ci.env" <<EOF
+          DB_DATABASE=task_mall_ci
+          DB_USERNAME=task_mall_ci
+          DB_PASSWORD=ci-only-placeholder
+          REDIS_PASSWORD=ci-only-placeholder
+          WECHAT_PAYMENT_PRIVATE_KEY_FILE=$RUNNER_TEMP/task-mall-ci-secrets/merchant.pem
+          WECHAT_PAYMENT_PLATFORM_CERT_FILE=$RUNNER_TEMP/task-mall-ci-secrets/platform.pem
+          EOF
+          PRODUCTION_ENV_FILE="$RUNNER_TEMP/task-mall-ci.env" \
+          RELEASE_VERSION=0000000000000000000000000000000000000000 \
+            docker compose \
+              --env-file "$RUNNER_TEMP/task-mall-ci.env" \
+              -f infra/compose.production.yaml \
+              config --quiet
+
+  deploy-production:
+    name: Deploy production
+    needs: [frontend, api, deployment-config]
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: task-mall-production
+      cancel-in-progress: false
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Create release bundle
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          git branch --force task-mall-release "$RELEASE_SHA"
+          git bundle create "$RUNNER_TEMP/task-mall.bundle" refs/heads/task-mall-release
+          git bundle verify "$RUNNER_TEMP/task-mall.bundle"
+
+      - name: Configure deployment SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          DEPLOY_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+          DEPLOY_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_KEY"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+          test -n "$DEPLOY_PORT"
+          test -n "$DEPLOY_USER"
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/task-mall-deploy"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/task-mall-deploy" "$HOME/.ssh/known_hosts"
+          ssh-keygen -y -f "$HOME/.ssh/task-mall-deploy" >/dev/null
+
+      - name: Deploy tested commit
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          DEPLOY_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          ssh \
+            -T \
+            -i "$HOME/.ssh/task-mall-deploy" \
+            -p "$DEPLOY_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" "deploy $RELEASE_SHA" \
+            < "$RUNNER_TEMP/task-mall.bundle"
+
+      - name: Verify public endpoints
+        run: |
+          curl --fail --silent --show-error --retry 6 --retry-delay 5 --retry-all-errors \
+            https://rwsc.jxgxnxs.cn/api/v1/health/ready >/dev/null
+          curl --fail --silent --show-error --retry 3 --retry-delay 3 --retry-all-errors \
+            https://rwsc.jxgxnxs.cn/ >/dev/null
+          curl --fail --silent --show-error --retry 3 --retry-delay 3 --retry-all-errors \
+            https://rwsc.jxgxnxs.cn/admin/ >/dev/null

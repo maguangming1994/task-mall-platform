@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Common\Exceptions\IdempotencyConflictException;
 use App\Models\User;
 use App\Modules\Account\Models\UserAssetAccount;
 use App\Modules\Admin\Models\AdminUser;
@@ -65,7 +66,7 @@ class WalletRechargeFlowTest extends TestCase
         try {
             $service->create($user, ['method' => 'online', 'amount_cents' => 2000], 'recharge-fingerprint-001');
             $this->fail('Expected an idempotency conflict.');
-        } catch (\App\Common\Exceptions\IdempotencyConflictException $exception) {
+        } catch (IdempotencyConflictException $exception) {
             $this->assertSame('IDEMPOTENCY_KEY_REUSED', $exception::ERROR_CODE);
             $this->assertSame(409, $exception::STATUS);
             $this->assertSame('相同幂等键已绑定不同的充值请求，请更换幂等键。', $exception->getMessage());

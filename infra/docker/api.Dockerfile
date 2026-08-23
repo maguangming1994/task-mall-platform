@@ -1,4 +1,4 @@
-FROM php:8.4-fpm-alpine AS runtime
+FROM php:8.5-fpm-alpine AS runtime
 
 ARG ALPINE_MIRROR=https://mirrors.cloud.tencent.com/alpine
 RUN sed -i "s|https://dl-cdn.alpinelinux.org/alpine|${ALPINE_MIRROR}|g" /etc/apk/repositories \

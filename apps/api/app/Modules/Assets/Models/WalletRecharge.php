@@ -4,6 +4,7 @@ namespace App\Modules\Assets\Models;
 
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Payment\Models\Payment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,8 +26,23 @@ class WalletRecharge extends Model
         return ['amount_cents' => 'integer', 'offline_proof_file_ids' => 'array', 'expires_at' => 'datetime', 'reviewed_at' => 'datetime', 'succeeded_at' => 'datetime'];
     }
 
-    public function getRouteKeyName(): string { return 'public_id'; }
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
-    public function reviewer(): BelongsTo { return $this->belongsTo(AdminUser::class, 'reviewed_by_admin_user_id'); }
-    public function payments(): HasMany { return $this->hasMany(\App\Modules\Payment\Models\Payment::class); }
+    public function getRouteKeyName(): string
+    {
+        return 'public_id';
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'reviewed_by_admin_user_id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
 }

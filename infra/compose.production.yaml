@@ -1,6 +1,7 @@
 name: task-mall-production
 
 x-api: &api
+  image: task-mall-api:${RELEASE_VERSION:-local}
   build:
     context: ..
     dockerfile: infra/docker/api.Dockerfile
@@ -36,6 +37,7 @@ services:
     command: ["php", "artisan", "schedule:work"]
 
   nginx:
+    image: task-mall-web:${RELEASE_VERSION:-local}
     build:
       context: ..
       dockerfile: infra/docker/web.Dockerfile
