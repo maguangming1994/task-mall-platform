@@ -69,7 +69,8 @@ page {
     linear-gradient(180deg, #fffef9 0%, var(--tm-canvas) 48%, #f3f7ff 100%);
   color: var(--tm-ink-900);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 28rpx;
+  /* Typography uses physical CSS pixels so phone width changes do not resize text. */
+  font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -186,7 +187,7 @@ view {
   border-radius: 999rpx;
   background: var(--tm-campus-yellow);
   color: var(--tm-ink-900);
-  font-size: 17rpx;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: .08em;
 }
@@ -204,7 +205,7 @@ view {
   background: var(--tm-brand-600);
   box-shadow: 0 12rpx 28rpx rgba(23,105,255,.22);
   color: #fff;
-  font-size: 28rpx;
+  font-size: 17px;
   font-weight: 800;
   line-height: 88rpx;
 }
@@ -215,7 +216,7 @@ view {
   border-radius: 18rpx;
   background: #fff;
   color: var(--tm-ink-900);
-  font-size: 28rpx;
+  font-size: 17px;
   font-weight: 800;
   line-height: 86rpx;
 }

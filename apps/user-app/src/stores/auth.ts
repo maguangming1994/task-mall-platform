@@ -35,6 +35,10 @@ function loadStoredAuth(): StoredAuth | null {
   return stored && typeof stored === 'object' ? stored as StoredAuth : null
 }
 
+function isUnauthorized(error: unknown) {
+  return error instanceof ApiError && error.statusCode === 401
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => {
     const stored = loadStoredAuth()
@@ -89,12 +93,21 @@ export const useAuthStore = defineStore('auth', {
       if (!this.accessToken) throw new Error('请先完成微信登录。')
       this.submitting = true
       try {
-        this.user = await apiRequest<CurrentUser>({
+        const bind = () => apiRequest<CurrentUser>({
           path: '/me/phone',
           method: 'PUT',
           accessToken: this.accessToken,
           data: { new_phone: phone, new_phone_verification_code: verificationCode },
         })
+
+        if (this.expiresAt <= Date.now() && this.refreshToken) await this.refreshSession()
+        try {
+          this.user = await bind()
+        } catch (error) {
+          if (!isUnauthorized(error) || !this.refreshToken) throw error
+          await this.refreshSession()
+          this.user = await bind()
+        }
         this.persist()
 
         return this.user
@@ -106,12 +119,21 @@ export const useAuthStore = defineStore('auth', {
       if (!this.accessToken) throw new Error('请先完成微信登录。')
       this.submitting = true
       try {
-        this.user = await apiRequest<CurrentUser>({
+        const bind = () => apiRequest<CurrentUser>({
           path: '/me/phone/wechat',
           method: 'PUT',
           accessToken: this.accessToken,
           data: { code: phoneCode },
         })
+
+        if (this.expiresAt <= Date.now() && this.refreshToken) await this.refreshSession()
+        try {
+          this.user = await bind()
+        } catch (error) {
+          if (!isUnauthorized(error) || !this.refreshToken) throw error
+          await this.refreshSession()
+          this.user = await bind()
+        }
         this.persist()
 
         return this.user

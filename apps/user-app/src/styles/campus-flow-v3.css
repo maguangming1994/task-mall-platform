@@ -124,7 +124,7 @@ page {
   border-radius: 999rpx;
   background: var(--tm-campus-yellow);
   color: var(--tm-ink-900);
-  font-size: 17rpx;
+  font-size: 12px;
   font-weight: 900;
 }
 

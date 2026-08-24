@@ -91,7 +91,7 @@ function open(target: NavigationTarget) {
 .tabbar-item.active::before{content:'';position:absolute;z-index:-1;inset:2rpx 8rpx;border-radius:22rpx;background:#eef8f2}
 .tabbar-icon-wrap{display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;border-radius:16rpx;transition:transform var(--tm-motion-fast,160ms) var(--tm-ease,cubic-bezier(.2,.75,.25,1))}
 .tabbar-icon{display:block;width:38rpx;height:38rpx}
-.tabbar-label{overflow:hidden;max-width:100%;font-size:19rpx;font-weight:700;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+.tabbar-label{overflow:hidden;max-width:100%;font-size:13px;font-weight:700;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
 .tabbar-item.featured{z-index:0;padding:5rpx 4rpx}
 .tabbar-item.featured .tabbar-icon-wrap{width:48rpx;height:48rpx;margin-top:0;border:0;border-radius:16rpx;background:transparent;box-shadow:none}
 .tabbar-item.featured .tabbar-icon{width:38rpx;height:38rpx}
@@ -105,7 +105,7 @@ function open(target: NavigationTarget) {
 .tabbar-shell.flat .tabbar-item.active::before{display:none}
 .tabbar-shell.flat .tabbar-icon-wrap,.tabbar-shell.flat .tabbar-item.featured .tabbar-icon-wrap{width:45rpx;height:45rpx}
 .tabbar-shell.flat .tabbar-icon,.tabbar-shell.flat .tabbar-item.featured .tabbar-icon{width:36rpx;height:36rpx}
-.tabbar-shell.flat .tabbar-label{font-size:18rpx}
+.tabbar-shell.flat .tabbar-label{font-size:13px}
 @media (prefers-reduced-motion: reduce){.tabbar-item,.tabbar-icon-wrap{transition:none}.tabbar-item:active .tabbar-icon-wrap{transform:none}}
 @media screen and (min-width:768px){.tabbar{right:auto;left:50%;width:690rpx;transform:translateX(-50%)}.tabbar-shell.flat .tabbar{right:auto;left:50%;width:750rpx;transform:translateX(-50%)}}
 
