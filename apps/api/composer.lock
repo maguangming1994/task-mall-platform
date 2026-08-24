@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4421aa7188516893822cdeabc0df635a",
+    "content-hash": "028345faa4d0ce44658217e97e35c01a",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -58,6 +58,48 @@
                 "source": "https://github.com/adbario/php-dot-notation/tree/2.5.0"
             },
             "time": "2022-10-14T20:31:46+00:00"
+        },
+        {
+            "name": "alibabacloud/cloudauth-20190307",
+            "version": "3.13.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/cloudauth-20190307.git",
+                "reference": "c0e8bf240e544948530cb8892955e896efda1491"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/cloudauth-20190307/zipball/c0e8bf240e544948530cb8892955e896efda1491",
+                "reference": "c0e8bf240e544948530cb8892955e896efda1491",
+                "shasum": ""
+            },
+            "require": {
+                "alibabacloud/credentials": "^1.2.2",
+                "alibabacloud/darabonba": "^1.0.0",
+                "alibabacloud/openapi-core": "^1.0.0",
+                "php": ">5.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AlibabaCloud\\SDK\\Cloudauth\\V20190307\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Alibaba Cloud SDK",
+                    "email": "sdk-team@alibabacloud.com"
+                }
+            ],
+            "description": "Alibaba Cloud ID Verification (20190307) SDK Library for PHP",
+            "support": {
+                "source": "https://github.com/alibabacloud-sdk-php/cloudauth-20190307/tree/3.13.4"
+            },
+            "time": "2026-07-10T03:29:08+00:00"
         },
         {
             "name": "alibabacloud/credentials",

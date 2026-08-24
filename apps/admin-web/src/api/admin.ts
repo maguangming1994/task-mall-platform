@@ -437,9 +437,14 @@ export interface WechatPaymentSettings {
   last_test_message: string | null
 }
 export interface IdentityVerificationSettings {
-  driver: 'disabled' | 'manual'
+  driver: 'disabled' | 'manual' | 'aliyun'
   collection_enabled: boolean
   manual_review_enabled: boolean
+  aliyun: { region: string; endpoint: string; timeout_seconds: number }
+  access_key_id: SecureValueState
+  access_key_secret: SecureValueState
+  security_token: SecureValueState
+  ready: boolean
   source: string
 }
 

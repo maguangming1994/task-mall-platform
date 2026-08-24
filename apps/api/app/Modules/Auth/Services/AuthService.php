@@ -295,6 +295,7 @@ class AuthService
     {
         $phone = $user->phone;
         $avatar = $user->avatar_file_id === null ? null : UploadedFile::query()->find($user->avatar_file_id);
+        $identityVerification = $user->identityVerification()->first();
 
         return [
             'id' => $user->public_id,
@@ -305,6 +306,7 @@ class AuthService
             'phone_bound' => $user->phone_verified_at !== null,
             'status' => $user->status,
             'profile_completed' => $user->profile_completed_at !== null,
+            'real_name_status' => $identityVerification?->status ?? 'not_submitted',
         ];
     }
 

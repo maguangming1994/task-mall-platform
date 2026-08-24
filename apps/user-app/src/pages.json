@@ -31,6 +31,12 @@
       }
     },
     {
+      "path": "pages/identity-verification/index",
+      "style": {
+        "navigationBarTitleText": "实名认证"
+      }
+    },
+    {
       "path": "pages/assets/index",
       "style": {
         "navigationBarTitleText": "我的资产"

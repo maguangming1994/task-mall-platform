@@ -36,6 +36,7 @@ use App\Modules\Fulfillment\Http\Controllers\FulfillmentController;
 use App\Modules\Growth\Http\Controllers\DailyCheckInController;
 use App\Modules\Growth\Http\Controllers\ReferralController;
 use App\Modules\Identity\Http\Controllers\AdminIdentityVerificationSettingsController;
+use App\Modules\Identity\Http\Controllers\UserIdentityVerificationController;
 use App\Modules\Inventory\Http\Controllers\AdminInventoryController;
 use App\Modules\Inventory\Http\Controllers\AdminShippingTemplateController;
 use App\Modules\Inventory\Http\Controllers\ShippingQuoteController;
@@ -147,6 +148,10 @@ Route::middleware('auth.access')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/me', [CurrentUserController::class, 'show']);
     Route::put('/me', [UserProfileController::class, 'update'])->middleware('legal.consent:account');
+    Route::get('/me/identity-verification', [UserIdentityVerificationController::class, 'show'])
+        ->middleware('legal.consent:account');
+    Route::post('/me/identity-verification', [UserIdentityVerificationController::class, 'store'])
+        ->middleware(['legal.consent:account', 'throttle:5,60']);
     Route::get('/me/asset-overview', [UserAssetOverviewController::class, 'show'])->middleware('legal.consent:account');
     Route::get('/points/account', [UserAssetLedgerController::class, 'pointAccount'])->middleware('legal.consent:account');
     Route::get('/points/batches', [UserAssetLedgerController::class, 'pointBatches'])->middleware('legal.consent:account');
