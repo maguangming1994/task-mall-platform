@@ -5272,7 +5272,7 @@ components:
         total: { type: integer, minimum: 0 }
     ClientCapabilities:
       type: object
-      required: [version, platform, visitor_browsing, login_methods, share_methods, cash_payment_methods, wechat_payment_enabled, wallet_payment_enabled, external_task_publishing_enabled, external_task_publishing_stage, notification_channels, feature_flags]
+      required: [version, platform, visitor_browsing, login_methods, wechat_official_account_app_id, share_methods, cash_payment_methods, wechat_payment_enabled, wallet_payment_enabled, external_task_publishing_enabled, external_task_publishing_stage, notification_channels, feature_flags]
       properties:
         version: { type: integer, minimum: 1 }
         platform: { type: string, enum: [wechat-mini, h5-wechat, h5-browser] }
@@ -5280,6 +5280,9 @@ components:
         login_methods:
           type: array
           items: { type: string, enum: [wechat_mini, wechat_oa, phone] }
+        wechat_official_account_app_id:
+          type: [string, 'null']
+          description: 公众号网页授权 AppID；H5 微信环境可动态读取，其他平台返回 null。
         share_methods:
           type: array
           items: { type: string, enum: [mini_card, qr_code, wechat_js, web_share, copy_link] }

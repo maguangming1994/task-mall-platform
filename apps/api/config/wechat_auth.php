@@ -10,5 +10,7 @@ return [
     'official_account' => [
         'app_id' => env('WECHAT_OA_APP_ID'),
         'app_secret' => env('WECHAT_OA_APP_SECRET'),
+        'token' => env('WECHAT_OA_TOKEN'),
+        'encoding_aes_key' => env('WECHAT_OA_ENCODING_AES_KEY'),
     ],
 ];

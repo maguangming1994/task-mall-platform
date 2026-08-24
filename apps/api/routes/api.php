@@ -19,6 +19,7 @@ use App\Modules\Assets\Http\Controllers\UserAssetLedgerController;
 use App\Modules\Assets\Http\Controllers\WalletRechargeController;
 use App\Modules\Audit\Http\Controllers\AdminAuditLogController;
 use App\Modules\Auth\Http\Controllers\AdminSmsProviderController;
+use App\Modules\Auth\Http\Controllers\AdminWechatProviderController;
 use App\Modules\Auth\Http\Controllers\AuthController;
 use App\Modules\Auth\Http\Controllers\CurrentUserController;
 use App\Modules\Auth\Http\Controllers\PhoneBindingController;
@@ -37,6 +38,7 @@ use App\Modules\Growth\Http\Controllers\ReferralController;
 use App\Modules\Inventory\Http\Controllers\AdminInventoryController;
 use App\Modules\Inventory\Http\Controllers\AdminShippingTemplateController;
 use App\Modules\Inventory\Http\Controllers\ShippingQuoteController;
+use App\Modules\Identity\Http\Controllers\AdminIdentityVerificationSettingsController;
 use App\Modules\Legal\Http\Controllers\AdminLegalDocumentController;
 use App\Modules\Legal\Http\Controllers\LegalDocumentController;
 use App\Modules\Legal\Http\Controllers\UserLegalConsentController;
@@ -51,6 +53,7 @@ use App\Modules\Order\Http\Controllers\CheckoutController;
 use App\Modules\Order\Http\Controllers\OrderController;
 use App\Modules\Payment\Http\Controllers\AdminReconciliationController;
 use App\Modules\Payment\Http\Controllers\PaymentController;
+use App\Modules\Payment\Http\Controllers\AdminWechatPaymentSettingsController;
 use App\Modules\Payment\Http\Controllers\WechatPaymentNotificationController;
 use App\Modules\Privacy\Http\Controllers\AccountCancellationController;
 use App\Modules\Privacy\Http\Controllers\AdminPrivacyRequestController;
@@ -296,6 +299,31 @@ Route::prefix('admin')->group(function () {
             ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
         Route::post('/sms/settings/test', [AdminSmsProviderController::class, 'test'])
             ->middleware(['admin.permission:settings.manage', 'admin.recent_verification', 'throttle:30,1']);
+        Route::get('/wechat/settings', [AdminWechatProviderController::class, 'show'])
+            ->middleware('admin.permission:settings.manage');
+        Route::put('/wechat/settings/{provider}', [AdminWechatProviderController::class, 'update'])
+            ->whereIn('provider', ['mini', 'official_account'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::post('/wechat/settings/{provider}/test', [AdminWechatProviderController::class, 'test'])
+            ->whereIn('provider', ['mini', 'official_account'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification', 'throttle:10,1']);
+        Route::post('/wechat/verification-files', [AdminWechatProviderController::class, 'uploadVerificationFile'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification', 'throttle:10,1']);
+        Route::delete('/wechat/verification-files/{filename}', [AdminWechatProviderController::class, 'deleteVerificationFile'])
+            ->where('filename', 'MP_verify_[A-Za-z0-9_-]{6,64}\.txt')
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::get('/wechat-payment/settings', [AdminWechatPaymentSettingsController::class, 'show'])
+            ->middleware('admin.permission:settings.manage');
+        Route::put('/wechat-payment/settings', [AdminWechatPaymentSettingsController::class, 'update'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::post('/wechat-payment/credentials', [AdminWechatPaymentSettingsController::class, 'credentials'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification', 'throttle:10,1']);
+        Route::post('/wechat-payment/settings/test', [AdminWechatPaymentSettingsController::class, 'test'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification', 'throttle:10,1']);
+        Route::get('/identity-verification/settings', [AdminIdentityVerificationSettingsController::class, 'show'])
+            ->middleware('admin.permission:settings.manage');
+        Route::put('/identity-verification/settings', [AdminIdentityVerificationSettingsController::class, 'update'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
         Route::get('/media/storage/providers', [AdminMediaController::class, 'providers'])->middleware('admin.permission:settings.manage');
         Route::put('/media/storage/providers/{mediaStorageProvider}', [AdminMediaController::class, 'configure'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
         Route::post('/media/storage/providers/{mediaStorageProvider}/test', [AdminMediaController::class, 'test'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);

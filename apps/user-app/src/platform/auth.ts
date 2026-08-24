@@ -33,7 +33,7 @@ function miniLoginCode(): Promise<string> {
   })
 }
 
-function h5LoginCode(): string | null {
+function h5LoginCode(configuredAppId?: string | null): string | null {
   const code = readQueryString(window.location.search, 'code')
   if (code) {
     const expectedState = uni.getStorageSync(oauthStateKey)
@@ -46,7 +46,7 @@ function h5LoginCode(): string | null {
   }
   if (import.meta.env.DEV) return localCode('h5')
 
-  const appId = import.meta.env.VITE_WECHAT_OA_APP_ID
+  const appId = configuredAppId || import.meta.env.VITE_WECHAT_OA_APP_ID
   if (!appId) throw new Error('公众号网页授权尚未配置。')
 
   const redirectUri = encodeURIComponent(`${window.location.origin}${window.location.pathname}`)
@@ -61,12 +61,12 @@ function h5LoginCode(): string | null {
   return null
 }
 
-export async function requestWechatLoginCode(): Promise<WechatLoginCode | null> {
+export async function requestWechatLoginCode(officialAccountAppId?: string | null): Promise<WechatLoginCode | null> {
   if (clientPlatform === 'wechat-mini') {
     return { channel: 'mini', code: await miniLoginCode() }
   }
   if (clientPlatform === 'h5-wechat') {
-    const code = h5LoginCode()
+    const code = h5LoginCode(officialAccountAppId)
     return code ? { channel: 'h5', code } : null
   }
 

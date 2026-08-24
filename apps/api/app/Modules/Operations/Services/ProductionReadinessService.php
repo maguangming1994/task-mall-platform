@@ -3,10 +3,22 @@
 namespace App\Modules\Operations\Services;
 
 use App\Modules\Auth\Services\SmsProviderSettingsService;
+use App\Modules\Auth\Services\WechatProviderSettingsService;
+use App\Modules\Payment\Services\WechatPaymentSettingsService;
 
 class ProductionReadinessService
 {
-    public function __construct(private readonly SmsProviderSettingsService $smsSettings) {}
+    /** @var array<string,mixed>|null */
+    private ?array $paymentConfiguration = null;
+
+    /** @var array<string,array<string,mixed>> */
+    private array $wechatConfigurations = [];
+
+    public function __construct(
+        private readonly SmsProviderSettingsService $smsSettings,
+        private readonly WechatProviderSettingsService $wechatSettings,
+        private readonly WechatPaymentSettingsService $wechatPaymentSettings,
+    ) {}
 
     /** @return array{ready:bool,checked_at:string,checks:array<int,array<string,mixed>>,summary:array<string,int>} */
     public function evaluate(): array
@@ -22,13 +34,13 @@ class ProductionReadinessService
             $this->check('infra.database', '数据库使用 PostgreSQL', config('database.default') === 'pgsql', '生产 DB_CONNECTION 必须为 pgsql。'),
             $this->check('infra.cache', '缓存使用 Redis', config('cache.default') === 'redis', '生产 CACHE_STORE 必须为 redis。'),
             $this->check('infra.queue', '队列使用 Redis', config('queue.default') === 'redis', '生产 QUEUE_CONNECTION 必须为 redis。'),
-            $this->check('wechat.driver', '微信使用真实适配器', config('wechat_auth.driver') === 'wechat', '设置 WECHAT_AUTH_DRIVER=wechat。'),
-            $this->check('wechat.mini', '小程序 AppID/AppSecret 已配置', $this->filled('wechat_auth.mini.app_id') && $this->filled('wechat_auth.mini.app_secret'), '提供 WECHAT_MINI_APP_ID 与 WECHAT_MINI_APP_SECRET。'),
-            $this->check('wechat.oa', '公众号 AppID/AppSecret 已配置', $this->filled('wechat_auth.official_account.app_id') && $this->filled('wechat_auth.official_account.app_secret'), '提供 WECHAT_OA_APP_ID 与 WECHAT_OA_APP_SECRET。'),
+            $this->check('wechat.driver', '微信使用真实适配器', $this->wechatDriverReady(), '在后台第三方服务中启用真实微信模式。'),
+            $this->check('wechat.mini', '小程序 AppID/AppSecret 已配置', $this->wechatProviderReady('mini'), '在后台配置小程序 AppID 与 AppSecret。'),
+            $this->check('wechat.oa', '公众号 AppID/AppSecret 已配置', $this->wechatProviderReady('official_account'), '在后台配置公众号 AppID 与 AppSecret。'),
             $this->check('wechat.domains', '微信授权域名已登记', config('production_readiness.authorized_domains', []) !== [], '设置 WECHAT_AUTHORIZED_DOMAINS 并在微信后台完成登记。'),
-            $this->check('payment.driver', '微信支付使用真实适配器', config('wechat_payment.driver') === 'wechat', '设置 WECHAT_PAYMENT_DRIVER=wechat。'),
-            $this->check('payment.merchant', '微信支付商户号、证书序列号和私钥已配置', $this->filled('wechat_payment.merchant_id') && $this->filled('wechat_payment.merchant_certificate_serial') && $this->filled('wechat_payment.merchant_private_key_path'), '提供微信支付商户号、商户证书序列号和只读私钥路径。'),
-            $this->check('payment.callback', '微信支付 APIv3 密钥、平台证书与 HTTPS 回调已配置', $this->secretReady(config('wechat_payment.api_v3_key')) && is_file((string) config('wechat_payment.platform_certificate_path')) && str_starts_with((string) config('wechat_payment.notify_url'), 'https://'), '提供 32 字节 APIv3 密钥、微信支付平台证书路径和正式 HTTPS 支付回调地址。'),
+            $this->check('payment.driver', '微信支付使用真实适配器', $this->wechatPaymentValue('driver') === 'wechat', '在后台第三方服务中启用真实微信支付。'),
+            $this->check('payment.merchant', '微信支付商户号、证书序列号和私钥已配置', $this->wechatPaymentMerchantReady(), '在后台配置商户号、证书序列号并上传商户私钥。'),
+            $this->check('payment.callback', '微信支付 APIv3 密钥、平台证书与 HTTPS 回调已配置', $this->wechatPaymentCallbackReady(), '在后台配置 APIv3 密钥、平台证书和正式 HTTPS 回调地址。'),
             $this->check('sms.provider', '短信网关已配置', $this->smsProviderReady(), '推荐配置 PHONE_VERIFICATION_DRIVER=aliyun，并通过服务器环境变量提供阿里云访问凭据。'),
             $this->check('sms.template', '短信签名和模板已配置', $this->smsTemplateReady(), '提供阿里云已审核通过的 ALIYUN_SMS_SIGN_NAME 与 ALIYUN_SMS_TEMPLATE_CODE。'),
             $this->check('notification.provider', '外部消息投递网关已配置', config('notifications.driver') === 'webhook' && $this->filled('notifications.webhook.endpoint') && $this->secretReady(config('notifications.webhook.token')), '配置 NOTIFICATION_EXTERNAL_DRIVER=webhook、消息端点和至少 32 位独立令牌。'),
@@ -112,6 +124,67 @@ class ProductionReadinessService
         } catch (\Throwable) {
             return false;
         }
+    }
+
+    private function wechatDriverReady(): bool
+    {
+        try {
+            return $this->wechatConfiguration('mini')['driver'] === 'wechat'
+                && $this->wechatConfiguration('official_account')['driver'] === 'wechat';
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function wechatProviderReady(string $provider): bool
+    {
+        try {
+            $configuration = $this->wechatConfiguration($provider);
+            return $configuration['driver'] === 'wechat'
+                && filled($configuration['app_id']) && filled($configuration['app_secret']);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function wechatPaymentValue(string $key): mixed
+    {
+        try {
+            $this->paymentConfiguration ??= $this->wechatPaymentSettings->effective();
+
+            return $this->paymentConfiguration[$key] ?? null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function wechatPaymentMerchantReady(): bool
+    {
+        $privateKeyReady = filled($this->wechatPaymentValue('merchant_private_key'))
+            ? openssl_pkey_get_private((string) $this->wechatPaymentValue('merchant_private_key')) !== false
+            : filled(config('wechat_payment.merchant_private_key_path'));
+
+        return filled($this->wechatPaymentValue('merchant_id'))
+            && filled($this->wechatPaymentValue('merchant_certificate_serial'))
+            && $privateKeyReady;
+    }
+
+    private function wechatPaymentCallbackReady(): bool
+    {
+        $certificateReady = (filled($this->wechatPaymentValue('platform_certificate'))
+                && openssl_x509_read((string) $this->wechatPaymentValue('platform_certificate')) !== false)
+            || is_file((string) config('wechat_payment.platform_certificate_path'));
+
+        return strlen((string) $this->wechatPaymentValue('api_v3_key')) === 32
+            && $certificateReady
+            && str_starts_with((string) $this->wechatPaymentValue('notify_url'), 'https://');
+    }
+
+    /** @return array<string,mixed> */
+    private function wechatConfiguration(string $provider): array
+    {
+        return $this->wechatConfigurations[$provider]
+            ??= $this->wechatSettings->effective($provider);
     }
 
     private function filledValue(mixed $value): bool

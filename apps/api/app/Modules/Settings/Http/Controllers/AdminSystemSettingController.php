@@ -7,6 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Auth\Services\SmsProviderSettingsService;
+use App\Modules\Auth\Services\WechatProviderSettingsService;
+use App\Modules\Identity\Services\IdentityVerificationSettingsService;
+use App\Modules\Payment\Services\WechatPaymentSettingsService;
 use App\Modules\Settings\Models\SystemSettingDefinition;
 use App\Modules\Settings\Models\SystemSettingDraft;
 use App\Modules\Settings\Models\SystemSettingVersion;
@@ -24,7 +27,7 @@ class AdminSystemSettingController extends Controller
         ]);
         $definitions = SystemSettingDefinition::query()
             ->where('enabled', true)
-            ->where('setting_key', '!=', SmsProviderSettingsService::SETTING_KEY)
+            ->whereNotIn('setting_key', $this->specializedSettingKeys())
             ->when(isset($data['group']), fn ($query) => $query->where('group_code', $data['group']))
             ->when(isset($data['keyword']), function ($query) use ($data): void {
                 $keyword = '%'.$data['keyword'].'%';
@@ -261,7 +264,7 @@ class AdminSystemSettingController extends Controller
 
     private function rejectSpecializedSetting(string $settingKey): ?JsonResponse
     {
-        if ($settingKey !== SmsProviderSettingsService::SETTING_KEY) {
+        if (! in_array($settingKey, $this->specializedSettingKeys(), true)) {
             return null;
         }
 
@@ -270,5 +273,17 @@ class AdminSystemSettingController extends Controller
             '短信服务配置必须通过专用安全接口管理。',
             409,
         );
+    }
+
+    /** @return list<string> */
+    private function specializedSettingKeys(): array
+    {
+        return [
+            SmsProviderSettingsService::SETTING_KEY,
+            WechatProviderSettingsService::MINI_SETTING_KEY,
+            WechatProviderSettingsService::OA_SETTING_KEY,
+            WechatPaymentSettingsService::SETTING_KEY,
+            IdentityVerificationSettingsService::SETTING_KEY,
+        ];
     }
 }

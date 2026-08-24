@@ -180,7 +180,7 @@ async function wechatLogin() {
   formError.value = ''
   wechatSubmitting.value = true
   try {
-    const credential = await requestWechatLoginCode()
+    const credential = await requestWechatLoginCode(capabilities.value?.wechat_official_account_app_id)
     if (!credential) return
     const user = await auth.loginWithWechat(credential.channel, credential.code)
     await routeAfterAuthentication(!user.phone_bound)

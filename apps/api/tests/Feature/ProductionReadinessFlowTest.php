@@ -6,7 +6,10 @@ use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Auth\Services\PhoneVerificationService;
+use App\Modules\Auth\Services\SmsProviderSettingsService;
+use App\Modules\Auth\Services\WechatProviderSettingsService;
 use App\Modules\Operations\Services\ProductionReadinessService;
+use App\Modules\Payment\Services\WechatPaymentSettingsService;
 use App\Modules\Upload\Models\UploadedFile;
 use App\Modules\Upload\Services\FileScanService;
 use Database\Seeders\RbacSeeder;
@@ -62,6 +65,25 @@ class ProductionReadinessFlowTest extends TestCase
             'production_readiness.operator_entity_name' => 'Example Entity', 'production_readiness.customer_service_contact' => 'service@example.test',
             'production_readiness.privacy_contact' => 'privacy@example.test', 'production_readiness.legal_documents_approved' => true,
         ]);
+        $this->mock(WechatProviderSettingsService::class)
+            ->shouldReceive('effective')->twice()->andReturnUsing(fn (string $provider) => [
+                'driver' => 'wechat', 'app_id' => $provider.'-app', 'app_secret' => $provider.'-secret',
+            ]);
+        $this->mock(WechatPaymentSettingsService::class)
+            ->shouldReceive('effective')->once()->andReturn([
+                'driver' => 'wechat', 'merchant_id' => 'merchant-1',
+                'merchant_certificate_serial' => 'certificate-serial', 'merchant_private_key' => null,
+                'api_v3_key' => str_repeat('p', 32), 'platform_certificate' => null,
+                'notify_url' => 'https://api.example.test/api/v1/payment-notifications/wechat',
+            ]);
+        $this->mock(SmsProviderSettingsService::class)
+            ->shouldReceive('effective')->twice()->andReturn([
+                'driver' => 'webhook',
+                'webhook' => [
+                    'endpoint' => 'https://sms.example.test/send', 'token' => 'sms-token',
+                    'template_id' => 'template-1', 'sign_name' => 'Task Mall',
+                ],
+            ]);
         try {
             $result = app(ProductionReadinessService::class)->evaluate();
             $this->assertTrue($result['ready']);

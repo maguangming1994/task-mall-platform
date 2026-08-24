@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Auth\Services\PhoneVerificationService;
 use App\Modules\Growth\Models\Referral;
+use App\Modules\Identity\Services\IdentityVerificationSettingsService;
 use App\Modules\Settings\Services\SystemSettingService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,7 +18,7 @@ use Throwable;
 
 class AdminUserCenterController extends Controller
 {
-    public function overview(SystemSettingService $settings): JsonResponse
+    public function overview(SystemSettingService $settings, IdentityVerificationSettingsService $identitySettings): JsonResponse
     {
         $today = CarbonImmutable::today();
         $taskReports = DB::table('task_reports')->where('status', 'submitted')->count();
@@ -60,7 +61,7 @@ class AdminUserCenterController extends Controller
                 'referral_milestones' => $this->setting($settings, 'tasks.referral_completion_milestones', ['first_task', 'first_cash_order']),
                 'referral_monthly_cap' => $this->setting($settings, 'tasks.referral_monthly_cap', 5),
                 'referral_reward_points' => (int) ($this->setting($settings, 'points.source_reward_amounts', ['referral' => 0])['referral'] ?? 0),
-                'real_name_collection_enabled' => false,
+                'real_name_collection_enabled' => $identitySettings->effective()['collection_enabled'],
             ],
             'level_rules' => $this->levelRules($settings),
             'trend' => $this->sevenDayTrend(),

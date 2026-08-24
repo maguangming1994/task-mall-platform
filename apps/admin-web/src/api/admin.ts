@@ -400,6 +400,49 @@ export interface SmsServiceTestResult {
   sent_at?: string | null
 }
 
+export type WechatDriver = 'local' | 'wechat'
+export type SecureValueState = { configured: boolean; masked: string | null; source: 'backend' | 'env' | 'none' }
+export interface WechatAppSettings {
+  driver: WechatDriver
+  app_id: string
+  app_id_source: 'backend' | 'env'
+  app_secret: SecureValueState
+  token: SecureValueState
+  encoding_aes_key: SecureValueState
+  timeout_seconds: number
+  ready: boolean
+  last_tested_at: string | null
+  last_test_status: 'success' | 'failed' | null
+  last_test_message: string | null
+}
+export interface WechatVerificationFile { filename: string; public_url: string; updated_at: string | null }
+export interface WechatSettingsBundle {
+  mini: WechatAppSettings
+  official_account: WechatAppSettings
+  verification_files: WechatVerificationFile[]
+}
+export interface WechatPaymentSettings {
+  driver: WechatDriver
+  merchant_id: string
+  merchant_certificate_serial: string
+  notify_url: string
+  refund_notify_url: string
+  timeout_seconds: number
+  api_v3_key: SecureValueState
+  merchant_private_key: SecureValueState
+  platform_certificate: SecureValueState
+  ready: boolean
+  last_tested_at: string | null
+  last_test_status: 'success' | 'failed' | null
+  last_test_message: string | null
+}
+export interface IdentityVerificationSettings {
+  driver: 'disabled' | 'manual'
+  collection_enabled: boolean
+  manual_review_enabled: boolean
+  source: string
+}
+
 export interface UserAssetSummary {
   user_id: string
   points: { available: number; frozen: number; debt: number }
@@ -949,6 +992,58 @@ export async function sendSmsServiceTest(phone: string): Promise<SmsServiceTestR
     method: 'POST',
     body: JSON.stringify({ phone }),
   })
+}
+
+export function getWechatSettings(): Promise<WechatSettingsBundle> {
+  return request('/admin/wechat/settings')
+}
+
+export function saveWechatAppSettings(provider: 'mini' | 'official_account', input: Record<string, unknown>): Promise<WechatAppSettings> {
+  return request(`/admin/wechat/settings/${provider}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+
+export function testWechatAppSettings(provider: 'mini' | 'official_account'): Promise<{ accepted: boolean; tested_at: string; message: string }> {
+  return request(`/admin/wechat/settings/${provider}/test`, { method: 'POST', body: JSON.stringify({}) })
+}
+
+export function uploadWechatVerificationFile(file: File): Promise<WechatVerificationFile> {
+  const body = new FormData()
+  body.append('file', file)
+  return request('/admin/wechat/verification-files', { method: 'POST', body })
+}
+
+export function deleteWechatVerificationFile(filename: string): Promise<void> {
+  return request(`/admin/wechat/verification-files/${encodeURIComponent(filename)}`, { method: 'DELETE' })
+}
+
+export function getWechatPaymentSettings(): Promise<WechatPaymentSettings> {
+  return request('/admin/wechat-payment/settings')
+}
+
+export function saveWechatPaymentSettings(input: Record<string, unknown>): Promise<WechatPaymentSettings> {
+  return request('/admin/wechat-payment/settings', { method: 'PUT', body: JSON.stringify(input) })
+}
+
+export function saveWechatPaymentCredentials(input: { reason: string; apiV3Key?: string; privateKey?: File; platformCertificate?: File; clear?: string[] }): Promise<WechatPaymentSettings> {
+  const body = new FormData()
+  body.append('reason', input.reason)
+  if (input.apiV3Key) body.append('api_v3_key', input.apiV3Key)
+  if (input.privateKey) body.append('merchant_private_key', input.privateKey)
+  if (input.platformCertificate) body.append('platform_certificate', input.platformCertificate)
+  for (const field of input.clear ?? []) body.append(`clear_${field}`, '1')
+  return request('/admin/wechat-payment/credentials', { method: 'POST', body })
+}
+
+export function testWechatPaymentSettings(): Promise<{ accepted: boolean; tested_at: string; message: string }> {
+  return request('/admin/wechat-payment/settings/test', { method: 'POST', body: JSON.stringify({}) })
+}
+
+export function getIdentityVerificationSettings(): Promise<IdentityVerificationSettings> {
+  return request('/admin/identity-verification/settings')
+}
+
+export function saveIdentityVerificationSettings(input: Record<string, unknown>): Promise<IdentityVerificationSettings> {
+  return request('/admin/identity-verification/settings', { method: 'PUT', body: JSON.stringify(input) })
 }
 
 export async function listManagedAdmins(): Promise<{ items: ManagedAdmin[] }> {

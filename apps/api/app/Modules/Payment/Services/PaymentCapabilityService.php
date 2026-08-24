@@ -7,7 +7,10 @@ use App\Modules\Settings\Services\SystemSettingService;
 
 class PaymentCapabilityService
 {
-    public function __construct(private readonly SystemSettingService $settings) {}
+    public function __construct(
+        private readonly SystemSettingService $settings,
+        private readonly WechatPaymentSettingsService $wechatPaymentSettings,
+    ) {}
 
     /** @return array{wallet: array{enabled: bool, reason: ?string}, wechat: array{enabled: bool, reason: ?string}} */
     public function forPlatform(string $platform): array
@@ -43,28 +46,25 @@ class PaymentCapabilityService
             return false;
         }
 
-        if (config('wechat_payment.driver') === 'local') {
+        $configuration = $this->wechatPaymentSettings->effective();
+        if ($configuration['driver'] === 'local') {
             return app()->environment(['local', 'testing']);
         }
 
-        if (config('wechat_payment.driver') !== 'wechat') {
+        if ($configuration['driver'] !== 'wechat') {
             return false;
         }
 
-        $privateKeyPath = (string) config('wechat_payment.merchant_private_key_path');
-        $platformCertificatePath = (string) config('wechat_payment.platform_certificate_path');
         $appId = $platform === 'wechat-mini'
-            ? config('wechat_payment.mini_app_id')
-            : config('wechat_payment.official_account_app_id');
+            ? $configuration['mini_app_id']
+            : $configuration['official_account_app_id'];
 
-        return filled(config('wechat_payment.merchant_id'))
-            && filled(config('wechat_payment.merchant_certificate_serial'))
-            && $privateKeyPath !== ''
-            && is_file($privateKeyPath)
-            && filled(config('wechat_payment.api_v3_key'))
-            && $platformCertificatePath !== ''
-            && is_file($platformCertificatePath)
-            && filled(config('wechat_payment.notify_url'))
+        return filled($configuration['merchant_id'])
+            && filled($configuration['merchant_certificate_serial'])
+            && openssl_pkey_get_private((string) $configuration['merchant_private_key']) !== false
+            && filled($configuration['api_v3_key'])
+            && openssl_x509_read((string) $configuration['platform_certificate']) !== false
+            && filled($configuration['notify_url'])
             && filled($appId);
     }
 

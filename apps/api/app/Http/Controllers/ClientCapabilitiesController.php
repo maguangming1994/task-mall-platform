@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Common\Support\ApiResponse;
 use App\Modules\Auth\Services\WechatIdentityProvider;
+use App\Modules\Auth\Services\WechatProviderSettingsService;
 use App\Modules\Operations\Services\ReleaseControlService;
 use App\Modules\Payment\Services\PaymentCapabilityService;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,7 @@ class ClientCapabilitiesController extends Controller
         WechatIdentityProvider $wechat,
         ReleaseControlService $releases,
         PaymentCapabilityService $payments,
+        WechatProviderSettingsService $wechatSettings,
     ): JsonResponse {
         $data = validator([
             'client_platform' => $request->header('X-Client-Platform'),
@@ -41,6 +43,9 @@ class ClientCapabilitiesController extends Controller
             'platform' => $platform,
             'visitor_browsing' => true,
             'login_methods' => $loginMethods,
+            'wechat_official_account_app_id' => $platform === 'h5-wechat'
+                ? $wechatSettings->effective('official_account')['app_id']
+                : null,
             'share_methods' => match ($platform) {
                 'wechat-mini' => ['mini_card', 'qr_code'],
                 'h5-wechat' => ['wechat_js', 'copy_link'],

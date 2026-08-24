@@ -13,16 +13,18 @@ use Illuminate\Validation\ValidationException;
 
 class WechatPayV3Gateway implements WechatPaymentGateway
 {
+    public function __construct(private readonly WechatPaymentSettingsService $settings) {}
+
     public function prepare(Payment $payment, User $user): array
     {
         $this->ensureConfigured();
         $isH5 = $payment->scene === 'h5-browser';
         $path = $isH5 ? '/v3/pay/transactions/h5' : '/v3/pay/transactions/jsapi';
-        $appId = $payment->scene === 'wechat-mini' ? config('wechat_payment.mini_app_id') : config('wechat_payment.official_account_app_id');
+        $appId = $payment->scene === 'wechat-mini' ? $this->value('mini_app_id') : $this->value('official_account_app_id');
         $body = [
-            'appid' => $appId, 'mchid' => config('wechat_payment.merchant_id'),
+            'appid' => $appId, 'mchid' => $this->value('merchant_id'),
             'description' => $payment->order_id ? '任务商城订单 '.$payment->order->order_no : '任务商城余额充值 '.$payment->walletRecharge->recharge_no,
-            'out_trade_no' => $payment->payment_no, 'notify_url' => config('wechat_payment.notify_url'),
+            'out_trade_no' => $payment->payment_no, 'notify_url' => $this->value('notify_url'),
             'amount' => ['total' => $payment->cash_amount, 'currency' => 'CNY'],
         ];
         if ($isH5) {
@@ -39,7 +41,7 @@ class WechatPayV3Gateway implements WechatPaymentGateway
 
         try {
             $response = Http::acceptJson()->withHeaders(['Authorization' => $this->authorization('POST', $path, $json), 'User-Agent' => 'task-mall-api/1.0'])
-                ->withBody($json, 'application/json')->timeout((int) config('wechat_payment.timeout_seconds'))->post('https://api.mch.weixin.qq.com'.$path);
+                ->withBody($json, 'application/json')->timeout((int) $this->value('timeout_seconds'))->post('https://api.mch.weixin.qq.com'.$path);
         } catch (ConnectionException) {
             throw ValidationException::withMessages(['payment' => '微信支付连接失败，请稍后重试。']);
         }
@@ -60,8 +62,7 @@ class WechatPayV3Gateway implements WechatPaymentGateway
         $timestamp = (string) ($headers['timestamp'] ?? '');
         $nonce = (string) ($headers['nonce'] ?? '');
         $signature = base64_decode((string) ($headers['signature'] ?? ''), true);
-        $certificatePath = (string) config('wechat_payment.platform_certificate_path');
-        $certificate = is_file($certificatePath) ? file_get_contents($certificatePath) : false;
+        $certificate = (string) $this->value('platform_certificate');
         if (! ctype_digit($timestamp) || abs(time() - (int) $timestamp) > 300 || ! $signature || ! $certificate || openssl_verify("{$timestamp}\n{$nonce}\n{$body}\n", $signature, $certificate, OPENSSL_ALGO_SHA256) !== 1) {
             abort(401, 'Invalid WeChat Pay signature.');
         }
@@ -70,7 +71,7 @@ class WechatPayV3Gateway implements WechatPaymentGateway
         abort_unless(is_array($envelope) && is_array($resource), 400, 'Invalid WeChat Pay notification.');
         $cipher = base64_decode((string) ($resource['ciphertext'] ?? ''), true);
         abort_unless($cipher !== false && strlen($cipher) > 16, 400, 'Invalid WeChat Pay ciphertext.');
-        $plain = openssl_decrypt(substr($cipher, 0, -16), 'aes-256-gcm', (string) config('wechat_payment.api_v3_key'), OPENSSL_RAW_DATA, (string) ($resource['nonce'] ?? ''), substr($cipher, -16), (string) ($resource['associated_data'] ?? ''));
+        $plain = openssl_decrypt(substr($cipher, 0, -16), 'aes-256-gcm', (string) $this->value('api_v3_key'), OPENSSL_RAW_DATA, (string) ($resource['nonce'] ?? ''), substr($cipher, -16), (string) ($resource['associated_data'] ?? ''));
         $trade = $plain === false ? null : json_decode($plain, true);
         abort_unless(is_array($trade), 400, 'WeChat Pay notification decryption failed.');
 
@@ -80,9 +81,9 @@ class WechatPayV3Gateway implements WechatPaymentGateway
     public function query(Payment $payment): array
     {
         $this->ensureConfigured();
-        $path = '/v3/pay/transactions/out-trade-no/'.$payment->payment_no.'?mchid='.urlencode((string) config('wechat_payment.merchant_id'));
+        $path = '/v3/pay/transactions/out-trade-no/'.$payment->payment_no.'?mchid='.urlencode((string) $this->value('merchant_id'));
         try {
-            $response = Http::acceptJson()->withHeaders(['Authorization' => $this->authorization('GET', $path, ''), 'User-Agent' => 'task-mall-api/1.0'])->timeout((int) config('wechat_payment.timeout_seconds'))->get('https://api.mch.weixin.qq.com'.$path);
+            $response = Http::acceptJson()->withHeaders(['Authorization' => $this->authorization('GET', $path, ''), 'User-Agent' => 'task-mall-api/1.0'])->timeout((int) $this->value('timeout_seconds'))->get('https://api.mch.weixin.qq.com'.$path);
         } catch (ConnectionException) {
             throw ValidationException::withMessages(['payment' => '微信支付查询连接失败。']);
         }
@@ -99,9 +100,9 @@ class WechatPayV3Gateway implements WechatPaymentGateway
     {
         $this->ensureConfigured();
         $path = '/v3/pay/transactions/out-trade-no/'.$payment->payment_no.'/close';
-        $json = json_encode(['mchid' => config('wechat_payment.merchant_id')], JSON_UNESCAPED_SLASHES);
+        $json = json_encode(['mchid' => $this->value('merchant_id')], JSON_UNESCAPED_SLASHES);
         try {
-            $response = Http::withHeaders(['Authorization' => $this->authorization('POST', $path, $json), 'User-Agent' => 'task-mall-api/1.0'])->withBody($json, 'application/json')->timeout((int) config('wechat_payment.timeout_seconds'))->post('https://api.mch.weixin.qq.com'.$path);
+            $response = Http::withHeaders(['Authorization' => $this->authorization('POST', $path, $json), 'User-Agent' => 'task-mall-api/1.0'])->withBody($json, 'application/json')->timeout((int) $this->value('timeout_seconds'))->post('https://api.mch.weixin.qq.com'.$path);
         } catch (ConnectionException) {
             throw ValidationException::withMessages(['payment' => '微信支付关单连接失败。']);
         }
@@ -115,7 +116,7 @@ class WechatPayV3Gateway implements WechatPaymentGateway
         $payload = [
             'out_refund_no' => $refund->refund_no,
             'reason' => mb_substr('订单退款 '.$refund->refund_no, 0, 80),
-            'notify_url' => config('wechat_payment.refund_notify_url'),
+            'notify_url' => $this->value('refund_notify_url'),
             'amount' => [
                 'refund' => $refund->refund_external_amount,
                 'total' => $payment->cash_amount,
@@ -133,7 +134,7 @@ class WechatPayV3Gateway implements WechatPaymentGateway
             $response = Http::acceptJson()->withHeaders([
                 'Authorization' => $this->authorization('POST', $path, $json),
                 'User-Agent' => 'task-mall-api/1.0',
-            ])->withBody($json, 'application/json')->timeout((int) config('wechat_payment.timeout_seconds'))
+            ])->withBody($json, 'application/json')->timeout((int) $this->value('timeout_seconds'))
                 ->post('https://api.mch.weixin.qq.com'.$path);
         } catch (ConnectionException) {
             throw ValidationException::withMessages(['refund' => '微信退款渠道连接失败，退款仍保持处理中，请稍后主动查询。']);
@@ -153,7 +154,7 @@ class WechatPayV3Gateway implements WechatPaymentGateway
             $response = Http::acceptJson()->withHeaders([
                 'Authorization' => $this->authorization('GET', $path, ''),
                 'User-Agent' => 'task-mall-api/1.0',
-            ])->timeout((int) config('wechat_payment.timeout_seconds'))->get('https://api.mch.weixin.qq.com'.$path);
+            ])->timeout((int) $this->value('timeout_seconds'))->get('https://api.mch.weixin.qq.com'.$path);
         } catch (ConnectionException) {
             throw ValidationException::withMessages(['refund' => '微信退款查询连接失败，未改变本地退款状态。']);
         }
@@ -212,8 +213,7 @@ class WechatPayV3Gateway implements WechatPaymentGateway
         $timestamp = (string) ($headers['timestamp'] ?? '');
         $nonce = (string) ($headers['nonce'] ?? '');
         $signature = base64_decode((string) ($headers['signature'] ?? ''), true);
-        $certificatePath = (string) config('wechat_payment.platform_certificate_path');
-        $certificate = is_file($certificatePath) ? file_get_contents($certificatePath) : false;
+        $certificate = (string) $this->value('platform_certificate');
         if (! ctype_digit($timestamp) || abs(time() - (int) $timestamp) > 300 || ! $signature || ! $certificate || openssl_verify("{$timestamp}\n{$nonce}\n{$body}\n", $signature, $certificate, OPENSSL_ALGO_SHA256) !== 1) {
             abort(401, 'Invalid WeChat Pay signature.');
         }
@@ -222,7 +222,7 @@ class WechatPayV3Gateway implements WechatPaymentGateway
         abort_unless(is_array($envelope) && is_array($encrypted), 400, 'Invalid WeChat Pay notification.');
         $cipher = base64_decode((string) ($encrypted['ciphertext'] ?? ''), true);
         abort_unless($cipher !== false && strlen($cipher) > 16, 400, 'Invalid WeChat Pay ciphertext.');
-        $plain = openssl_decrypt(substr($cipher, 0, -16), 'aes-256-gcm', (string) config('wechat_payment.api_v3_key'), OPENSSL_RAW_DATA, (string) ($encrypted['nonce'] ?? ''), substr($cipher, -16), (string) ($encrypted['associated_data'] ?? ''));
+        $plain = openssl_decrypt(substr($cipher, 0, -16), 'aes-256-gcm', (string) $this->value('api_v3_key'), OPENSSL_RAW_DATA, (string) ($encrypted['nonce'] ?? ''), substr($cipher, -16), (string) ($encrypted['associated_data'] ?? ''));
         $resource = $plain === false ? null : json_decode($plain, true);
         abort_unless(is_array($resource), 400, 'WeChat Pay notification decryption failed.');
 
@@ -244,13 +244,12 @@ class WechatPayV3Gateway implements WechatPaymentGateway
         $nonce = bin2hex(random_bytes(12));
         $signature = $this->sign("{$method}\n{$path}\n{$timestamp}\n{$nonce}\n{$body}\n");
 
-        return sprintf('WECHATPAY2-SHA256-RSA2048 mchid="%s",nonce_str="%s",timestamp="%s",serial_no="%s",signature="%s"', config('wechat_payment.merchant_id'), $nonce, $timestamp, config('wechat_payment.merchant_certificate_serial'), $signature);
+        return sprintf('WECHATPAY2-SHA256-RSA2048 mchid="%s",nonce_str="%s",timestamp="%s",serial_no="%s",signature="%s"', $this->value('merchant_id'), $nonce, $timestamp, $this->value('merchant_certificate_serial'), $signature);
     }
 
     private function sign(string $message): string
     {
-        $path = (string) config('wechat_payment.merchant_private_key_path');
-        $key = is_file($path) ? file_get_contents($path) : false;
+        $key = (string) $this->value('merchant_private_key');
         if (! $key || ! openssl_sign($message, $signature, $key, OPENSSL_ALGO_SHA256)) {
             throw ValidationException::withMessages(['payment' => '微信支付商户私钥不可用。']);
         }
@@ -260,8 +259,8 @@ class WechatPayV3Gateway implements WechatPaymentGateway
 
     private function ensureConfigured(): void
     {
-        foreach (['merchant_id', 'merchant_certificate_serial', 'merchant_private_key_path', 'api_v3_key', 'notify_url'] as $key) {
-            if (! filled(config('wechat_payment.'.$key))) {
+        foreach (['merchant_id', 'merchant_certificate_serial', 'merchant_private_key', 'api_v3_key', 'notify_url'] as $key) {
+            if (! filled($this->value($key))) {
                 throw ValidationException::withMessages(['payment' => '微信支付生产参数尚未配置完整。']);
             }
         }
@@ -269,17 +268,23 @@ class WechatPayV3Gateway implements WechatPaymentGateway
 
     private function ensureRefundConfigured(): void
     {
-        foreach (['merchant_id', 'merchant_certificate_serial', 'merchant_private_key_path', 'api_v3_key', 'platform_certificate_path', 'refund_notify_url'] as $key) {
-            $value = config('wechat_payment.'.$key);
+        foreach (['merchant_id', 'merchant_certificate_serial', 'merchant_private_key', 'api_v3_key', 'platform_certificate', 'refund_notify_url'] as $key) {
+            $value = $this->value($key);
             if (! filled($value)) {
                 throw ValidationException::withMessages(['refund' => '微信退款生产参数尚未配置完整，已阻止退款，未伪造成功结果。']);
             }
         }
-        if (! is_file((string) config('wechat_payment.merchant_private_key_path')) || ! is_file((string) config('wechat_payment.platform_certificate_path'))) {
+        if (openssl_pkey_get_private((string) $this->value('merchant_private_key')) === false
+            || openssl_x509_read((string) $this->value('platform_certificate')) === false) {
             throw ValidationException::withMessages(['refund' => '微信退款商户私钥或平台证书不可用，已阻止退款，未伪造成功结果。']);
         }
-        if (strlen((string) config('wechat_payment.api_v3_key')) !== 32) {
+        if (strlen((string) $this->value('api_v3_key')) !== 32) {
             throw ValidationException::withMessages(['refund' => '微信支付 API V3 密钥必须为 32 字节，已阻止退款。']);
         }
+    }
+
+    private function value(string $key): mixed
+    {
+        return $this->settings->effective()[$key] ?? null;
     }
 }

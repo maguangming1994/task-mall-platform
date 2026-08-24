@@ -16,6 +16,7 @@ export interface ClientCapabilities {
   platform: ClientPlatform
   visitor_browsing: boolean
   login_methods: LoginMethod[]
+  wechat_official_account_app_id: string | null
   share_methods: string[]
   cash_payment_methods: CashPaymentMethodCode[]
   payment_methods: PaymentMethodCapability[]
