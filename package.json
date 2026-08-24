@@ -10,9 +10,11 @@
   "scripts": {
     "dev:user:h5": "pnpm --dir apps/user-app dev:h5",
     "dev:user:wechat": "pnpm --dir apps/user-app dev:mp-weixin",
+    "dev:user:wechat:online": "pnpm --dir apps/user-app dev:mp-weixin:online",
     "dev:admin": "pnpm --dir apps/admin-web dev",
     "build:user:h5": "pnpm --dir apps/user-app build:h5",
     "build:user:wechat": "pnpm --dir apps/user-app build:mp-weixin",
+    "build:user:wechat:online": "pnpm --dir apps/user-app build:mp-weixin:online",
     "build:admin": "pnpm --dir apps/admin-web build",
     "build": "pnpm run build:user:h5 && pnpm run build:user:wechat && pnpm run build:admin",
     "typecheck": "pnpm --dir apps/user-app type-check && pnpm --dir apps/admin-web typecheck",

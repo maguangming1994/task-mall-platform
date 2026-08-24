@@ -31,7 +31,25 @@ let defaultApiBaseUrl = 'http://127.0.0.1:8000/api/v1'
 defaultApiBaseUrl = '/api/v1'
 // #endif
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl
+function resolveApiBaseUrl() {
+  const configuredBaseUrl = (import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl).trim()
+
+  if (clientPlatform !== 'wechat-mini' || /^https?:\/\//i.test(configuredBaseUrl)) {
+    return configuredBaseUrl.replace(/\/+$/, '')
+  }
+
+  const publicOrigin = (import.meta.env.VITE_H5_PUBLIC_URL || '').trim().replace(/\/+$/, '')
+  if (publicOrigin && /^https:\/\//i.test(publicOrigin)) {
+    const normalizedPath = configuredBaseUrl.startsWith('/')
+      ? configuredBaseUrl
+      : `/${configuredBaseUrl}`
+    return `${publicOrigin}${normalizedPath}`.replace(/\/+$/, '')
+  }
+
+  throw new Error('微信小程序 API 地址必须使用完整的 HTTPS 线上地址。')
+}
+
+const apiBaseUrl = resolveApiBaseUrl()
 
 export function apiUrl(path: string) {
   return `${apiBaseUrl}${path}`
