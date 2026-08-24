@@ -105,21 +105,21 @@ class AuthService
                 throw new AuthException('ACCOUNT_DISABLED', '账号当前不可登录。', 403);
             }
 
-            UserIdentity::query()->updateOrCreate(
+            $identity = UserIdentity::query()->updateOrCreate(
                 ['provider' => $provider, 'provider_user_id' => $providerHash],
                 [
                     'user_id' => $user->id,
                     'provider_user_value' => $external['openid'],
                     'union_id' => $unionHash,
                     'union_value' => $external['unionid'],
-                    'metadata' => ['source' => 'wechat_code_exchange'],
+                    'metadata' => ['source' => 'wechat_code_exchange', 'app_id_hash' => $external['app_id_hash']],
                     'last_login_at' => now(),
                 ],
             );
 
             $device = $this->resolveDevice($user, $clientPlatform, $deviceId, $deviceName);
 
-            return $this->issueTokenPair($user, $device);
+            return $this->issueTokenPair($user, $device, $identity->id);
         });
     }
 
@@ -258,7 +258,7 @@ class AuthService
 
             $session->device->update(['last_active_at' => now()]);
 
-            return $this->issueTokenPair($session->user, $session->device);
+            return $this->issueTokenPair($session->user, $session->device, $session->user_identity_id);
         });
     }
 
@@ -395,12 +395,13 @@ class AuthService
     /**
      * @return array<string, mixed>
      */
-    private function issueTokenPair(User $user, UserDevice $device): array
+    private function issueTokenPair(User $user, UserDevice $device, ?int $userIdentityId = null): array
     {
         $refreshToken = $this->randomToken();
         $session = UserSession::query()->create([
             'user_id' => $user->id,
             'user_device_id' => $device->id,
+            'user_identity_id' => $userIdentityId,
             'refresh_token_hash' => hash('sha256', $refreshToken),
             'issued_at' => now(),
             'expires_at' => now()->addDays((int) config('auth_tokens.refresh_ttl_days')),

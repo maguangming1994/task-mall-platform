@@ -8,6 +8,7 @@ use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Notification\Models\NotificationCampaign;
 use App\Modules\Notification\Models\NotificationTemplate;
+use App\Modules\Notification\Services\NotificationSceneConfigService;
 use App\Modules\Notification\Services\NotificationService;
 use App\Modules\Operations\Models\DeploymentRelease;
 use App\Modules\Operations\Models\FeatureFlag;
@@ -78,6 +79,30 @@ class AdminOperationsController extends Controller
         return ApiResponse::success(['items' => NotificationTemplate::query()->latest()->get()->map(fn (NotificationTemplate $template) => $this->templateData($template))]);
     }
 
+    public function notificationRules(NotificationSceneConfigService $service): JsonResponse
+    {
+        return ApiResponse::success(['items' => $service->catalog()]);
+    }
+
+    public function updateNotificationRule(Request $request, string $sceneCode, NotificationSceneConfigService $service, AuditLogger $audit): JsonResponse
+    {
+        $data = $request->validate([
+            'enabled' => ['required', 'boolean'],
+            'channels' => ['required', 'array', 'min:1'],
+            'channels.*' => ['required', 'in:in_app,wechat_mini,sms'],
+            'expected_version' => ['required', 'integer', 'min:1'],
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
+        ]);
+        $before = collect($service->catalog())->firstWhere('scene_code', $sceneCode);
+        abort_if($before === null, 404);
+        /** @var AdminUser $admin */
+        $admin = $request->user();
+        $after = $service->update($sceneCode, $data, $admin);
+        $audit->record($admin, 'notification_scene_rule.update', 'notification_scene_rule', $sceneCode, $before, $after, $data['reason']);
+
+        return ApiResponse::success($after);
+    }
+
     public function template(NotificationTemplate $notificationTemplate): JsonResponse
     {
         return ApiResponse::success($this->templateData($notificationTemplate, true));
@@ -85,7 +110,7 @@ class AdminOperationsController extends Controller
 
     public function saveTemplate(Request $request, NotificationService $service, AuditLogger $audit): JsonResponse
     {
-        $data = $request->validate(['scene_code' => ['required', 'string', 'max:64'], 'channel' => ['required', 'in:in_app,wechat,sms'], 'subject' => ['required', 'string', 'max:160'], 'body' => ['required', 'string', 'max:2000'], 'allowed_variables' => ['present', 'array', 'max:20'], 'allowed_variables.*' => ['string', 'regex:/^[a-zA-Z0-9_]+$/'], 'provider_template_id' => ['nullable', 'string', 'max:160'], 'publish' => ['required', 'boolean']]); /** @var AdminUser $admin */
+        $data = $request->validate(['scene_code' => ['required', 'string', 'max:64'], 'channel' => ['required', 'in:in_app,wechat,wechat_mini,sms'], 'subject' => ['required', 'string', 'max:160'], 'body' => ['required', 'string', 'max:2000'], 'allowed_variables' => ['present', 'array', 'max:20'], 'allowed_variables.*' => ['string', 'regex:/^[a-zA-Z0-9_]+$/'], 'provider_template_id' => ['nullable', 'string', 'max:160'], 'publish' => ['required', 'boolean']]); /** @var AdminUser $admin */
         $admin = $request->user();
         $existing = NotificationTemplate::query()->where('scene_code', $data['scene_code'])->where('channel', $data['channel'])->where('locale', 'zh-CN')->first();
         $before = $existing ? $this->templateData($existing, true) : null;

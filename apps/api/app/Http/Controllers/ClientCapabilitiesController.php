@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Common\Support\ApiResponse;
 use App\Modules\Auth\Services\WechatIdentityProvider;
 use App\Modules\Auth\Services\WechatProviderSettingsService;
+use App\Modules\Notification\Services\NotificationSceneConfigService;
 use App\Modules\Operations\Services\ReleaseControlService;
 use App\Modules\Payment\Services\PaymentCapabilityService;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +19,7 @@ class ClientCapabilitiesController extends Controller
         ReleaseControlService $releases,
         PaymentCapabilityService $payments,
         WechatProviderSettingsService $wechatSettings,
+        NotificationSceneConfigService $notificationScenes,
     ): JsonResponse {
         $data = validator([
             'client_platform' => $request->header('X-Client-Platform'),
@@ -37,6 +39,10 @@ class ClientCapabilitiesController extends Controller
             ->filter(fn (string $method) => $paymentCapabilities[$method]['enabled'])
             ->values()
             ->all();
+        $notificationChannels = ['in_app'];
+        if ($platform === 'wechat-mini' && collect($notificationScenes->catalog())->contains(fn (array $scene): bool => $scene['enabled'] && in_array('wechat_mini', $scene['channels'], true) && $scene['templates']['wechat_mini']['ready'])) {
+            $notificationChannels[] = 'wechat_mini';
+        }
 
         return ApiResponse::success([
             'version' => 3,
@@ -65,7 +71,7 @@ class ClientCapabilitiesController extends Controller
             'wechat_payment_unavailable_message' => $paymentCapabilities['wechat']['reason'],
             'wallet_payment_unavailable_message' => $paymentCapabilities['wallet']['reason'],
             'open_in_wechat_url' => null,
-            'notification_channels' => ['in_app'],
+            'notification_channels' => $notificationChannels,
             'feature_flags' => collect(['checkout_v2', 'community_video', 'external_notifications'])->mapWithKeys(fn (string $code) => [$code => $releases->enabled($code, (string) ($request->header('X-Device-Id') ?: 'anonymous'), $platform)]),
         ]);
     }

@@ -180,6 +180,8 @@ Route::middleware('auth.access')->group(function () {
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->middleware('legal.consent:account');
     Route::get('/notification-preferences', [NotificationController::class, 'preference'])->middleware('legal.consent:account');
     Route::put('/notification-preferences', [NotificationController::class, 'updatePreference'])->middleware('legal.consent:account');
+    Route::get('/notification-subscriptions/wechat', [NotificationController::class, 'wechatSubscriptionOptions'])->middleware('legal.consent:account');
+    Route::post('/notification-subscriptions/wechat', [NotificationController::class, 'recordWechatSubscriptions'])->middleware(['legal.consent:account', 'throttle:20,1']);
     Route::post('/growth/referrals', [ReferralController::class, 'bind'])->middleware(['legal.consent:account', 'throttle:5,1']);
     Route::get('/community/my-posts', [CommunityPostController::class, 'mine'])->middleware('legal.consent:community');
     Route::post('/community/posts', [CommunityPostController::class, 'store'])->middleware(['legal.consent:community', 'throttle:20,1']);
@@ -345,6 +347,8 @@ Route::prefix('admin')->group(function () {
         Route::get('/operations/release-control', [AdminOperationsController::class, 'releaseControl'])->middleware('admin.permission:deployment.manage');
         Route::put('/operations/feature-flags/{flag:code}', [AdminOperationsController::class, 'updateFeatureFlag'])->middleware(['admin.permission:deployment.manage', 'admin.recent_verification']);
         Route::post('/operations/releases/{release}/transition', [AdminOperationsController::class, 'transitionRelease'])->middleware(['admin.permission:deployment.manage', 'admin.recent_verification']);
+        Route::get('/notification-rules', [AdminOperationsController::class, 'notificationRules'])->middleware('admin.permission:operations.manage');
+        Route::put('/notification-rules/{sceneCode}', [AdminOperationsController::class, 'updateNotificationRule'])->middleware(['admin.permission:operations.manage', 'admin.recent_verification']);
         Route::get('/notification-templates', [AdminOperationsController::class, 'templates'])->middleware('admin.permission:operations.manage');
         Route::get('/notification-templates/{notificationTemplate}', [AdminOperationsController::class, 'template'])->middleware('admin.permission:operations.manage');
         Route::post('/notification-templates', [AdminOperationsController::class, 'saveTemplate'])->middleware('admin.permission:operations.manage');

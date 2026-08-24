@@ -5,12 +5,20 @@ namespace App\Providers;
 use App\Modules\Assets\Contracts\PayoutProvider;
 use App\Modules\Assets\Services\HttpPayoutProvider;
 use App\Modules\Assets\Services\LocalPayoutProvider;
+use App\Modules\Community\Models\CommunityPostVersion;
+use App\Modules\Community\Models\ContentAppeal;
+use App\Modules\Community\Models\ModerationAction;
+use App\Modules\Fulfillment\Models\Fulfillment;
+use App\Modules\Notification\Observers\NotificationBusinessObserver;
+use App\Modules\Order\Models\Order;
 use App\Modules\Payment\Contracts\WechatPaymentGateway;
 use App\Modules\Payment\Services\LocalWechatPaymentGateway;
 use App\Modules\Payment\Services\WechatPaymentSettingsService;
 use App\Modules\Payment\Services\WechatPayV3Gateway;
+use App\Modules\Refund\Models\Refund;
 use App\Modules\Settings\Events\SystemSettingPublished;
 use App\Modules\Settings\Listeners\ForgetPublishedSettingCache;
+use App\Modules\Task\Models\TaskClaim;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -35,5 +43,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(SystemSettingPublished::class, ForgetPublishedSettingCache::class);
+        foreach ([TaskClaim::class, Order::class, Refund::class, Fulfillment::class, CommunityPostVersion::class, ModerationAction::class, ContentAppeal::class] as $model) {
+            $model::observe(NotificationBusinessObserver::class);
+        }
     }
 }

@@ -164,13 +164,11 @@ class CommunityContentService
                 $version->update(['review_status' => 'approved', 'reviewed_by_admin_id' => $admin->id, 'review_note' => $data['note'], 'reviewed_at' => now()]);
                 $locked->update(['title' => $version->title, 'content' => $version->content, 'category_code' => $version->category_code, 'status' => 'published', 'published_version_no' => $version->version_no, 'reviewed_by_admin_id' => $admin->id, 'review_note' => $data['note'], 'published_at' => now()]);
                 $this->grantPostReward($locked);
-                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'post_review_approved', '帖子审核通过', '你的帖子或新版本已通过审核并公开。', 'post-review:'.$version->public_id.':approved', false, ['in_app'], ['post_id' => $locked->public_id]);
             } else {
                 $version->update(['review_status' => 'rejected', 'reviewed_by_admin_id' => $admin->id, 'review_reason_code' => $data['reason_code'], 'review_note' => $data['note'], 'reviewed_at' => now()]);
                 if ($locked->published_version_no === null) {
                     $locked->update(['status' => 'rejected', 'reviewed_by_admin_id' => $admin->id, 'review_reason_code' => $data['reason_code'], 'review_note' => $data['note']]);
                 }
-                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'post_review_rejected', '帖子审核未通过', $data['note'], 'post-review:'.$version->public_id.':rejected', false, ['in_app'], ['post_id' => $locked->public_id]);
             }
 
             return $locked->fresh();

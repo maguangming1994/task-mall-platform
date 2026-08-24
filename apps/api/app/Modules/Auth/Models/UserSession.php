@@ -14,6 +14,7 @@ class UserSession extends Model
         'public_id',
         'user_id',
         'user_device_id',
+        'user_identity_id',
         'refresh_token_hash',
         'issued_at',
         'expires_at',
@@ -56,5 +57,10 @@ class UserSession extends Model
     public function device(): BelongsTo
     {
         return $this->belongsTo(UserDevice::class, 'user_device_id');
+    }
+
+    public function identity(): BelongsTo
+    {
+        return $this->belongsTo(UserIdentity::class, 'user_identity_id');
     }
 }

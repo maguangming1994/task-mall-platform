@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Assets\Services\WalletWithdrawalService;
+use App\Modules\Notification\Services\NotificationBusinessEventService;
 use App\Modules\Notification\Services\NotificationService;
 use App\Modules\Operations\Models\DeploymentRelease;
 use App\Modules\Operations\Services\ProductionReadinessService;
@@ -90,6 +91,10 @@ Artisan::command('notifications:deliver {--limit=100}', function (NotificationSe
     $this->info('Delivered notifications: '.$service->deliverPending((int) $this->option('limit')));
 })->purpose('Deliver due external notification channel jobs with retry policy');
 
+Artisan::command('notifications:dispatch-business-events {--limit=100}', function (NotificationBusinessEventService $service) {
+    $this->info('Dispatched business notification events: '.$service->processPending((int) $this->option('limit')));
+})->purpose('Turn committed task, order and post state events into configured notifications');
+
 Artisan::command('notifications:run-campaigns {--limit=10}', function (NotificationService $service) {
     $this->info('Processed campaigns: '.$service->runCampaigns((int) $this->option('limit')));
 })->purpose('Generate subscribed marketing notifications for due campaigns');
@@ -141,6 +146,7 @@ Schedule::command('growth:scan-first-cash-orders --limit=500')->everyTenMinutes(
 Schedule::command('after-sales:close-expired --limit=500')->hourly()->withoutOverlapping();
 Schedule::command('refunds:sync-provider --limit=100')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('withdrawals:sync-payouts --limit=100')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('notifications:dispatch-business-events --limit=500')->everyMinute()->withoutOverlapping();
 Schedule::command('notifications:deliver --limit=500')->everyMinute()->withoutOverlapping();
 Schedule::command('notifications:run-campaigns --limit=20')->everyMinute()->withoutOverlapping();
 Schedule::command('system:consistency-audit --strict')->dailyAt('04:10')->withoutOverlapping();
