@@ -30,6 +30,17 @@ export interface NotificationListResponse {
 }
 
 export interface NotificationPreference { in_app_enabled: boolean; wechat_enabled: boolean; sms_enabled: boolean; marketing_subscribed: boolean; quiet_hours_start: string; quiet_hours_end: string }
+export type NotificationSubscriptionContext = 'task' | 'order' | 'community'
+export interface WechatSubscriptionGrantState { template_id: string; status: string; available_count: number }
+export interface WechatSubscriptionResult { template_id: string; status: string }
+export interface WechatSubscriptionGroup {
+  context: NotificationSubscriptionContext
+  label: string
+  template_ids: string[]
+  scenes: string[]
+  grants: WechatSubscriptionGrantState[]
+}
+export interface WechatSubscriptionOptions { configured: boolean; groups: WechatSubscriptionGroup[] }
 
 export function listNotifications(token: string, filters: { page?: number; page_size?: number; category?: NotificationCategory; unread_only?: boolean } = {}) {
   const suffix = buildQueryString({
@@ -47,3 +58,7 @@ export function markAllNotificationsRead(token: string, category?: NotificationC
 }
 export function getNotificationPreference(token: string) { return apiRequest<NotificationPreference>({ path: '/notification-preferences', accessToken: token }) }
 export function updateNotificationPreference(token: string, data: NotificationPreference) { return apiRequest<NotificationPreference>({ path: '/notification-preferences', method: 'PUT', accessToken: token, data: data as unknown as Record<string, unknown> }) }
+export function getWechatSubscriptionOptions(token: string) { return apiRequest<WechatSubscriptionOptions>({ path: '/notification-subscriptions/wechat', accessToken: token }) }
+export function recordWechatSubscriptionResults(token: string, results: WechatSubscriptionResult[], requestId: string) {
+  return apiRequest<WechatSubscriptionOptions>({ path: '/notification-subscriptions/wechat', method: 'POST', accessToken: token, data: { request_id: requestId, results } as unknown as Record<string, unknown> })
+}

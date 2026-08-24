@@ -4,11 +4,15 @@ namespace App\Modules\Notification\Http\Controllers;
 
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Modules\Auth\Models\UserIdentity;
+use App\Modules\Auth\Models\UserSession;
 use App\Modules\Notification\Models\Notification;
 use App\Modules\Notification\Models\NotificationPreference;
 use App\Modules\Notification\Services\NotificationService;
+use App\Modules\Notification\Services\WechatSubscriptionGrantService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class NotificationController extends Controller
 {
@@ -78,6 +82,36 @@ class NotificationController extends Controller
         $preference->update($data);
 
         return ApiResponse::success($this->preferenceData($preference->fresh()));
+    }
+
+    public function wechatSubscriptionOptions(Request $request, WechatSubscriptionGrantService $service): JsonResponse
+    {
+        return ApiResponse::success($service->options($this->wechatIdentity($request)));
+    }
+
+    public function recordWechatSubscriptions(Request $request, WechatSubscriptionGrantService $service): JsonResponse
+    {
+        $data = $request->validate([
+            'request_id' => ['required', 'string', 'min:8', 'max:100', 'regex:/^[A-Za-z0-9:_-]+$/'],
+            'results' => ['required', 'array', 'min:1', 'max:3'],
+            'results.*.template_id' => ['required', 'string', 'max:160', 'distinct:strict'],
+            'results.*.status' => ['required', 'in:accept,acceptWithAudio,reject,ban,filter'],
+        ]);
+
+        return ApiResponse::success($service->record($this->wechatIdentity($request), $data['results'], $data['request_id']));
+    }
+
+    private function wechatIdentity(Request $request): UserIdentity
+    {
+        $session = $request->attributes->get('auth_session');
+        $identity = $session instanceof UserSession && $session->user_identity_id !== null
+            ? UserIdentity::query()->find($session->user_identity_id)
+            : null;
+        if ($identity === null || $identity->user_id !== $request->user()->id || $identity->provider !== 'wechat_mini') {
+            throw ValidationException::withMessages(['subscription' => '请在微信小程序中重新登录后再授权订阅消息。']);
+        }
+
+        return $identity;
     }
 
     private function data(Notification $notification): array

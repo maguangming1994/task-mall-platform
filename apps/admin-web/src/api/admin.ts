@@ -721,6 +721,13 @@ export interface ManagedNotificationTemplate {
   id: string; scene_code: string; channel: string; status: string; current_version_no: number;
   current_version: ManagedNotificationTemplateVersion | null; versions?: ManagedNotificationTemplateVersion[]; updated_at: string | null
 }
+export interface ManagedNotificationRule {
+  scene_code: string; domain: 'task' | 'order' | 'community'; domain_name: string; name: string; category: string;
+  enabled: boolean; channels: string[]; allowed_channels: string[]; allowed_variables: string[]; essential: boolean;
+  deep_link: string; subscription_context: string; sort: number; lock_version: number; updated_at: string | null;
+  default_template: { subject: string; body: string };
+  templates: Record<string, { configured: boolean; ready: boolean; template_id: string | null; version_no: number | null; provider_template_id: string | null }>
+}
 export interface ManagedNotificationCampaign {
   id: string; name: string; title: string; body: string; channels: string[]; status: string;
   recipient_count: number; sent_count: number; scheduled_at: string | null; completed_at: string | null; created_at: string
@@ -1510,6 +1517,8 @@ export async function updateFeatureFlag(code: string, input: Record<string, unkn
 export async function listNotificationTemplates(): Promise<{ items: ManagedNotificationTemplate[] }> { return request('/admin/notification-templates') }
 export async function getNotificationTemplate(id: string): Promise<ManagedNotificationTemplate> { return request(`/admin/notification-templates/${encodeURIComponent(id)}`) }
 export async function saveNotificationTemplate(input: Record<string, unknown>): Promise<ManagedNotificationTemplate> { return request('/admin/notification-templates', { method: 'POST', body: JSON.stringify(input) }) }
+export async function listNotificationRules(): Promise<{ items: ManagedNotificationRule[] }> { return request('/admin/notification-rules') }
+export async function updateNotificationRule(sceneCode: string, input: Record<string, unknown>): Promise<ManagedNotificationRule> { return request(`/admin/notification-rules/${encodeURIComponent(sceneCode)}`, { method: 'PUT', body: JSON.stringify(input) }) }
 export async function listNotificationCampaigns(): Promise<{ items: ManagedNotificationCampaign[] }> { return request('/admin/notification-campaigns') }
 export async function createNotificationCampaign(input: Record<string, unknown>): Promise<ManagedNotificationCampaign> { return request('/admin/notification-campaigns', { method: 'POST', headers: { 'Idempotency-Key': `campaign-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify(input) }) }
 export async function cancelNotificationCampaign(id: string, reason: string): Promise<ManagedNotificationCampaign> { return request(`/admin/notification-campaigns/${encodeURIComponent(id)}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) }) }

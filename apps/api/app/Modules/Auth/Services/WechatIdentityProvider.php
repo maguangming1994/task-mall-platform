@@ -11,21 +11,22 @@ class WechatIdentityProvider
 {
     public function __construct(private readonly WechatProviderSettingsService $settings) {}
 
-    /** @return array{openid:string,unionid:?string} */
+    /** @return array{openid:string,unionid:?string,app_id_hash:string} */
     public function exchange(string $channel, string $code): array
     {
         $provider = $this->providerName($channel);
         $configuration = $this->settings->effective($provider);
-        if ($configuration['driver'] === 'local') {
-            return $this->exchangeLocally($code);
-        }
-        if ($configuration['driver'] !== 'wechat') {
+        if ($configuration['driver'] !== 'local' && $configuration['driver'] !== 'wechat') {
             throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务当前不可用。', 503);
         }
 
-        return $provider === 'mini'
-            ? $this->exchangeMiniCode($code, $configuration)
-            : $this->exchangeOfficialAccountCode($code, $configuration);
+        $identity = $configuration['driver'] === 'local'
+            ? $this->exchangeLocally($code)
+            : ($provider === 'mini'
+                ? $this->exchangeMiniCode($code, $configuration)
+                : $this->exchangeOfficialAccountCode($code, $configuration));
+
+        return [...$identity, 'app_id_hash' => hash('sha256', (string) $configuration['app_id'])];
     }
 
     public function available(string $channel): bool

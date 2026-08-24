@@ -16,6 +16,7 @@ use App\Modules\Task\Services\TaskSubmissionService;
 use Database\Seeders\RbacSeeder;
 use Database\Seeders\SystemSettingDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -63,6 +64,9 @@ class TaskAppealRiskReferralPublisherFlowTest extends TestCase
 
         $this->assertSame('appeal_rejected', $claim->fresh()->status);
         $this->assertSame('released', $claim->fresh()->slot_status);
+        $notificationBody = (string) DB::table('notifications')->where('user_id', $user->id)->where('scene_code', 'task_appeal_rejected')->value('body');
+        $this->assertStringContainsString('复核后仍无法证实完成', $notificationBody);
+        $this->assertStringNotContainsString('材料无法核验', $notificationBody);
         $this->assertDatabaseMissing('task_reward_reservations', ['task_claim_id' => $claim->id, 'status' => 'reserved']);
     }
 

@@ -74,7 +74,9 @@ class CommunityModerationService
                 UserRestriction::query()->create(['user_id' => $locked->user_id, 'moderation_action_id' => $action->id, 'restriction_type' => $restriction, 'reason_code' => $data['reason_code'], 'status' => 'active', 'starts_at' => now(), 'ends_at' => empty($data['restriction_days']) ? null : now()->addDays((int) $data['restriction_days'])]);
             }
             ContentReport::query()->where(['content_type' => $type, 'content_id' => $locked->id])->where('status', 'submitted')->update(['status' => 'resolved', 'resolved_at' => now()]);
-            $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'content_moderated', '社区内容处置通知', $data['note'], 'content-moderation:'.$action->public_id, true);
+            if ($type !== 'post') {
+                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'content_moderated', '社区内容处置通知', $data['note'], 'content-moderation:'.$action->public_id, true);
+            }
 
             return $action;
         });
@@ -127,7 +129,9 @@ class CommunityModerationService
             } else {
                 $locked->update(['status' => 'rejected', 'reviewed_by_admin_id' => $admin->id, 'review_note' => $data['note'], 'reviewed_at' => now()]);
             }
-            $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'content_appeal_reviewed', '社区申诉结果', $data['note'], 'content-appeal-review:'.$locked->public_id, true);
+            if ($action->content_type !== 'post') {
+                $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'content_appeal_reviewed', '社区申诉结果', $data['note'], 'content-appeal-review:'.$locked->public_id, true);
+            }
 
             return $locked->fresh();
         });

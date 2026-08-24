@@ -20,6 +20,16 @@
     <view v-if="showSettings && preference" class="settings-card">
       <view class="settings-head"><view class="settings-icon">信</view><view><text>通知偏好</text><text>外部渠道可关闭，站内关键记录始终保留</text></view></view>
       <view class="setting-row"><view class="setting-copy"><text>微信通知</text><text>接收任务、订单与资产提醒</text></view><switch color="#16839b" :checked="preference.wechat_enabled" :disabled="savingPreference" @change="changePreference('wechat_enabled', $event)" /></view>
+      <!-- #ifdef MP-WEIXIN -->
+      <view v-if="wechatSubscriptions?.configured" class="subscription-section">
+        <view class="subscription-heading"><text>小程序订阅提醒</text><text>微信一次授权对应一次后续服务通知</text></view>
+        <view class="subscription-actions">
+          <button v-for="group in wechatSubscriptions.groups" :key="group.context" class="subscription-button" :loading="subscribingContext === group.context" :disabled="Boolean(subscribingContext)" @click="subscribeWechat(group)">
+            <text>{{ group.label }}</text><text>{{ availableGrantCount(group) > 0 ? `可用 ${availableGrantCount(group)} 次` : '点击授权' }}</text>
+          </button>
+        </view>
+      </view>
+      <!-- #endif -->
       <view class="setting-row"><view class="setting-copy"><text>短信通知</text><text>用于重要状态及安全验证</text></view><switch color="#16839b" :checked="preference.sms_enabled" :disabled="savingPreference" @change="changePreference('sms_enabled', $event)" /></view>
       <view class="setting-row"><view class="setting-copy"><text>营销订阅</text><text>接收校园活动与优惠推荐</text></view><switch color="#16839b" :checked="preference.marketing_subscribed" :disabled="savingPreference" @change="changePreference('marketing_subscribed', $event)" /></view>
       <view class="quiet-row">
@@ -88,14 +98,21 @@ import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import {
   getNotificationPreference,
+  getWechatSubscriptionOptions,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
   updateNotificationPreference,
+  recordWechatSubscriptionResults,
   type AppNotification,
   type NotificationCategory,
   type NotificationPreference,
+  type NotificationSubscriptionContext,
+  type WechatSubscriptionGroup,
+  type WechatSubscriptionOptions,
+  type WechatSubscriptionResult,
 } from '@/api/notifications'
+import { ApiError } from '@/api/http'
 import AppTabBar from '@/components/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
@@ -104,10 +121,12 @@ type CategoryFilter = '' | NotificationCategory
 type CommunityFilter = 'all' | 'comments' | 'likes' | 'reviews'
 type TogglePreferenceKey = 'wechat_enabled' | 'sms_enabled' | 'marketing_subscribed'
 type QuietHourKey = 'quiet_hours_start' | 'quiet_hours_end'
+interface PendingWechatSubscriptionResults { request_id: string; results: WechatSubscriptionResult[] }
 
 const auth = useAuthStore()
 const items = ref<AppNotification[]>([])
 const preference = ref<NotificationPreference | null>(null)
+const wechatSubscriptions = ref<WechatSubscriptionOptions | null>(null)
 const activeCategory = ref<CategoryFilter>('')
 const communityFilter = ref<CommunityFilter>('all')
 const unreadOnly = ref(false)
@@ -121,6 +140,9 @@ const loading = ref(false)
 const loadingMore = ref(false)
 const markingAll = ref(false)
 const savingPreference = ref(false)
+const subscribingContext = ref<NotificationSubscriptionContext | ''>('')
+const loadingWechatSubscriptions = ref(false)
+const subscriptionCursors = ref<Partial<Record<NotificationSubscriptionContext, number>>>({})
 const showSettings = ref(false)
 const errorMessage = ref('')
 let requestVersion = 0
@@ -162,13 +184,147 @@ onReachBottom(() => { if (hasMore.value && !loadingMore.value) void loadMore() }
 
 async function initialize() {
   if (!auth.accessToken) { navigateToLogin(); return }
-  await Promise.all([loadNotifications(true), loadPreference()])
+  await Promise.all([loadNotifications(true), loadPreference(), loadWechatSubscriptions()])
 }
 
 async function loadPreference() {
   if (!auth.accessToken || preference.value) return
   try { preference.value = await getNotificationPreference(auth.accessToken) }
   catch (error) { toast(error, '通知偏好加载失败') }
+}
+
+async function loadWechatSubscriptions() {
+  // #ifndef MP-WEIXIN
+  return
+  // #endif
+  if (!auth.accessToken || loadingWechatSubscriptions.value) return
+  loadingWechatSubscriptions.value = true
+  try {
+    const pendingStatus = await syncPendingWechatSubscriptionResults()
+    if (pendingStatus === 'synced') return
+    if (pendingStatus === 'discarded') uni.showToast({ title: '订阅模板已更新，请重新授权', icon: 'none' })
+    wechatSubscriptions.value = await getWechatSubscriptionOptions(auth.accessToken)
+  } catch (error) {
+    wechatSubscriptions.value = null
+    toast(error, '订阅配置加载失败')
+  } finally {
+    loadingWechatSubscriptions.value = false
+  }
+}
+
+async function subscribeWechat(group: WechatSubscriptionGroup) {
+  if (!auth.accessToken || subscribingContext.value || !group.template_ids.length) return
+  subscribingContext.value = group.context
+  try {
+    // #ifdef MP-WEIXIN
+    const pendingStatus = await syncPendingWechatSubscriptionResults()
+    if (pendingStatus === 'pending') {
+      uni.showToast({ title: '上次微信授权结果仍待同步', icon: 'none' })
+      return
+    }
+    if (pendingStatus === 'discarded') {
+      wechatSubscriptions.value = await getWechatSubscriptionOptions(auth.accessToken)
+      uni.showToast({ title: '订阅模板已更新，请重新点击授权', icon: 'none' })
+    }
+
+    const currentGroup = wechatSubscriptions.value?.groups.find((item) => item.context === group.context) ?? group
+    const templateIds = selectableWechatTemplateIds(currentGroup)
+    if (!templateIds.length) {
+      uni.showToast({ title: '当前提醒已有可用授权', icon: 'none' })
+      return
+    }
+
+    let result: Awaited<ReturnType<typeof uni.requestSubscribeMessage>>
+    try {
+      result = await uni.requestSubscribeMessage({ tmplIds: templateIds })
+    } catch (error) {
+      toast(error, '微信订阅授权未完成')
+      return
+    }
+
+    const statuses: WechatSubscriptionResult[] = templateIds.map((templateId) => ({ template_id: templateId, status: String((result as unknown as Record<string, unknown>)[templateId] || 'reject') }))
+    const requestId = `wechat-subscription-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+    uni.setStorageSync(pendingWechatSubscriptionStorageKey(), { request_id: requestId, results: statuses } satisfies PendingWechatSubscriptionResults)
+    const syncStatus = await syncPendingWechatSubscriptionResults()
+    if (syncStatus === 'pending') {
+      uni.showToast({ title: '微信授权已完成，结果稍后自动同步', icon: 'none' })
+      return
+    }
+    if (syncStatus === 'discarded') {
+      wechatSubscriptions.value = await getWechatSubscriptionOptions(auth.accessToken)
+      uni.showToast({ title: '订阅模板已更新，请重新授权', icon: 'none' })
+      return
+    }
+    const accepted = statuses.filter((item) => item.status === 'accept' || item.status === 'acceptWithAudio').length
+    uni.showToast({ title: accepted > 0 ? '订阅授权成功' : '未开启订阅提醒', icon: accepted > 0 ? 'success' : 'none' })
+    // #endif
+    // #ifndef MP-WEIXIN
+    uni.showToast({ title: '请在微信小程序中完成订阅授权', icon: 'none' })
+    // #endif
+  } catch (error) { toast(error, '订阅操作失败') }
+  finally { subscribingContext.value = '' }
+}
+
+function availableGrantCount(group: WechatSubscriptionGroup) { return group.grants.reduce((sum, grant) => sum + grant.available_count, 0) }
+
+function pendingWechatSubscriptionStorageKey() { return `task_mall_wechat_subscription_results:${auth.user?.id ?? 'anonymous'}` }
+function wechatSubscriptionCursorStorageKey(context: NotificationSubscriptionContext) { return `task_mall_wechat_subscription_cursor:${auth.user?.id ?? 'anonymous'}:${context}` }
+
+function pendingWechatSubscriptionResults(): PendingWechatSubscriptionResults | null {
+  const stored = uni.getStorageSync(pendingWechatSubscriptionStorageKey()) as unknown
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return null
+  const candidate = stored as Record<string, unknown>
+  if (typeof candidate.request_id !== 'string' || !candidate.request_id.trim() || !Array.isArray(candidate.results)) return null
+  const results = candidate.results.filter((item): item is WechatSubscriptionResult => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return false
+    const result = item as Record<string, unknown>
+    return typeof result.template_id === 'string' && Boolean(result.template_id.trim()) && typeof result.status === 'string' && Boolean(result.status.trim())
+  })
+  return results.length === candidate.results.length && results.length ? { request_id: candidate.request_id, results } : null
+}
+
+async function syncPendingWechatSubscriptionResults(): Promise<'none' | 'synced' | 'discarded' | 'pending'> {
+  const pending = pendingWechatSubscriptionResults()
+  if (!pending || !auth.accessToken) return 'none'
+  try {
+    wechatSubscriptions.value = await recordWechatSubscriptionResults(auth.accessToken, pending.results, pending.request_id)
+    uni.removeStorageSync(pendingWechatSubscriptionStorageKey())
+    return 'synced'
+  } catch (error) {
+    if (!isTerminalWechatSubscriptionSyncFailure(error)) return 'pending'
+    uni.removeStorageSync(pendingWechatSubscriptionStorageKey())
+    return 'discarded'
+  }
+}
+
+function isTerminalWechatSubscriptionSyncFailure(error: unknown) {
+  return error instanceof ApiError
+    && error.statusCode >= 400
+    && error.statusCode < 500
+    && ![401, 408, 425, 429].includes(error.statusCode)
+}
+
+function selectableWechatTemplateIds(group: WechatSubscriptionGroup) {
+  const grants = new Map(group.grants.map((grant) => [grant.template_id, grant]))
+  const templateIds = [...new Set(group.template_ids)]
+  const neverRequested = templateIds.filter((templateId) => {
+    const grant = grants.get(templateId)
+    return !grant || grant.status === 'not_requested'
+  })
+  const exhausted = templateIds.filter((templateId) => {
+    const grant = grants.get(templateId)
+    return grant && grant.status !== 'not_requested' && grant.status !== 'ban' && grant.available_count <= 0
+  })
+  const selected = neverRequested.slice(0, 3)
+  if (selected.length === 3 || !exhausted.length) return selected
+
+  const storedCursor = Number(uni.getStorageSync(wechatSubscriptionCursorStorageKey(group.context)))
+  const cursor = (subscriptionCursors.value[group.context] ?? (Number.isInteger(storedCursor) && storedCursor >= 0 ? storedCursor : 0)) % exhausted.length
+  const rotated = [...exhausted.slice(cursor), ...exhausted.slice(0, cursor)]
+  const exhaustedSelection = rotated.slice(0, 3 - selected.length)
+  subscriptionCursors.value[group.context] = (cursor + exhaustedSelection.length) % exhausted.length
+  uni.setStorageSync(wechatSubscriptionCursorStorageKey(group.context), subscriptionCursors.value[group.context])
+  return [...selected, ...exhaustedSelection]
 }
 
 async function loadNotifications(reset: boolean) {
@@ -325,6 +481,9 @@ function notificationTarget(item: AppNotification): string {
   }
   if (item.category === 'asset') return '/pages/assets/index'
   if (item.category === 'community') {
+    if (['post_review_pending', 'post_review_rejected', 'post_hidden', 'post_deleted', 'post_appeal_submitted', 'post_appeal_rejected'].includes(item.scene_code)) {
+      return '/pages/community/index?view=mine'
+    }
     const postId = firstString(data, ['post_id', 'post_public_id'])
     if (postId) return `/pages/community-detail/index?id=${encodeURIComponent(postId)}`
     const activityId = firstString(data, ['activity_id', 'activity_public_id'])
@@ -356,5 +515,6 @@ function toast(error: unknown, fallback: string) { uni.showToast({ title: error 
 .community-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12rpx;margin-top:22rpx}.community-shortcut{min-width:0;padding:18rpx 14rpx;border:1rpx solid #d4e6e7;border-radius:22rpx;background:#fff;box-shadow:0 10rpx 22rpx rgba(25,72,89,.06);box-sizing:border-box;transition:transform .16s ease}.community-shortcut.active{transform:translateY(-3rpx);box-shadow:0 14rpx 26rpx rgba(25,72,89,.10)}.shortcut-comments{background:#eefbf2}.shortcut-likes{background:#fff4ef}.shortcut-reviews{background:#fff9e4}.shortcut-top{display:flex;align-items:center;justify-content:space-between;gap:8rpx}.shortcut-icon{display:flex;align-items:center;justify-content:center;width:46rpx;height:46rpx;border-radius:14rpx;background:#fff;color:#26756f;font-size:19rpx;font-weight:900}.shortcut-count{color:#1d4e5a;font-size:32rpx;font-weight:900}.shortcut-label,.shortcut-hint{display:block}.shortcut-label{margin-top:13rpx;color:#264a54;font-size:21rpx;font-weight:850}.shortcut-hint{margin-top:5rpx;overflow:hidden;color:#71838a;font-size:16rpx;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
 .notice-card{background:#fff}.notice-card.unread{border-left:6rpx solid #ef9587}.notice-card.unread::after{background:#ef9587}.category-mark{border:0;background:#e5f6f3;color:#167d76}.tone-asset{background:#fff3df;color:#b46600}.tone-order{background:#eeeaff;color:#694cc8}.tone-after_sale{background:#fff0ef;color:#ce4d55}.tone-community{background:#e9f8ec;color:#33823e}.notice-title{color:#1d4150;font-weight:850}.category-tag{background:#f2f6f5;color:#61747b;font-weight:700}.detail-link{color:#177f84;font-weight:850}.retry-button{border:0;background:#2a9e98;box-shadow:0 8rpx 16rpx rgba(42,158,152,.18);color:#fff;font-weight:850}
 .settings-card{padding:22rpx;border-radius:27rpx}.settings-head{margin-bottom:16rpx}.setting-row,.quiet-row{min-height:74rpx;margin-top:10rpx;padding:12rpx 15rpx;border:0;border-radius:17rpx;background:#f5f9fa;box-sizing:border-box}.setting-copy{min-width:0;flex:1}.setting-copy>text{display:block}.setting-copy>text:first-child{color:#183246;font-size:21rpx;font-weight:850}.setting-copy>text:last-child{margin-top:4rpx;color:#7a8992;font-size:15rpx;line-height:1.35}.setting-row switch{flex:none;transform:scale(.82);transform-origin:right center}.quiet-row{align-items:center}.quiet-pickers{flex:none;gap:7rpx}.settings-note{padding:14rpx 4rpx 2rpx;font-size:16rpx}
+.subscription-section{margin-top:10rpx;padding:16rpx 15rpx;border-radius:17rpx;background:#f2f9f8}.subscription-heading>text{display:block}.subscription-heading>text:first-child{color:#183246;font-size:21rpx;font-weight:850}.subscription-heading>text:last-child{margin-top:4rpx;color:#71838a;font-size:15rpx}.subscription-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10rpx;margin-top:14rpx}.subscription-button{min-width:0;height:92rpx;margin:0;padding:12rpx 8rpx;border:1rpx solid #cfe3e2;border-radius:14rpx;background:#fff;color:#1f5f61;font-size:17rpx;line-height:1.3}.subscription-button::after{border:0}.subscription-button>text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.subscription-button>text:first-child{font-weight:850}.subscription-button>text:last-child{margin-top:5rpx;color:#6f8588;font-size:14rpx}
 @media screen and (max-width:360px){.quiet-row{align-items:flex-start;flex-direction:column}.quiet-pickers{align-self:stretch;justify-content:flex-end}}
 </style>

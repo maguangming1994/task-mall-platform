@@ -4,6 +4,8 @@ namespace App\Modules\Notification\Services;
 
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Notification\Exceptions\PermanentNotificationDeliveryException;
+use App\Modules\Notification\Exceptions\SkippedNotificationDeliveryException;
 use App\Modules\Notification\Models\Notification;
 use App\Modules\Notification\Models\NotificationCampaign;
 use App\Modules\Notification\Models\NotificationPreference;
@@ -18,22 +20,70 @@ use Throwable;
 
 class NotificationService
 {
-    public function __construct(private readonly SystemSettingService $settings) {}
+    public function __construct(
+        private readonly SystemSettingService $settings,
+        private readonly WechatSubscriptionGrantService $wechatGrants,
+        private readonly WechatMiniSubscriptionSender $wechatMini,
+        private readonly NotificationSceneRegistry $sceneRegistry,
+        private readonly WechatMiniTemplateData $wechatTemplates,
+    ) {}
 
-    public function create(User $user, string $category, string $scene, string $title, string $body, string $eventKey, bool $essential = false, array $channels = ['in_app'], array $data = []): Notification
+    public function create(User $user, string $category, string $scene, string $title, string $body, string $eventKey, bool $essential = false, array $channels = ['in_app'], array $data = [], array $channelPayloads = []): Notification
     {
         $hash = hash('sha256', $eventKey);
         if ($notification = Notification::query()->where('event_key_hash', $hash)->first()) {
             return $notification;
         }
 
-        return DB::transaction(function () use ($user, $category, $scene, $title, $body, $hash, $essential, $channels, $data) {
+        return DB::transaction(function () use ($user, $category, $scene, $title, $body, $hash, $essential, $channels, $data, $channelPayloads) {
             $preference = $this->preference($user);
-            $notification = Notification::query()->create(['user_id' => $user->id, 'category' => $category, 'scene_code' => $scene, 'title' => $title, 'body' => $body, 'data' => $data, 'essential' => $essential, 'event_key_hash' => $hash]);
+            $notification = Notification::query()->firstOrCreate(
+                ['event_key_hash' => $hash],
+                ['user_id' => $user->id, 'category' => $category, 'scene_code' => $scene, 'title' => $title, 'body' => $body, 'data' => $data, 'essential' => $essential],
+            );
+            if (! $notification->wasRecentlyCreated) {
+                return $notification;
+            }
             foreach (array_unique(['in_app', ...$channels]) as $channel) {
-                $enabled = $channel === 'in_app' || $essential || (bool) $preference->{$channel.'_enabled'};
-                $status = $enabled ? ($channel === 'in_app' ? 'sent' : ($this->inQuietHours($preference) && ! $essential ? 'scheduled' : 'pending')) : 'skipped';
-                DB::table('notification_deliveries')->insert(['notification_id' => $notification->id, 'channel' => $channel, 'status' => $status, 'payload_snapshot' => json_encode(['scene' => $scene, 'title' => $title, 'body' => $body, 'data' => $data], JSON_UNESCAPED_UNICODE), 'next_retry_at' => $status === 'scheduled' ? $this->quietHoursEnd($preference) : null, 'sent_at' => $status === 'sent' ? now() : null, 'created_at' => now(), 'updated_at' => now()]);
+                $channelPayload = $channelPayloads[$channel] ?? [];
+                $payload = ['scene' => $scene, 'title' => $title, 'body' => $body, 'data' => $data, ...$channelPayload];
+                $wechatReservation = null;
+                $errorCode = null;
+                $errorMessage = null;
+                if (! $this->channelEnabled($channel, $preference)) {
+                    $status = 'skipped';
+                    $errorCode = 'CHANNEL_DISABLED';
+                    $errorMessage = '用户已关闭该外部通知渠道。';
+                } elseif (($channelPayload['configured'] ?? true) === false) {
+                    $status = 'skipped';
+                    $errorCode = 'CHANNEL_TEMPLATE_NOT_READY';
+                    $errorMessage = (string) ($channelPayload['config_error'] ?? '渠道模板配置不完整。');
+                } elseif ($channel === 'wechat_mini' && ($channelPayload['subscription_required'] ?? false)) {
+                    $wechatReservation = $this->wechatGrants->reserve($user, (string) ($channelPayload['provider_template_id'] ?? ''));
+                    if ($wechatReservation === null) {
+                        $status = 'skipped';
+                        $errorCode = 'WECHAT_SUBSCRIPTION_NOT_GRANTED';
+                        $errorMessage = '用户当前没有可用的微信订阅授权。';
+                    } else {
+                        $payload['wechat_identity_id'] = $wechatReservation['identity_id'];
+                        $payload['wechat_app_id_hash'] = $wechatReservation['app_id_hash'];
+                        $status = $this->inQuietHours($preference) && ! $essential ? 'scheduled' : 'pending';
+                    }
+                } else {
+                    $status = $channel === 'in_app' ? 'sent' : ($this->inQuietHours($preference) && ! $essential ? 'scheduled' : 'pending');
+                }
+                DB::table('notification_deliveries')->insert([
+                    'notification_id' => $notification->id,
+                    'channel' => $channel,
+                    'status' => $status,
+                    'payload_snapshot' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                    'next_retry_at' => $status === 'scheduled' ? $this->quietHoursEnd($preference) : null,
+                    'error_code' => $errorCode,
+                    'error_message' => $errorMessage,
+                    'sent_at' => $status === 'sent' ? now() : null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
 
             return $notification;
@@ -42,6 +92,7 @@ class NotificationService
 
     public function deliverPending(int $limit = 100): int
     {
+        DB::table('notification_deliveries')->where('status', 'processing')->where('updated_at', '<=', now()->subMinutes(10))->update(['status' => 'retrying', 'next_retry_at' => now(), 'updated_at' => now()]);
         $count = 0;
         DB::table('notification_deliveries')->whereIn('status', ['pending', 'retrying', 'scheduled'])->where(fn ($query) => $query->whereNull('next_retry_at')->orWhere('next_retry_at', '<=', now()))->orderBy('id')->limit($limit)->get()->each(function ($delivery) use (&$count): void {
             $count += $this->deliver((int) $delivery->id) ? 1 : 0;
@@ -130,12 +181,24 @@ class NotificationService
     public function saveTemplate(AdminUser $admin, array $data): NotificationTemplate
     {
         $variables = array_values(array_unique($data['allowed_variables']));
+        if ($this->sceneRegistry->has($data['scene_code'])) {
+            $definition = $this->sceneRegistry->get($data['scene_code']);
+            if (array_diff($variables, $definition['allowed_variables'])) {
+                throw ValidationException::withMessages(['allowed_variables' => '变量白名单包含当前业务场景不支持的字段。']);
+            }
+        }
         preg_match_all('/\{\{([a-zA-Z0-9_]+)\}\}/', $data['subject'].' '.$data['body'], $matches);
         if (array_diff(array_unique($matches[1]), $variables)) {
             throw ValidationException::withMessages(['body' => '模板使用了未加入白名单的变量。']);
         }
         if (preg_match('/\{\{[^}]+\}\}/', preg_replace('/\{\{[a-zA-Z0-9_]+\}\}/', '', $data['subject'].' '.$data['body']))) {
             throw ValidationException::withMessages(['body' => '模板变量格式无效。']);
+        }
+        if ($data['channel'] === 'wechat_mini' && $data['publish']) {
+            if (blank($data['provider_template_id'] ?? null)) {
+                throw ValidationException::withMessages(['provider_template_id' => '发布微信小程序订阅模板前必须填写微信模板 ID。']);
+            }
+            $this->wechatTemplates->decode($data['body']);
         }
 
         return DB::transaction(function () use ($admin, $data, $variables) {
@@ -156,30 +219,66 @@ class NotificationService
 
     private function deliver(int $id): bool
     {
-        return DB::transaction(function () use ($id) {
+        $delivery = DB::transaction(function () use ($id) {
             $delivery = DB::table('notification_deliveries')->lockForUpdate()->find($id);
             if (! $delivery || ! in_array($delivery->status, ['pending', 'retrying', 'scheduled'], true)) {
-                return false;
+                return null;
             }
-            try {
-                if (config('notifications.driver') === 'local') {
-                    $providerId = 'local-'.Str::ulid();
-                } else {
-                    $response = Http::withToken((string) config('notifications.webhook.token'))->timeout((int) config('notifications.webhook.timeout_seconds'))->post((string) config('notifications.webhook.endpoint'), ['channel' => $delivery->channel, 'payload' => json_decode($delivery->payload_snapshot, true)]);
-                    $response->throw();
-                    $providerId = (string) ($response->json('message_id') ?: Str::ulid());
-                }
-                DB::table('notification_deliveries')->where('id', $id)->update(['status' => 'sent', 'provider_message_id' => $providerId, 'sent_at' => now(), 'next_retry_at' => null, 'updated_at' => now()]);
+            DB::table('notification_deliveries')->where('id', $id)->update(['status' => 'processing', 'updated_at' => now()]);
 
-                return true;
-            } catch (Throwable $exception) {
-                $retry = $delivery->retry_count + 1;
-                $max = (int) $this->settings->read('notifications.external_retry_count')['value'];
-                DB::table('notification_deliveries')->where('id', $id)->update(['status' => $retry >= $max ? 'failed' : 'retrying', 'retry_count' => $retry, 'next_retry_at' => $retry >= $max ? null : now()->addMinutes(2 ** $retry), 'error_code' => class_basename($exception), 'error_message' => Str::limit($exception->getMessage(), 500), 'updated_at' => now()]);
-
-                return false;
-            }
+            return $delivery;
         });
+        if ($delivery === null) {
+            return false;
+        }
+
+        try {
+            $payload = json_decode($delivery->payload_snapshot, true) ?: [];
+            $notification = Notification::query()->findOrFail($delivery->notification_id);
+            if ($delivery->channel === 'wechat_mini' && ($payload['provider'] ?? null) === 'wechat_mini_subscription') {
+                $providerId = $this->wechatMini->send(User::query()->findOrFail($notification->user_id), $payload);
+            } elseif (config('notifications.driver') === 'local') {
+                $providerId = 'local-'.Str::ulid();
+            } else {
+                $response = Http::withToken((string) config('notifications.webhook.token'))
+                    ->timeout((int) config('notifications.webhook.timeout_seconds'))
+                    ->post((string) config('notifications.webhook.endpoint'), [
+                        'delivery_id' => $delivery->id,
+                        'notification_id' => $notification->public_id,
+                        'channel' => $delivery->channel,
+                        'payload' => $payload,
+                    ]);
+                $response->throw();
+                $providerId = (string) ($response->json('message_id') ?: Str::ulid());
+            }
+            DB::table('notification_deliveries')->where('id', $id)->where('status', 'processing')->update(['status' => 'sent', 'provider_message_id' => $providerId, 'sent_at' => now(), 'next_retry_at' => null, 'error_code' => null, 'error_message' => null, 'updated_at' => now()]);
+
+            return true;
+        } catch (SkippedNotificationDeliveryException $exception) {
+            DB::table('notification_deliveries')->where('id', $id)->where('status', 'processing')->update(['status' => 'skipped', 'error_code' => $exception->errorCode, 'error_message' => Str::limit($exception->getMessage(), 500), 'next_retry_at' => null, 'updated_at' => now()]);
+
+            return false;
+        } catch (PermanentNotificationDeliveryException $exception) {
+            DB::table('notification_deliveries')->where('id', $id)->where('status', 'processing')->update(['status' => 'failed', 'retry_count' => $delivery->retry_count + 1, 'error_code' => $exception->errorCode, 'error_message' => Str::limit($exception->getMessage(), 500), 'next_retry_at' => null, 'updated_at' => now()]);
+
+            return false;
+        } catch (Throwable $exception) {
+            $retry = $delivery->retry_count + 1;
+            $max = (int) $this->settings->read('notifications.external_retry_count')['value'];
+            DB::table('notification_deliveries')->where('id', $id)->where('status', 'processing')->update(['status' => $retry >= $max ? 'failed' : 'retrying', 'retry_count' => $retry, 'next_retry_at' => $retry >= $max ? null : now()->addMinutes(2 ** $retry), 'error_code' => class_basename($exception), 'error_message' => Str::limit($exception->getMessage(), 500), 'updated_at' => now()]);
+
+            return false;
+        }
+    }
+
+    private function channelEnabled(string $channel, NotificationPreference $preference): bool
+    {
+        return match ($channel) {
+            'in_app' => true,
+            'wechat', 'wechat_mini', 'wechat_oa' => (bool) $preference->wechat_enabled,
+            'sms' => (bool) $preference->sms_enabled,
+            default => false,
+        };
     }
 
     private function inQuietHours(NotificationPreference $preference): bool

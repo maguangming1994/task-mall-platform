@@ -90,6 +90,8 @@ class CheckoutOrderCreationFlowTest extends TestCase
         $this->assertDatabaseCount('order_batches', 1);
         $this->assertDatabaseCount('orders', 2);
         $this->assertDatabaseCount('order_items', 2);
+        $this->assertDatabaseHas('notifications', ['user_id' => $user->id, 'scene_code' => 'order_pending_payment']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $user->id, 'scene_code' => 'order_paid']);
         $this->assertDatabaseCount('inventory_reservations', 2);
         $this->assertDatabaseHas('inventory_reservations', ['status' => 'reserved']);
         $this->assertDatabaseHas('inventory_reservations', ['status' => 'consumed']);
@@ -505,6 +507,8 @@ class CheckoutOrderCreationFlowTest extends TestCase
         $this->withToken($admin)->withHeaders(['Idempotency-Key' => 'fulfillment-good'])->postJson('/api/v1/admin/orders/'.$order['id'].'/fulfillments', ['method' => 'no_logistics', 'no_logistics_reason' => '数字权益已在账户内交付。', 'items' => [['order_item_id' => $itemId, 'quantity' => 1]]])->assertCreated();
         $this->withToken($admin)->withHeaders(['Idempotency-Key' => 'fulfillment-over'])->postJson('/api/v1/admin/orders/'.$order['id'].'/fulfillments', ['method' => 'no_logistics', 'no_logistics_reason' => '重复交付测试。', 'items' => [['order_item_id' => $itemId, 'quantity' => 1]]])->assertUnprocessable();
         $this->assertDatabaseHas('orders', ['public_id' => $order['id'], 'status' => 'fulfilled']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $user->id, 'scene_code' => 'order_fulfilled']);
+        $this->assertSame(0, DB::table('notifications')->where('user_id', $user->id)->where('scene_code', 'order_fulfillment_updated')->count());
         $this->userRequest($token)->postJson('/api/v1/orders/'.$order['id'].'/complete')->assertOk()->assertJsonPath('data.status', 'completed');
         $this->assertDatabaseHas('orders', ['public_id' => $order['id'], 'status' => 'completed']);
     }
@@ -637,6 +641,9 @@ class CheckoutOrderCreationFlowTest extends TestCase
         $this->withToken($admin)->postJson('/api/v1/admin/refunds/'.$first->json('data.id').'/review', [
             'decision' => 'approve', 'note' => '先完成部分退款。',
         ])->assertOk();
+        $partialRefundBody = (string) DB::table('notifications')->where('user_id', $user->id)->where('scene_code', 'order_partially_refunded')->value('body');
+        $this->assertStringContainsString(number_format($first->json('data.refund_cash_amount') / 100, 2, '.', ''), $partialRefundBody);
+        $this->assertStringContainsString('积分 '.$first->json('data.refund_points'), $partialRefundBody);
         $this->assertDatabaseHas('refunds', ['public_id' => $first->json('data.id'), 'coupon_returned' => false]);
         $this->assertDatabaseHas('user_coupons', ['id' => $coupon->id, 'status' => 'used']);
         $this->assertDatabaseHas('orders', ['public_id' => $order['id'], 'status' => 'partially_refunded']);
@@ -658,6 +665,8 @@ class CheckoutOrderCreationFlowTest extends TestCase
             'decision' => 'approve', 'note' => '累计已达到整单全额退款。',
         ])->assertOk();
         $this->assertDatabaseHas('refunds', ['public_id' => $second->json('data.id'), 'coupon_returned' => true]);
+        $this->assertSame(1, DB::table('notifications')->where('user_id', $user->id)->where('scene_code', 'order_partially_refunded')->count());
+        $this->assertSame(1, DB::table('notifications')->where('user_id', $user->id)->where('scene_code', 'order_refunded')->count());
 
         $returned = UserCoupon::query()->findOrFail($coupon->id);
         $this->assertSame('unused', $returned->status);

@@ -17,6 +17,7 @@ use App\Modules\Upload\Models\UploadedFile;
 use Database\Seeders\RbacSeeder;
 use Database\Seeders\SystemSettingDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -114,6 +115,7 @@ class TaskSubmissionReviewRewardFlowTest extends TestCase
         $this->assertSame('reviewing', $claim->fresh()->status);
         $this->assertSame('under_review', $claim->fresh()->execution_status);
         $this->assertSame('reviewing', $claim->fresh()->review_status);
+        $this->assertDatabaseHas('notifications', ['user_id' => $user->id, 'scene_code' => 'task_review_started']);
         $this->withToken($token)->getJson('/api/v1/admin/task-submissions?status=reviewing')
             ->assertOk()
             ->assertJsonPath('data.items.0.id', $submission->public_id)
@@ -232,6 +234,10 @@ class TaskSubmissionReviewRewardFlowTest extends TestCase
         $this->assertSame([20, 150], TaskRewardBudget::query()->where('task_id', $task->id)->orderBy('id')->pluck('issued_amount')->all());
         $this->assertSame(20, $user->assetAccount()->firstOrFail()->points_available);
         $this->assertSame(150, $user->assetAccount()->firstOrFail()->wallet_available_cents);
+        $this->assertSame(0, DB::table('notifications')->where('user_id', $user->id)->where('scene_code', 'task_review_started')->count());
+        $rewardBody = (string) DB::table('notifications')->where('user_id', $user->id)->where('scene_code', 'task_reward_delivered')->value('body');
+        $this->assertStringContainsString('积分 20', $rewardBody);
+        $this->assertStringContainsString('余额 ¥1.50', $rewardBody);
     }
 
     public function test_rejection_requires_reason_and_allows_resubmission_within_limit(): void
@@ -273,6 +279,22 @@ class TaskSubmissionReviewRewardFlowTest extends TestCase
         $this->assertNotNull($claim->progress_started_at);
         $this->assertSame('delivered', $claim->reward_status);
         $this->assertSame(30, $user->assetAccount()->firstOrFail()->points_available);
+        $this->assertSame(0, DB::table('notifications')->where('user_id', $user->id)->where('scene_code', 'task_claimed')->count());
+        $this->assertDatabaseHas('notifications', ['user_id' => $user->id, 'scene_code' => 'task_completed']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $user->id, 'scene_code' => 'task_reward_delivered']);
+    }
+
+    public function test_first_execution_progress_emits_one_stage_notification(): void
+    {
+        [, , $task] = $this->publishedTask('execution-progress', [['type' => 'points', 'points' => 10]]);
+        $user = $this->eligibleUser();
+        $claim = app(TaskClaimService::class)->claim($user, $task, 'execution-progress-claim');
+
+        $claim->update(['execution_status' => 'in_progress', 'progress_current' => 1, 'progress_target' => 3, 'progress_started_at' => now()]);
+        $claim->update(['progress_current' => 2, 'last_progress_at' => now()]);
+
+        $this->assertSame(1, DB::table('notifications')->where('user_id', $user->id)->where('scene_code', 'task_progress_started')->count());
+        $this->assertStringContainsString('1 / 3', (string) DB::table('notifications')->where('user_id', $user->id)->where('scene_code', 'task_progress_started')->value('body'));
     }
 
     public function test_failed_coupon_component_does_not_revoke_approval_and_can_be_retried(): void
