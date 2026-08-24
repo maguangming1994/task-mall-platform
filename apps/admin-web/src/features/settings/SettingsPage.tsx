@@ -124,7 +124,7 @@ function HomeImageInput({ url, label, defaultUrl, onChange }: { url: string; lab
       onChange={(images) => onChange(images[0]?.url ?? '')}
       max={1}
       primaryLabel={label}
-      helperText={url ? '当前显示的是新图片；点击缩略图可放大预览，删除后恢复系统默认。' : '支持电脑上传或图片网址导入；上传完成后会立即显示预览。'}
+      helperText={url ? '当前显示的是新图片；点击缩略图可放大预览，删除后恢复系统默认。' : '支持本地上传、HTTPS 链接转存或直接外链；添加后会立即显示预览。'}
     />
   </Space>
 }
@@ -395,7 +395,7 @@ function AppearanceSettingEditor({ setting, value, onChange }: ValueEditorProps)
     const updateBanner = (key: string, next: unknown) => update('banner', { ...banner, [key]: next })
     const updateEntry = (index: number, key: string, next: unknown) => update('quick_entries', entries.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: next } : item))
     return <Space direction="vertical" style={{ width: '100%' }} size="middle">
-      <Alert showIcon type="info" message="社区 Logo、头图和快捷入口图标均支持本地上传、图片网址导入及恢复系统默认。" />
+      <Alert showIcon type="info" message="社区 Logo、头图和快捷入口图标均支持本地上传、HTTPS 链接转存、直接外链及恢复系统默认。" />
       {renderBrand(brand, '社区顶部 Logo', '校', updateBrand)}
       <Card size="small" title="社区主视觉"><HomeImageInput url={String(banner.image_url ?? '')} defaultUrl={defaultHomePreview('社', String(banner.title || '校园互助社区'), '#DFF8FF', '#0C7A91')} label="社区主视觉背景" onChange={(url) => updateBanner('image_url', url)} /></Card>
       <Card size="small" title="社区快捷入口图标"><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 12 }}>{entries.map((item, index) => <Card key={String(item.id ?? index)} size="small" title={String(item.label || `入口 ${index + 1}`)}><Space direction="vertical" style={{ width: '100%' }}><HomeImageInput url={String(item.icon_url ?? '')} defaultUrl={defaultHomePreview(['助', '团', '任', '帖'][index] || '社', String(item.label || '社区入口'))} label={`${String(item.label || '社区入口')}图标`} onChange={(url) => updateEntry(index, 'icon_url', url)} /><Input value={String(item.label ?? '')} onChange={(event) => updateEntry(index, 'label', event.target.value)} /><Input value={String(item.description ?? '')} onChange={(event) => updateEntry(index, 'description', event.target.value)} /></Space></Card>)}</div></Card>

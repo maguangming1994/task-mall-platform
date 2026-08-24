@@ -16,6 +16,7 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Button, Input, Modal, Select, Space, Tooltip } from 'antd'
 import { useEffect, useState, type ReactNode } from 'react'
+import { ImageSourceModal } from './ImageSourceModal'
 
 interface RichTextEditorProps {
   value?: string
@@ -26,10 +27,9 @@ interface RichTextEditorProps {
   compact?: boolean
 }
 
-type InsertMode = 'link' | 'image' | null
-
 export function RichTextEditor({ value = '', onChange, placeholder = '请输入内容…', minHeight = 240, disabled = false, compact = false }: RichTextEditorProps) {
-  const [insertMode, setInsertMode] = useState<InsertMode>(null)
+  const [linkOpen, setLinkOpen] = useState(false)
+  const [imageOpen, setImageOpen] = useState(false)
   const [resourceUrl, setResourceUrl] = useState('')
   const editor = useEditor({
     editable: !disabled,
@@ -62,19 +62,16 @@ export function RichTextEditor({ value = '', onChange, placeholder = '请输入�
     </Tooltip>
   )
 
-  const openInsert = (mode: Exclude<InsertMode, null>) => {
-    setResourceUrl(mode === 'link' ? (editor.getAttributes('link').href ?? '') : '')
-    setInsertMode(mode)
+  const openLink = () => {
+    setResourceUrl(editor.getAttributes('link').href ?? '')
+    setLinkOpen(true)
   }
 
-  const confirmInsert = () => {
+  const confirmLink = () => {
     const url = resourceUrl.trim()
-    if (insertMode === 'link') {
-      if (!url) editor.chain().focus().unsetLink().run()
-      else editor.chain().focus().extendMarkRange('link').setLink({ href: url, target: '_blank', rel: 'noopener noreferrer nofollow' }).run()
-    }
-    if (insertMode === 'image' && url) editor.chain().focus().setImage({ src: url }).run()
-    setInsertMode(null)
+    if (!url) editor.chain().focus().unsetLink().run()
+    else editor.chain().focus().extendMarkRange('link').setLink({ href: url, target: '_blank', rel: 'noopener noreferrer nofollow' }).run()
+    setLinkOpen(false)
     setResourceUrl('')
   }
 
@@ -98,8 +95,8 @@ export function RichTextEditor({ value = '', onChange, placeholder = '请输入�
           {toolbarButton('左对齐', <AlignLeftOutlined />, () => editor.chain().focus().setTextAlign('left').run(), editor.isActive({ textAlign: 'left' }))}
           {toolbarButton('居中', <AlignCenterOutlined />, () => editor.chain().focus().setTextAlign('center').run(), editor.isActive({ textAlign: 'center' }))}
           {toolbarButton('右对齐', <AlignRightOutlined />, () => editor.chain().focus().setTextAlign('right').run(), editor.isActive({ textAlign: 'right' }))}
-          {toolbarButton('插入链接', <LinkOutlined />, () => openInsert('link'), editor.isActive('link'))}
-          {!compact && toolbarButton('插入网络图片', <PictureOutlined />, () => openInsert('image'))}
+          {toolbarButton('插入链接', <LinkOutlined />, openLink, editor.isActive('link'))}
+          {!compact && toolbarButton('插入图片', <PictureOutlined />, () => setImageOpen(true))}
           {!compact && toolbarButton('插入表格', <TableOutlined />, () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run())}
           {toolbarButton('撤销', <UndoOutlined />, () => editor.chain().focus().undo().run(), false, !editor.can().undo())}
           {toolbarButton('重做', <RedoOutlined />, () => editor.chain().focus().redo().run(), false, !editor.can().redo())}
@@ -107,10 +104,16 @@ export function RichTextEditor({ value = '', onChange, placeholder = '请输入�
         </Space>
       </div>
       <EditorContent editor={editor} />
-      <div className="rich-text-editor-hint">{compact ? '支持加粗、斜体、下划线、列表、对齐与链接；粘贴内容会统一为平台样式。' : '支持标题、列表、链接、HTTPS 图片与表格；粘贴内容会统一为平台样式。'}</div>
-      <Modal title={insertMode === 'image' ? '插入网络图片' : '插入链接'} open={insertMode !== null} onCancel={() => setInsertMode(null)} onOk={confirmInsert} okButtonProps={{ disabled: insertMode === 'image' && !resourceUrl.trim() }} okText="插入" cancelText="取消" destroyOnHidden>
-        <Input value={resourceUrl} onChange={(event) => setResourceUrl(event.target.value)} placeholder={insertMode === 'image' ? 'https://example.com/image.jpg' : 'https://example.com'} autoFocus onPressEnter={confirmInsert} />
+      <div className="rich-text-editor-hint">{compact ? '支持加粗、斜体、下划线、列表、对齐与链接；粘贴内容会统一为平台样式。' : '支持标题、列表、链接、图片与表格；粘贴内容会统一为平台样式。'}</div>
+      <Modal title="插入链接" open={linkOpen} onCancel={() => setLinkOpen(false)} onOk={confirmLink} okText="插入" cancelText="取消" destroyOnHidden>
+        <Input value={resourceUrl} onChange={(event) => setResourceUrl(event.target.value)} placeholder="https://example.com" autoFocus onPressEnter={confirmLink} />
       </Modal>
+      <ImageSourceModal
+        title="插入图片"
+        open={imageOpen}
+        onCancel={() => setImageOpen(false)}
+        onSelect={(image) => editor.chain().focus().setImage({ src: image.url }).run()}
+      />
     </div>
   )
 }

@@ -332,7 +332,7 @@ export interface ManagedInventory { sku_id: string; sku_code: string; product_id
 export interface MediaAsset { id: string; url: string; name: string; mime_type: string; size_bytes: number; provider: string; status: string }
 export interface MediaStorageProvider {
   provider: 'local' | 'tencent_cos' | 'qiniu_kodo'; display_name: string; enabled: boolean; active: boolean;
-  endpoint: string | null; region: string | null; bucket: string | null; public_base_url: string | null;
+  endpoint: string | null; region: string | null; bucket: string | null; private_bucket: string | null; public_base_url: string | null;
   access_key_configured: boolean; access_key_masked: string | null; secret_key_configured: boolean;
   last_tested_at: string | null; last_test_status: 'success' | 'failed' | null; last_test_message: string | null
 }

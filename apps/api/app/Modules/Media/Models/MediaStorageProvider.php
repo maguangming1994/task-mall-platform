@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class MediaStorageProvider extends Model
 {
-    protected $fillable = ['provider', 'display_name', 'enabled', 'active', 'endpoint', 'region', 'bucket', 'public_base_url', 'access_key', 'secret_key', 'last_tested_at', 'last_test_status', 'last_test_message'];
+    protected $fillable = ['provider', 'display_name', 'enabled', 'active', 'endpoint', 'region', 'bucket', 'private_bucket', 'public_base_url', 'access_key', 'secret_key', 'last_tested_at', 'last_test_status', 'last_test_message'];
 
     protected $hidden = ['access_key', 'secret_key'];
 

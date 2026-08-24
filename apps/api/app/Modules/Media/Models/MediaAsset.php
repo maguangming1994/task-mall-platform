@@ -23,4 +23,9 @@ class MediaAsset extends Model
     {
         return 'public_id';
     }
+
+    public function deliveryUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/api/v1/media/assets/'.$this->public_id;
+    }
 }

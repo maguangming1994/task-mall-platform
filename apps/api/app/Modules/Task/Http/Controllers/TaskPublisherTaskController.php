@@ -135,7 +135,7 @@ class TaskPublisherTaskController extends Controller
         $data = $request->validate([
             'business_scenario' => ['sometimes', 'in:platform_task,user_bounty,growth_challenge,referral_milestone'],
             'project_name' => ['sometimes', 'nullable', 'string', 'max:120'],
-            'cover_image_url' => ['sometimes', 'nullable', 'url', 'max:2048'],
+            'cover_image_url' => ['sometimes', 'nullable', app()->environment('production') ? 'url:https' : 'url:http,https', 'max:2048'],
             'supported_devices' => ['sometimes', 'array', 'min:1', 'max:2'],
             'supported_devices.*' => ['in:android,ios'],
             'visibility' => ['required', 'in:public,targeted_private'], 'category' => ['required', 'in:onboarding,daily,community,commerce,research,campaign'],
@@ -155,7 +155,7 @@ class TaskPublisherTaskController extends Controller
             'steps.*.kind' => ['sometimes', 'in:instruction,link,qr_code,copy_text,image_guide,verification_image,form_input,confirmation'],
             'steps.*.input_type' => ['required', 'in:none,text,image,text_image,link'],
             'steps.*.required' => ['required', 'boolean'], 'steps.*.link_url' => ['sometimes', 'nullable', 'url', 'max:2048'],
-            'steps.*.copy_text' => ['sometimes', 'nullable', 'string', 'max:5000'], 'steps.*.example_image_url' => ['sometimes', 'nullable', 'url', 'max:2048'],
+            'steps.*.copy_text' => ['sometimes', 'nullable', 'string', 'max:5000'], 'steps.*.example_image_url' => ['sometimes', 'nullable', app()->environment('production') ? 'url:https' : 'url:http,https', 'max:2048'],
             'steps.*.button_text' => ['sometimes', 'nullable', 'string', 'max:20'], 'steps.*.placeholder' => ['sometimes', 'nullable', 'string', 'max:120'],
             'steps.*.min_files' => ['sometimes', 'integer', 'min:1', 'max:9'], 'steps.*.max_files' => ['sometimes', 'integer', 'min:1', 'max:9'],
             'claim_starts_at' => ['required', 'date'], 'claim_ends_at' => ['required', 'date'], 'submit_ends_at' => ['required', 'date'], 'rules' => ['sometimes', 'array'],

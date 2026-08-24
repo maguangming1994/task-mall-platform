@@ -177,7 +177,7 @@ function CommunityHomepagePreview({ config }: { config: CommunityHomepageConfig 
     <Space direction="vertical" size={12} style={{ maxWidth: 550 }}>
       <Typography.Title level={4} style={{ margin: 0 }}>校园风移动端实时预览</Typography.Title>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>采用明亮黄绿底色、黑色粗边与高饱和快捷入口。用户端会读取同一份配置；保存后按配置版本即时生效。</Typography.Paragraph>
-      <Alert showIcon type="info" message="素材策略" description="Banner 与快捷入口图标支持本地上传或 HTTPS 图片网址导入，都会转存到当前启用的对象存储，不依赖外部链接。" />
+      <Alert showIcon type="info" message="素材策略" description="Banner 与快捷入口图标支持本地上传、HTTPS 链接转存和直接外链；长期使用的图片建议转存到当前启用的对象存储。" />
       <Space wrap>{entries.map((entry, index) => <Tag key={entry.id} color="default" style={{ borderColor: '#151515', color: '#151515', background: safeCampusColor(entry.color, index), fontWeight: 700 }}>{entry.label} · {quickTargetOptions.find((option) => option.value === entry.target)?.label ?? entry.target}</Tag>)}</Space>
     </Space>
   </div>
@@ -396,7 +396,7 @@ export function CommunityManagementPage() {
           key: 'decoration',
           label: '校园社区装修',
           children: <Card bordered={false} size="small" title="校园社区首页装修" extra={<Space><Button onClick={() => void load()}>刷新配置</Button><Button type="primary" icon={<EditOutlined />} disabled={!config} onClick={openConfig}>编辑装修</Button></Space>}>
-            <Alert showIcon type="success" message="已启用高饱和校园风" description="运营人员可维护 Banner、快捷入口与热榜话题；所有图片会经素材存储统一管理，文本、颜色、启用状态和跳转会随配置版本发布。" style={{ marginBottom: 20 }} />
+            <Alert showIcon type="success" message="已启用高饱和校园风" description="运营人员可维护 Banner、快捷入口与热榜话题；上传或转存的图片由素材存储统一管理，文本、颜色、启用状态和跳转会随配置版本发布。" style={{ marginBottom: 20 }} />
             {configError && <Alert showIcon type="warning" message="配置暂不可读取" description={configError} action={<Button size="small" onClick={() => void load()}>重试</Button>} style={{ marginBottom: 16 }} />}
             {config ? <CommunityHomepagePreview config={config} /> : <Empty description="正在读取校园社区装修配置" />}
           </Card>,
@@ -486,7 +486,7 @@ export function CommunityManagementPage() {
       destroyOnHidden
     >
       <Form form={configForm} layout="vertical" onFinish={saveConfig}>
-        <Alert showIcon type="info" message="保存会发布新配置版本" description="活动审核、社区治理与装修配置均会记录运营理由。图片使用“从电脑上传”或“图片网址导入”后，会自动转存到当前启用的素材存储。" style={{ marginBottom: 18 }} />
+        <Alert showIcon type="info" message="保存会发布新配置版本" description="活动审核、社区治理与装修配置均会记录运营理由。图片可从本地上传、通过链接转存，或直接使用 HTTPS 外链。" style={{ marginBottom: 18 }} />
         <Card size="small" title="校园 Banner" style={{ marginBottom: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 12 }}>
             <Form.Item name={['banner', 'title']} label="主标题" rules={[{ required: true, message: '请输入 Banner 主标题' }]}><Input maxLength={80} placeholder="例如：校园互助社区" /></Form.Item>

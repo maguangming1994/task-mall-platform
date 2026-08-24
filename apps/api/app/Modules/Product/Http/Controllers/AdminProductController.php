@@ -138,7 +138,7 @@ class AdminProductController extends Controller
             'category_id' => ['required', 'string', 'size:26', 'exists:product_categories,public_id'], 'name' => ['required', 'string', 'max:160'], 'subtitle' => ['nullable', 'string', 'max:255'],
             'description' => ['required', 'string', 'min:1', 'max:200000'], 'cover_file_id' => ['nullable', 'string', 'size:26'],
             'gallery_images' => ['sometimes', 'array', 'min:1', 'max:9'],
-            'gallery_images.*.url' => ['required', 'url:http,https', 'max:2048'],
+            'gallery_images.*.url' => ['required', app()->environment('production') ? 'url:https' : 'url:http,https', 'max:2048'],
             'gallery_images.*.asset_id' => ['sometimes', 'nullable', 'string', 'size:26', 'exists:media_assets,public_id'],
             'gallery_images.*.alt' => ['sometimes', 'nullable', 'string', 'max:120'],
             'gallery_images.*.sort_order' => ['sometimes', 'integer', 'min:0', 'max:8'],

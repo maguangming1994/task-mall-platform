@@ -1,10 +1,11 @@
-import { apiRequest } from '@/api/http'
+import { ApiError, apiRequest, apiUrl, type ApiEnvelope, type ApiErrorPayload } from '@/api/http'
 
 export interface PublisherSession { access_token: string; expires_at: string; publisher: { id: string; admin_display_name: string; can_publish: boolean; permissions?: string[] } }
 export interface PublisherPool { id: string; name: string; asset_type: string; available_amount: number }
 export interface PublisherStep { id: string; title: string; description: string; input_type: 'none' | 'text' | 'image' | 'text_image' | 'link'; required: boolean; link_url?: string | null; copy_text?: string | null }
 export interface PublisherTaskVersion { version_no: number; status: string; change_type: string; source_version_no?: number | null; changed_fields: string[]; created_at?: string | null; published_at?: string | null }
 export interface PublisherAuditEvent { id: string; action: string; actor?: string | null; reason?: string | null; before?: Record<string, unknown> | null; after?: Record<string, unknown> | null; created_at?: string | null }
+export interface PublisherMediaAsset { id: string; url: string; name: string; mime_type: string; size_bytes: number; provider: string; status: string }
 export interface PublisherTask {
   id: string
   title: string
@@ -70,4 +71,56 @@ export function changePublisherTaskStatus(token: string, taskId: string, action:
 }
 export function publishPublisherTask(token: string, taskId: string) {
   return changePublisherTaskStatus(token, taskId, 'publish', '发布方在移动端确认任务信息与预算后申请发布')
+}
+
+export function importPublisherMediaUrl(token: string, url: string) {
+  return apiRequest<PublisherMediaAsset>({
+    path: '/task-publisher/media/assets/import-url',
+    method: 'POST',
+    accessToken: token,
+    data: { url },
+  })
+}
+
+export function chooseAndUploadPublisherMedia(token: string): Promise<PublisherMediaAsset> {
+  return new Promise((resolve, reject) => {
+    uni.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      success(selected) {
+        const filePath = selected.tempFilePaths[0]
+        if (!filePath) {
+          reject(new Error('未选择图片。'))
+          return
+        }
+        uni.uploadFile({
+          url: apiUrl('/task-publisher/media/assets/upload'),
+          filePath,
+          name: 'file',
+          header: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+          success(response) {
+            let payload: ApiEnvelope<PublisherMediaAsset> | ApiErrorPayload
+            try {
+              payload = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+            } catch {
+              reject(new ApiError('INVALID_RESPONSE', '图片上传响应无法解析。', response.statusCode))
+              return
+            }
+            if (response.statusCode >= 200 && response.statusCode < 300 && 'data' in payload) {
+              resolve(payload.data)
+              return
+            }
+            const error = payload as ApiErrorPayload
+            reject(new ApiError(error.code || 'UPLOAD_FAILED', error.message || '图片上传失败。', response.statusCode, error.details))
+          },
+          fail(error) {
+            reject(new ApiError('NETWORK_ERROR', error.errMsg || '图片上传网络连接失败。', 0))
+          },
+        })
+      },
+      fail(error) {
+        reject(new Error(/cancel/i.test(error.errMsg || '') ? '已取消选择图片。' : (error.errMsg || '选择图片失败。')))
+      },
+    })
+  })
 }

@@ -154,7 +154,7 @@ export function ProductManagementPage() {
         <Typography.Title level={5}>一、商品基础信息</Typography.Title>
         <Space align="start" style={{ display: 'flex' }}><Form.Item name="category_id" label="商品分类" rules={[{ required: true, message: '请选择商品分类' }]} style={{ width: 220 }}><Select placeholder="请选择分类" options={categories.filter(item => item.status === 'active' || item.id === editingProduct?.category?.id).map(item => ({ value: item.id, label: item.status === 'active' ? item.name : `${item.name}（已停用）` }))} /></Form.Item><Form.Item name="name" label="商品名称" rules={[{ required: true }]} style={{ flex: 1 }}><Input /></Form.Item><Form.Item name="subtitle" label="副标题" style={{ flex: 1 }}><Input /></Form.Item></Space>
 
-        <Form.Item name="gallery_images" label="商品主图与轮播图" required extra="支持电脑本地文件和图片网址两种导入方式；网址图片也会下载并转存到当前存储。" rules={[{ validator: async (_, images) => { if (!images?.length) throw new Error('至少添加一张商品图片') } }]}><MediaGalleryInput /></Form.Item>
+        <Form.Item name="gallery_images" label="商品主图与轮播图" required extra="支持本地上传、HTTPS 链接转存和直接外链；长期使用的图片建议转存到当前存储。" rules={[{ validator: async (_, images) => { if (!images?.length) throw new Error('至少添加一张商品图片') } }]}><MediaGalleryInput /></Form.Item>
 
         <Form.Item name="description" label="商品详情" rules={[{ required: true, message: '请输入商品详情' }]}><RichTextEditor placeholder="请输入商品介绍、规格说明和售后提示…" /></Form.Item>
         <Divider />

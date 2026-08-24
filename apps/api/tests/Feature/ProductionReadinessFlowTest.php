@@ -8,6 +8,7 @@ use App\Modules\Admin\Models\Role;
 use App\Modules\Auth\Services\PhoneVerificationService;
 use App\Modules\Auth\Services\SmsProviderSettingsService;
 use App\Modules\Auth\Services\WechatProviderSettingsService;
+use App\Modules\Media\Models\MediaStorageProvider;
 use App\Modules\Operations\Services\ProductionReadinessService;
 use App\Modules\Payment\Services\WechatPaymentSettingsService;
 use App\Modules\Upload\Models\UploadedFile;
@@ -92,6 +93,29 @@ class ProductionReadinessFlowTest extends TestCase
             config(['database.default' => $originalDatabase]);
             $this->app->detectEnvironment(fn () => $originalEnvironment);
         }
+    }
+
+    public function test_readiness_recognizes_the_active_cloud_private_bucket(): void
+    {
+        config(['uploads.mode' => 's3_presigned', 'uploads.disk' => 'local']);
+        MediaStorageProvider::query()->update(['active' => false]);
+        MediaStorageProvider::query()->where('provider', 'qiniu_kodo')->firstOrFail()->update([
+            'enabled' => true,
+            'active' => true,
+            'endpoint' => 'https://s3.cn-south-1.qiniucs.com',
+            'region' => 'cn-south-1',
+            'bucket' => 'task-mall-public',
+            'private_bucket' => 'task-mall-private',
+            'public_base_url' => 'https://images.example.test',
+            'access_key' => 'QINIU_ACCESS_KEY',
+            'secret_key' => 'QINIU_SECRET_KEY',
+        ]);
+
+        $result = app(ProductionReadinessService::class)->evaluate();
+        $storageCheck = collect($result['checks'])->firstWhere('code', 'upload.storage');
+
+        $this->assertTrue($storageCheck['ready']);
+        $this->assertNull($storageCheck['action']);
     }
 
     public function test_sms_and_file_scanner_webhooks_fail_closed_and_accept_valid_provider_results(): void

@@ -25,7 +25,8 @@ class AdminMediaController extends Controller
             'endpoint' => ['nullable', 'url:https', 'max:500'],
             'region' => ['nullable', 'string', 'max:80'],
             'bucket' => ['nullable', 'string', 'max:120'],
-            'public_base_url' => ['nullable', 'url:http,https', 'max:500'],
+            'private_bucket' => ['nullable', 'string', 'max:120'],
+            'public_base_url' => ['nullable', app()->environment('production') ? 'url:https' : 'url:http,https', 'max:500'],
             'access_key' => ['nullable', 'string', 'max:500'],
             'secret_key' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -55,20 +56,26 @@ class AdminMediaController extends Controller
         return ApiResponse::success(['items' => $storage->providers()]);
     }
 
-    public function upload(Request $request, MediaStorageService $storage): JsonResponse
+    public function upload(Request $request, MediaStorageService $storage, AuditLogger $audit): JsonResponse
     {
         $request->validate(['file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp']]);
         /** @var AdminUser $admin */ $admin = $request->user();
+        $asset = $storage->upload($request->file('file'), $admin);
+        $presented = $storage->presentAsset($asset);
+        $audit->record($admin, 'media.asset.upload', 'media_asset', $asset->public_id, null, $presented);
 
-        return ApiResponse::success($storage->presentAsset($storage->upload($request->file('file'), $admin)), 201);
+        return ApiResponse::success($presented, 201);
     }
 
-    public function importUrl(Request $request, MediaStorageService $storage): JsonResponse
+    public function importUrl(Request $request, MediaStorageService $storage, AuditLogger $audit): JsonResponse
     {
         $data = $request->validate(['url' => ['required', 'url:https', 'max:2048']]);
         /** @var AdminUser $admin */ $admin = $request->user();
+        $asset = $storage->importUrl($data['url'], $admin);
+        $presented = $storage->presentAsset($asset);
+        $audit->record($admin, 'media.asset.import_url', 'media_asset', $asset->public_id, null, $presented);
 
-        return ApiResponse::success($storage->presentAsset($storage->importUrl($data['url'], $admin)), 201);
+        return ApiResponse::success($presented, 201);
     }
 
     public function migrations(MediaStorageService $storage): JsonResponse

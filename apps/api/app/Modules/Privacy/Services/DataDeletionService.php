@@ -11,11 +11,13 @@ use App\Modules\Auth\Models\UserSession;
 use App\Modules\Privacy\Models\DataDeletionJob;
 use App\Modules\Privacy\Models\DataDeletionManifest;
 use App\Modules\Upload\Models\UploadedFile;
+use App\Modules\Upload\Services\ControlledUploadDiskResolver;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class DataDeletionService
 {
+    public function __construct(private readonly ControlledUploadDiskResolver $disks) {}
+
     /** @return array<string,int> */
     public function executeCancellation(DataDeletionJob $job): array
     {
@@ -43,8 +45,9 @@ class DataDeletionService
 
         UploadedFile::query()->where('owner_user_id', $user->id)->whereNotIn('purpose', ['privacy_export'])->chunkById(100, function ($files) use (&$stats): void {
             foreach ($files as $file) {
-                if (Storage::disk($file->disk)->exists($file->quarantine_path)) {
-                    Storage::disk($file->disk)->delete($file->quarantine_path);
+                $disk = $this->disks->disk($file->disk);
+                if ($disk->exists($file->quarantine_path)) {
+                    $disk->delete($file->quarantine_path);
                     $stats['objects_deleted']++;
                 }
                 $file->update(['status' => 'rejected', 'rejection_code' => 'account_cancelled']);

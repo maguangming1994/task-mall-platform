@@ -16,6 +16,7 @@ x-api: &api
   volumes:
     - ${WECHAT_PAYMENT_PRIVATE_KEY_FILE:?set WECHAT_PAYMENT_PRIVATE_KEY_FILE}:/run/secrets/wechat_merchant_key:ro
     - ${WECHAT_PAYMENT_PLATFORM_CERT_FILE:?set WECHAT_PAYMENT_PLATFORM_CERT_FILE}:/run/secrets/wechat_platform_cert:ro
+    - app-storage:/var/www/html/storage/app
 
 services:
   api:
@@ -50,6 +51,8 @@ services:
     restart: unless-stopped
     depends_on: [api]
     networks: [backend]
+    volumes:
+      - app-storage:/var/www/storage/app:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/gateway-health"]
       interval: 15s
@@ -94,3 +97,4 @@ networks:
 volumes:
   postgres-data:
   redis-data:
+  app-storage:

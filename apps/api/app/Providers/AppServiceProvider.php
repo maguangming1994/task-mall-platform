@@ -19,7 +19,9 @@ use App\Modules\Refund\Models\Refund;
 use App\Modules\Settings\Events\SystemSettingPublished;
 use App\Modules\Settings\Listeners\ForgetPublishedSettingCache;
 use App\Modules\Task\Models\TaskClaim;
+use App\Modules\Upload\Services\ControlledUploadDiskResolver;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -42,6 +44,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        foreach (['tencent_cos', 'qiniu_kodo'] as $provider) {
+            config()->set("filesystems.disks.{$provider}", [
+                'driver' => 'controlled-upload-cloud',
+                'provider' => $provider,
+            ]);
+        }
+        Storage::extend('controlled-upload-cloud', fn ($app, array $config) => $app
+            ->make(ControlledUploadDiskResolver::class)
+            ->disk((string) $config['provider']));
+
         Event::listen(SystemSettingPublished::class, ForgetPublishedSettingCache::class);
         foreach ([TaskClaim::class, Order::class, Refund::class, Fulfillment::class, CommunityPostVersion::class, ModerationAction::class, ContentAppeal::class] as $model) {
             $model::observe(NotificationBusinessObserver::class);

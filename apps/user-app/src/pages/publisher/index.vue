@@ -28,7 +28,17 @@
         <text class="field-label">支持设备</text><view class="inline-choices"><text v-for="item in deviceOptions" :key="item.value" :class="['inline-choice',{active:device===item.value}]" @click="device=item.value">{{ item.label }}</text></view>
         <input v-model="title" class="input" maxlength="80" placeholder="任务标题，例如：完成商品价格对比并提交截图" />
         <input v-model="projectName" class="input" maxlength="80" placeholder="项目名称（选填，用于后台归档）" />
-        <input v-model="coverImageUrl" class="input" placeholder="任务封面 HTTPS 地址（选填）" />
+        <text class="field-label">任务封面（选填）</text>
+        <view v-if="coverImageUrl" class="cover-preview">
+          <image :src="coverImageUrl" mode="aspectFill" />
+          <text class="cover-remove" @click="coverWorking || (coverImageUrl='')">移除</text>
+        </view>
+        <input v-model="coverImageUrl" class="input" :disabled="coverWorking" placeholder="也可以直接填写 HTTPS 图片链接" />
+        <view class="media-actions">
+          <button class="media-button primary" :disabled="coverWorking" :loading="coverAction==='upload'" @click="uploadCover">本地上传</button>
+          <button class="media-button" :disabled="coverWorking || !validCoverUrl(coverImageUrl)" :loading="coverAction==='import'" @click="rehostCover">链接转存</button>
+        </view>
+        <text class="media-hint">本地上传和链接转存会保存到后台当前启用的本地、腾讯云 COS 或七牛云 Kodo；直接链接依赖原网站可用性。</text>
         <textarea v-model="description" class="textarea" maxlength="2000" placeholder="任务说明：目标、适用人群、禁止事项和最终交付结果" />
         <input v-model="tagsText" class="input" placeholder="标签，多个用逗号分隔，例如：电商,截图" />
       </view>
@@ -64,7 +74,7 @@
         <view class="publish-actions"><button class="draft-button" :disabled="working" :loading="working" @click="saveTask(false)">{{ editingTaskId ? '保存新版本' : '仅保存草稿' }}</button><button v-if="!editingTaskId" class="primary-button no-margin" :disabled="working || !agreed || !matchingPool" :loading="working" @click="saveTask(true)">校验预算并申请发布</button></view>
       </view>
 
-      <view class="nav-actions"><button v-if="stage>0" class="back-button" :disabled="working" @click="stage--">上一步</button><button v-if="stage<4" class="next-button" :disabled="working" @click="nextStage">下一步</button></view>
+      <view class="nav-actions"><button v-if="stage>0" class="back-button" :disabled="working || coverWorking" @click="stage--">上一步</button><button v-if="stage<4" class="next-button" :disabled="working || coverWorking" @click="nextStage">下一步</button></view>
 
       <view v-if="listLoading" class="published-card list-state"><view class="loading-line" /><view class="loading-line short" /><view class="loading-line" /></view>
       <view v-else-if="listError" class="published-card list-state error-state"><text class="state-icon">!</text><text class="state-title">发布列表加载失败</text><text class="state-copy">{{ listError }}</text><button class="refresh-button" @click="load">重试</button></view>
@@ -77,7 +87,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { createPublisherTask, getPublisherTask, listPublisherPools, listPublisherTasks, loginPublisher, publishPublisherTask, updatePublisherTask, type PublisherPool, type PublisherStep, type PublisherTask } from '@/api/publisher'
+import { chooseAndUploadPublisherMedia, createPublisherTask, getPublisherTask, importPublisherMediaUrl, listPublisherPools, listPublisherTasks, loginPublisher, publishPublisherTask, updatePublisherTask, type PublisherPool, type PublisherStep, type PublisherTask } from '@/api/publisher'
 
 const stages=['基础信息','时限频率','奖励预算','任务步骤','发布确认']
 const scenarioOptions=[{value:'user_bounty',label:'发布悬赏',tip:'按步骤提交材料并人工审核'},{value:'platform_task',label:'平台任务',tip:'平台运营发布的常规任务'},{value:'growth_challenge',label:'成长挑战',tip:'签到或阶段目标类活动'}]
@@ -88,7 +98,7 @@ const inputTypeOptions:[{value:PublisherStep['input_type'];label:string},...Arra
 
 const account=ref('');const password=ref('');const mfaCode=ref('');const publisherToken=ref('');const publisherName=ref('');const working=ref(false);const stage=ref(0);const tasks=ref<PublisherTask[]>([]);const pools=ref<PublisherPool[]>([]);const listLoading=ref(false);const listError=ref('');const authError=ref('')
 const pendingEditId=ref('');const editingTaskId=ref<string|null>(null);const editingTaskTitle=ref('');const editingVersion=ref<number|null>(null);const editingStatus=ref('');const selectedBudgetPoolId=ref('');const editClaimStartsAt=ref('');const editClaimEndsAt=ref('');const editSubmitEndsAt=ref('')
-const scenario=ref('user_bounty');const category=ref('campaign');const device=ref('all');const title=ref('');const projectName=ref('');const coverImageUrl=ref('');const description=ref('');const tagsText=ref('悬赏,活动')
+const scenario=ref('user_bounty');const category=ref('campaign');const device=ref('all');const title=ref('');const projectName=ref('');const coverImageUrl=ref('');const coverAction=ref<'upload'|'import'|null>(null);const description=ref('');const tagsText=ref('悬赏,活动')
 const claimDays=ref(7);const completionHours=ref(24);const reviewHours=ref(48);const submissionLimit=ref(3);const taskType=ref('one_time')
 const rewardType=ref<'points'|'wallet_balance'>('points');const rewardUnit=ref(100);const quota=ref(10);const rulesText=ref('');const agreed=ref(false)
 const steps=ref<PublisherStep[]>([{id:'step-1',title:'完成任务并提交凭证',description:'按照任务说明完成操作，并提交能够验证结果的截图和文字说明。',input_type:'text_image',required:true}])
@@ -98,6 +108,7 @@ const selectedPool=computed(()=>pools.value.find(item=>item.id===selectedBudgetP
 const matchingPool=computed(()=>selectedPool.value||pools.value.find(item=>item.available_amount>=requiredBudget.value)||null)
 const budgetText=computed(()=>rewardType.value==='points'?`${requiredBudget.value} 积分`:`¥${(requiredBudget.value/100).toFixed(2)}`)
 const rewardDisplay=computed(()=>rewardType.value==='points'?`${rewardUnit.value}积分`:`¥${Number(rewardUnit.value||0).toFixed(2)}`)
+const coverWorking=computed(()=>coverAction.value!==null)
 
 async function login(){authError.value='';working.value=true;try{const data=await loginPublisher(account.value,password.value,mfaCode.value);publisherToken.value=data.access_token;publisherName.value=data.publisher.admin_display_name;persistPublisherSession();await Promise.all([load(),loadPools()]);if(pendingEditId.value)await loadEditTask(pendingEditId.value);uni.showToast({title:'发布身份验证成功',icon:'success'})}catch(error){authError.value=error instanceof Error?error.message:'管理员凭证验证失败，请重试';toastError(error,'验证失败')}finally{working.value=false}}
 function goNormalLogin(){uni.navigateTo({url:'/pages/login/index'})}
@@ -109,12 +120,28 @@ async function load(){if(!publisherToken.value)return;listLoading.value=true;lis
 async function loadPools(){if(!publisherToken.value)return;try{pools.value=await listPublisherPools(publisherToken.value,rewardType.value==='points'?'points':'wallet_cash')}catch(error){toastError(error,'预算池加载失败')}}
 async function loadEditTask(id:string){if(!publisherToken.value)return;working.value=true;try{const task=await getPublisherTask(publisherToken.value,id);editingTaskId.value=task.id;editingTaskTitle.value=task.title;editingVersion.value=task.version;editingStatus.value=task.status;scenario.value=task.business_scenario||'user_bounty';category.value=task.category||'campaign';device.value=task.supported_devices?.length===1?task.supported_devices[0]:'all';title.value=task.title;projectName.value=task.project_name||'';coverImageUrl.value=task.cover_image_url||'';description.value=task.description_text||task.description||'';tagsText.value=(task.tags||[]).join(',');taskType.value=task.task_type||'one_time';claimDays.value=Math.max(1,Math.ceil((new Date(task.claim_ends_at||Date.now()).getTime()-new Date(task.claim_starts_at||Date.now()).getTime())/86400000));completionHours.value=task.completion_window_hours||24;reviewHours.value=task.review_deadline_hours||48;submissionLimit.value=task.submission_limit||3;editClaimStartsAt.value=task.claim_starts_at||'';editClaimEndsAt.value=task.claim_ends_at||'';editSubmitEndsAt.value=task.submit_ends_at||'';const reward=task.rewards?.[0];rewardType.value=reward?.type==='wallet_balance'?'wallet_balance':'points';rewardUnit.value=rewardType.value==='points'?Number(reward?.points||0):Number(reward?.balance_amount||0)/100;quota.value=Number(task.reward_quota_total||10);selectedBudgetPoolId.value=task.reward_budget_bindings?.[0]?.budget_pool_id||'';await loadPools();rulesText.value=Array.isArray(task.rules)?task.rules.join('\n'):'';steps.value=(task.steps||[]).map((item,index)=>({...item,id:item.id||`step-${index+1}`,description:item.description||'',required:item.required!==false,input_type:item.input_type||'none'}));if(!steps.value.length)steps.value=[{id:'step-1',title:'',description:'',input_type:'text_image',required:true}];stage.value=0}catch(error){toastError(error,'编辑任务加载失败')}finally{working.value=false}}
 async function changeRewardType(value:'points'|'wallet_balance'){rewardType.value=value;rewardUnit.value=value==='points'?100:1;selectedBudgetPoolId.value='';await loadPools()}
+async function uploadCover(){if(!publisherToken.value)return;coverAction.value='upload';try{const asset=await chooseAndUploadPublisherMedia(publisherToken.value);coverImageUrl.value=asset.url;uni.showToast({title:'封面已保存到当前存储',icon:'success'})}catch(error){if(!(error instanceof Error&&error.message==='已取消选择图片。'))toastError(error,'封面上传失败')}finally{coverAction.value=null}}
+async function rehostCover(){const url=coverImageUrl.value.trim();if(!publisherToken.value||!validCoverUrl(url))return uni.showToast({title:'请先填写有效的 HTTPS 图片链接',icon:'none'});coverAction.value='import';try{const asset=await importPublisherMediaUrl(publisherToken.value,url);coverImageUrl.value=asset.url;uni.showToast({title:'图片已转存',icon:'success'})}catch(error){toastError(error,'链接转存失败')}finally{coverAction.value=null}}
 function optionLabel(options:Array<{value:string;label:string}>,value:string){return options.find(item=>item.value===value)?.label||'未配置'}
 function poolAmountText(value:number){return rewardType.value==='points'?`${value} 积分`:`¥${(value/100).toFixed(2)}`}
 function addStep(){if(steps.value.length>=20)return uni.showToast({title:'最多添加 20 个步骤',icon:'none'});steps.value.push({id:`step-${Date.now()}`,title:'',description:'',input_type:'image',required:true})}
 function removeStep(index:number){steps.value.splice(index,1)}
 function jumpStage(index:number){if(index<stage.value)stage.value=index}
-function validateStage(index:number){if(index===0&&(!title.value.trim()||!description.value.trim()))return '请填写任务标题和说明';if(index===1&&(claimDays.value<1||completionHours.value<1||reviewHours.value<1||submissionLimit.value<1))return '时限和提交次数必须大于 0';if(index===2&&(!rewardUnit.value||!quota.value||!matchingPool.value))return '奖励、名额或预算池校验未通过';if(index===3&&(!steps.value.length||steps.value.some(item=>!item.title.trim()||!item.description.trim())))return '请完整填写每个任务步骤';return ''}
+function validateStage(index:number){if(index===0&&(!title.value.trim()||!description.value.trim()))return '请填写任务标题和说明';if(index===0&&coverImageUrl.value.trim()&&!validCoverUrl(coverImageUrl.value))return '任务封面必须使用 HTTPS 图片地址';if(index===1&&(claimDays.value<1||completionHours.value<1||reviewHours.value<1||submissionLimit.value<1))return '时限和提交次数必须大于 0';if(index===2&&(!rewardUnit.value||!quota.value||!matchingPool.value))return '奖励、名额或预算池校验未通过';if(index===3&&(!steps.value.length||steps.value.some(item=>!item.title.trim()||!item.description.trim())))return '请完整填写每个任务步骤';return ''}
+function validCoverUrl(value:string){
+  if(!value||value.length>2048||value!==value.trim()||/\s/.test(value))return false
+  const match=/^(https?):\/\/([^/?#]+)(?:[/?#]|$)/i.exec(value)
+  if(!match||(!import.meta.env.DEV&&match[1].toLowerCase()!=='https'))return false
+  const authority=match[2]
+  if(authority.includes('@')||authority.startsWith('['))return false
+  const portIndex=authority.lastIndexOf(':')
+  const host=portIndex>=0?authority.slice(0,portIndex):authority
+  const port=portIndex>=0?authority.slice(portIndex+1):''
+  if(portIndex>=0&&(!/^\d{1,5}$/.test(port)||Number(port)<1||Number(port)>65535))return false
+  if(!host||host.length>253||!/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(host))return false
+  if(/^\d+(?:\.\d+){3}$/.test(host)&&host.split('.').some(part=>Number(part)>255))return false
+  return true
+}
 function nextStage(){const error=validateStage(stage.value);if(error)return uni.showToast({title:error,icon:'none'});stage.value++}
 async function saveTask(publishAfter:boolean){if(!publisherToken.value)return;for(let index=0;index<4;index++){const error=validateStage(index);if(error){stage.value=index;return uni.showToast({title:error,icon:'none'})}}if(publishAfter&&!agreed.value)return uni.showToast({title:'请先同意悬赏发布规则',icon:'none'});working.value=true;try{await loadPools();const budgetPool=matchingPool.value;if(!budgetPool)throw new Error('请先选择可用预算池');if(publishAfter&&budgetPool.available_amount<requiredBudget.value)throw new Error('奖励预算不足，请调整奖励或名额');const now=Date.now();const claimStart=editingTaskId.value&&editClaimStartsAt.value?editClaimStartsAt.value:new Date(now+60000).toISOString();const claimEnd=editingTaskId.value&&editClaimEndsAt.value?editClaimEndsAt.value:new Date(now+claimDays.value*86400000).toISOString();const submitEnd=editingTaskId.value&&editSubmitEndsAt.value?editSubmitEndsAt.value:new Date(new Date(claimEnd).getTime()+completionHours.value*3600000).toISOString();const reward=rewardType.value==='points'?{type:'points',points:Math.round(rewardUnit.value)}:{type:'wallet_balance',balance_amount:Math.round(rewardUnit.value*100)};const payload={business_scenario:scenario.value,project_name:projectName.value.trim()||null,cover_image_url:coverImageUrl.value.trim()||null,supported_devices:device.value==='all'?['android','ios']:[device.value],visibility:'public',category:category.value,task_type:taskType.value,participation_mode:'claim_and_submit',verification_mode:'manual',title:title.value.trim(),description:description.value.trim(),tags:tagsText.value.split(/[,，]/).map(item=>item.trim()).filter(Boolean).slice(0,10),rewards:[reward],reward_budgets:[{reward_sequence:1,budget_pool_id:budgetPool.id}],reward_quota_total:Math.round(quota.value),reward_quota_per_cycle:taskType.value==='one_time'?null:Math.round(quota.value),completion_window_hours:Math.round(completionHours.value),submission_limit:Math.round(submissionLimit.value),review_deadline_hours:Math.round(reviewHours.value),appeal_deadline_days:7,appeal_limit:1,attachment_rules:{max_count:9,max_images:9,max_image_bytes:10485760},steps:steps.value.map(item=>({...item,link_url:item.link_url||null,copy_text:item.copy_text||null})),claim_starts_at:claimStart,claim_ends_at:claimEnd,submit_ends_at:submitEnd,rules:rulesText.value.split('\n').map(item=>item.trim()).filter(Boolean)};const task=editingTaskId.value?await updatePublisherTask(publisherToken.value,editingTaskId.value,payload,editingVersion.value||1):await createPublisherTask(publisherToken.value,payload);if(publishAfter&&!editingTaskId.value)await publishPublisherTask(publisherToken.value,task.id);await load();const wasEditing=Boolean(editingTaskId.value);editingTaskId.value=null;editingTaskTitle.value='';editingVersion.value=null;editingStatus.value='';pendingEditId.value='';uni.showToast({title:wasEditing?'新版本已保存':'草稿已保存',icon:'success'})}catch(error){toastError(error,'保存失败')}finally{working.value=false}}
 async function publishExisting(id:string){if(!publisherToken.value)return;try{await publishPublisherTask(publisherToken.value,id);await load();uni.showToast({title:'已提交发布流程',icon:'success'})}catch(error){toastError(error,'发布失败')}}
@@ -148,4 +175,5 @@ function toastError(error:unknown,fallback:string){uni.showToast({title:error in
 .hero .eyebrow{color:#8b6509!important}
 .hero .title{color:#102a43!important}
 .hero .hero-copy{color:#354b5f!important}
+.cover-preview{position:relative;overflow:hidden;width:100%;height:260rpx;margin-top:14rpx;border:1rpx solid #cfe1e9;border-radius:18rpx;background:#eef5f8}.cover-preview image{width:100%;height:100%}.cover-remove{position:absolute;right:14rpx;top:14rpx;padding:9rpx 16rpx;border-radius:12rpx;background:rgba(8,30,48,.78);color:#fff;font-size:19rpx}.media-actions{display:grid;grid-template-columns:1fr 1fr;gap:14rpx;margin-top:14rpx}.media-button{height:64rpx;margin:0;border:1rpx solid #cfe1e9;border-radius:16rpx;background:#fff;color:#1475c5;font-size:21rpx;line-height:62rpx}.media-button.primary{border-color:#1475c5;background:#1475c5;color:#fff}.media-button::after{border:0}.media-button[disabled]{opacity:.52}.media-hint{display:block;margin-top:12rpx;color:#728894;font-size:18rpx;line-height:1.55}
 </style>

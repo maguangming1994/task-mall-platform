@@ -4,12 +4,13 @@ namespace App\Modules\Upload\Services;
 
 use App\Modules\Upload\Models\UploadedFile;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
 
 class FileScanService
 {
+    public function __construct(private readonly ControlledUploadDiskResolver $disks) {}
+
     public function scan(UploadedFile $file): void
     {
         if (config('uploads.scanner') === 'webhook') {
@@ -22,7 +23,7 @@ class FileScanService
 
             return;
         }
-        $stream = Storage::disk($file->disk)->readStream($file->quarantine_path);
+        $stream = $this->disks->disk($file->disk)->readStream($file->quarantine_path);
         if (! is_resource($stream)) {
             throw new RuntimeException('Cannot open quarantined object.');
         }
@@ -78,7 +79,7 @@ class FileScanService
             return;
         }
         try {
-            $downloadUrl = Storage::disk($file->disk)->temporaryUrl($file->quarantine_path, now()->addMinutes(10));
+            $downloadUrl = $this->disks->disk($file->disk)->temporaryUrl($file->quarantine_path, now()->addMinutes(10));
         } catch (Throwable) {
             $downloadUrl = null;
         }

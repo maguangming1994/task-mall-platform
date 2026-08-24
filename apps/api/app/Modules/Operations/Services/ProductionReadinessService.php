@@ -4,6 +4,7 @@ namespace App\Modules\Operations\Services;
 
 use App\Modules\Auth\Services\SmsProviderSettingsService;
 use App\Modules\Auth\Services\WechatProviderSettingsService;
+use App\Modules\Media\Models\MediaStorageProvider;
 use App\Modules\Payment\Services\WechatPaymentSettingsService;
 
 class ProductionReadinessService
@@ -44,7 +45,7 @@ class ProductionReadinessService
             $this->check('sms.provider', '短信网关已配置', $this->smsProviderReady(), '推荐配置 PHONE_VERIFICATION_DRIVER=aliyun，并通过服务器环境变量提供阿里云访问凭据。'),
             $this->check('sms.template', '短信签名和模板已配置', $this->smsTemplateReady(), '提供阿里云已审核通过的 ALIYUN_SMS_SIGN_NAME 与 ALIYUN_SMS_TEMPLATE_CODE。'),
             $this->check('notification.provider', '外部消息投递网关已配置', config('notifications.driver') === 'webhook' && $this->filled('notifications.webhook.endpoint') && $this->secretReady(config('notifications.webhook.token')), '配置 NOTIFICATION_EXTERNAL_DRIVER=webhook、消息端点和至少 32 位独立令牌。'),
-            $this->check('upload.storage', '上传使用 S3 预签名私有存储', config('uploads.mode') === 's3_presigned' && config('uploads.disk') === 's3', '配置 UPLOAD_MODE=s3_presigned、UPLOAD_DISK=s3 和生产桶凭据。'),
+            $this->check('upload.storage', '受控上传使用云端私有桶预签名', $this->privateUploadStorageReady(), '在后台启用 COS 或七牛云的独立私有桶，并配置 UPLOAD_MODE=s3_presigned。'),
             $this->check('upload.scanner', '外部文件扫描器已配置', config('uploads.scanner') === 'webhook' && $this->filled('uploads.scanner_webhook.endpoint') && $this->filled('uploads.scanner_webhook.token'), '配置 UPLOAD_SCANNER=webhook、扫描端点与令牌。'),
             $this->check('compliance.entity', '运营主体和联系人已填写', $this->filled('production_readiness.operator_entity_name') && $this->filled('production_readiness.customer_service_contact') && $this->filled('production_readiness.privacy_contact'), '填写运营主体、客服和隐私联系人。'),
             $this->check('compliance.legal', '正式协议已完成法务批准', (bool) config('production_readiness.legal_documents_approved'), '正式文本发布并复核后设置 LEGAL_DOCUMENTS_APPROVED=true。'),
@@ -85,6 +86,34 @@ class ProductionReadinessService
         $origins = config('cors.allowed_origins', []);
 
         return is_array($origins) && $origins !== [] && ! in_array('*', $origins, true) && collect($origins)->every(fn ($origin) => is_string($origin) && str_starts_with($origin, 'https://'));
+    }
+
+    private function privateUploadStorageReady(): bool
+    {
+        if (config('uploads.mode') !== 's3_presigned') {
+            return false;
+        }
+
+        try {
+            $provider = MediaStorageProvider::query()
+                ->where('active', true)
+                ->where('enabled', true)
+                ->first();
+            if ($provider !== null && in_array($provider->provider, ['tencent_cos', 'qiniu_kodo'], true)) {
+                return filled($provider->endpoint)
+                    && str_starts_with((string) $provider->endpoint, 'https://')
+                    && filled($provider->region)
+                    && filled($provider->bucket)
+                    && filled($provider->private_bucket)
+                    && $provider->bucket !== $provider->private_bucket
+                    && filled($provider->access_key)
+                    && filled($provider->secret_key);
+            }
+        } catch (\Throwable) {
+            // Database-backed media storage may not be migrated during an early readiness probe.
+        }
+
+        return config('uploads.disk') === 's3';
     }
 
     private function smsProviderReady(): bool

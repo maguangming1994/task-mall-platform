@@ -8,12 +8,14 @@ use App\Modules\Upload\Jobs\ScanUploadedFile;
 use App\Modules\Upload\Models\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class UploadService
 {
-    public function __construct(private readonly UploadPolicy $policy) {}
+    public function __construct(
+        private readonly UploadPolicy $policy,
+        private readonly ControlledUploadDiskResolver $disks,
+    ) {}
 
     /** @return array{file:UploadedFile,ticket:array<string,mixed>} */
     public function createTicket(User $user, array $data, string $idempotencyKey): array
@@ -34,7 +36,7 @@ class UploadService
             'extension' => $validated['extension'],
             'declared_mime' => strtolower($data['content_type']),
             'declared_size' => $data['size'],
-            'disk' => config('uploads.disk'),
+            'disk' => $this->disks->activeDiskName(),
             'quarantine_path' => 'quarantine/'.now()->format('Y/m/d').'/'.Str::uuid().'.'.$validated['extension'],
             'status' => 'issued',
             'upload_token_hash' => $this->fingerprint($token),
@@ -48,7 +50,7 @@ class UploadService
 
     public function proxyUpload(Request $request, UploadedFile $file): UploadedFile
     {
-        if (config('uploads.mode') !== 'local_proxy') {
+        if (config('uploads.mode') !== 'local_proxy' && $file->disk !== 'local') {
             throw new UploadException('UPLOAD_PROXY_DISABLED', '当前环境不开放代理上传。', 404);
         }
         $token = (string) $request->header('X-Upload-Token');
@@ -62,7 +64,7 @@ class UploadService
         if (strlen($content) !== $file->declared_size) {
             throw new UploadException('UPLOAD_SIZE_MISMATCH', '实际文件大小与票据不一致。', 422);
         }
-        if (! Storage::disk($file->disk)->put($file->quarantine_path, $content, ['visibility' => 'private'])) {
+        if (! $this->disks->disk($file->disk)->put($file->quarantine_path, $content, ['visibility' => 'private'])) {
             throw new UploadException('UPLOAD_STORAGE_FAILED', '文件写入隔离区失败。', 503);
         }
         $file->update(['status' => 'uploaded', 'actual_size' => strlen($content), 'uploaded_at' => now(), 'upload_token_hash' => null, 'upload_token_ciphertext' => null]);
@@ -80,10 +82,11 @@ class UploadService
             $file->update(['status' => 'expired', 'upload_token_hash' => null, 'upload_token_ciphertext' => null]);
             throw new UploadException('UPLOAD_TICKET_EXPIRED', '上传票据已过期。', 410);
         }
-        if (! Storage::disk($file->disk)->exists($file->quarantine_path)) {
+        $disk = $this->disks->disk($file->disk);
+        if (! $disk->exists($file->quarantine_path)) {
             throw new UploadException('UPLOAD_OBJECT_MISSING', '隔离区中尚未发现上传对象。', 409);
         }
-        $actualSize = Storage::disk($file->disk)->size($file->quarantine_path);
+        $actualSize = $disk->size($file->quarantine_path);
         if ($actualSize !== $file->declared_size) {
             $file->update(['status' => 'rejected', 'actual_size' => $actualSize, 'rejection_code' => 'size_mismatch']);
             throw new UploadException('UPLOAD_SIZE_MISMATCH', '对象大小与票据不一致。', 422);
@@ -104,8 +107,11 @@ class UploadService
     /** @return array<string,mixed> */
     private function ticketFor(UploadedFile $file, ?string $token): array
     {
-        if (config('uploads.mode') === 's3_presigned') {
-            $signed = Storage::disk($file->disk)->temporaryUploadUrl($file->quarantine_path, $file->ticket_expires_at, ['ContentType' => $file->declared_mime]);
+        if (config('uploads.mode') === 's3_presigned' && $file->disk !== 'local') {
+            $signed = $this->disks->disk($file->disk)->temporaryUploadUrl($file->quarantine_path, $file->ticket_expires_at, [
+                'ContentType' => $file->declared_mime,
+                'ACL' => 'private',
+            ]);
 
             return ['file_id' => $file->public_id, 'upload_url' => $signed['url'], 'method' => 'PUT', 'headers' => $signed['headers'], 'expires_at' => $file->ticket_expires_at->toIso8601String(), 'status' => $file->status];
         }
