@@ -140,6 +140,7 @@ class ProductionReadinessService
     {
         try {
             $configuration = $this->wechatConfiguration($provider);
+
             return $configuration['driver'] === 'wechat'
                 && filled($configuration['app_id']) && filled($configuration['app_secret']);
         } catch (\Throwable) {

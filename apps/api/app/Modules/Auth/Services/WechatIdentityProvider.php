@@ -16,7 +16,9 @@ class WechatIdentityProvider
     {
         $provider = $this->providerName($channel);
         $configuration = $this->settings->effective($provider);
-        if ($configuration['driver'] === 'local') return $this->exchangeLocally($code);
+        if ($configuration['driver'] === 'local') {
+            return $this->exchangeLocally($code);
+        }
         if ($configuration['driver'] !== 'wechat') {
             throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务当前不可用。', 503);
         }
@@ -29,7 +31,9 @@ class WechatIdentityProvider
     public function available(string $channel): bool
     {
         $configuration = $this->settings->effective($this->providerName($channel));
-        if ($configuration['driver'] === 'local') return app()->environment(['local', 'testing']);
+        if ($configuration['driver'] === 'local') {
+            return app()->environment(['local', 'testing']);
+        }
 
         return $configuration['driver'] === 'wechat'
             && filled($configuration['app_id']) && filled($configuration['app_secret']);
@@ -50,7 +54,9 @@ class WechatIdentityProvider
         }
         $payload = $response->json();
         $phone = is_array($payload) ? data_get($payload, 'phone_info.phoneNumber') : null;
-        if ($response->serverError()) throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信手机号授权服务暂时不可用。', 503);
+        if ($response->serverError()) {
+            throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信手机号授权服务暂时不可用。', 503);
+        }
         if (! is_array($payload) || ($payload['errcode'] ?? null) !== 0
             || ! is_string($phone) || ! preg_match('/^\+?[0-9]{6,20}$/', $phone)) {
             throw new AuthException('WECHAT_PHONE_AUTH_FAILED', '微信手机号授权凭证无效或已过期，请重新授权。', 422);
@@ -66,6 +72,7 @@ class WechatIdentityProvider
             || ! preg_match('/^local:([A-Za-z0-9_-]{3,80})(?::([A-Za-z0-9_-]{3,80}))?$/', $code, $matches)) {
             throw new AuthException('WECHAT_AUTH_FAILED', '微信临时登录凭证无效或已过期。', 422);
         }
+
         return ['openid' => $matches[1], 'unionid' => $matches[2] ?? null];
     }
 
@@ -83,7 +90,10 @@ class WechatIdentityProvider
         } catch (ConnectionException) {
             throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务连接失败，请稍后重试。', 503);
         }
-        if ($response->serverError()) throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务暂时不可用。', 503);
+        if ($response->serverError()) {
+            throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务暂时不可用。', 503);
+        }
+
         return $this->validatedPayload($response->json());
     }
 
@@ -101,7 +111,10 @@ class WechatIdentityProvider
         } catch (ConnectionException) {
             throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务连接失败，请稍后重试。', 503);
         }
-        if ($response->serverError()) throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务暂时不可用。', 503);
+        if ($response->serverError()) {
+            throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务暂时不可用。', 503);
+        }
+
         return $this->validatedPayload($response->json());
     }
 
@@ -113,6 +126,7 @@ class WechatIdentityProvider
         if (! is_array($payload) || ! is_string($payload['openid'] ?? null)) {
             throw new AuthException('WECHAT_AUTH_FAILED', '微信临时登录凭证无效或已过期。', 422);
         }
+
         return ['openid' => $payload['openid'], 'unionid' => is_string($payload['unionid'] ?? null) ? $payload['unionid'] : null];
     }
 
@@ -137,6 +151,7 @@ class WechatIdentityProvider
             if ($response->serverError() || ! is_string($token) || $token === '') {
                 throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信接口凭证获取失败，请检查小程序配置。', 503);
             }
+
             return $token;
         });
     }

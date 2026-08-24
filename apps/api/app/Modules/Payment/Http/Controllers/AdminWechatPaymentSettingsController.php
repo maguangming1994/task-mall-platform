@@ -18,14 +18,18 @@ class AdminWechatPaymentSettingsController extends Controller
 {
     public function show(Request $request, WechatPaymentSettingsService $settings): JsonResponse
     {
-        if (! $this->isAuthorized($request)) return $this->denied();
+        if (! $this->isAuthorized($request)) {
+            return $this->denied();
+        }
 
         return ApiResponse::success($settings->snapshot());
     }
 
     public function update(Request $request, WechatPaymentSettingsService $settings, AuditLogger $audit): JsonResponse
     {
-        if (! $this->isAuthorized($request)) return $this->denied();
+        if (! $this->isAuthorized($request)) {
+            return $this->denied();
+        }
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:4', 'max:500'],
             'driver' => ['required', 'in:local,wechat'],
@@ -46,7 +50,9 @@ class AdminWechatPaymentSettingsController extends Controller
 
     public function credentials(Request $request, WechatPaymentSettingsService $settings, AuditLogger $audit): JsonResponse
     {
-        if (! $this->isAuthorized($request)) return $this->denied();
+        if (! $this->isAuthorized($request)) {
+            return $this->denied();
+        }
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:4', 'max:500'],
             'api_v3_key' => ['sometimes', 'nullable', 'string', 'size:32'],
@@ -57,7 +63,9 @@ class AdminWechatPaymentSettingsController extends Controller
             'clear_platform_certificate' => ['sometimes', 'boolean'],
         ]);
         $credentials = [];
-        if (filled($data['api_v3_key'] ?? null)) $credentials['api_v3_key'] = $data['api_v3_key'];
+        if (filled($data['api_v3_key'] ?? null)) {
+            $credentials['api_v3_key'] = $data['api_v3_key'];
+        }
         foreach (['merchant_private_key', 'platform_certificate'] as $field) {
             if (($data[$field] ?? null) instanceof UploadedFile) {
                 $credentials[$field] = file_get_contents($data[$field]->getRealPath());
@@ -88,7 +96,9 @@ class AdminWechatPaymentSettingsController extends Controller
 
     public function test(Request $request, WechatPaymentSettingsService $settings, AuditLogger $audit): JsonResponse
     {
-        if (! $this->isAuthorized($request)) return $this->denied();
+        if (! $this->isAuthorized($request)) {
+            return $this->denied();
+        }
         /** @var AdminUser $admin */
         $admin = $request->user();
         try {
@@ -105,6 +115,7 @@ class AdminWechatPaymentSettingsController extends Controller
     private function isAuthorized(Request $request): bool
     {
         $admin = $request->user();
+
         return $admin instanceof AdminUser && $admin->hasPermission('settings.manage')
             && $admin->roles()->where('code', 'super_admin')->exists();
     }

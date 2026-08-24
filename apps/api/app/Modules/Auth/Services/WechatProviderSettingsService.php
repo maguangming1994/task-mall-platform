@@ -87,7 +87,7 @@ class WechatProviderSettingsService
     }
 
     /** @param array<string, mixed> $settings
-     * @param array<string, mixed> $credentials
+     * @param  array<string, mixed>  $credentials
      * @return array<string, mixed>
      */
     public function update(string $provider, array $settings, array $credentials, string $reason, AdminUser $actor): array

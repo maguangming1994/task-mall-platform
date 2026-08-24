@@ -111,7 +111,9 @@ class ThirdPartySettingsSecurityTest extends TestCase
     {
         $opensslConfig = dirname(PHP_BINARY).DIRECTORY_SEPARATOR.'extras'.DIRECTORY_SEPARATOR.'ssl'.DIRECTORY_SEPARATOR.'openssl.cnf';
         $options = ['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA];
-        if (is_file($opensslConfig)) $options['config'] = $opensslConfig;
+        if (is_file($opensslConfig)) {
+            $options['config'] = $opensslConfig;
+        }
         $key = openssl_pkey_new($options);
         openssl_pkey_export($key, $privateKey, null, $options);
         $csr = openssl_csr_new(['commonName' => 'task-mall.test'], $key, [...$options, 'digest_alg' => 'sha256']);
