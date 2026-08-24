@@ -33,6 +33,7 @@ type AppFormValues = {
   app_secret: string; token: string; encoding_aes_key: string
   clear_app_secret: boolean; clear_token: boolean; clear_encoding_aes_key: boolean
 }
+type AppSecretField = 'app_secret' | 'token' | 'encoding_aes_key'
 type PaymentFormValues = RecentValues & {
   driver: 'local' | 'wechat'; merchant_id: string; merchant_certificate_serial: string
   notify_url: string; refund_notify_url: string; timeout_seconds: number; api_v3_key: string
@@ -135,28 +136,39 @@ export function ThirdPartyServicesPanel() {
     try {
       const values = await wechatForm.validateFields()
       const app = values[provider]
-      for (const field of ['app_secret', 'token', 'encoding_aes_key'] as const) {
-        if (app[field].trim() && app[`clear_${field}`]) throw new Error('密钥不能同时输入新值并勾选清除。')
+      const secretFields: AppSecretField[] = provider === 'mini'
+        ? ['app_secret']
+        : ['app_secret', 'token', 'encoding_aes_key']
+      for (const field of secretFields) {
+        if ((app[field]?.trim() ?? '') && app[`clear_${field}`]) {
+          messageApi.warning('密钥不能同时输入新值并勾选清除。')
+          return
+        }
       }
       setBusy(`wechat-${provider}`)
       await verifyRecent(values)
       const input: Record<string, unknown> = {
-        reason: values.reason.trim(), driver: app.driver, app_id: app.app_id.trim(), timeout_seconds: Number(app.timeout_seconds),
+        reason: values.reason.trim(), driver: app.driver, app_id: app.app_id?.trim() ?? '', timeout_seconds: Number(app.timeout_seconds),
       }
-      for (const field of ['app_secret', 'token', 'encoding_aes_key'] as const) {
-        if (app[field].trim()) input[field] = app[field].trim()
+      for (const field of secretFields) {
+        const value = app[field]?.trim() ?? ''
+        if (value) input[field] = value
         if (app[`clear_${field}`]) input[`clear_${field}`] = true
       }
       const updated = await saveWechatAppSettings(provider, input)
       setWechat((current) => current ? { ...current, [provider]: updated } : current)
       wechatForm.setFieldValue(provider, appValues(updated))
       messageApi.success(provider === 'mini' ? '小程序配置已保存。' : '公众号配置已保存。')
-    } catch (error) { messageApi.error(errorText(error, error instanceof Error ? error.message : '微信配置保存失败。')) }
+    } catch (error) { messageApi.error(errorText(error, '微信配置保存失败，请刷新页面后重试。')) }
     finally { setBusy('') }
   }
 
   const testWechat = async (provider: 'mini' | 'official_account') => {
     try {
+      if (!wechat?.[provider].ready) {
+        const providerName = provider === 'mini' ? '微信小程序' : '微信公众号'
+        return messageApi.warning(`请先保存完整的${providerName}配置，再测试连接。`)
+      }
       const values = wechatForm.getFieldsValue()
       if (!values.current_password) return messageApi.warning('连接测试前请填写管理员密码。')
       setBusy(`test-${provider}`); await verifyRecent(values)

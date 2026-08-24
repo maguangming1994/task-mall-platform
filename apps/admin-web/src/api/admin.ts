@@ -786,6 +786,14 @@ export class ApiError extends Error {
 }
 
 const validationFieldLabels: Record<string, string> = {
+  provider: '微信应用配置',
+  driver: '运行模式',
+  app_id: 'AppID',
+  app_secret: 'AppSecret',
+  timeout_seconds: '请求超时时间',
+  reason: '修改原因',
+  current_password: '当前管理员密码',
+  mfa_code: 'MFA 验证码',
   cover_image_url: '任务封面图',
   supported_devices: '支持设备',
   category: '任务分类',
