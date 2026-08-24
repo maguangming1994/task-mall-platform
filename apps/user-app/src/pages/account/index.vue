@@ -1,13 +1,7 @@
 <template>
   <view class="page">
     <view class="account-toolbar">
-      <view class="toolbar-spacer" />
       <text>账户中心</text>
-      <view v-if="hasCompletedLogin" class="toolbar-actions">
-        <view @click="openPrivacy">⚙</view>
-        <view @click="openNotifications">信</view>
-      </view>
-      <view v-else class="toolbar-spacer" />
     </view>
 
     <view v-if="resolvingAccount" class="account-state account-loading" aria-live="polite">
@@ -125,7 +119,7 @@
 
     <button class="logout" @click="logout">退出当前账号</button>
     </template>
-    <AppTabBar current-target="account" />
+    <AppTabBar current-target="account" variant="flat" />
   </view>
 </template>
 
@@ -340,4 +334,33 @@ async function logout() {
 .account-state,.guest-account{position:relative;overflow:hidden;min-height:650rpx;border:1rpx solid #d7e9e4;border-radius:32rpx;background:#fff;box-shadow:0 16rpx 38rpx rgba(34,85,80,.10)}
 .account-state{display:flex;align-items:center;justify-content:center;flex-direction:column;padding:54rpx;text-align:center;box-sizing:border-box}.state-mark{display:flex;width:92rpx;height:92rpx;align-items:center;justify-content:center;border-radius:30rpx;background:#0daf72;box-shadow:0 12rpx 26rpx rgba(13,175,114,.22);color:#fff;font-size:34rpx;font-weight:900}.loading-mark{background:#dff5ec;box-shadow:none;color:#18805d}.state-title{display:block;margin-top:25rpx;color:#17384d;font-size:30rpx;font-weight:900}.state-copy{display:block;margin-top:9rpx;color:#7a8d97;font-size:20rpx}
 .guest-account{min-height:720rpx;background:linear-gradient(150deg,#e6fff1 0%,#eaf8ff 64%,#fff6d9 100%)}.guest-account:active{transform:scale(.99)}.guest-account-art{position:absolute;right:-120rpx;bottom:-10rpx;width:710rpx;height:520rpx;opacity:.34}.guest-account-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(235,255,244,.98) 0%,rgba(235,255,244,.91) 42%,rgba(238,250,255,.52) 100%)}.guest-account-content{position:relative;z-index:1;display:flex;align-items:center;flex-direction:column;padding:82rpx 50rpx 58rpx;text-align:center}.guest-kicker,.guest-title,.guest-copy{display:block}.guest-kicker{margin-top:28rpx;color:#16805f;font-size:16rpx;font-weight:900;letter-spacing:2rpx}.guest-title{margin-top:12rpx;color:#17384d;font-size:42rpx;font-weight:950}.guest-copy{max-width:520rpx;margin-top:14rpx;color:#5f7782;font-size:22rpx;line-height:1.65}.guest-login-button{width:100%;height:84rpx;margin-top:42rpx;border:0;border-radius:22rpx;background:#0daf72;box-shadow:0 12rpx 26rpx rgba(13,175,114,.20);color:#fff;font-size:26rpx;font-weight:900;line-height:84rpx}.guest-login-button::after{border:0}
+
+/* Stable phone typography: text stays readable while grids adapt by viewport. */
+.page{padding-top:calc(var(--status-bar-height) + 10px);padding-bottom:calc(68px + env(safe-area-inset-bottom))}
+.account-toolbar{display:flex;min-height:44px;align-items:center;margin-bottom:12px;padding:0 104px 0 4px}
+.account-toolbar>text{overflow:hidden;font-size:20px;line-height:1.2;text-align:left;text-overflow:ellipsis;white-space:nowrap}
+.toolbar-spacer,.toolbar-actions{display:none}
+.page .account-hero{min-height:250px;padding:20px 16px 16px;border-radius:22px}
+.hero-profile{gap:12px}.profile-copy{min-width:0;flex:1}.page .account-hero .profile-mark{width:56px;height:56px;flex:none;font-size:20px}
+.page .account-hero .profile-badge{max-width:100%;margin-bottom:4px;padding:3px 8px;font-size:12px;letter-spacing:0}
+.page .account-hero .title{display:block;overflow:hidden;font-size:23px;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+.page .account-hero .subtitle{margin-top:4px;font-size:14px;line-height:1.4}.page .profile-edit{min-width:82px;height:40px;padding:0 12px;font-size:14px;line-height:38px}
+.page .hero-meta{right:16px;bottom:16px;left:16px;padding:12px 14px 10px;border-radius:16px}
+.completion-block{grid-template-columns:70px minmax(0,1fr);gap:10px;padding-bottom:9px!important}.page .completion-copy strong{font-size:20px}.page .completion-copy text{font-size:12px}
+.completion-block .profile-progress{height:6px}.identity-block{gap:8px;margin-top:9px}.page .identity-symbol{width:28px;height:28px;border-radius:9px;font-size:13px}
+.page .hero-meta .identity-block strong{font-size:15px}.page .hero-meta .identity-block text{font-size:12px}
+.wallet-layout{gap:10px;margin-top:12px}.wallet-main{min-height:145px;padding:16px;border-radius:18px}.wallet-head text:first-child{font-size:15px}.wallet-head text:last-child{font-size:12px}
+.wallet-main>strong{margin-top:16px;font-size:27px;letter-spacing:0}.wallet-caption{font-size:13px}.wallet-action-row{right:16px;bottom:14px;left:16px;gap:10px}
+.wallet-action-row button{min-height:44px;height:44px;padding:0 16px;font-size:14px;line-height:44px}.wallet-action-row>text{font-size:12px}
+.asset-side{gap:8px}.asset-mini{min-height:68px;padding:12px;border-radius:16px}.asset-mini text{font-size:14px}.asset-mini small{font-size:12px}.asset-mini strong{font-size:16px}
+.growth-card,.order-card,.community-services,.quick-services{margin-top:12px;padding:16px;border-radius:18px}.growth-card{padding-right:82px}.section-kicker{font-size:11px;letter-spacing:0}.section-title{font-size:18px}.section-note{font-size:12px}
+.growth-copy strong{font-size:17px}.growth-copy small{font-size:13px}.growth-target{top:15px;right:15px;width:56px;height:56px;border-radius:16px}.growth-target strong{font-size:15px}.growth-target text{font-size:11px}
+.order-status-grid{gap:6px;margin-top:14px}.order-status-item{padding:10px 3px;border-radius:14px}.order-mark{width:36px;height:36px;border-radius:12px;font-size:15px}.order-status-item strong{margin-top:5px;font-size:15px}.order-status-item text{font-size:12px}
+.community-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:12px}.community-item,.community-item:nth-child(2),.community-item:nth-child(3),.community-item:nth-child(5),.community-item:nth-child(6){min-height:82px;padding:10px 4px;border-radius:14px;background:#f6faf8}
+.community-item:nth-child(2),.community-item:nth-child(5){background:#fff9e8}.community-item:nth-child(3),.community-item:nth-child(6){background:#f2f0ff}.community-item .service-icon{width:38px;height:38px}.community-item .service-label{margin-top:6px;font-size:14px}
+.quick-services .quick-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:12px}.quick-services .quick-card{min-height:82px;padding:8px 2px;border-radius:13px}.quick-services .quick-card .service-icon{width:38px;height:38px;border-radius:12px}.quick-services .quick-card .service-label{font-size:13px}
+.logout{min-height:44px;height:44px;margin-top:12px;font-size:14px;line-height:42px}
+.account-state,.guest-account{min-height:420px;border-radius:22px}.state-mark{width:58px;height:58px;border-radius:18px;font-size:20px}.state-title{font-size:19px}.state-copy{font-size:13px}
+.guest-account{min-height:440px}.guest-account-content{padding:50px 28px 34px}.guest-kicker{font-size:11px;letter-spacing:0}.guest-title{font-size:25px}.guest-copy{font-size:14px}.guest-login-button{min-height:44px;height:44px;margin-top:24px;border-radius:14px;font-size:15px;line-height:44px}
+@media screen and (max-width:360px){.page{padding-right:16px;padding-left:16px}.page .account-hero{min-height:300px}.hero-profile{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:center;gap:8px 12px}.page .account-hero .profile-mark{grid-row:1}.profile-copy{grid-column:2;grid-row:1}.page .account-hero .profile-badge{white-space:nowrap}.page .profile-edit{grid-column:2;grid-row:2;width:96px;margin:0}.wallet-layout{grid-template-columns:1fr}.asset-side{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto}.wallet-action-row>text{display:none}.quick-services .quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>

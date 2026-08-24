@@ -32,6 +32,9 @@
         <view class="home-v10-hero-brand">
           <text class="home-v10-hero-title">{{ home.brand.name || '任务商城' }}</text>
           <text class="home-v10-hero-subtitle">完成任务，兑换好生活</text>
+          <button v-if="activeHeroSlide" class="home-v10-hero-cta" @click.stop="navigateHomeLink(activeHeroSlide.link_type)">
+            {{ activeHeroSlide.button_text || '立即查看' }}<text>›</text>
+          </button>
         </view>
 
         <view class="home-v10-hero-actions">
@@ -766,6 +769,7 @@ function createDefaultHome(): HomeContent {
 }
 
 const home = ref<HomeContent>(createDefaultHome())
+const activeHeroSlide = computed(() => home.value.carousel.items[activeHeroIndex.value] || home.value.carousel.items[0])
 const quickEntries = computed(() => home.value.modules.quick_entries.slice(0, 4).map((item) => ({
   ...item,
   action: () => navigateHomeLink(item.link_type),
@@ -1161,4 +1165,26 @@ function handlePopupAction() {
 .home-v4-state-title,.home-v4-state-copy{display:block}.home-v4-state-title{color:#17394c;font-weight:850}.home-v4-state-copy{margin-top:4rpx;color:#768893;font-size:17rpx}
 .home-v4-state-action{height:54rpx;flex:none;margin:0;padding:0 18rpx;border:1rpx solid #08a96a;border-radius:14rpx;background:#ecfbf4;color:#078a59;font-size:18rpx;line-height:52rpx}.home-v4-state-action::after{border:0}
 @keyframes home-v4-spin{to{transform:rotate(360deg)}}
+
+/* Stable phone typography: keep type in px and let layout, not text, respond. */
+.home-v4-safe{height:calc(var(--status-bar-height) + 10px)}
+.home-v10-auth-shell{padding-bottom:20px}
+.home-v10-hero{height:210px}
+.home-v10-hero-veil{background:linear-gradient(90deg,rgba(255,255,255,.99) 0%,rgba(255,255,255,.95) 42%,rgba(255,255,255,.46) 62%,rgba(255,255,255,.03) 78%)}
+.home-v10-hero-brand{top:22px;left:18px;max-width:56%}
+.home-v10-hero-title{font-size:28px;letter-spacing:0;line-height:1.08}
+.home-v10-hero-subtitle{margin-top:10px;font-size:15px;letter-spacing:0;line-height:1.45}
+.home-v10-hero-cta{display:flex;min-width:112px;min-height:44px;align-items:center;justify-content:center;gap:6px;margin:22px 0 0;padding:0 18px;border:0;border-radius:22px;background:linear-gradient(110deg,#08aa67,#08c17d);box-shadow:0 8px 18px rgba(8,169,104,.2);color:#fff;font-size:15px;font-weight:900;line-height:44px}.home-v10-hero-cta::after{display:none}.home-v10-hero-cta text{font-size:20px;line-height:1}
+.home-v10-hero-actions{top:66px;right:14px;gap:10px}.home-v10-hero-action{width:42px}.home-v10-hero-action>text{margin-top:5px;font-size:12px}.home-v10-action-image{width:28px;height:28px}
+.home-v10-main{margin-top:-28px;padding:0 14px 24px}
+.home-v10-quick-card{padding:18px 8px 16px;border-radius:20px}.home-v10-quick-icon{width:44px;height:44px;border-radius:14px}.home-v10-quick-icon image{width:36px;height:36px}.home-v10-quick-icon>text{font-size:19px}.home-v10-quick-label{margin-top:9px;font-size:14px}
+.home-v10-announcement{min-height:52px;gap:8px;margin-top:12px;padding:8px 12px;border-radius:14px}.home-v10-announcement-icon{width:32px;height:32px;border-radius:10px;font-size:18px}.home-v10-announcement-icon image{width:26px;height:26px}.home-v10-announcement-label{font-size:14px}.home-v10-announcement-content{font-size:13px}.home-v10-announcement-arrow{font-size:20px}
+.home-v10-error{font-size:13px}.home-v10-section-head{margin:20px 2px 10px}.home-v10-section-title{font-size:19px}.home-v10-section-link{font-size:13px}
+.home-v10-task-card{min-height:96px;gap:10px;padding:13px;border-radius:17px}.home-v10-task-empty{min-height:96px;gap:10px;padding:13px;border-radius:17px}.home-v10-task-empty-icon{width:52px;height:52px;border-radius:16px;font-size:17px}.home-v10-task-empty-copy>text:first-child{font-size:15px}.home-v10-task-empty-copy>text:last-child{margin-top:4px;font-size:13px;line-height:1.45}.home-v10-task-empty-link{font-size:13px}
+.home-v10-task-cover{width:64px;height:64px;border-radius:16px}.home-v10-task-fallback{width:42px;height:42px;border-radius:13px;font-size:17px}.home-v10-task-title{font-size:15px}.home-v10-task-description{margin-top:4px;font-size:13px;line-height:1.45}.home-v10-task-meta{margin-top:6px;font-size:12px}.home-v10-task-side{max-width:92px}.home-v10-task-reward{max-width:92px;font-size:14px}.home-v10-task-button{min-height:44px;height:44px;margin-top:8px;padding:0 15px;font-size:14px;line-height:44px}
+.home-v10-continue-head{padding:15px 16px 10px}.home-v10-continue-head text:first-child{font-size:17px}.home-v10-continue-head text:last-child{font-size:13px}
+.home-v10-mall-section{margin-top:18px;padding:14px 12px 15px;border-radius:18px}.home-v10-mall-head{padding:0 2px 11px}.home-v10-mall-head text:first-child{font-size:18px}.home-v10-mall-head text:last-child{font-size:13px}.home-v10-products{gap:8px}.home-v10-product-image{height:72px;border-radius:12px;font-size:22px}.home-v10-product-name{margin-top:7px;font-size:13px;line-height:1.35}.home-v10-product-price{margin-top:4px;font-size:12px}
+.home-v10-trust{min-height:68px;gap:10px;margin-top:16px;padding:12px 14px;border-radius:15px}.home-v10-trust-shield{width:40px;height:44px;border-radius:12px 12px 16px 16px;font-size:17px}.home-v10-trust>view:nth-child(2)>text:first-child{font-size:14px}.home-v10-trust>view:nth-child(2)>text:last-child{margin-top:3px;font-size:12px;line-height:1.45}.home-v10-trust>text:last-child{font-size:20px}
+.home-v09-auth{padding-bottom:24px}
+@media screen and (max-width:360px){.home-v10-hero{height:200px}.home-v10-hero-brand{max-width:58%}.home-v10-hero-actions{top:64px}.home-v10-task-card{flex-wrap:wrap}.home-v10-task-copy{flex-basis:calc(100% - 74px)}.home-v10-task-side{width:100%;max-width:none;align-items:center;justify-content:space-between;flex-direction:row;padding-left:74px}.home-v10-task-button{margin-top:0}.home-v10-products{grid-template-columns:repeat(2,minmax(0,1fr))}.home-v10-product-image{height:84px}}
 </style>

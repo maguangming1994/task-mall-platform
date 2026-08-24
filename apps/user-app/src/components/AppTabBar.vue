@@ -108,4 +108,16 @@ function open(target: NavigationTarget) {
 .tabbar-shell.flat .tabbar-label{font-size:18rpx}
 @media (prefers-reduced-motion: reduce){.tabbar-item,.tabbar-icon-wrap{transition:none}.tabbar-item:active .tabbar-icon-wrap{transform:none}}
 @media screen and (min-width:768px){.tabbar{right:auto;left:50%;width:690rpx;transform:translateX(-50%)}.tabbar-shell.flat .tabbar{right:auto;left:50%;width:750rpx;transform:translateX(-50%)}}
+
+/* Keep navigation readable at the same physical scale across phone widths. */
+.tabbar-spacer{height:calc(76px + env(safe-area-inset-bottom))}
+.tabbar{right:12px;bottom:calc(8px + env(safe-area-inset-bottom));left:12px;height:64px;padding:6px 8px;border-radius:18px}
+.tabbar-item{gap:3px;padding:3px 2px}.tabbar-item.active::before{inset:1px 5px;border-radius:14px}
+.tabbar-icon-wrap,.tabbar-item.featured .tabbar-icon-wrap{width:28px;height:28px;border-radius:9px}.tabbar-icon,.tabbar-item.featured .tabbar-icon{width:24px;height:24px}
+.tabbar-label,.tabbar-shell.flat .tabbar-label{font-size:13px;line-height:1.2}
+.tabbar-shell.flat .tabbar-spacer{height:calc(64px + env(safe-area-inset-bottom))}
+.tabbar-shell.flat .tabbar{height:calc(64px + env(safe-area-inset-bottom));padding:6px 10px calc(6px + env(safe-area-inset-bottom))}
+.tabbar-shell.flat .tabbar-item{gap:3px;padding:3px 2px}.tabbar-shell.flat .tabbar-icon-wrap,.tabbar-shell.flat .tabbar-item.featured .tabbar-icon-wrap{width:28px;height:28px}.tabbar-shell.flat .tabbar-icon,.tabbar-shell.flat .tabbar-item.featured .tabbar-icon{width:24px;height:24px}
+.tabbar-shell.flat .tabbar-item.active::before{display:block;z-index:1;top:-6px;right:28%;bottom:auto;left:28%;height:3px;border-radius:999px;background:var(--tabbar-active,#12a66a)}
+@media screen and (min-width:768px){.tabbar{right:auto;left:50%;width:690rpx;transform:translateX(-50%)}.tabbar-shell.flat .tabbar{right:auto;left:50%;width:750rpx;transform:translateX(-50%)}}
 </style>
