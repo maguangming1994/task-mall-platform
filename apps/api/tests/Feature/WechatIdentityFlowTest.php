@@ -105,6 +105,22 @@ class WechatIdentityFlowTest extends TestCase
         ]);
     }
 
+    public function test_unconfigured_wechat_phone_authorization_returns_a_safe_fallback(): void
+    {
+        $login = $this->wechatLogin('mini', 'local:mini-open-unconfigured:union-unconfigured');
+        $token = $login->json('data.access_token');
+
+        config()->set('wechat_auth.driver', 'wechat');
+        config()->set('wechat_auth.mini.app_id', null);
+        config()->set('wechat_auth.mini.app_secret', null);
+
+        $this->withToken($token)
+            ->putJson('/api/v1/me/phone/wechat', ['code' => 'phone-authorization-code'])
+            ->assertStatus(503)
+            ->assertJsonPath('code', 'WECHAT_PHONE_PROVIDER_NOT_CONFIGURED')
+            ->assertJsonPath('message', '微信手机号授权暂时不可用，请使用短信验证码完成绑定，或稍后重试。');
+    }
+
     public function test_union_collision_creates_a_pending_conflict_without_silent_merge(): void
     {
         $hasher = app(IdentityHasher::class);

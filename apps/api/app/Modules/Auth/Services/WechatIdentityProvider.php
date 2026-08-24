@@ -44,7 +44,11 @@ class WechatIdentityProvider
     {
         $configuration = $this->settings->effective('mini');
         if ($configuration['driver'] !== 'wechat' || blank($configuration['app_id']) || blank($configuration['app_secret'])) {
-            throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信手机号授权服务尚未完成生产配置。', 503);
+            throw new AuthException(
+                'WECHAT_PHONE_PROVIDER_NOT_CONFIGURED',
+                '微信手机号授权暂时不可用，请使用短信验证码完成绑定，或稍后重试。',
+                503,
+            );
         }
         try {
             $response = Http::acceptJson()->timeout($configuration['timeout_seconds'])

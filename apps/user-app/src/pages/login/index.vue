@@ -58,7 +58,7 @@
         </view>
 
         <!-- #ifdef MP-WEIXIN -->
-        <template v-if="needsPhoneBinding">
+        <template v-if="needsPhoneBinding && wechatPhoneAvailable">
           <button
             v-if="agreed"
             class="wechat-phone-button"
@@ -72,6 +72,9 @@
           <button v-else class="wechat-phone-button" @click="ensureAgreed">微信授权手机号</button>
           <view class="divider"><view /><text>或使用短信验证码</text><view /></view>
         </template>
+        <view v-else-if="needsPhoneBinding && capabilities" class="wechat-phone-unavailable">
+          微信手机号授权暂时不可用，请使用短信验证码完成绑定。
+        </view>
         <!-- #endif -->
 
         <view class="field-group">
@@ -144,6 +147,7 @@ const needsPhoneBinding = ref(Boolean(auth.user && !auth.user.phone_bound))
 const returnUrl = ref<string | null>(null)
 const isDevelopment = import.meta.env.DEV
 const wechatMethod = computed(() => capabilities.value?.login_methods.find(method => method !== 'phone'))
+const wechatPhoneAvailable = computed(() => capabilities.value?.login_methods.includes('wechat_mini') === true)
 let timer: ReturnType<typeof setInterval> | undefined
 
 function showError(error: unknown) {
@@ -235,9 +239,35 @@ async function authorizeWechatPhone(event: WechatPhoneEvent) {
     await auth.bindWechatPhone(phoneCode)
     finishLogin()
   } catch (error) {
+    if (error instanceof ApiError && ['WECHAT_PHONE_PROVIDER_NOT_CONFIGURED', 'WECHAT_PROVIDER_UNAVAILABLE'].includes(error.code)) {
+      const refreshed = await refreshCapabilities()
+      if (refreshed?.login_methods.includes('wechat_mini')) {
+        try {
+          await auth.bindWechatPhone(phoneCode)
+          finishLogin()
+          return
+        } catch (retryError) {
+          if (!(retryError instanceof ApiError) || !['WECHAT_PHONE_PROVIDER_NOT_CONFIGURED', 'WECHAT_PROVIDER_UNAVAILABLE'].includes(retryError.code)) {
+            showError(retryError)
+            return
+          }
+        }
+      }
+      showError(new Error('微信手机号授权暂时不可用，请使用短信验证码完成绑定，或稍后重试。'))
+      return
+    }
     showError(error)
   } finally {
     wechatPhoneSubmitting.value = false
+  }
+}
+
+async function refreshCapabilities() {
+  try {
+    capabilities.value = await loadClientCapabilities()
+    return capabilities.value
+  } catch {
+    return null
   }
 }
 
@@ -315,6 +345,7 @@ onUnmounted(() => {
 .form-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18rpx;margin-bottom:26rpx}.form-kicker{color:#1178bd;font-size:15rpx;font-weight:900;letter-spacing:2rpx}.form-title{margin-top:6rpx;color:var(--tm-ink-900);font-size:29rpx;font-weight:950}.form-step{padding:8rpx 13rpx;border-radius:999rpx;background:#fff4bd;color:#7c5b00;font-size:17rpx;font-weight:850}
 .wechat-button,.wechat-phone-button{display:flex;align-items:center;justify-content:center;gap:13rpx;height:84rpx;margin:0;border:0;border-radius:20rpx;background:#1fbd6b;box-shadow:0 10rpx 22rpx rgba(21,150,84,.18);color:#fff;font-size:25rpx;font-weight:850;line-height:84rpx}.wechat-icon{display:inline-flex;align-items:center;justify-content:center;width:40rpx;height:40rpx;border-radius:50%;background:rgba(255,255,255,.2);font-size:20rpx}.divider{display:flex;align-items:center;gap:16rpx;margin:25rpx 0;color:#98a5b2;font-size:18rpx}.divider view{flex:1;height:1rpx;background:#e6edf1}
 .verified-tip{display:flex;align-items:center;gap:16rpx;margin-bottom:24rpx;padding:18rpx;border:1rpx solid #c9ebd8;border-radius:18rpx;background:#effbf4}.verified-badge{display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;flex:none;border-radius:50%;background:#1ab66d;color:#fff;font-size:24rpx}.verified-title{color:#0b7544;font-size:22rpx;font-weight:850}.verified-copy{margin-top:4rpx;color:#56806b;font-size:17rpx}
+.wechat-phone-unavailable{margin-bottom:22rpx;padding:16rpx 18rpx;border:1rpx solid #f0d7a8;border-radius:16rpx;background:#fff9e8;color:#8a6416;font-size:19rpx;line-height:1.5}
 .field-group+.field-group{margin-top:22rpx}.label{margin-bottom:10rpx;color:#31455a;font-size:21rpx;font-weight:850}.input-shell{display:flex;height:82rpx;align-items:center;overflow:hidden;padding:0 10rpx;border:1rpx solid #d4e4ec;border-radius:18rpx;background:#f9fcfd;box-sizing:border-box;transition:border-color .18s ease,box-shadow .18s ease}.input-shell:focus-within{border-color:#2096db;box-shadow:0 0 0 5rpx rgba(32,150,219,.10)}.input-prefix{display:flex;height:46rpx;align-items:center;justify-content:center;flex:none;padding:0 15rpx;border-radius:13rpx;background:#e9f5fb;color:#286078;font-size:19rpx;font-weight:900}.phone-prefix{margin-left:1rpx;letter-spacing:.4rpx}.input{min-width:0;height:80rpx;flex:1;padding:0 16rpx;color:var(--tm-ink-900);font-size:24rpx;box-sizing:border-box}.code-shell{min-width:0;padding-right:7rpx}.code-input{padding-left:17rpx}.code-button{width:auto;min-width:146rpx;height:58rpx;flex:none;margin:0;padding:0 18rpx;border:0;border-radius:14rpx;background:#dff3ff;color:#0d68b7;font-size:19rpx;font-weight:900;line-height:58rpx;white-space:nowrap}.code-button[disabled]{background:#edf2f5;color:#98a3ad}
 .dev-tip{display:flex;align-items:center;gap:10rpx;margin-top:18rpx;padding:13rpx 15rpx;border-radius:14rpx;background:#fff8df;color:#886514;font-size:18rpx}.dev-mark{padding:3rpx 7rpx;border-radius:7rpx;background:#ffd84d;color:#534000;font-size:13rpx;font-weight:950}.agreement-row{display:flex;align-items:flex-start;gap:12rpx;margin-top:24rpx;color:#6c7884;font-size:19rpx;line-height:1.65}.agreement-check{display:flex;width:30rpx;height:30rpx;align-items:center;justify-content:center;flex:none;margin-top:1rpx;border:1rpx solid #aebdc8;border-radius:8rpx;background:#fff;color:#fff;font-size:19rpx}.agreement-check.checked{border-color:#158fca;background:linear-gradient(145deg,#1267df,#20c3c8)}.agreement-copy{min-width:0;flex:1}.agreement-link{color:#0c6fc0;font-weight:800}.login-button{height:88rpx;margin-top:22rpx;border:0;border-radius:21rpx;background:linear-gradient(115deg,#1267df,#1ba2de 62%,#20c6c5);box-shadow:0 13rpx 28rpx rgba(17,111,189,.22);color:#fff;font-size:27rpx;font-weight:900;line-height:88rpx}.login-button[disabled],.wechat-button[disabled],.wechat-phone-button[disabled]{box-shadow:none;opacity:.46}.register-note{margin-top:14rpx;color:#8a96a2;text-align:center;font-size:17rpx;line-height:1.45}.code-button::after,.login-button::after,.wechat-button::after,.wechat-phone-button::after{border:0}
 .form-error{margin-top:16rpx;padding:14rpx 16rpx;border:1rpx solid #f4c4be;border-radius:14rpx;background:#fff5f3;color:#b42318;font-size:18rpx;line-height:1.5}

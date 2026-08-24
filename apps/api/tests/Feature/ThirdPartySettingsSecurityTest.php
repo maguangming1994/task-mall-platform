@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Auth\Models\WechatProviderCredential;
+use App\Modules\Auth\Services\WechatIdentityProvider;
 use App\Modules\Auth\Services\WechatProviderSettingsService;
 use App\Modules\Payment\Models\WechatPaymentCredential;
 use Database\Seeders\RbacSeeder;
@@ -12,6 +13,7 @@ use Database\Seeders\SystemSettingDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class ThirdPartySettingsSecurityTest extends TestCase
@@ -49,6 +51,22 @@ class ThirdPartySettingsSecurityTest extends TestCase
         $effective = app(WechatProviderSettingsService::class)->effective('mini');
         $this->assertSame('wx1234567890abcdef', $effective['app_id']);
         $this->assertSame($secret, $effective['app_secret']);
+
+        Http::fake([
+            'api.weixin.qq.com/cgi-bin/token*' => Http::response([
+                'access_token' => 'saved-settings-access-token',
+                'expires_in' => 7200,
+            ]),
+            'api.weixin.qq.com/wxa/business/getuserphonenumber*' => Http::response([
+                'errcode' => 0,
+                'errmsg' => 'ok',
+                'phone_info' => ['phoneNumber' => '13800138883'],
+            ]),
+        ]);
+        $this->assertSame(
+            '13800138883',
+            app(WechatIdentityProvider::class)->exchangePhoneNumber('saved-settings-phone-code'),
+        );
     }
 
     public function test_official_account_verification_file_is_restricted_and_available_at_root(): void
