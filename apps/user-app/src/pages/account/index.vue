@@ -3,12 +3,32 @@
     <view class="account-toolbar">
       <view class="toolbar-spacer" />
       <text>账户中心</text>
-      <view class="toolbar-actions">
+      <view v-if="hasCompletedLogin" class="toolbar-actions">
         <view @click="openPrivacy">⚙</view>
         <view @click="openNotifications">信</view>
       </view>
+      <view v-else class="toolbar-spacer" />
     </view>
 
+    <view v-if="resolvingAccount" class="account-state account-loading" aria-live="polite">
+      <view class="state-mark loading-mark">···</view>
+      <text class="state-title">正在确认登录状态</text>
+      <text class="state-copy">请稍候</text>
+    </view>
+
+    <view v-else-if="!hasCompletedLogin" class="guest-account" role="button" tabindex="0" @click="goLogin">
+      <image class="guest-account-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
+      <view class="guest-account-shade" />
+      <view class="guest-account-content">
+        <view class="state-mark">未</view>
+        <text class="guest-kicker">ACCOUNT ACCESS</text>
+        <text class="guest-title">未登录</text>
+        <text class="guest-copy">登录后查看任务进度、校园钱包、积分和订单。</text>
+        <button class="guest-login-button" @click.stop="goLogin">{{ guestActionText }}</button>
+      </view>
+    </view>
+
+    <template v-else>
     <view class="account-hero">
       <image class="account-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
       <view class="hero-profile">
@@ -104,6 +124,7 @@
     </view>
 
     <button class="logout" @click="logout">退出当前账号</button>
+    </template>
     <AppTabBar current-target="account" />
   </view>
 </template>
@@ -126,6 +147,9 @@ const saving = ref(false)
 const uploading = ref(false)
 const showProfileEditor = ref(false)
 const accountAppearance = ref<AccountAppearance>({ profile_icon_url: '', service_icons: [] })
+const resolvingAccount = ref(Boolean(auth.accessToken))
+const hasCompletedLogin = computed(() => Boolean(auth.isAuthenticated && auth.user?.phone_bound))
+const guestActionText = computed(() => auth.accessToken && auth.user && !auth.user.phone_bound ? '继续完成登录' : '登录 / 注册')
 const profileCompletion = computed(() => Math.min(100, (nickname.value.trim() ? 35 : 0) + (avatarFileId.value ? 35 : 0) + (auth.user ? 30 : 0)))
 const memberLevel = computed(() => (profileCompletion.value >= 100 ? '认证成员' : profileCompletion.value >= 65 ? '成长成员' : '新同学'))
 const completedGoal = computed(() => `${Math.min(5, Math.floor((assets.value?.points.available ?? 0) / 500))}/5`)
@@ -164,12 +188,22 @@ const communityServices = [
 onShow(load)
 
 async function load() {
-  if (!auth.accessToken) return navigateToLogin()
-  const [, appearanceResult] = await Promise.all([auth.fetchCurrentUser(), loadAppearanceContent()])
-  accountAppearance.value = appearanceResult.account
-  nickname.value = auth.user?.nickname ?? ''
-  avatarFileId.value = auth.user?.avatar_file_id ?? ''
-  assets.value = await loadAssetOverview(auth.accessToken)
+  resolvingAccount.value = Boolean(auth.accessToken)
+  showProfileEditor.value = false
+  assets.value = null
+  if (!auth.accessToken) return
+
+  try {
+    await auth.fetchCurrentUser()
+    if (!hasCompletedLogin.value || !auth.accessToken) return
+    const appearanceResult = await loadAppearanceContent()
+    accountAppearance.value = appearanceResult.account
+    nickname.value = auth.user?.nickname ?? ''
+    avatarFileId.value = auth.user?.avatar_file_id ?? ''
+    assets.value = await loadAssetOverview(auth.accessToken)
+  } finally {
+    resolvingAccount.value = false
+  }
 }
 
 async function uploadAvatar() {
@@ -195,6 +229,7 @@ async function saveProfile() {
 }
 
 function money(cents: number) { return (cents / 100).toFixed(2) }
+function goLogin() { navigateToLogin('/pages/account/index') }
 function openAssets() { uni.navigateTo({ url: '/pages/assets/index' }) }
 function openRecharge() { uni.navigateTo({ url: '/pages/wallet-recharge/index' }) }
 function openTasks() { uni.setStorageSync('task_mall_open_my_tasks', true); uni.reLaunch({ url: '/pages/tasks/index' }) }
@@ -302,4 +337,7 @@ async function logout() {
 .page .wallet-main button{background:#fff;color:#1774bd;box-shadow:0 8rpx 20rpx rgba(33,119,180,.12)}
 .page .asset-mini.points{background:linear-gradient(145deg,#fff8cf,#fffdf1)}
 .page .asset-mini.coupons{background:linear-gradient(145deg,#e7fbef,#f7fff9)}
+.account-state,.guest-account{position:relative;overflow:hidden;min-height:650rpx;border:1rpx solid #d7e9e4;border-radius:32rpx;background:#fff;box-shadow:0 16rpx 38rpx rgba(34,85,80,.10)}
+.account-state{display:flex;align-items:center;justify-content:center;flex-direction:column;padding:54rpx;text-align:center;box-sizing:border-box}.state-mark{display:flex;width:92rpx;height:92rpx;align-items:center;justify-content:center;border-radius:30rpx;background:#0daf72;box-shadow:0 12rpx 26rpx rgba(13,175,114,.22);color:#fff;font-size:34rpx;font-weight:900}.loading-mark{background:#dff5ec;box-shadow:none;color:#18805d}.state-title{display:block;margin-top:25rpx;color:#17384d;font-size:30rpx;font-weight:900}.state-copy{display:block;margin-top:9rpx;color:#7a8d97;font-size:20rpx}
+.guest-account{min-height:720rpx;background:linear-gradient(150deg,#e6fff1 0%,#eaf8ff 64%,#fff6d9 100%)}.guest-account:active{transform:scale(.99)}.guest-account-art{position:absolute;right:-120rpx;bottom:-10rpx;width:710rpx;height:520rpx;opacity:.34}.guest-account-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(235,255,244,.98) 0%,rgba(235,255,244,.91) 42%,rgba(238,250,255,.52) 100%)}.guest-account-content{position:relative;z-index:1;display:flex;align-items:center;flex-direction:column;padding:82rpx 50rpx 58rpx;text-align:center}.guest-kicker,.guest-title,.guest-copy{display:block}.guest-kicker{margin-top:28rpx;color:#16805f;font-size:16rpx;font-weight:900;letter-spacing:2rpx}.guest-title{margin-top:12rpx;color:#17384d;font-size:42rpx;font-weight:950}.guest-copy{max-width:520rpx;margin-top:14rpx;color:#5f7782;font-size:22rpx;line-height:1.65}.guest-login-button{width:100%;height:84rpx;margin-top:42rpx;border:0;border-radius:22rpx;background:#0daf72;box-shadow:0 12rpx 26rpx rgba(13,175,114,.20);color:#fff;font-size:26rpx;font-weight:900;line-height:84rpx}.guest-login-button::after{border:0}
 </style>
