@@ -9,6 +9,7 @@ use App\Modules\Auth\Models\IdentityConflict;
 use App\Modules\Auth\Models\UserDevice;
 use App\Modules\Auth\Models\UserIdentity;
 use App\Modules\Auth\Models\UserSession;
+use App\Modules\Identity\Models\UserIdentityVerification;
 use App\Modules\Notification\Models\NotificationPreference;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -82,6 +83,11 @@ class User extends Authenticatable
     public function notificationPreference(): HasOne
     {
         return $this->hasOne(NotificationPreference::class);
+    }
+
+    public function identityVerification(): HasOne
+    {
+        return $this->hasOne(UserIdentityVerification::class)->latestOfMany();
     }
 
     /**

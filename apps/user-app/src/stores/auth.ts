@@ -10,6 +10,7 @@ export interface CurrentUser {
   phone_bound: boolean
   status: 'active' | 'disabled' | 'cancelled'
   profile_completed: boolean
+  real_name_status: 'not_submitted' | 'pending' | 'verified' | 'failed' | 'provider_error'
 }
 
 interface AuthTokens {

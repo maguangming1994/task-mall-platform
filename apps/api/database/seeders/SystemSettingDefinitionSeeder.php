@@ -196,7 +196,8 @@ class SystemSettingDefinitionSeeder extends Seeder
             ], 'properties' => ['timeout_seconds' => ['type' => 'integer', 'min' => 1, 'max' => 30]]], 'normal'],
             ['identity.verification', 'accounts', '实名认证配置', 'object', null, [
                 'driver' => 'disabled', 'collection_enabled' => false, 'manual_review_enabled' => false,
-            ], ['required_keys' => ['driver', 'collection_enabled', 'manual_review_enabled']], 'normal'],
+                'aliyun' => ['region' => 'cn-hangzhou', 'endpoint' => 'cloudauth.aliyuncs.com', 'timeout_seconds' => 8],
+            ], ['required_keys' => ['driver', 'collection_enabled', 'manual_review_enabled', 'aliyun']], 'normal'],
             ['accounts.growth_levels_enabled', 'accounts', '用户成长等级开关', 'boolean', null, true, null, 'normal'],
             ['accounts.growth_active_task_count', 'accounts', '活跃用户任务达标数', 'integer', '个', 1, ['min' => 0, 'max' => 10000], 'normal'],
             ['accounts.growth_active_cash_order_count', 'accounts', '活跃用户现金订单达标数', 'integer', '单', 1, ['min' => 0, 'max' => 10000], 'normal'],

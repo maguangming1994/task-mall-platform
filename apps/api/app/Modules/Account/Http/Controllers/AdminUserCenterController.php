@@ -150,13 +150,13 @@ class AdminUserCenterController extends Controller
         ]);
     }
 
-    public function verifications(Request $request): JsonResponse
+    public function verifications(Request $request, IdentityVerificationSettingsService $identitySettings): JsonResponse
     {
         $filters = $request->validate([
             'status' => ['sometimes', 'in:verified,partial,unverified'],
             'page_size' => ['sometimes', 'integer', 'min:10', 'max:100'],
         ]);
-        $query = User::query()->with('identities')->latest('id');
+        $query = User::query()->with(['identities', 'identityVerification'])->latest('id');
         $this->applyVerificationFilter($query, $filters['status'] ?? null);
         $paginator = $query->paginate((int) ($filters['page_size'] ?? 20));
         $items = collect($paginator->items())->map(function (User $user): array {
@@ -170,7 +170,7 @@ class AdminUserCenterController extends Controller
                 'profile_completed' => $profile,
                 'wechat_bound' => $wechat,
                 'status' => $phone && $profile ? 'verified' : ($phone || $profile || $wechat ? 'partial' : 'unverified'),
-                'real_name_status' => 'not_collected',
+                'real_name_status' => $user->identityVerification?->status ?? 'not_collected',
                 'updated_at' => $user->updated_at?->toIso8601String(),
             ];
         });
@@ -179,7 +179,7 @@ class AdminUserCenterController extends Controller
             'items' => $items,
             'pagination' => ['page' => $paginator->currentPage(), 'page_size' => $paginator->perPage(), 'total' => $paginator->total(), 'last_page' => $paginator->lastPage()],
             'identity_policy' => [
-                'collect_id_number' => false,
+                'collect_id_number' => (bool) $identitySettings->effective()['collection_enabled'],
                 'collect_id_images' => false,
                 'note' => '当前仅核验手机号、资料完整度和微信身份绑定；如提现通道要求实名，应接入持牌认证服务并仅保存认证结果与必要凭证摘要。',
             ],

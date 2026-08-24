@@ -38,6 +38,12 @@ type PaymentFormValues = RecentValues & {
   notify_url: string; refund_notify_url: string; timeout_seconds: number; api_v3_key: string
   clear_api_v3_key: boolean; clear_merchant_private_key: boolean; clear_platform_certificate: boolean
 }
+type IdentityFormValues = RecentValues & {
+  driver: 'disabled' | 'manual' | 'aliyun'; collection_enabled: boolean; manual_review_enabled: boolean
+  aliyun: { region: string; endpoint: string; timeout_seconds: number }
+  access_key_id: string; access_key_secret: string; security_token: string
+  clear_access_key_id: boolean; clear_access_key_secret: boolean; clear_security_token: boolean
+}
 
 function errorText(error: unknown, fallback: string) {
   return error instanceof ApiError ? error.message : fallback
@@ -90,7 +96,7 @@ export function ThirdPartyServicesPanel() {
   const [platformCertificate, setPlatformCertificate] = useState<UploadFile | null>(null)
   const [wechatForm] = Form.useForm<WechatFormValues>()
   const [paymentForm] = Form.useForm<PaymentFormValues>()
-  const [identityForm] = Form.useForm<RecentValues & IdentityVerificationSettings>()
+  const [identityForm] = Form.useForm<IdentityFormValues>()
   const [messageApi, contextHolder] = message.useMessage()
 
   const load = useCallback(async () => {
@@ -108,7 +114,12 @@ export function ThirdPartyServicesPanel() {
         timeout_seconds: paymentValue.timeout_seconds, api_v3_key: '', clear_api_v3_key: false,
         clear_merchant_private_key: false, clear_platform_certificate: false, reason: '', current_password: '', mfa_code: '',
       })
-      identityForm.setFieldsValue({ ...identityValue, reason: '', current_password: '', mfa_code: '' })
+      identityForm.setFieldsValue({
+        driver: identityValue.driver, collection_enabled: identityValue.collection_enabled,
+        manual_review_enabled: identityValue.manual_review_enabled, aliyun: identityValue.aliyun,
+        access_key_id: '', access_key_secret: '', security_token: '', clear_access_key_id: false,
+        clear_access_key_secret: false, clear_security_token: false, reason: '', current_password: '', mfa_code: '',
+      })
     } catch (error) {
       messageApi.error(errorText(error, '第三方服务配置加载失败。'))
     } finally { setLoading(false) }
@@ -202,12 +213,21 @@ export function ThirdPartyServicesPanel() {
   const saveIdentity = async () => {
     try {
       const values = await identityForm.validateFields(); setBusy('identity-save'); await verifyRecent(values)
-      const updated = await saveIdentityVerificationSettings({
+      const input: Record<string, unknown> = {
         reason: values.reason.trim(), driver: values.driver,
         collection_enabled: values.collection_enabled, manual_review_enabled: values.manual_review_enabled,
-      })
+        aliyun: values.aliyun,
+      }
+      for (const field of ['access_key_id', 'access_key_secret', 'security_token'] as const) {
+        if (values[field].trim()) input[field] = values[field].trim()
+        if (values[`clear_${field}`]) input[`clear_${field}`] = true
+      }
+      const updated = await saveIdentityVerificationSettings(input)
       setIdentity(updated); messageApi.success('实名认证配置已保存。')
-      identityForm.setFieldsValue({ reason: '', current_password: '', mfa_code: '' })
+      identityForm.setFieldsValue({
+        access_key_id: '', access_key_secret: '', security_token: '', clear_access_key_id: false,
+        clear_access_key_secret: false, clear_security_token: false, reason: '', current_password: '', mfa_code: '',
+      })
     } catch (error) { messageApi.error(errorText(error, '实名认证配置保存失败。')) } finally { setBusy('') }
   }
 
@@ -280,12 +300,28 @@ export function ThirdPartyServicesPanel() {
   </Form>
 
   const identityTab = <Form form={identityForm} layout="vertical">
-    <Alert showIcon type="info" message="当前系统尚未接入外部实名认证供应商，仅开放关闭与人工审核模式；不会把身份证信息发送到未配置的平台。" />
+    <Alert showIcon type="info" message="阿里云模式使用身份二要素核验。姓名和身份证号仅在单次核验请求中使用，系统只留存掩码、不可逆摘要和认证结果。" />
     <section className="third-party-section">
-      {identity && <Tag color={identity.driver === 'manual' ? 'processing' : 'default'}>{identity.driver === 'manual' ? '人工审核已配置' : '实名认证已关闭'}</Tag>}
-      <Form.Item name="driver" label="实名认证模式"><Select options={[{ value: 'disabled', label: '关闭' }, { value: 'manual', label: '人工审核' }]} /></Form.Item>
+      {identity && statusTags(identity.ready, null)}
+      <Form.Item name="driver" label="实名认证模式"><Select options={[{ value: 'disabled', label: '关闭' }, { value: 'manual', label: '人工审核' }, { value: 'aliyun', label: '阿里云身份二要素核验' }]} /></Form.Item>
       <Form.Item name="collection_enabled" label="允许收集实名资料" valuePropName="checked"><Switch /></Form.Item>
       <Form.Item name="manual_review_enabled" label="启用人工复核" valuePropName="checked"><Switch /></Form.Item>
+    </section>
+    <section className="third-party-section">
+      <Typography.Title level={5}>阿里云信息核验</Typography.Title>
+      <div className="third-party-two-column">
+        <Form.Item name={['aliyun', 'region']} label="Region"><Input placeholder="cn-hangzhou" /></Form.Item>
+        <Form.Item name={['aliyun', 'timeout_seconds']} label="请求超时"><InputNumber min={1} max={30} addonAfter="秒" style={{ width: '100%' }} /></Form.Item>
+      </div>
+      <Form.Item name={['aliyun', 'endpoint']} label="Endpoint"><Input placeholder="cloudauth.aliyuncs.com" /></Form.Item>
+      {identity && <>
+        <Form.Item name="access_key_id" label={<Space>AccessKey ID {secretTag(identity.access_key_id)}</Space>}><Input.Password autoComplete="new-password" placeholder="留空表示保留当前值" /></Form.Item>
+        {identity.access_key_id.configured && <Form.Item name="clear_access_key_id" valuePropName="checked"><Checkbox>清除 AccessKey ID</Checkbox></Form.Item>}
+        <Form.Item name="access_key_secret" label={<Space>AccessKey Secret {secretTag(identity.access_key_secret)}</Space>}><Input.Password autoComplete="new-password" placeholder="留空表示保留当前值" /></Form.Item>
+        {identity.access_key_secret.configured && <Form.Item name="clear_access_key_secret" valuePropName="checked"><Checkbox>清除 AccessKey Secret</Checkbox></Form.Item>}
+        <Form.Item name="security_token" label={<Space>SecurityToken（可选） {secretTag(identity.security_token)}</Space>}><Input.Password autoComplete="new-password" placeholder="仅使用临时 STS 凭证时填写" /></Form.Item>
+        {identity.security_token.configured && <Form.Item name="clear_security_token" valuePropName="checked"><Checkbox>清除 SecurityToken</Checkbox></Form.Item>}
+      </>}
     </section>
     <RecentFields />
     <Button type="primary" loading={busy === 'identity-save'} onClick={() => void saveIdentity()}>保存实名认证配置</Button>

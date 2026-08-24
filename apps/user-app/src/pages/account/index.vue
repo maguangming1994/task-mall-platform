@@ -139,6 +139,7 @@ const baseServices = [
   { id: 'addresses', mark: '址', label: '收货地址', note: '管理配送信息', tone: 'green', action: openAddresses },
   { id: 'legal', mark: '约', label: '协议隐私', note: '授权与版本', tone: 'slate', action: openLegal },
   { id: 'security', mark: '安', label: '账号安全', note: '换绑与注销', tone: 'blue', action: openPrivacy },
+  { id: 'identity', mark: '证', label: '实名认证', note: '身份二要素核验', tone: 'green', action: openIdentityVerification },
   { id: 'support', mark: '服', label: '联系客服', note: '扫码进入小程序', tone: 'green', action: openSupport },
 ]
 const services = computed(() => baseServices.map((item) => {
@@ -203,6 +204,7 @@ function openReferrals() { uni.navigateTo({ url: '/pages/referrals/index' }) }
 function openCheckIn() { uni.navigateTo({ url: '/pages/check-in/index' }) }
 function openNotifications() { uni.navigateTo({ url: '/pages/notifications/index' }) }
 function openPrivacy() { uni.navigateTo({ url: '/pages/privacy/index' }) }
+function openIdentityVerification() { uni.navigateTo({ url: '/pages/identity-verification/index' }) }
 function openAddresses() { uni.navigateTo({ url: '/pages/addresses/index' }) }
 function openLegal() { uni.navigateTo({ url: '/pages/legal/index' }) }
 function openSupport() { uni.navigateTo({ url: '/pages/support/index' }) }
