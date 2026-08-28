@@ -382,7 +382,7 @@ onUnmounted(() => {
 @media screen and (min-width:768px){.page-shell{width:750rpx;margin:0 auto}.page{background:#f3f8fb}.page-shell{box-shadow:0 0 70rpx rgba(24,42,78,.06)}}
 /* V09 登录稿：把登录动作的主色收回校园绿，湖蓝只作为环境色与辅助强调。 */
 .page{background:linear-gradient(180deg,#eefbff 0,#f8fcfd 42%,#f7fafc 100%)}
-.intro-panel{background-image:linear-gradient(110deg,rgba(255,255,255,.98) 0%,rgba(239,253,251,.93) 48%,rgba(222,247,252,.66) 100%),url('../../static/home/hero-campus-reward.png');background-size:cover;background-position:center right}
+.intro-panel{background-image:linear-gradient(110deg,rgba(255,255,255,.98) 0%,rgba(239,253,251,.93) 48%,rgba(222,247,252,.66) 100%)}
 .brand-symbol{background:linear-gradient(145deg,#08a865,#11c796);box-shadow:0 9rpx 22rpx rgba(7,167,111,.2)}
 .secure-pill{background:#e6f8ef;color:#07885a}
 .eyebrow,.form-kicker{color:#087db6}
