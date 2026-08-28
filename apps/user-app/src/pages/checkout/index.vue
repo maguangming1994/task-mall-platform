@@ -121,7 +121,7 @@ onLoad((query) => {
   if (query?.directBuy === '1' && productId && skuId && (purchaseMode === 'cash' || purchaseMode === 'points' || purchaseMode === 'cash_points')) directBuy.value = { productId, skuId, purchaseMode }
 })
 onShow(async () => {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   if (!initialized.value) return load()
   if (refreshAfterRecharge.value) await refreshCheckoutAfterRecharge()
 })
@@ -164,7 +164,7 @@ async function refreshCheckoutAfterRecharge() {
   } finally { loading.value = false }
 }
 async function load() {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   loadError.value = ''
   try {

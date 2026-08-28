@@ -78,7 +78,7 @@ onLoad((options?: Record<string, string | undefined>) => {
 })
 
 onShow(async () => {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   loadError.value = ''
   try {
@@ -94,7 +94,7 @@ onShow(async () => {
 })
 
 async function reloadOrders() {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   loadError.value = ''
   try { await refreshOrders() }

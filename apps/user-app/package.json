@@ -38,7 +38,8 @@
     "build:quickapp-webview": "uni build -p quickapp-webview",
     "build:quickapp-webview-huawei": "uni build -p quickapp-webview-huawei",
     "build:quickapp-webview-union": "uni build -p quickapp-webview-union",
-    "type-check": "vue-tsc --noEmit"
+    "type-check": "vue-tsc --noEmit",
+    "test:e2e:wechat": "uni build -p mp-weixin --auto-port 9420 && node e2e/start-wechat-automator.cjs && jest --config e2e/jest.config.cjs --runInBand"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-5010520260709002",
@@ -70,8 +71,13 @@
     "@dcloudio/vite-plugin-uni": "3.0.0-5010520260709002",
     "@vue/runtime-core": "3.4.21",
     "@vue/tsconfig": "^0.1.3",
+    "jest": "27.0.4",
+    "rollup": "4.62.4",
     "typescript": "^4.9.4",
     "vite": "5.2.8",
     "vue-tsc": "^1.0.24"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "4.62.4"
   }
 }

@@ -58,7 +58,7 @@ const regionText = computed(() => region.value.length === 3 ? region.value.join(
 
 onShow(load)
 async function load() {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   loadError.value = ''
   try { addresses.value = await listAddresses(auth.accessToken) }

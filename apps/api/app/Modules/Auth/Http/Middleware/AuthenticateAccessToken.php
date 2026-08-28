@@ -29,7 +29,7 @@ class AuthenticateAccessToken
         }
 
         $session = UserSession::query()
-            ->with(['user', 'device'])
+            ->with(['user', 'device', 'identity'])
             ->where('public_id', $payload['sid'])
             ->first();
 
@@ -42,9 +42,27 @@ class AuthenticateAccessToken
             return ApiResponse::error('AUTH_SESSION_REVOKED', '登录状态已失效。', 401);
         }
 
+        if ($session->user->phone_verified_at === null
+            && str_starts_with($session->identity?->provider ?? '', 'wechat_')
+            && ! $this->allowsPhoneBindingFlow($request)) {
+            return ApiResponse::error('PHONE_BINDING_REQUIRED', '请先完成手机号绑定。', 403);
+        }
+
         $request->setUserResolver(fn (): User => $session->user);
         $request->attributes->set('auth_session', $session);
 
         return $next($request);
+    }
+
+    private function allowsPhoneBindingFlow(Request $request): bool
+    {
+        return $request->is(
+            'api/v1/auth/logout',
+            'api/v1/me',
+            'api/v1/me/legal-consents',
+            'api/v1/me/legal-consents/pending',
+            'api/v1/me/phone',
+            'api/v1/me/phone/wechat',
+        );
     }
 }

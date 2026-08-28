@@ -61,7 +61,7 @@ async function loadCategories(){ try { const result=await listCommunityActivityC
 async function load(){ loading.value=true; error.value=''; try { if(mode.value==='all'){ const result=await listCommunityActivities({category:activeCategory.value||undefined,page_size:30},auth.accessToken||undefined); activities.value=result.items } else { if(!ensureAuth()) return; const result=await listMyCommunityActivities(auth.accessToken,mode.value); activities.value=activeCategory.value?result.items.filter(item=>item.category_code===activeCategory.value):result.items } } catch(cause){ error.value=message(cause) } finally { loading.value=false } }
 async function selectCategory(value:string){ activeCategory.value=value; await load() }
 async function selectMode(value:Mode){ if(value!=='all'&&!ensureAuth())return; mode.value=value; await load() }
-function ensureAuth(){ if(auth.accessToken)return true; uni.showModal({title:'登录后查看组团',content:'登录后可以发起、报名和管理校园组团。',confirmText:'去登录',success:result=>{if(result.confirm)navigateToLogin()}}); return false }
+function ensureAuth(){ if(auth.isAuthenticated)return true; uni.showModal({title:'登录后查看组团',content:'登录后可以发起、报名和管理校园组团。',confirmText:'去登录',success:result=>{if(result.confirm)navigateToLogin()}}); return false }
 function createActivity(){ if(!ensureAuth())return; uni.navigateTo({url:'/pages/community-activity-compose/index'}) }
 function openDetail(id:string){ uni.navigateTo({url:`/pages/community-activity-detail/index?id=${encodeURIComponent(id)}`}) }
 function goBack(){ const pages=getCurrentPages(); pages.length>1?uni.navigateBack():uni.reLaunch({url:'/pages/community/index'}) }

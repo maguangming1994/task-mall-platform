@@ -183,7 +183,7 @@ onShow(() => { void initialize() })
 onReachBottom(() => { if (hasMore.value && !loadingMore.value) void loadMore() })
 
 async function initialize() {
-  if (!auth.accessToken) { navigateToLogin(); return }
+  if (!auth.isAuthenticated) { navigateToLogin(); return }
   await Promise.all([loadNotifications(true), loadPreference(), loadWechatSubscriptions()])
 }
 

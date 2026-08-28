@@ -182,7 +182,7 @@ async function loadHall() {
     uni.showToast({ title: error instanceof Error ? error.message : '任务加载失败', icon: 'none' })
   } finally { loading.value = false }
 }
-async function openMine() { if (!auth.accessToken) return navigateToLogin(); tab.value = 'mine'; await loadMine() }
+async function openMine() { if (!auth.isAuthenticated) return navigateToLogin(); tab.value = 'mine'; await loadMine() }
 function openNotifications() { uni.navigateTo({ url: '/pages/notifications/index' }) }
 async function loadMine() {
   if (!auth.accessToken) return

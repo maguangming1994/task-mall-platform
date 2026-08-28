@@ -107,7 +107,7 @@ const deadlineText = computed(() => {
 })
 
 onLoad(async query => {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   recordId.value = typeof query?.id === 'string' ? query.id : ''
   kind.value = query?.type === 'exchange' ? 'exchange' : 'refund'
   await load()

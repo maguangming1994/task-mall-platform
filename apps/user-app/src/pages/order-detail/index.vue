@@ -84,7 +84,7 @@ const addressText = computed(() => {
 })
 
 onLoad((query) => {
-  if (!auth.accessToken) return redirectToLogin()
+  if (!auth.isAuthenticated) return redirectToLogin()
   orderId.value = typeof query?.id === 'string' ? query.id : ''
   resumePaymentId.value = typeof query?.resumePayment === 'string' ? query.resumePayment : typeof query?.paymentId === 'string' ? query.paymentId : ''
   resumeOrderId.value = typeof query?.resumeOrder === 'string' ? query.resumeOrder : resumePaymentId.value ? orderId.value : ''

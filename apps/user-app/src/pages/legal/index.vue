@@ -53,7 +53,7 @@ async function load() {
   loadError.value = ''
   try {
     documents.value = await loadCurrentLegalDocuments()
-    pending.value = auth.accessToken ? await loadPendingLegalDocuments(auth.accessToken) : []
+    pending.value = auth.isAuthenticated ? await loadPendingLegalDocuments(auth.accessToken) : []
     confirmed.value = pending.value.length === 0
   } catch (error) { loadError.value = error instanceof Error ? error.message : '请检查网络后重试'; uni.showToast({ title: loadError.value, icon: 'none' }) }
   finally { loading.value = false }
@@ -63,7 +63,7 @@ function isPending(id: string) { return pending.value.some((item) => item.id ===
 function dateText(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()}` }
 async function confirmPending() {
   if (!pending.value.length) return uni.showToast({ title: '当前已是最新版本', icon: 'none' })
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   submitting.value = true
   try {
     for (const document of pending.value) await acceptLegalDocument(auth.accessToken, document.id)

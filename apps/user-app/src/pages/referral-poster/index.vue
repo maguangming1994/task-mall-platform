@@ -51,7 +51,7 @@ const shareOptions = [
   { key: 'copy', label: '复制链接', icon: '↗', tone: 'copy', action: () => copyLink() },
 ]
 
-onShow(() => { if (!auth.accessToken) { navigateToLogin(); return }; void load() })
+onShow(() => { if (!auth.isAuthenticated) { navigateToLogin(); return }; void load() })
 onShareAppMessage(() => ({ title: shareTitle(), path: sharePath.value }))
 
 async function load() {

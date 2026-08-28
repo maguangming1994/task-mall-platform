@@ -844,7 +844,7 @@ onShow(async () => {
   await loadHome()
   if (auth.accessToken) await auth.fetchCurrentUser()
   await loadRegisteredHomeData()
-  if (!auth.accessToken) return
+  if (!auth.isAuthenticated) return
   try {
     const pending = await loadPendingLegalDocuments(auth.accessToken, 'account')
     if (pending.length > 0) uni.navigateTo({ url: '/pages/legal-consent/index?next=home' })
@@ -856,7 +856,7 @@ onShow(async () => {
 async function loadRegisteredHomeData() {
   const [tasksResult, claimsResult, productsResult] = await Promise.allSettled([
     listHallTasks({ claimable_only: false }),
-    auth.accessToken ? listMyTaskClaims(auth.accessToken) : Promise.resolve({ items: [] as TaskClaim[] }),
+    auth.isAuthenticated ? listMyTaskClaims(auth.accessToken) : Promise.resolve({ items: [] as TaskClaim[] }),
     listProducts(),
   ])
   if (tasksResult.status === 'fulfilled') hallTasks.value = tasksResult.value.items

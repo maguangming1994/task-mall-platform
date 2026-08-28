@@ -65,7 +65,7 @@ const loadError = ref('')
 const eligibleOrders = computed(() => orders.value.filter(order => ['pending_fulfillment', 'fulfilled', 'completed'].includes(order.status) && eligibleItems(order).length > 0))
 onShow(load)
 async function load() {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true; loadError.value = ''
   try {
     const [orderResult, refundResult, exchangeResult] = await Promise.all([listOrders(auth.accessToken), listRefunds(auth.accessToken), listExchanges(auth.accessToken)])

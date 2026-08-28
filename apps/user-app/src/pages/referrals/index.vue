@@ -53,7 +53,7 @@ onLoad((options) => {
 onShow(() => {
   const stored = String(uni.getStorageSync(pendingStorageKey) || '').trim().toUpperCase()
   if (stored && !bindCode.value) { pendingCode.value = stored; bindCode.value = stored }
-  if (!auth.accessToken) { navigateToLogin(); return }
+  if (!auth.isAuthenticated) { navigateToLogin(); return }
   void load()
 })
 

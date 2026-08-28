@@ -115,7 +115,7 @@ async function load() {
       listProducts(categoryId.value || undefined),
       listProductCategories(),
       loadAppearanceContent().catch(() => null),
-      auth.accessToken ? getCart(auth.accessToken).catch(() => null) : Promise.resolve(null),
+      auth.isAuthenticated ? getCart(auth.accessToken).catch(() => null) : Promise.resolve(null),
     ])
     products.value = productResult.items
     categories.value = categoryResult.items

@@ -48,7 +48,7 @@ const joinLabel=computed(()=>activity.value?.remaining_slots===0?'已经满员':
 
 onLoad((options?:Record<string,string|undefined>)=>{id.value=options?.id||'';void load()})
 async function load(){if(!id.value){error.value='缺少组团编号';loading.value=false;return}loading.value=true;error.value='';try{activity.value=await getCommunityActivity(id.value,auth.accessToken||undefined)}catch(cause){error.value=message(cause)}finally{loading.value=false}}
-function ensureAuth(){if(auth.accessToken)return true;uni.showModal({title:'登录后报名',content:'登录后即可参加校园组团并接收活动消息。',confirmText:'去登录',success:result=>{if(result.confirm)navigateToLogin()}});return false}
+function ensureAuth(){if(auth.isAuthenticated)return true;uni.showModal({title:'登录后报名',content:'登录后即可参加校园组团并接收活动消息。',confirmText:'去登录',success:result=>{if(result.confirm)navigateToLogin()}});return false}
 async function join(){if(!ensureAuth()||!auth.accessToken||!activity.value?.can_join)return;submitting.value=true;try{activity.value=await joinCommunityActivity(auth.accessToken,id.value);uni.showToast({title:'报名成功',icon:'success'})}catch(cause){toast(cause)}finally{submitting.value=false}}
 async function leave(){if(!auth.accessToken||!activity.value)return;const result=await uni.showModal({title:'退出这个组团？',content:'退出后名额会释放给其他同学。',confirmText:'确认退出'});if(!result.confirm)return;submitting.value=true;try{activity.value=await leaveCommunityActivity(auth.accessToken,id.value);uni.showToast({title:'已退出组团',icon:'success'})}catch(cause){toast(cause)}finally{submitting.value=false}}
 function preview(current:number){if(!activity.value)return;const urls=activity.value.images.map(communityActivityImageUrl).filter(Boolean);if(urls.length)uni.previewImage({urls,current:urls[current]})}

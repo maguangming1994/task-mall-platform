@@ -105,7 +105,7 @@ function priceText(option: PurchaseOption | null) {
 }
 function deliveryText(type: string) { return ({ logistics: '物流配送', no_logistics: '无需物流', virtual_delivery: '虚拟交付' } as Record<string, string>)[type] || '交付方式以订单为准' }
 async function submit(nextAction: 'cart' | 'buy') {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   if (!selectedSku.value || !selectedOption.value) return
   action.value = nextAction
   submitting.value = true

@@ -102,7 +102,7 @@ const selectedCategoryLabel = computed(() => categories.value.find(item => item.
 const submitLabel = computed(() => editingId.value ? (reviewNote.value ? '修改并重新提交' : '提交新版本') : '发布')
 
 onLoad(async (options?: Record<string, string | undefined>) => {
-  if (!auth.accessToken) { redirectToLogin(); return }
+  if (!auth.isAuthenticated) { redirectToLogin(); return }
   editingId.value = options?.postId || ''
   const requestedCategory = options?.category
   try { categories.value = (await listCommunityCategories()).items } catch { categories.value = fallbackCategories }
@@ -154,7 +154,7 @@ function removeImage(fileId: string) { images.value = images.value.filter(item =
 async function submit() {
   const message = validate()
   if (message) return uni.showToast({ title: message, icon: 'none' })
-  if (!auth.accessToken) return redirectToLogin()
+  if (!auth.isAuthenticated) return redirectToLogin()
   submitting.value = true; submitError.value = ''
   const payload = { title: title.value.trim(), content: content.value.trim(), category_code: categoryCode.value, image_file_ids: images.value.map(item => item.fileId) }
   try {

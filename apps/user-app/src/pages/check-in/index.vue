@@ -74,7 +74,7 @@ const milestoneNote = computed(() => status.value?.workflow.next_action || 'ÂêåÊ
 onShow(load)
 
 async function load() {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   loadError.value = ''
   try { status.value = await getDailyCheckIn(auth.accessToken) }

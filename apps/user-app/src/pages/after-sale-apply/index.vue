@@ -88,7 +88,7 @@ const refundPreview = computed(() => {
 })
 
 onLoad(async (query) => {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   requestOrderId.value = typeof query?.orderId === 'string' ? query.orderId : ''
   requestItemId.value = typeof query?.itemId === 'string' ? query.itemId : ''
   requestType.value = typeof query?.type === 'string' && ['refund_only', 'return_and_refund', 'exchange'].includes(query.type) ? query.type as ServiceType : 'refund_only'

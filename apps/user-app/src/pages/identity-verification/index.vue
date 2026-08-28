@@ -62,7 +62,7 @@ const canSubmit = computed(() => realName.value.trim().length >= 2 && /^[0-9]{17
 onShow(load)
 
 async function load() {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   try {
     state.value = await loadIdentityVerification(auth.accessToken)

@@ -75,7 +75,7 @@
 
       <view class="fixed-action">
         <view class="fixed-reward"><text class="fixed-caption">任务奖励</text><text class="fixed-value">{{ primaryRewardText(task) }}</text></view>
-        <button class="claim-button" :disabled="claiming || (!task.can_claim && !!auth.accessToken)" :loading="claiming" @click="claimCurrentTask">{{ !auth.accessToken ? '登录后领取' : task.can_claim ? '立即领取' : reasonText(task.claim_unavailable_reason) }}</button>
+        <button class="claim-button" :disabled="claiming || (!task.can_claim && auth.isAuthenticated)" :loading="claiming" @click="claimCurrentTask">{{ !auth.isAuthenticated ? '登录后领取' : task.can_claim ? '立即领取' : reasonText(task.claim_unavailable_reason) }}</button>
       </view>
 
       <view v-if="claimConfirmVisible" class="claim-confirm-mask" @click.self="closeClaimConfirm">
@@ -194,7 +194,7 @@ function onHeroImageError() {
 
 async function claimCurrentTask() {
   if (!task.value) return
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   claimConfirmVisible.value = true
 }
 
@@ -226,7 +226,7 @@ async function confirmClaim() {
 
 async function reportCurrentTask() {
   if (!task.value) return
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   const result = await uni.showModal({ title: '举报任务', editable: true, placeholderText: '请描述风险或违规情况' })
   if (!result.confirm || !result.content?.trim()) return
   try { await reportTask(auth.accessToken, task.value.id, 'other', result.content.trim()); uni.showToast({ title: '举报已提交', icon: 'success' }) }

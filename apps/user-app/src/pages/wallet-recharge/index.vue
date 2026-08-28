@@ -100,7 +100,7 @@ const onlineResultText = computed(() => {
 onLoad((query) => { returnToCheckout.value = query?.returnTo === 'checkout' })
 onShow(async () => { await load(); await resumeOnlineIntent() })
 async function load() {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   loadError.value = ''
   try { [wallet.value, recharges.value] = await Promise.all([getWalletAccount(auth.accessToken), listWalletRecharges(auth.accessToken).then((r) => r.items)]) }

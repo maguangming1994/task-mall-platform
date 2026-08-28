@@ -62,7 +62,7 @@ const blockerNames: Record<string, string> = { ongoing_order: '存在进行中�
 
 onShow(load)
 async function load() {
-  if (!auth.accessToken) { redirectToLogin(); return }
+  if (!auth.isAuthenticated) { redirectToLogin(); return }
   loading.value = true
   loadError.value = ''
   try {

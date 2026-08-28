@@ -75,7 +75,7 @@ const selectedItems = computed(() => cart.value.items.filter((item) => item.sele
 const requiresCashPayment = computed(() => selectedItems.value.some((item) => (item.unit_cash_amount || 0) > 0 || item.fulfillment_type === 'logistics'))
 const paymentUnavailableText = computed(() => capabilities.value?.payment_unavailable_message || '支付能力正在加载，请稍后重试。')
 const canCheckout = computed(() => { const selected = cart.value.items.filter((item) => item.selected); const hasLogistics = selected.some((item) => item.fulfillment_type === 'logistics'); return selected.length > 0 && selected.every((item) => item.valid) && (!hasLogistics || !!selectedAddress.value) && (!hasLogistics || !!quote.value) && !quoteError.value && (!requiresCashPayment.value || paymentOptions.value.length > 0) })
-onShow(async () => { if (!auth.accessToken) return navigateToLogin(); await load() })
+onShow(async () => { if (!auth.isAuthenticated) return navigateToLogin(); await load() })
 async function load() {
   if (!auth.accessToken) return
   loading.value = true

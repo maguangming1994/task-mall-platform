@@ -28,7 +28,7 @@ class AuthenticateOptionalAccessToken
             return ApiResponse::error('AUTH_REQUIRED', '登录状态无效或已过期。', 401);
         }
 
-        $session = UserSession::query()->with(['user', 'device'])->where('public_id', $payload['sid'])->first();
+        $session = UserSession::query()->with(['user', 'device', 'identity'])->where('public_id', $payload['sid'])->first();
         if ($session === null
             || $session->user->public_id !== $payload['sub']
             || $session->revoked_at !== null
@@ -36,6 +36,11 @@ class AuthenticateOptionalAccessToken
             || $session->device->revoked_at !== null
             || $session->user->status !== 'active') {
             return ApiResponse::error('AUTH_SESSION_REVOKED', '登录状态已失效。', 401);
+        }
+
+        if ($session->user->phone_verified_at === null
+            && str_starts_with($session->identity?->provider ?? '', 'wechat_')) {
+            return $next($request);
         }
 
         $request->setUserResolver(fn (): User => $session->user);

@@ -77,7 +77,7 @@ const couponsError = ref('')
 onShow(load)
 
 async function load() {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   pointsError.value = ''
   walletError.value = ''

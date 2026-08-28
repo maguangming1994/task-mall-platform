@@ -51,7 +51,7 @@ export const useAuthStore = defineStore('auth', {
     }
   },
   getters: {
-    isAuthenticated: state => Boolean(state.accessToken && state.user),
+    isAuthenticated: state => Boolean(state.accessToken && state.user?.phone_bound),
   },
   actions: {
     async requestPhoneCode(phone: string, purpose: 'login' | 'bind_phone' = 'login') {

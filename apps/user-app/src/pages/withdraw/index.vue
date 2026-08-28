@@ -61,7 +61,7 @@ const feeRateText = computed(() => quote.value ? `${(quote.value.fee_rate / 1000
 onShow(load)
 
 async function load() {
-  if (!auth.accessToken) return navigateToLogin()
+  if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   loadError.value = ''
   try {

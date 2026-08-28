@@ -55,7 +55,7 @@ const submitting=ref(false)
 const agreed=ref(false)
 const submitError=ref('')
 
-onLoad(async()=>{ if(!auth.accessToken){redirectToLogin();return} restoreDraft(); try{const result=await listCommunityActivityCategories();if(result.items.length)categories.value=result.items}catch{} })
+onLoad(async()=>{ if(!auth.isAuthenticated){redirectToLogin();return} restoreDraft(); try{const result=await listCommunityActivityCategories();if(result.items.length)categories.value=result.items}catch{} })
 function categoryStyle(item:CommunityActivityCategory,index:number){return{'--color':item.color||['#39c8ff','#ff6f9b','#ff9847','#ba8355','#ff5e71','#a35cff','#62d84d','#16cca2','#717985'][index%9]}}
 function formatDate(value:Date){return`${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`}
 function changeLimit(delta:number){form.participant_limit=Math.min(100,Math.max(2,Number(form.participant_limit||2)+delta))}

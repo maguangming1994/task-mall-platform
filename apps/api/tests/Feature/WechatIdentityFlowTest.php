@@ -64,6 +64,28 @@ class WechatIdentityFlowTest extends TestCase
         $this->assertDatabaseHas('user_identities', ['provider' => 'phone']);
     }
 
+    public function test_unbound_wechat_session_is_limited_to_the_phone_binding_flow(): void
+    {
+        $login = $this->wechatLogin('mini', 'local:mini-open-limited:union-limited');
+        $token = $login->json('data.access_token');
+
+        $this->withToken($token)
+            ->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.phone_bound', false);
+
+        $this->withToken($token)
+            ->getJson('/api/v1/me/legal-consents/pending?scope=account')
+            ->assertOk();
+
+        foreach (['/api/v1/me/asset-overview', '/api/v1/orders', '/api/v1/community/my-posts'] as $path) {
+            $this->withToken($token)
+                ->getJson($path)
+                ->assertForbidden()
+                ->assertJsonPath('code', 'PHONE_BINDING_REQUIRED');
+        }
+    }
+
     public function test_wechat_user_can_bind_phone_from_mini_program_authorization(): void
     {
         $login = $this->wechatLogin('mini', 'local:mini-open-phone:union-phone');
