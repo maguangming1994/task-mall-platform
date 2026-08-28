@@ -67,6 +67,11 @@ flock -n 9 || fail "已有生产部署正在执行"
 [ -f "$ENV_FILE" ] || fail "缺少线上环境文件：$ENV_FILE"
 [ "$(git -C "$APP_DIR" symbolic-ref --quiet --short HEAD)" = "main" ] || fail "线上仓库必须位于 main 分支"
 
+[ "$(read_env_value APP_ENV)" = "production" ] || fail "APP_ENV 必须为 production"
+[ "$(read_env_value APP_DEBUG)" = "false" ] || fail "APP_DEBUG 必须为 false"
+[ "$(read_env_value APP_URL)" = "$PUBLIC_BASE_URL" ] || fail "APP_URL 必须为 $PUBLIC_BASE_URL"
+[ "$(read_env_value WECHAT_AUTH_DRIVER)" = "wechat" ] || fail "WECHAT_AUTH_DRIVER 必须为 wechat"
+
 for key_name in WECHAT_PAYMENT_PRIVATE_KEY_FILE WECHAT_PAYMENT_PLATFORM_CERT_FILE; do
   secret_path=$(read_env_value "$key_name")
   case "$secret_path" in
