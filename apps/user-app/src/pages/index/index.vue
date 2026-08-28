@@ -635,7 +635,7 @@
       </view>
     </view>
 
-    <AppTabBar current-target="home" variant="flat" />
+    <AppTabBar id="home-tab-bar" current-target="home" variant="flat" />
   </view>
 </template>
 

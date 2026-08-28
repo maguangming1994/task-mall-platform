@@ -67,11 +67,13 @@ describe('WeChat mini program production smoke flows', () => {
 
     for (let index = 0; index < expectedPaths.length; index += 1) {
       const page = await openPage('/pages/index/index', '.home-v4')
-      const items = await page.$$('.tabbar-item')
+      await page.waitFor('#home-tab-bar', 20000)
+      const tabBar = await page.$('#home-tab-bar')
+      expect(tabBar).not.toBeNull()
+      const items = await tabBar.$$('.tabbar-item')
       expect(items).toHaveLength(5)
       await items[index].tap()
-      await delay(1800)
-      expect((await program.currentPage()).path).toBe(expectedPaths[index])
+      await waitForPath(expectedPaths[index], 15000)
     }
   })
 
@@ -89,10 +91,7 @@ describe('WeChat mini program production smoke flows', () => {
     const loginButton = await account.$('.guest-login-button')
     expect(loginButton).not.toBeNull()
     await loginButton.tap()
-    await delay(2000)
-
-    const login = await program.currentPage()
-    expect(login.path).toBe('pages/login/index')
+    const login = await waitForPath('pages/login/index', 15000)
     await login.waitFor('.login-topbar', 20000)
     expect(await login.$('.agreement-check')).not.toBeNull()
   })
