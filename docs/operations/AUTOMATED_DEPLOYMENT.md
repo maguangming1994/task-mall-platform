@@ -13,6 +13,8 @@ powershell -ExecutionPolicy Bypass -File scripts/release.ps1 -Message "本次修
 
 发布脚本会拒绝未暂存文件、`.env`、证书、私钥和数据库备份，随后同步远端状态、运行 `scripts/check.ps1`、提交并推送。推送后由 GitHub Actions 串行部署；CI 或部署失败时不会强制改写 Git 历史。
 
+GitHub 网络连接的已验证处理顺序、当前提交状态和故障记录见 [`GIT_SUBMISSION_RUNBOOK.md`](./GIT_SUBMISSION_RUNBOOK.md)。发布脚本会优先使用当前会话的 `TASK_MALL_GIT_PROXY`；未显式配置时，如果本机 `127.0.0.1:8800` 可用，则直接采用该命令级代理，避免先重复尝试已知不可用的直连路径。
+
 ## 首次启用
 
 自动部署默认关闭。完成以下配置并验证后，才把仓库变量 `PRODUCTION_DEPLOY_ENABLED` 设为 `true`：

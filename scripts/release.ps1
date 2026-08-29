@@ -36,6 +36,76 @@ function Get-GitScalar {
     return [string]$output[0]
 }
 
+function Test-HttpProxyTunnel {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$HostName,
+        [Parameter(Mandatory = $true)]
+        [int]$Port,
+        [string]$TargetHost = 'github.com',
+        [int]$TargetPort = 443,
+        [int]$TimeoutMilliseconds = 3000
+    )
+
+    $client = [Net.Sockets.TcpClient]::new()
+    try {
+        $connectTask = $client.ConnectAsync($HostName, $Port)
+        if (-not $connectTask.Wait($TimeoutMilliseconds)) { return $false }
+        if (-not $client.Connected) { return $false }
+
+        $stream = $client.GetStream()
+        $stream.ReadTimeout = $TimeoutMilliseconds
+        $stream.WriteTimeout = $TimeoutMilliseconds
+        $request = "CONNECT ${TargetHost}:${TargetPort} HTTP/1.1`r`nHost: ${TargetHost}:${TargetPort}`r`nProxy-Connection: Keep-Alive`r`n`r`n"
+        $requestBytes = [Text.Encoding]::ASCII.GetBytes($request)
+        $stream.Write($requestBytes, 0, $requestBytes.Length)
+        $stream.Flush()
+
+        $reader = [IO.StreamReader]::new($stream, [Text.Encoding]::ASCII, $false, 1024, $true)
+        $statusLine = $reader.ReadLine()
+        if ($statusLine -notmatch '^HTTP/\d(?:\.\d)?\s+200\b') { return $false }
+        while ($reader.ReadLine()) { }
+
+        $sslStream = [Net.Security.SslStream]::new($stream, $false)
+        $tlsTask = $sslStream.AuthenticateAsClientAsync($TargetHost)
+        if (-not $tlsTask.Wait($TimeoutMilliseconds)) { return $false }
+        return $sslStream.IsAuthenticated
+    }
+    catch {
+        return $false
+    }
+    finally {
+        $client.Dispose()
+    }
+}
+
+function Get-GitNetworkArguments {
+    $proxy = $env:TASK_MALL_GIT_PROXY
+    if ($proxy -eq 'direct') {
+        Write-Host 'Git network: explicitly using direct connection'
+        return @()
+    }
+
+    if ([string]::IsNullOrWhiteSpace($proxy)) {
+        $proxyReady = Test-HttpProxyTunnel -HostName '127.0.0.1' -Port 8800
+
+        if ($proxyReady) {
+            $proxy = 'http://127.0.0.1:8800'
+        }
+        elseif (Get-Process -Name 'QuickQ', 'quickqservice-g90' -ErrorAction SilentlyContinue) {
+            throw "QuickQ is running but its HTTP proxy is unavailable at 127.0.0.1:8800. Reconnect QuickQ before releasing, or set TASK_MALL_GIT_PROXY=direct to explicitly use the direct route."
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($proxy)) {
+        Write-Host 'Git network: direct connection'
+        return @()
+    }
+
+    Write-Host 'Git network: command-scoped proxy enabled'
+    return @('-c', "http.proxy=$proxy", '-c', "https.proxy=$proxy")
+}
+
 function Test-ForbiddenPath {
     param([string]$Path)
 
@@ -79,8 +149,17 @@ try {
 
     Push-Location $workspace
     try {
-        $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
-        if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'Git was not found.' }
+        $machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+        $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+        $env:Path = @($env:Path, $machinePath, $userPath) -join ';'
+        $gitCommand = Get-Command git -ErrorAction SilentlyContinue
+        if (-not $gitCommand) { throw 'Git was not found.' }
+        $gitRoot = Split-Path (Split-Path $gitCommand.Source -Parent) -Parent
+        $gitRuntimeBin = Join-Path $gitRoot 'mingw64\bin'
+        if (Test-Path -LiteralPath (Join-Path $gitRuntimeBin 'git-remote-https.exe')) {
+            $env:GIT_EXEC_PATH = $gitRuntimeBin
+        }
+        $gitNetworkArguments = @(Get-GitNetworkArguments)
 
         $branch = Get-GitScalar branch --show-current
         if ($branch -ne 'main') { throw "Releases must run from main. Current branch: $branch" }
@@ -115,7 +194,7 @@ try {
         Invoke-Git diff --cached --check | Out-Null
 
         Write-Host '[1/4] Fetching origin/main'
-        Invoke-Git fetch --prune origin main | Out-Null
+        Invoke-Git @gitNetworkArguments fetch --prune origin main | Out-Null
         $localSha = Get-GitScalar rev-parse HEAD
         $remoteSha = Get-GitScalar rev-parse origin/main
         if ($localSha -ne $remoteSha) {
@@ -134,8 +213,8 @@ try {
         $releaseSha = Get-GitScalar rev-parse HEAD
 
         Write-Host '[4/4] Pushing main; production follows successful CI'
-        Invoke-Git push origin HEAD:main | ForEach-Object { Write-Host $_ }
-        Invoke-Git fetch origin main | Out-Null
+        Invoke-Git @gitNetworkArguments push origin HEAD:main | ForEach-Object { Write-Host $_ }
+        Invoke-Git @gitNetworkArguments fetch origin main | Out-Null
         $publishedSha = Get-GitScalar rev-parse origin/main
         if ($publishedSha -ne $releaseSha) {
             throw "Remote commit verification failed. expected=$releaseSha actual=$publishedSha"
