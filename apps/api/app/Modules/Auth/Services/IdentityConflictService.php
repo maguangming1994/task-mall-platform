@@ -115,7 +115,7 @@ class IdentityConflictService
 
             $identity = UserIdentity::query()
                 ->where('user_id', $source->id)
-                ->whereIn('provider', ['wechat_mini', 'wechat_oa'])
+                ->whereIn('provider', UserIdentity::WECHAT_PROVIDERS)
                 ->orderByDesc('last_login_at')
                 ->lockForUpdate()
                 ->first();
@@ -259,7 +259,7 @@ class IdentityConflictService
         } elseif ($conflict->kind === 'phone_already_bound' && $conflict->source_user_id !== null) {
             UserIdentity::query()
                 ->where('user_id', $conflict->source_user_id)
-                ->whereIn('provider', ['wechat_mini', 'wechat_oa'])
+                ->whereIn('provider', UserIdentity::WECHAT_PROVIDERS)
                 ->update(['user_id' => $target->id, 'updated_at' => now()]);
         }
 

@@ -162,7 +162,7 @@ class AdminUserCenterController extends Controller
         $items = collect($paginator->items())->map(function (User $user): array {
             $phone = $user->phone_verified_at !== null;
             $profile = $user->profile_completed_at !== null;
-            $wechat = $user->identities->contains(fn ($identity) => in_array($identity->provider, ['wechat_miniprogram', 'wechat_official_account'], true));
+            $wechat = $user->identities->contains(fn ($identity) => $identity->isWechat());
 
             return [
                 'user' => ['id' => $user->public_id, 'nickname' => $user->nickname, 'phone_masked' => $this->maskPhone($user->phone)],
@@ -255,7 +255,7 @@ class AdminUserCenterController extends Controller
             'verification' => [
                 'phone' => $user->phone_verified_at !== null,
                 'profile' => $user->profile_completed_at !== null,
-                'wechat' => $user->identities->contains(fn ($identity) => in_array($identity->provider, ['wechat_miniprogram', 'wechat_official_account'], true)),
+                'wechat' => $user->identities->contains(fn ($identity) => $identity->isWechat()),
             ],
             'created_at' => $user->created_at?->toIso8601String(),
             'last_login_at' => $user->getAttribute('last_login_at'),

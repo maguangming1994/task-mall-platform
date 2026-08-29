@@ -8,6 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserIdentity extends Model
 {
+    public const WECHAT_PROVIDERS = [
+        'wechat_mini',
+        'wechat_oa',
+        'wechat_miniprogram',
+        'wechat_official_account',
+    ];
+
     protected $fillable = [
         'user_id',
         'provider',
@@ -32,5 +39,10 @@ class UserIdentity extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function isWechat(): bool
+    {
+        return in_array($this->provider, self::WECHAT_PROVIDERS, true);
     }
 }
