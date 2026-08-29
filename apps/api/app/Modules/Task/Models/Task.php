@@ -2,13 +2,16 @@
 
 namespace App\Modules\Task\Models;
 
+use App\Modules\Campus\Models\Concerns\BelongsToCampus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Task extends Model
 {
-    protected $fillable = ['public_id', 'created_by_admin_id', 'creation_channel', 'source_task_template_id', 'source_task_template_version_no', 'status', 'current_version_no', 'published_version_no', 'lock_version', 'view_count', 'idempotency_key_hash', 'scheduled_at', 'published_at', 'closed_at'];
+    use BelongsToCampus;
+
+    protected $fillable = ['public_id', 'campus_id', 'created_by_admin_id', 'creation_channel', 'source_task_template_id', 'source_task_template_version_no', 'status', 'current_version_no', 'published_version_no', 'lock_version', 'view_count', 'idempotency_key_hash', 'scheduled_at', 'published_at', 'closed_at'];
 
     protected $hidden = ['idempotency_key_hash'];
 

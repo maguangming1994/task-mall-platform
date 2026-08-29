@@ -2,6 +2,7 @@
 
 namespace App\Modules\Admin\Models;
 
+use App\Modules\Campus\Models\Campus;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -49,6 +50,13 @@ class AdminUser extends Authenticatable
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'admin_user_role');
+    }
+
+    public function campuses(): BelongsToMany
+    {
+        return $this->belongsToMany(Campus::class, 'admin_user_campus')
+            ->withPivot('is_primary')
+            ->withTimestamps();
     }
 
     public function sessions(): HasMany

@@ -5,6 +5,9 @@
     :style="pageStyle"
   >
     <view class="home-v4-safe" />
+    <view class="home-campus-context">
+      <CampusSelector :access-token="auth.accessToken" :account-campus="auth.user?.campus" @change="handleCampusChange" />
+    </view>
 
     <view v-if="auth.isAuthenticated" class="home-v10-auth-shell">
       <view class="home-v10-hero">
@@ -641,14 +644,17 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { loadHomeContent, type HomeCarouselItem, type HomeContent, type HomeLinkType } from '@/api/home'
 import { loadPendingLegalDocuments } from '@/api/legal'
 import { openPrimaryNavigation } from '@/api/navigation'
 import { listProducts, type MallProduct } from '@/api/products'
 import { listHallTasks, listMyTaskClaims, type HallTask, type TaskClaim, type TaskReward } from '@/api/tasks'
 import AppTabBar from '@/components/AppTabBar.vue'
+import CampusSelector from '@/components/CampusSelector.vue'
+import type { Campus } from '@/api/campuses'
 import { useAuthStore } from '@/stores/auth'
+import { useCampusStore } from '@/stores/campus'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { compactRichTextContent } from '@/utils/richText'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
@@ -658,6 +664,8 @@ type RegisteredProductCard = { id: string; name: string; image_url: string; pric
 
 const fallbackHeroImage = '/static/home/hero-campus-reward.png'
 const auth = useAuthStore()
+const campus = useCampusStore()
+let promotionCampusReady: Promise<unknown> | null = null
 const popupVisible = ref(false)
 const homeLoading = ref(false)
 const homeLoaded = ref(false)
@@ -845,7 +853,13 @@ const registeredProducts = computed<RegisteredProductCard[]>(() => {
   return [...live, ...fallbacks, ...presets].slice(0, 4)
 })
 
+onLoad((options?: Record<string, string | undefined>) => {
+  const hint = promotionCampusHint(options)
+  if (hint) promotionCampusReady = campus.selectPromotionCampus(hint, auth.accessToken).catch(() => null)
+})
+
 onShow(async () => {
+  if (promotionCampusReady) await promotionCampusReady
   await loadHome()
   if (auth.accessToken) await auth.fetchCurrentUser()
   await loadRegisteredHomeData()
@@ -867,6 +881,20 @@ async function loadRegisteredHomeData() {
   if (tasksResult.status === 'fulfilled') hallTasks.value = tasksResult.value.items
   if (claimsResult.status === 'fulfilled') myClaims.value = claimsResult.value.items
   if (productsResult.status === 'fulfilled') mallProducts.value = productsResult.value.items
+}
+
+async function handleCampusChange(_campus: Campus) {
+  await loadRegisteredHomeData()
+}
+
+function promotionCampusHint(options?: Record<string, string | undefined>) {
+  if (options?.campus) return options.campus
+  if (!options?.scene) return ''
+  let scene = options.scene
+  try { scene = decodeURIComponent(scene) } catch { /* 保留微信传入的原始场景值。 */ }
+  const pairs = scene.split(/[&,;]/).map(part => part.split('='))
+  const campusPair = pairs.find(([key]) => key === 'campus' || key === 'school')
+  return campusPair?.slice(1).join('=') || (scene.includes('=') ? '' : scene)
 }
 
 async function loadHome() {
@@ -1075,6 +1103,7 @@ function handlePopupAction() {
 <style scoped>
 .home-v4{min-height:100vh;background:radial-gradient(circle at 96% 3%,rgba(69,207,212,.17),transparent 240rpx),linear-gradient(180deg,#fff 0,#fbfffd 58%,#f7fbff 100%);color:#0b253d}
 .home-v4-safe{height:calc(env(safe-area-inset-top) + 14rpx)}
+.home-campus-context{display:flex;align-items:center;justify-content:flex-start;padding:0 28rpx 16rpx;background:rgba(255,255,255,.96)}
 .home-v4.is-authenticated{background:#fff;color:#122338}
 .home-v4.is-authenticated>.home-v4-header,.home-v4.is-authenticated>.home-v4-state,.home-v4.is-authenticated>.home-v4-content{display:none}
 .home-v10-auth-shell{min-height:100vh;padding-bottom:18rpx;background:linear-gradient(180deg,#f7fbff 0,#fff 31%,#fff 100%)}

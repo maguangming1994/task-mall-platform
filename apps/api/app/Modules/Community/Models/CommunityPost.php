@@ -2,6 +2,7 @@
 
 namespace App\Modules\Community\Models;
 
+use App\Modules\Campus\Models\Concerns\BelongsToCampus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,9 +10,9 @@ use Illuminate\Support\Str;
 
 class CommunityPost extends Model
 {
-    use SoftDeletes;
+    use BelongsToCampus, SoftDeletes;
 
-    protected $fillable = ['public_id', 'user_id', 'title', 'content', 'category_code', 'status', 'current_version_no', 'published_version_no', 'comment_count', 'like_count', 'reward_granted', 'idempotency_key_hash', 'reviewed_by_admin_id', 'review_reason_code', 'review_note', 'published_at'];
+    protected $fillable = ['public_id', 'campus_id', 'user_id', 'title', 'content', 'category_code', 'status', 'current_version_no', 'published_version_no', 'comment_count', 'like_count', 'reward_granted', 'idempotency_key_hash', 'reviewed_by_admin_id', 'review_reason_code', 'review_note', 'published_at'];
 
     protected static function booted(): void
     {

@@ -37,6 +37,7 @@ export function apiUrl(path: string) {
   return `${apiBaseUrl}${path}`
 }
 const deviceStorageKey = 'task_mall_device_id'
+const campusStorageKey = 'task_mall_selected_campus'
 
 function getDeviceId() {
   const stored = uni.getStorageSync(deviceStorageKey)
@@ -68,6 +69,7 @@ export function apiRequest<T>(options: ApiRequestOptions): Promise<T> {
         'Content-Type': 'application/json',
         'X-Client-Platform': clientPlatform,
         'X-Device-Id': getDeviceId(),
+        ...(uni.getStorageSync(campusStorageKey)?.id ? { 'X-Campus-Id': uni.getStorageSync(campusStorageKey).id } : {}),
         ...(options.accessToken ? { Authorization: `Bearer ${options.accessToken}` } : {}),
         ...options.headers,
       },

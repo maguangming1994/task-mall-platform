@@ -10,6 +10,8 @@ use App\Modules\Admin\Http\Middleware\RequireAdminPermission;
 use App\Modules\Admin\Http\Middleware\RequireRecentAdminVerification;
 use App\Modules\Auth\Http\Middleware\AuthenticateAccessToken;
 use App\Modules\Auth\Http\Middleware\AuthenticateOptionalAccessToken;
+use App\Modules\Campus\Http\Middleware\EnforceAdminCampusScope;
+use App\Modules\Campus\Http\Middleware\ResolveCampusContext;
 use App\Modules\Legal\Http\Middleware\RequireLegalConsent;
 use App\Modules\Privacy\Exceptions\PrivacyException;
 use App\Modules\Refund\Exceptions\RefundException;
@@ -35,12 +37,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(AttachRequestId::class);
         $middleware->append(AddSecurityHeaders::class);
         $middleware->append(MeasureRequestPerformance::class);
+        $middleware->append(ResolveCampusContext::class);
         $middleware->alias([
             'auth.access' => AuthenticateAccessToken::class,
             'auth.optional' => AuthenticateOptionalAccessToken::class,
             'auth.admin' => AuthenticateAdminAccessToken::class,
             'admin.permission' => RequireAdminPermission::class,
             'admin.recent_verification' => RequireRecentAdminVerification::class,
+            'admin.campus' => EnforceAdminCampusScope::class,
             'legal.consent' => RequireLegalConsent::class,
             'auth.publisher' => AuthenticateTaskPublisher::class,
         ]);

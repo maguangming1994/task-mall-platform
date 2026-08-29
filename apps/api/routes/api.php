@@ -25,6 +25,8 @@ use App\Modules\Auth\Http\Controllers\CurrentUserController;
 use App\Modules\Auth\Http\Controllers\PhoneBindingController;
 use App\Modules\Auth\Http\Controllers\PhoneVerificationController;
 use App\Modules\Auth\Http\Controllers\WechatAuthController;
+use App\Modules\Campus\Http\Controllers\AdminCampusController;
+use App\Modules\Campus\Http\Controllers\CampusController;
 use App\Modules\Cart\Http\Controllers\CartController;
 use App\Modules\Community\Http\Controllers\CommunityActivityController;
 use App\Modules\Community\Http\Controllers\CommunityCommentController;
@@ -96,6 +98,7 @@ Route::get('/health/ready', [HealthController::class, 'ready'])->name('api.healt
 Route::get('/internal/metrics', [MonitoringController::class, 'metrics'])->middleware('throttle:60,1');
 
 Route::get('/client-capabilities', [ClientCapabilitiesController::class, 'show']);
+Route::get('/campuses', [CampusController::class, 'index']);
 Route::get('/home-content', [HomeContentController::class, 'show']);
 Route::get('/appearance-content', [AppearanceContentController::class, 'show']);
 Route::get('/app-navigation', [AppNavigationController::class, 'show']);
@@ -153,6 +156,7 @@ Route::middleware('auth.access')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/me', [CurrentUserController::class, 'show']);
     Route::put('/me', [UserProfileController::class, 'update'])->middleware('legal.consent:account');
+    Route::put('/me/campus', [CampusController::class, 'select']);
     Route::get('/me/identity-verification', [UserIdentityVerificationController::class, 'show'])
         ->middleware('legal.consent:account');
     Route::post('/me/identity-verification', [UserIdentityVerificationController::class, 'store'])
@@ -264,12 +268,17 @@ Route::prefix('admin')->group(function () {
         Route::post('/mfa/verify', [AdminAuthController::class, 'verifyMfa'])->middleware('throttle:10,1');
     });
 
-    Route::middleware('auth.admin')->group(function () {
+    Route::middleware(['auth.admin', 'admin.campus'])->group(function () {
         Route::post('/auth/logout', [AdminAuthController::class, 'logout']);
         Route::post('/auth/verify', [AdminAuthController::class, 'verifyRecent'])->middleware('throttle:10,1');
         Route::put('/auth/password', [AdminAuthController::class, 'changePassword'])->middleware('throttle:5,1');
         Route::get('/me', [AdminCurrentUserController::class, 'show']);
         Route::get('/navigation', [AdminCurrentUserController::class, 'navigation']);
+        Route::get('/campuses', [AdminCampusController::class, 'index'])->middleware('admin.permission:campus.manage');
+        Route::post('/campuses', [AdminCampusController::class, 'store'])->middleware('admin.permission:rbac.manage');
+        Route::put('/campuses/{campus}', [AdminCampusController::class, 'update'])->middleware('admin.permission:campus.manage');
+        Route::put('/campuses/{campus}/agents', [AdminCampusController::class, 'agents'])->middleware('admin.permission:rbac.manage');
+        Route::get('/campus-agent-options', [AdminCampusController::class, 'agentOptions'])->middleware('admin.permission:rbac.manage');
         Route::get('/user-center/overview', [AdminUserCenterController::class, 'overview'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
         Route::get('/user-center/users', [AdminUserCenterController::class, 'users'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
         Route::get('/user-center/referrals', [AdminUserCenterController::class, 'referrals'])->middleware('admin.permission:user.view_masked|user.view_sensitive');

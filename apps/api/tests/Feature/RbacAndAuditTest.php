@@ -27,7 +27,7 @@ class RbacAndAuditTest extends TestCase
 
         $this->assertTrue($admin->hasPermission('task.frontend_publish'));
         $this->assertFalse($admin->hasPermission('finance.manage'));
-        $this->assertDatabaseCount('roles', 9);
+        $this->assertDatabaseCount('roles', 10);
     }
 
     public function test_operation_logs_are_append_only(): void

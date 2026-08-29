@@ -7,6 +7,38 @@ export interface AdminProfile {
   requires_mfa: boolean
   roles: string[]
   permissions: string[]
+  campuses: Array<{ id: string; code: string; name: string; is_primary: boolean }>
+}
+
+export interface ManagedCampusAgent {
+  id: string
+  account: string
+  display_name: string
+  is_primary: boolean
+  roles: string[]
+}
+
+export interface CampusAgentOption {
+  id: string
+  account: string
+  display_name: string
+  roles: string[]
+}
+
+export interface ManagedCampus {
+  id: string
+  code: string
+  name: string
+  province: string | null
+  city: string | null
+  district: string | null
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+  status: 'active' | 'disabled'
+  sort_order: number
+  users_count: number
+  agents: ManagedCampusAgent[]
 }
 
 export interface NavigationItem {
@@ -1532,3 +1564,14 @@ export async function createNotificationCampaign(input: Record<string, unknown>)
 export async function cancelNotificationCampaign(id: string, reason: string): Promise<ManagedNotificationCampaign> { return request(`/admin/notification-campaigns/${encodeURIComponent(id)}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) }) }
 export async function listNotificationDeliveries(): Promise<{ items: ManagedNotificationDelivery[] }> { return request('/admin/notification-deliveries') }
 export async function retryNotificationDelivery(id: number, reason: string): Promise<ManagedNotificationDelivery> { return request(`/admin/notification-deliveries/${id}/retry`, { method: 'POST', body: JSON.stringify({ reason }) }) }
+export async function listManagedCampuses(): Promise<{ items: ManagedCampus[] }> { return request('/admin/campuses') }
+export async function listCampusAgentOptions(): Promise<{ items: CampusAgentOption[] }> { return request('/admin/campus-agent-options') }
+export async function createManagedCampus(input: Omit<ManagedCampus, 'id' | 'users_count' | 'agents'>): Promise<ManagedCampus> {
+  return request('/admin/campuses', { method: 'POST', body: JSON.stringify(input) })
+}
+export async function updateManagedCampus(id: string, input: Omit<ManagedCampus, 'id' | 'users_count' | 'agents'>): Promise<ManagedCampus> {
+  return request(`/admin/campuses/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+export async function updateManagedCampusAgents(id: string, adminUserIds: string[], primaryAdminUserId?: string): Promise<ManagedCampus> {
+  return request(`/admin/campuses/${encodeURIComponent(id)}/agents`, { method: 'PUT', body: JSON.stringify({ admin_user_ids: adminUserIds, primary_admin_user_id: primaryAdminUserId || null }) })
+}

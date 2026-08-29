@@ -52,8 +52,17 @@
     "mp-weixin" : {
         "appid" : "wx142866c45e952923",
         "setting" : {
-            "urlCheck" : false
+            "urlCheck" : false,
+            "minified" : true,
+            "minifyWXML" : true,
+            "minifyWXSS" : true
         },
+        "permission" : {
+            "scope.userLocation" : {
+                "desc" : "用于推荐距离您较近的学校"
+            }
+        },
+        "requiredPrivateInfos" : [ "getLocation" ],
         "usingComponents" : true
     },
     "mp-alipay" : {

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Product\Models;
 
+use App\Modules\Campus\Models\Concerns\BelongsToCampus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,7 +10,9 @@ use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    protected $fillable = ['public_id', 'product_category_id', 'name', 'subtitle', 'description', 'cover_file_public_id', 'gallery_images', 'status', 'current_version_no', 'lock_version', 'idempotency_key_hash', 'created_by_admin_id', 'published_at', 'off_shelf_at'];
+    use BelongsToCampus;
+
+    protected $fillable = ['public_id', 'campus_id', 'product_category_id', 'name', 'subtitle', 'description', 'cover_file_public_id', 'gallery_images', 'status', 'current_version_no', 'lock_version', 'idempotency_key_hash', 'created_by_admin_id', 'published_at', 'off_shelf_at'];
 
     protected $attributes = ['status' => 'draft', 'current_version_no' => 1, 'lock_version' => 1];
 

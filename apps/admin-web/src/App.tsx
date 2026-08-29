@@ -6,6 +6,7 @@ import {
   CustomerServiceOutlined,
   DashboardOutlined,
   FileDoneOutlined,
+  EnvironmentOutlined,
   LockOutlined,
   LogoutOutlined,
   KeyOutlined,
@@ -63,10 +64,12 @@ const CommunityManagementPage = lazy(() => import('./features/community/Communit
 const OperationsPage = lazy(() => import('./features/operations/OperationsPage').then((module) => ({ default: module.OperationsPage })))
 const UserOperationsPage = lazy(() => import('./features/users/UserOperationsPage').then((module) => ({ default: module.UserOperationsPage })))
 const SupportTicketPage = lazy(() => import('./features/support/SupportTicketPage').then((module) => ({ default: module.SupportTicketPage })))
+const CampusManagementPage = lazy(() => import('./features/campuses/CampusManagementPage').then((module) => ({ default: module.CampusManagementPage })))
 
 const iconMap: Record<string, ReactNode> = {
   DashboardOutlined: <DashboardOutlined />,
   TeamOutlined: <TeamOutlined />,
+  EnvironmentOutlined: <EnvironmentOutlined />,
   ProfileOutlined: <ProfileOutlined />,
   ShopOutlined: <ShopOutlined />,
   FileDoneOutlined: <FileDoneOutlined />,
@@ -82,6 +85,7 @@ const roleNames: Record<string, string> = {
   super_admin: '超级管理员',
   platform_admin: '平台管理员',
   operations_admin: '运营管理员',
+  campus_agent: '学校代理',
   task_reviewer: '任务审核员',
   community_reviewer: '社区审核员',
   customer_service: '客服人员',
@@ -225,6 +229,7 @@ function Workbench() {
 }
 
 function Workspace({ item }: { item: NavigationItem }) {
+  if (item.code === 'campuses') return <CampusManagementPage />
   if (item.code === 'users') return <UserOperationsPage />
   if (item.code === 'settings') return <SettingsPage />
   if (item.code === 'security') return <SecurityPage />

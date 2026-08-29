@@ -340,6 +340,7 @@ class AuthService
      */
     public function presentUser(User $user): array
     {
+        $user->loadMissing('campus');
         $phone = $user->phone;
         $avatar = $user->avatar_file_id === null ? null : UploadedFile::query()->find($user->avatar_file_id);
         $identityVerification = $user->identityVerification()->first();
@@ -354,6 +355,18 @@ class AuthService
             'status' => $user->status,
             'profile_completed' => $user->profile_completed_at !== null,
             'real_name_status' => $identityVerification?->status ?? 'not_submitted',
+            'campus' => $user->campus === null ? null : [
+                'id' => $user->campus->public_id,
+                'code' => $user->campus->code,
+                'name' => $user->campus->name,
+                'province' => $user->campus->province,
+                'city' => $user->campus->city,
+                'district' => $user->campus->district,
+                'address' => $user->campus->address,
+                'latitude' => $user->campus->latitude,
+                'longitude' => $user->campus->longitude,
+                'distance_km' => null,
+            ],
         ];
     }
 

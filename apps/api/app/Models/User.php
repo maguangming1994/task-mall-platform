@@ -9,10 +9,13 @@ use App\Modules\Auth\Models\IdentityConflict;
 use App\Modules\Auth\Models\UserDevice;
 use App\Modules\Auth\Models\UserIdentity;
 use App\Modules\Auth\Models\UserSession;
+use App\Modules\Campus\Models\Campus;
 use App\Modules\Identity\Models\UserIdentityVerification;
 use App\Modules\Notification\Models\NotificationPreference;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -26,6 +29,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'public_id',
+        'campus_id',
         'nickname',
         'avatar_file_id',
         'phone',
@@ -45,14 +49,35 @@ class User extends Authenticatable
 
     protected static function booted(): void
     {
+        static::addGlobalScope('admin_campus', function (Builder $builder): void {
+            if (! app()->bound('request')) {
+                return;
+            }
+
+            $request = request();
+            $campusId = $request->attributes->get('campus_database_id');
+            if ($request->attributes->get('campus_context_strict') === true && is_int($campusId)) {
+                $builder->where($builder->getModel()->qualifyColumn('campus_id'), $campusId);
+            }
+        });
+
         static::creating(function (User $user): void {
             $user->public_id ??= (string) Str::ulid();
+            $campusId = app()->bound('request') ? request()->attributes->get('campus_database_id') : null;
+            if ($user->campus_id === null && is_int($campusId)) {
+                $user->campus_id = $campusId;
+            }
         });
     }
 
     public function identities(): HasMany
     {
         return $this->hasMany(UserIdentity::class);
+    }
+
+    public function campus(): BelongsTo
+    {
+        return $this->belongsTo(Campus::class);
     }
 
     public function devices(): HasMany

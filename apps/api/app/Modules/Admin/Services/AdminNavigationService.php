@@ -15,6 +15,7 @@ class AdminNavigationService
         $items = [
             ['code' => 'workbench', 'label' => '工作台', 'icon' => 'DashboardOutlined', 'path' => '/', 'permissions' => []],
             ['code' => 'users', 'label' => '用户中心', 'icon' => 'TeamOutlined', 'path' => '/users', 'permissions' => ['user.view_masked', 'user.view_sensitive']],
+            ['code' => 'campuses', 'label' => '学校与代理', 'icon' => 'EnvironmentOutlined', 'path' => '/campuses', 'permissions' => ['campus.manage']],
             ['code' => 'privacy', 'label' => '协议与隐私', 'icon' => 'SafetyCertificateOutlined', 'path' => '/privacy', 'permissions' => ['legal.manage', 'privacy.manage']],
             ['code' => 'tasks', 'label' => '任务中心', 'icon' => 'ProfileOutlined', 'path' => '/tasks', 'permissions' => ['task.view', 'task.manage', 'task.review']],
             ['code' => 'mall', 'label' => '商城中心', 'icon' => 'ShopOutlined', 'path' => '/mall', 'permissions' => ['product.manage']],

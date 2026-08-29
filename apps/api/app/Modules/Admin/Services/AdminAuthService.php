@@ -174,6 +174,7 @@ class AdminAuthService
     /** @return array<string, mixed> */
     public function present(AdminUser $admin): array
     {
+        $admin->loadMissing('campuses');
         $admin->loadMissing('roles');
 
         return [
@@ -185,6 +186,12 @@ class AdminAuthService
             'requires_mfa' => $admin->requires_mfa,
             'roles' => $admin->roles->pluck('code')->sort()->values()->all(),
             'permissions' => $admin->permissionCodes(),
+            'campuses' => $admin->campuses->map(fn ($campus) => [
+                'id' => $campus->public_id,
+                'code' => $campus->code,
+                'name' => $campus->name,
+                'is_primary' => (bool) $campus->pivot->is_primary,
+            ])->values()->all(),
         ];
     }
 

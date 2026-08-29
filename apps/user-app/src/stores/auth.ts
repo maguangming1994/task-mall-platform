@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ApiError, apiRequest } from '@/api/http'
+import type { Campus } from '@/api/campuses'
 
 export interface CurrentUser {
   id: string
@@ -11,6 +12,7 @@ export interface CurrentUser {
   status: 'active' | 'disabled' | 'cancelled'
   profile_completed: boolean
   real_name_status: 'not_submitted' | 'pending' | 'verified' | 'failed' | 'provider_error'
+  campus: Campus | null
 }
 
 interface AuthTokens {

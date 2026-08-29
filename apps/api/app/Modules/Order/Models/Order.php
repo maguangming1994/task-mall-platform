@@ -3,6 +3,7 @@
 namespace App\Modules\Order\Models;
 
 use App\Models\User;
+use App\Modules\Campus\Models\Concerns\BelongsToCampus;
 use App\Modules\Fulfillment\Models\Fulfillment;
 use App\Modules\Refund\Models\Exchange;
 use App\Modules\Refund\Models\Refund;
@@ -13,7 +14,9 @@ use Illuminate\Support\Str;
 
 class Order extends Model
 {
-    protected $fillable = ['public_id', 'order_no', 'order_batch_id', 'user_id', 'fulfillment_type', 'status', 'cash_payment_method', 'address_snapshot', 'user_coupon_id', 'coupon_snapshot', 'shipping_rule_snapshot', 'items_cash_amount', 'items_points', 'cash_discount_amount', 'points_discount', 'shipping_amount', 'payable_cash_amount', 'payable_points', 'paid_wallet_amount', 'paid_external_amount', 'paid_points', 'refunded_wallet_amount', 'refunded_external_amount', 'refunded_points', 'expires_at', 'paid_at', 'fulfill_by', 'shipped_at', 'auto_complete_at', 'completed_at'];
+    use BelongsToCampus;
+
+    protected $fillable = ['public_id', 'campus_id', 'order_no', 'order_batch_id', 'user_id', 'fulfillment_type', 'status', 'cash_payment_method', 'address_snapshot', 'user_coupon_id', 'coupon_snapshot', 'shipping_rule_snapshot', 'items_cash_amount', 'items_points', 'cash_discount_amount', 'points_discount', 'shipping_amount', 'payable_cash_amount', 'payable_points', 'paid_wallet_amount', 'paid_external_amount', 'paid_points', 'refunded_wallet_amount', 'refunded_external_amount', 'refunded_points', 'expires_at', 'paid_at', 'fulfill_by', 'shipped_at', 'auto_complete_at', 'completed_at'];
 
     protected static function booted(): void
     {
