@@ -19,7 +19,21 @@ interface AuthTokens {
   token_type: 'Bearer'
   expires_in: number
   user: CurrentUser
+  account_resolution?: AccountResolution
 }
+
+export interface AccountResolution {
+  outcome: 'merged_into_existing_account'
+  message: string
+  conflict_id: string
+}
+
+export interface PhoneBindingActionResult {
+  user: CurrentUser
+  accountResolution: AccountResolution | null
+}
+
+type PhoneBindingPayload = CurrentUser | AuthTokens
 
 interface StoredAuth {
   accessToken: string
@@ -93,7 +107,7 @@ export const useAuthStore = defineStore('auth', {
       if (!this.accessToken) throw new Error('请先完成微信登录。')
       this.submitting = true
       try {
-        const bind = () => apiRequest<CurrentUser>({
+        const bind = () => apiRequest<PhoneBindingPayload>({
           path: '/me/phone',
           method: 'PUT',
           accessToken: this.accessToken,
@@ -102,15 +116,12 @@ export const useAuthStore = defineStore('auth', {
 
         if (this.expiresAt <= Date.now() && this.refreshToken) await this.refreshSession()
         try {
-          this.user = await bind()
+          return this.applyPhoneBinding(await bind())
         } catch (error) {
           if (!isUnauthorized(error) || !this.refreshToken) throw error
           await this.refreshSession()
-          this.user = await bind()
+          return this.applyPhoneBinding(await bind())
         }
-        this.persist()
-
-        return this.user
       } finally {
         this.submitting = false
       }
@@ -119,7 +130,7 @@ export const useAuthStore = defineStore('auth', {
       if (!this.accessToken) throw new Error('请先完成微信登录。')
       this.submitting = true
       try {
-        const bind = () => apiRequest<CurrentUser>({
+        const bind = () => apiRequest<PhoneBindingPayload>({
           path: '/me/phone/wechat',
           method: 'PUT',
           accessToken: this.accessToken,
@@ -128,15 +139,12 @@ export const useAuthStore = defineStore('auth', {
 
         if (this.expiresAt <= Date.now() && this.refreshToken) await this.refreshSession()
         try {
-          this.user = await bind()
+          return this.applyPhoneBinding(await bind())
         } catch (error) {
           if (!isUnauthorized(error) || !this.refreshToken) throw error
           await this.refreshSession()
-          this.user = await bind()
+          return this.applyPhoneBinding(await bind())
         }
-        this.persist()
-
-        return this.user
       } finally {
         this.submitting = false
       }
@@ -210,6 +218,19 @@ export const useAuthStore = defineStore('auth', {
       this.expiresAt = Date.now() + tokens.expires_in * 1000
       this.user = tokens.user
       this.persist()
+    },
+    applyPhoneBinding(payload: PhoneBindingPayload): PhoneBindingActionResult {
+      if ('access_token' in payload) {
+        this.applyTokens(payload)
+        return {
+          user: payload.user,
+          accountResolution: payload.account_resolution || null,
+        }
+      }
+
+      this.user = payload
+      this.persist()
+      return { user: payload, accountResolution: null }
     },
     clear() {
       this.accessToken = ''

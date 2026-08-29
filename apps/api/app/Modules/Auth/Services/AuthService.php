@@ -124,23 +124,23 @@ class AuthService
     }
 
     /** @return array<string, mixed> */
-    public function bindPhone(User $user, string $phone, string $verificationCode): array
+    public function bindPhone(User $user, UserSession $session, string $phone, string $verificationCode): array
     {
         if (! $this->phoneVerification->verify($phone, 'bind_phone', $verificationCode)) {
             throw new AuthException('PHONE_VERIFICATION_FAILED', '验证码错误、已过期或尚未申请。', 422);
         }
 
-        return $this->bindVerifiedPhone($user, $phone, 'sms_verification');
+        return $this->bindVerifiedPhone($user, $session, $phone, 'sms_verification');
     }
 
     /** @return array<string, mixed> */
-    public function bindWechatPhone(User $user, string $phone): array
+    public function bindWechatPhone(User $user, UserSession $session, string $phone): array
     {
-        return $this->bindVerifiedPhone($user, $phone, 'wechat_phone_authorization');
+        return $this->bindVerifiedPhone($user, $session, $phone, 'wechat_phone_authorization');
     }
 
     /** @return array<string, mixed> */
-    private function bindVerifiedPhone(User $user, string $phone, string $source): array
+    private function bindVerifiedPhone(User $user, UserSession $session, string $phone, string $source): array
     {
         $phoneHash = $this->phoneVerification->phoneHash($phone);
         if ($user->phone_hash !== null && $user->phone_hash !== $phoneHash) {
@@ -164,7 +164,21 @@ class AuthService
                 [$owner->id],
             );
 
-            throw $this->identityConflicts->exception($conflict);
+            return DB::transaction(function () use ($conflict, $user, $session): array {
+                $session->loadMissing(['device', 'identity']);
+                $resolved = $this->identityConflicts->resolveVerifiedPhoneOwnership($conflict, $user);
+                $target = $resolved['target'];
+                $this->cancellations->withdrawOnLogin($target);
+                $device = $this->resolveDeviceFromExisting($target, $session->device);
+                $tokens = $this->issueTokenPair($target, $device, $resolved['identity_id']);
+                $tokens['account_resolution'] = [
+                    'outcome' => 'merged_into_existing_account',
+                    'message' => '手机号已关联原账户，已合并微信身份并为你切换登录。',
+                    'conflict_id' => $resolved['conflict']->public_id,
+                ];
+
+                return $tokens;
+            });
         }
 
         DB::transaction(function () use ($user, $phone, $phoneHash, $source): void {
@@ -180,6 +194,39 @@ class AuthService
         });
 
         return $this->presentUser($user->fresh());
+    }
+
+    private function resolveDeviceFromExisting(User $user, UserDevice $sourceDevice): UserDevice
+    {
+        $device = UserDevice::query()
+            ->where('user_id', $user->id)
+            ->where('device_fingerprint_hash', $sourceDevice->device_fingerprint_hash)
+            ->where('client_platform', $sourceDevice->client_platform)
+            ->lockForUpdate()
+            ->first();
+
+        if ($device !== null) {
+            if ($device->revoked_at !== null) {
+                $this->enforceDeviceLimit($user);
+            }
+            $device->update([
+                'device_name' => $sourceDevice->device_name ?? $device->device_name,
+                'last_active_at' => now(),
+                'revoked_at' => null,
+            ]);
+
+            return $device;
+        }
+
+        $this->enforceDeviceLimit($user);
+
+        return UserDevice::query()->create([
+            'user_id' => $user->id,
+            'device_fingerprint_hash' => $sourceDevice->device_fingerprint_hash,
+            'client_platform' => $sourceDevice->client_platform,
+            'device_name' => $sourceDevice->device_name,
+            'last_active_at' => now(),
+        ]);
     }
 
     /**

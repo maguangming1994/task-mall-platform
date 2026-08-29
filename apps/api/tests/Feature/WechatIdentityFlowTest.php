@@ -3,13 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use App\Modules\Admin\Models\AdminUser;
-use App\Modules\Admin\Models\Role;
 use App\Modules\Auth\Models\UserIdentity;
 use App\Modules\Auth\Services\IdentityHasher;
 use App\Modules\Settings\Models\SystemSettingDefinition;
 use App\Modules\Settings\Models\SystemSettingVersion;
-use Database\Seeders\RbacSeeder;
 use Database\Seeders\SystemSettingDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -127,6 +124,54 @@ class WechatIdentityFlowTest extends TestCase
         ]);
     }
 
+    public function test_wechat_phone_authorization_switches_to_the_existing_phone_account(): void
+    {
+        $phoneHeaders = $this->headers('h5-browser', 'wechat-phone-existing-device');
+        $this->postJson('/api/v1/auth/phone/verification-codes', [
+            'phone' => '13800138883',
+            'purpose' => 'login',
+        ], $phoneHeaders)->assertAccepted();
+        $phoneUser = $this->postJson('/api/v1/auth/phone/login', [
+            'phone' => '13800138883',
+            'verification_code' => '246810',
+        ], $phoneHeaders)->assertOk();
+
+        $wechat = $this->wechatLogin('mini', 'local:mini-phone-merge:union-phone-merge')->assertOk();
+        $wechatToken = $wechat->json('data.access_token');
+
+        config()->set('wechat_auth.driver', 'wechat');
+        config()->set('wechat_auth.mini.app_id', 'test-mini-app-id');
+        config()->set('wechat_auth.mini.app_secret', 'test-mini-app-secret');
+        Cache::clear();
+        Http::fake([
+            'api.weixin.qq.com/cgi-bin/token*' => Http::response([
+                'access_token' => 'test-access-token',
+                'expires_in' => 7200,
+            ]),
+            'api.weixin.qq.com/wxa/business/getuserphonenumber*' => Http::response([
+                'errcode' => 0,
+                'errmsg' => 'ok',
+                'phone_info' => [
+                    'phoneNumber' => '13800138883',
+                    'purePhoneNumber' => '13800138883',
+                    'countryCode' => '86',
+                ],
+            ]),
+        ]);
+
+        $binding = $this->withToken($wechatToken)
+            ->putJson('/api/v1/me/phone/wechat', ['code' => 'existing-phone-code'])
+            ->assertOk()
+            ->assertJsonPath('data.user.id', $phoneUser->json('data.user.id'))
+            ->assertJsonPath('data.account_resolution.outcome', 'merged_into_existing_account');
+
+        $this->withToken($wechatToken)->getJson('/api/v1/me')->assertUnauthorized();
+        $this->withToken($binding->json('data.access_token'))
+            ->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.id', $phoneUser->json('data.user.id'));
+    }
+
     public function test_unconfigured_wechat_phone_authorization_returns_a_safe_fallback(): void
     {
         $login = $this->wechatLogin('mini', 'local:mini-open-unconfigured:union-unconfigured');
@@ -169,7 +214,7 @@ class WechatIdentityFlowTest extends TestCase
         $this->assertDatabaseHas('identity_conflicts', ['kind' => 'union_collision', 'status' => 'pending']);
     }
 
-    public function test_phone_conflict_can_be_resolved_by_super_admin_and_revokes_source_session(): void
+    public function test_verified_phone_conflict_merges_wechat_transition_account_and_switches_session(): void
     {
         $phoneHeaders = $this->headers('h5-browser', 'existing-phone-device');
         $this->postJson('/api/v1/auth/phone/verification-codes', [
@@ -183,6 +228,7 @@ class WechatIdentityFlowTest extends TestCase
 
         $wechat = $this->wechatLogin('mini', 'local:merge-open:merge-union')->assertOk();
         $wechatToken = $wechat->json('data.access_token');
+        $sourceUser = User::query()->where('public_id', $wechat->json('data.user.id'))->firstOrFail();
         $wechatHeaders = $this->headers('wechat-mini', 'mini-merge-device');
         $this->postJson('/api/v1/auth/phone/verification-codes', [
             'phone' => '13800138881',
@@ -191,39 +237,34 @@ class WechatIdentityFlowTest extends TestCase
         $binding = $this->withToken($wechatToken)->putJson('/api/v1/me/phone', [
             'new_phone' => '13800138881',
             'new_phone_verification_code' => '246810',
-        ])->assertConflict();
-
-        $this->seed(RbacSeeder::class);
-        $admin = AdminUser::query()->create([
-            'account' => 'identity-admin',
-            'display_name' => '身份管理员',
-            'password' => 'IdentityAdmin123!',
-        ]);
-        $admin->roles()->attach(Role::query()->where('code', 'super_admin')->value('id'));
-        $adminToken = $this->postJson('/api/v1/admin/auth/login', [
-            'account' => 'identity-admin',
-            'password' => 'IdentityAdmin123!',
-        ])->assertOk()->json('data.access_token');
-
-        $conflictId = $binding->json('details.conflict_id');
-        $this->withToken($adminToken)
-            ->postJson("/api/v1/admin/identity-conflicts/{$conflictId}/resolve", [
-                'resolution' => 'attach_to_target',
-                'reason' => '用户完成身份核验，确认归并至已有手机号账号。',
-                'target_user_id' => $phoneUser->json('data.user.id'),
-            ])
-            ->assertOk()
-            ->assertJsonPath('data.status', 'resolved');
+        ])->assertOk()
+            ->assertJsonPath('data.user.id', $phoneUser->json('data.user.id'))
+            ->assertJsonPath('data.user.phone_bound', true)
+            ->assertJsonPath('data.account_resolution.outcome', 'merged_into_existing_account')
+            ->assertJsonPath('data.account_resolution.message', '手机号已关联原账户，已合并微信身份并为你切换登录。');
 
         $this->withToken($wechatToken)
             ->getJson('/api/v1/me')
             ->assertUnauthorized();
+        $this->withToken($binding->json('data.access_token'))
+            ->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.id', $phoneUser->json('data.user.id'));
         $this->assertSame(
             $phoneUser->json('data.user.id'),
             UserIdentity::query()->where('provider', 'wechat_mini')->firstOrFail()->user->public_id,
         );
-        $this->assertDatabaseHas('identity_conflicts', ['status' => 'resolved']);
-        $this->assertDatabaseHas('operation_logs', ['action' => 'identity_conflict.resolve']);
+        $this->assertDatabaseHas('users', [
+            'id' => $sourceUser->id,
+            'status' => 'merged',
+            'merged_into_user_id' => User::query()->where('public_id', $phoneUser->json('data.user.id'))->value('id'),
+        ]);
+        $this->assertDatabaseHas('identity_conflicts', [
+            'source_user_id' => $sourceUser->id,
+            'status' => 'resolved',
+            'resolution' => 'verified_phone_account_merge',
+        ]);
+        $this->assertDatabaseHas('operation_logs', ['action' => 'identity_conflict.auto_resolved']);
     }
 
     public function test_capabilities_only_advertise_wechat_for_the_matching_runtime(): void

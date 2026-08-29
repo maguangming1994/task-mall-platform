@@ -205,8 +205,8 @@ async function phoneAction() {
   }
   try {
     if (needsPhoneBinding.value) {
-      await auth.bindPhone(phone.value, code.value)
-      finishLogin()
+      const result = await auth.bindPhone(phone.value, code.value)
+      await routeAfterAuthentication(false, result.accountResolution?.message)
     } else {
       await auth.loginWithPhone(phone.value, code.value)
       await routeAfterAuthentication(false)
@@ -239,7 +239,9 @@ async function bindWechatPhoneWithSessionRecovery(phoneCode: string) {
 
     const user = await auth.loginWithWechat('mini', credential.code)
     needsPhoneBinding.value = !user.phone_bound
-    return user.phone_bound ? user : auth.bindWechatPhone(phoneCode)
+    return user.phone_bound
+      ? { user, accountResolution: null }
+      : auth.bindWechatPhone(phoneCode)
   }
 
   if (!auth.accessToken) return restoreSessionAndBind()
@@ -265,15 +267,15 @@ async function authorizeWechatPhone(event: WechatPhoneEvent) {
 
   wechatPhoneSubmitting.value = true
   try {
-    await bindWechatPhoneWithSessionRecovery(phoneCode)
-    finishLogin()
+    const result = await bindWechatPhoneWithSessionRecovery(phoneCode)
+    await routeAfterAuthentication(false, result.accountResolution?.message)
   } catch (error) {
     if (error instanceof ApiError && ['WECHAT_PHONE_PROVIDER_NOT_CONFIGURED', 'WECHAT_PROVIDER_UNAVAILABLE'].includes(error.code)) {
       const refreshed = await refreshCapabilities()
       if (refreshed?.login_methods.includes('wechat_mini')) {
         try {
-          await bindWechatPhoneWithSessionRecovery(phoneCode)
-          finishLogin()
+          const result = await bindWechatPhoneWithSessionRecovery(phoneCode)
+          await routeAfterAuthentication(false, result.accountResolution?.message)
           return
         } catch (retryError) {
           if (!(retryError instanceof ApiError) || !['WECHAT_PHONE_PROVIDER_NOT_CONFIGURED', 'WECHAT_PROVIDER_UNAVAILABLE'].includes(retryError.code)) {
@@ -300,7 +302,7 @@ async function refreshCapabilities() {
   }
 }
 
-async function routeAfterAuthentication(bindPhone: boolean) {
+async function routeAfterAuthentication(bindPhone: boolean, successMessage?: string) {
   const pending = await loadPendingLegalDocuments(auth.accessToken, 'account')
   if (pending.length > 0) {
     const consentUrl = `/pages/legal-consent/index?next=${bindPhone ? 'bind-phone' : 'home'}`
@@ -312,14 +314,18 @@ async function routeAfterAuthentication(bindPhone: boolean) {
     uni.showToast({ title: '请继续绑定手机号', icon: 'none' })
     return
   }
-  finishLogin()
+  finishLogin(successMessage)
 }
 
-function finishLogin() {
+function finishLogin(successMessage?: string) {
   const target = returnUrl.value || resolveReturnUrl()
   clearReturnUrl()
-  uni.showToast({ title: '登录成功', icon: 'success' })
-  setTimeout(() => uni.reLaunch({ url: target || '/pages/index/index' }), 350)
+  uni.showToast({
+    title: successMessage || '登录成功',
+    icon: successMessage ? 'none' : 'success',
+    duration: successMessage ? 2600 : 1500,
+  })
+  setTimeout(() => uni.reLaunch({ url: target || '/pages/index/index' }), successMessage ? 900 : 350)
 }
 
 function ensureAgreed() {

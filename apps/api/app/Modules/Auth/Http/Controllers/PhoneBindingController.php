@@ -6,6 +6,7 @@ use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Auth\Exceptions\AuthException;
+use App\Modules\Auth\Models\UserSession;
 use App\Modules\Auth\Services\AuthService;
 use App\Modules\Auth\Services\WechatIdentityProvider;
 use Illuminate\Http\JsonResponse;
@@ -21,10 +22,12 @@ class PhoneBindingController extends Controller
         ]);
         /** @var User $user */
         $user = $request->user();
+        /** @var UserSession $session */
+        $session = $request->attributes->get('auth_session');
         $phone = str_starts_with($data['new_phone'], '+86') ? substr($data['new_phone'], 3) : $data['new_phone'];
 
         try {
-            return ApiResponse::success($auth->bindPhone($user, $phone, $data['new_phone_verification_code']));
+            return ApiResponse::success($auth->bindPhone($user, $session, $phone, $data['new_phone_verification_code']));
         } catch (AuthException $exception) {
             return ApiResponse::error(
                 $exception->errorCode,
@@ -45,11 +48,13 @@ class PhoneBindingController extends Controller
         ]);
         /** @var User $user */
         $user = $request->user();
+        /** @var UserSession $session */
+        $session = $request->attributes->get('auth_session');
 
         try {
             $phone = $wechat->exchangePhoneNumber($data['code']);
 
-            return ApiResponse::success($auth->bindWechatPhone($user, $phone));
+            return ApiResponse::success($auth->bindWechatPhone($user, $session, $phone));
         } catch (AuthException $exception) {
             return ApiResponse::error(
                 $exception->errorCode,
