@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :style="topSafeAreaStyle">
     <view class="task-topbar">
       <view class="task-topbar-title"><text class="task-topbar-kicker">CAMPUS TASKS</text><text class="task-topbar-name">任务大厅</text></view>
       <view v-if="tab === 'hall'" class="task-topbar-actions"><view class="task-topbar-action" @click="openMine"><text class="task-topbar-action-icon">▣</text><text>任务记录</text></view><view class="task-topbar-action" @click="showFilterHint"><text class="task-topbar-action-icon">⌕</text><text>筛选</text></view></view>
@@ -119,6 +119,9 @@ import { cancelTaskClaim, listHallTasks, listMyTaskClaims, type HallTask, type T
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { plainTextFromRich } from '@/utils/richText'
+import { createTopSafeAreaStyle } from '@/utils/safeArea'
+
+const topSafeAreaStyle = createTopSafeAreaStyle()
 
 const auth = useAuthStore()
 const tab = ref<'hall' | 'mine'>('hall')
@@ -332,4 +335,10 @@ function deadlineText(item: TaskClaim) { if (['approved', 'cancelled', 'appeal_r
 .task-card-top{align-items:flex-start;gap:14rpx}.task-card-icon{display:flex;align-items:center;justify-content:center;width:58rpx;height:58rpx;flex:none;border-radius:17rpx;background:linear-gradient(145deg,#dff6ff,#e9fbf3);color:#1578d6;font-size:14px;font-weight:900}.task-heading-main{padding-top:2rpx}.task-title{line-height:1.28}.task-metric-strip{margin-top:14rpx}.task-card .task-summary{margin-top:14rpx;font-size:13px;line-height:1.48}.task-card-bottom{margin-top:13rpx}.task-card .deadline{margin-top:12rpx;font-size:12px}.detail-entry{margin-top:13rpx;padding-top:12rpx;font-size:13px}
 .mine-review-notice{display:flex;align-items:center;gap:8rpx;margin:12rpx 0 0;padding:12rpx 16rpx;border:1rpx solid #cce4ef;border-radius:15rpx;background:#effaff;color:#28718c;font-size:13px;line-height:1.45}.mine-review-dot{color:#19a77b;font-size:12px}.mine-progress-track{height:8rpx;margin-top:10rpx;overflow:hidden;border-radius:999rpx;background:#e8f0f3}.mine-progress-track view{height:100%;border-radius:999rpx;background:linear-gradient(90deg,#16b886,#2ac3cb)}
 .task-empty{min-height:168rpx;padding:25rpx 20rpx 22rpx;margin-top:14rpx;border-style:dashed;background:rgba(255,255,255,.74);box-shadow:none}.task-empty-mark{width:58rpx;height:58rpx;border-radius:18rpx;font-size:14px}.task-empty-title{margin-top:13rpx;font-size:15px}.task-empty-copy{margin-top:6rpx;font-size:13px;line-height:1.45}.task-empty-action{min-width:174rpx;height:48rpx;margin-top:15rpx;font-size:13px;line-height:48rpx}
+.page{padding-top:var(--tm-custom-header-top,calc(env(safe-area-inset-top) + 8px))}
+.task-dashboard::after{z-index:0}
+.dashboard-copy,.dashboard-grid{position:relative;z-index:1}
+.dashboard-ring{z-index:2;right:28rpx;top:28rpx;width:96rpx;height:96rpx;box-sizing:border-box;align-items:center;border-width:6rpx;line-height:1}
+.dashboard-ring strong{font-size:16px;line-height:1}
+.dashboard-ring text{font-size:9px;line-height:1}
 </style>

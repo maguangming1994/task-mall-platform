@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :style="topSafeAreaStyle">
     <view class="ambient ambient-one" />
     <view class="ambient ambient-two" />
     <view class="login-topbar">
@@ -131,7 +131,9 @@ import { requestWechatLoginCode } from '@/platform/auth'
 import { loadClientCapabilities, type ClientCapabilities } from '@/platform/capabilities'
 import { useAuthStore } from '@/stores/auth'
 import { appendReturnUrl, clearReturnUrl, resolveReturnUrl } from '@/utils/authRedirect'
+import { createTopSafeAreaStyle } from '@/utils/safeArea'
 
+const topSafeAreaStyle = createTopSafeAreaStyle()
 const auth = useAuthStore()
 const phone = ref('')
 const code = ref('')
@@ -370,7 +372,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.login-topbar{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;height:84rpx;padding:calc(env(safe-area-inset-top) + 4rpx) 28rpx 0;box-sizing:content-box}
+.login-topbar{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;height:84rpx;padding:var(--tm-custom-header-top,calc(env(safe-area-inset-top) + 8px)) 28rpx 0;box-sizing:content-box}
 .login-back{display:flex;width:64rpx;height:64rpx;align-items:center;justify-content:center;border-radius:18rpx;color:#10283f;font-size:30px;font-weight:350;line-height:1}
 .login-topbar-spacer{width:64rpx;height:64rpx}.login-page-title{color:#0d2740;font-size:22px;font-weight:950}
 .page{position:relative;min-height:100vh;overflow:hidden;background:linear-gradient(180deg,#eafaff 0,#f5fbff 42%,#f7f8fc 100%);box-sizing:border-box}.ambient{position:absolute;border-radius:50%;pointer-events:none}.ambient-one{right:-150rpx;top:-130rpx;width:430rpx;height:430rpx;background:rgba(42,202,202,.18)}.ambient-two{left:-220rpx;top:440rpx;width:420rpx;height:420rpx;background:rgba(255,219,77,.18)}.page-shell{position:relative;z-index:1;padding:30rpx 28rpx calc(52rpx + env(safe-area-inset-bottom));box-sizing:border-box}
@@ -401,4 +403,5 @@ onUnmounted(() => {
 .verified-badge{background:#0bb476}
 .verified-tip{border-color:#c2ecd7;background:#effbf5}
 .register-note{color:#81909c}
+.secure-pill{flex:none;white-space:nowrap}
 </style>

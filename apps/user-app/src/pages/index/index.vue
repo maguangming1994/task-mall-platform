@@ -651,6 +651,7 @@ import AppTabBar from '@/components/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { compactRichTextContent } from '@/utils/richText'
+import { createTopSafeAreaStyle } from '@/utils/safeArea'
 
 type InfoTab = 'announcement' | 'messages' | 'assets'
 type RegisteredProductCard = { id: string; name: string; image_url: string; price_text: string; live: boolean }
@@ -769,12 +770,16 @@ function createDefaultHome(): HomeContent {
 }
 
 const home = ref<HomeContent>(createDefaultHome())
+const topSafeAreaStyle = createTopSafeAreaStyle()
 const activeHeroSlide = computed(() => home.value.carousel.items[activeHeroIndex.value] || home.value.carousel.items[0])
 const quickEntries = computed(() => home.value.modules.quick_entries.slice(0, 4).map((item) => ({
   ...item,
   action: () => navigateHomeLink(item.link_type),
 })))
-const pageStyle = computed(() => backgroundStyle(home.value.modules.page_background_url))
+const pageStyle = computed(() => ({
+  ...backgroundStyle(home.value.modules.page_background_url),
+  ...topSafeAreaStyle,
+}))
 const supportShortLabel = computed(() => {
   const value = String(home.value.floating_support.label || '客服').trim()
   if (value.includes('客服')) return '客服'
@@ -1167,7 +1172,7 @@ function handlePopupAction() {
 @keyframes home-v4-spin{to{transform:rotate(360deg)}}
 
 /* Stable phone typography: keep type in px and let layout, not text, respond. */
-.home-v4-safe{height:calc(var(--status-bar-height) + 10px)}
+.home-v4-safe{height:var(--tm-custom-header-top,calc(env(safe-area-inset-top) + 8px))}
 .home-v10-auth-shell{padding-bottom:20px}
 .home-v10-hero{height:210px}
 .home-v10-hero-veil{background:linear-gradient(90deg,rgba(255,255,255,.99) 0%,rgba(255,255,255,.95) 42%,rgba(255,255,255,.46) 62%,rgba(255,255,255,.03) 78%)}
