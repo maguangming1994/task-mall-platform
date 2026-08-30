@@ -1,0 +1,11 @@
+GeoNames geographical data
+Source: https://download.geonames.org/export/dump/CN.zip
+Attribution: GeoNames (https://www.geonames.org/)
+License: Creative Commons Attribution 4.0
+License URL: https://creativecommons.org/licenses/by/4.0/
+
+Supplemental coordinates:
+- Kokdala City (Q18651998) and Xinxing City (Q105300298): Wikidata, CC0.
+- Tiemenguan City and Shuanghe City: public city coordinate references listed in china_city_centroids.json metadata.
+
+All coordinates use WGS84 and are approximate city or prefecture centers. Campus-maintained coordinates take priority when available.

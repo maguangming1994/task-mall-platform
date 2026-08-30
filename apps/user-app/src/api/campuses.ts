@@ -1,5 +1,7 @@
 import { apiRequest } from '@/api/http'
 
+export type CampusLocationAccuracy = 'campus' | 'city' | 'unavailable'
+
 export interface Campus {
   id: string
   code: string
@@ -11,15 +13,35 @@ export interface Campus {
   latitude: number | null
   longitude: number | null
   distance_km: number | null
+  location_accuracy?: CampusLocationAccuracy
 }
 
-export function listCampuses(params: { keyword?: string; latitude?: number; longitude?: number } = {}) {
+export interface CampusListParams {
+  keyword?: string
+  province?: string
+  limit?: number
+}
+
+export interface NearbyCampusParams extends CampusListParams {
+  latitude: number
+  longitude: number
+}
+
+export function listCampuses(params: CampusListParams = {}) {
   const query = Object.entries(params)
     .filter(([, value]) => value !== undefined && value !== '')
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
     .join('&')
 
   return apiRequest<{ items: Campus[] }>({ path: `/campuses${query ? `?${query}` : ''}` })
+}
+
+export function listNearbyCampuses(params: NearbyCampusParams) {
+  return apiRequest<{ items: Campus[] }>({
+    path: '/campuses/nearby',
+    method: 'POST',
+    data: { ...params },
+  })
 }
 
 export function selectAccountCampus(campusId: string, accessToken: string) {

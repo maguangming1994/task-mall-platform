@@ -68,25 +68,28 @@ verify_service() {
   fi
 }
 
-echo "[1/7] 校验生产 Compose 配置"
+echo "[1/8] 校验生产 Compose 配置"
 compose config --quiet
 
-echo "[2/7] 构建版本镜像：$RELEASE_VERSION"
+echo "[2/8] 构建版本镜像：$RELEASE_VERSION"
 compose build --pull api nginx
 
-echo "[3/7] 等待 PostgreSQL 与 Redis"
+echo "[3/8] 等待 PostgreSQL 与 Redis"
 compose up -d --wait --wait-timeout 180 postgres redis
 
-echo "[4/7] 执行前向数据库迁移"
+echo "[4/8] 执行前向数据库迁移"
 compose run --rm --no-deps api php artisan migrate --force
 
-echo "[5/7] 启动 API、队列、调度器和 Web"
+echo "[5/8] 同步全国高校公开名录"
+compose run --rm --no-deps api php artisan campuses:sync-directory
+
+echo "[6/8] 启动 API、队列、调度器和 Web"
 compose up -d --remove-orphans --wait --wait-timeout 240
 
-echo "[6/7] 生成 Laravel 生产缓存"
+echo "[7/8] 生成 Laravel 生产缓存"
 compose exec -T api php artisan optimize
 
-echo "[7/7] 验证全部服务与页面"
+echo "[8/8] 验证全部服务与页面"
 for service in postgres redis api queue scheduler nginx; do
   verify_service "$service"
 done
@@ -98,6 +101,17 @@ wait_for_url "http://127.0.0.1:8080/admin/" "管理后台"
 wait_for_url "$PUBLIC_BASE_URL/api/v1/health/ready" "公网 API readiness"
 wait_for_url "$PUBLIC_BASE_URL/" "公网移动端"
 wait_for_url "$PUBLIC_BASE_URL/admin/" "公网管理后台"
+
+campus_smoke=$(curl --fail --silent --show-error --max-time 10 --get \
+  --data-urlencode "keyword=北京大学" \
+  "http://127.0.0.1:8080/api/v1/campuses")
+case "$campus_smoke" in
+  *'"code":"moe-4111010001"'*) ;;
+  *)
+    echo "高校公开列表校验失败：未找到北京大学。" >&2
+    exit 1
+    ;;
+esac
 
 compose ps
 echo "部署完成：$RELEASE_VERSION"

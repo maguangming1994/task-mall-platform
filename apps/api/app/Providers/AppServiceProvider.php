@@ -20,7 +20,10 @@ use App\Modules\Settings\Events\SystemSettingPublished;
 use App\Modules\Settings\Listeners\ForgetPublishedSettingCache;
 use App\Modules\Task\Models\TaskClaim;
 use App\Modules\Upload\Services\ControlledUploadDiskResolver;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 
@@ -44,6 +47,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('campus-list', fn (Request $request) => Limit::perMinute(60)
+            ->by($this->campusRateKey($request)));
+        RateLimiter::for('campus-nearby', fn (Request $request) => Limit::perMinute(20)
+            ->by($this->campusRateKey($request)));
+
         foreach (['tencent_cos', 'qiniu_kodo'] as $provider) {
             config()->set("filesystems.disks.{$provider}", [
                 'driver' => 'controlled-upload-cloud',
@@ -58,5 +66,15 @@ class AppServiceProvider extends ServiceProvider
         foreach ([TaskClaim::class, Order::class, Refund::class, Fulfillment::class, CommunityPostVersion::class, ModerationAction::class, ContentAppeal::class] as $model) {
             $model::observe(NotificationBusinessObserver::class);
         }
+    }
+
+    private function campusRateKey(Request $request): string
+    {
+        $deviceId = trim((string) $request->header('X-Device-Id', ''));
+        if (preg_match('/\A[A-Za-z0-9][A-Za-z0-9._:-]{7,127}\z/D', $deviceId) !== 1) {
+            $deviceId = 'anonymous';
+        }
+
+        return hash('sha256', ($request->ip() ?: 'unknown').'|'.$deviceId);
     }
 }

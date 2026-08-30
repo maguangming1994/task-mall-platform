@@ -12,8 +12,10 @@ use Illuminate\Support\Str;
 class Campus extends Model
 {
     protected $fillable = [
-        'public_id', 'code', 'name', 'province', 'city', 'district', 'address',
-        'latitude', 'longitude', 'status', 'sort_order',
+        'public_id', 'code', 'official_school_code', 'name', 'catalog_type',
+        'education_level', 'supervising_authority', 'official_note', 'catalog_status',
+        'catalog_version', 'catalog_source_url', 'catalog_synced_at', 'province', 'city',
+        'district', 'address', 'latitude', 'longitude', 'status', 'sort_order',
     ];
 
     protected static function booted(): void
@@ -29,6 +31,7 @@ class Campus extends Model
             'latitude' => 'float',
             'longitude' => 'float',
             'sort_order' => 'integer',
+            'catalog_synced_at' => 'datetime',
         ];
     }
 

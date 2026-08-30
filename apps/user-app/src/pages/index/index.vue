@@ -1103,7 +1103,7 @@ function handlePopupAction() {
 <style scoped>
 .home-v4{min-height:100vh;background:radial-gradient(circle at 96% 3%,rgba(69,207,212,.17),transparent 240rpx),linear-gradient(180deg,#fff 0,#fbfffd 58%,#f7fbff 100%);color:#0b253d}
 .home-v4-safe{height:calc(env(safe-area-inset-top) + 14rpx)}
-.home-campus-context{display:flex;align-items:center;justify-content:flex-start;padding:0 28rpx 16rpx;background:rgba(255,255,255,.96)}
+.home-campus-context{display:flex;align-items:center;padding:0 14px 12px;box-sizing:border-box;background:linear-gradient(180deg,#fff 0%,#f4fbf8 100%)}
 .home-v4.is-authenticated{background:#fff;color:#122338}
 .home-v4.is-authenticated>.home-v4-header,.home-v4.is-authenticated>.home-v4-state,.home-v4.is-authenticated>.home-v4-content{display:none}
 .home-v10-auth-shell{min-height:100vh;padding-bottom:18rpx;background:linear-gradient(180deg,#f7fbff 0,#fff 31%,#fff 100%)}

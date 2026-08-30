@@ -1,0 +1,2100 @@
+{
+  "metadata": {
+    "primary_source": "https://download.geonames.org/export/dump/CN.zip",
+    "primary_source_license": "CC BY 4.0",
+    "primary_source_attribution": "GeoNames (https://www.geonames.org/)",
+    "retrieved_on": "2026-08-30",
+    "coordinate_system": "WGS84",
+    "accuracy": "Approximate city or prefecture center; campus-maintained coordinates take priority.",
+    "city_count": 346,
+    "school_count_covered": 2952,
+    "supplemental_sources": {
+      "wikidata": [
+        "Q18651998",
+        "Q105300298"
+      ],
+      "public_coordinate_references": [
+        "https://www.abcdtools.com/zh-TW/city-to-latlong/14003708",
+        "https://www.abcdtools.com/city-to-latlong/18136290"
+      ]
+    }
+  },
+  "cities": {
+    "阿坝藏族羌族自治州": {
+      "latitude": 32.41875,
+      "longitude": 102.63664,
+      "source": "GeoNames",
+      "source_id": "1818175"
+    },
+    "阿克苏地区": {
+      "latitude": 41.166,
+      "longitude": 80.425,
+      "source": "GeoNames",
+      "source_id": "1529658"
+    },
+    "阿拉尔市": {
+      "latitude": 40.54184,
+      "longitude": 81.26566,
+      "source": "GeoNames",
+      "source_id": "1529641"
+    },
+    "阿拉善盟": {
+      "latitude": 40.48087,
+      "longitude": 102.84579,
+      "source": "GeoNames",
+      "source_id": "1818128"
+    },
+    "阿勒泰地区": {
+      "latitude": 47.14621,
+      "longitude": 88.74035,
+      "source": "GeoNames",
+      "source_id": "1529650"
+    },
+    "安康市": {
+      "latitude": 32.68,
+      "longitude": 109.01722,
+      "source": "GeoNames",
+      "source_id": "1789065"
+    },
+    "安庆市": {
+      "latitude": 30.51365,
+      "longitude": 117.04723,
+      "source": "GeoNames",
+      "source_id": "1817993"
+    },
+    "安顺市": {
+      "latitude": 26.25,
+      "longitude": 105.93333,
+      "source": "GeoNames",
+      "source_id": "1817968"
+    },
+    "安阳市": {
+      "latitude": 36.096,
+      "longitude": 114.38278,
+      "source": "GeoNames",
+      "source_id": "1785294"
+    },
+    "鞍山市": {
+      "latitude": 41.12361,
+      "longitude": 122.99,
+      "source": "GeoNames",
+      "source_id": "2038632"
+    },
+    "巴彦淖尔市": {
+      "latitude": 40.74143,
+      "longitude": 107.38599,
+      "source": "GeoNames",
+      "source_id": "11838258"
+    },
+    "巴音郭楞蒙古自治州": {
+      "latitude": 39.59135,
+      "longitude": 87.80201,
+      "source": "GeoNames",
+      "source_id": "1529604"
+    },
+    "巴中市": {
+      "latitude": 31.8694,
+      "longitude": 106.74432,
+      "source": "GeoNames",
+      "source_id": "11995100"
+    },
+    "白城市": {
+      "latitude": 45.61751,
+      "longitude": 122.83302,
+      "source": "GeoNames",
+      "source_id": "2038569"
+    },
+    "白山市": {
+      "latitude": 41.93853,
+      "longitude": 126.41965,
+      "source": "GeoNames",
+      "source_id": "2038584"
+    },
+    "白银市": {
+      "latitude": 36.54696,
+      "longitude": 104.17023,
+      "source": "GeoNames",
+      "source_id": "1817240"
+    },
+    "百色市": {
+      "latitude": 23.89013,
+      "longitude": 106.62684,
+      "source": "GeoNames",
+      "source_id": "1816269"
+    },
+    "蚌埠市": {
+      "latitude": 32.94083,
+      "longitude": 117.36083,
+      "source": "GeoNames",
+      "source_id": "1816440"
+    },
+    "包头市": {
+      "latitude": 40.6516,
+      "longitude": 109.84389,
+      "source": "GeoNames",
+      "source_id": "2038432"
+    },
+    "宝鸡市": {
+      "latitude": 34.36775,
+      "longitude": 107.23705,
+      "source": "GeoNames",
+      "source_id": "10942359"
+    },
+    "保定市": {
+      "latitude": 38.87288,
+      "longitude": 115.46246,
+      "source": "GeoNames",
+      "source_id": "1816971"
+    },
+    "保山市": {
+      "latitude": 25.11626,
+      "longitude": 99.16366,
+      "source": "GeoNames",
+      "source_id": "1281673"
+    },
+    "北海市": {
+      "latitude": 21.48349,
+      "longitude": 109.11549,
+      "source": "GeoNames",
+      "source_id": "1816705"
+    },
+    "北京市": {
+      "latitude": 39.9075,
+      "longitude": 116.39723,
+      "source": "GeoNames",
+      "source_id": "1816670"
+    },
+    "本溪市": {
+      "latitude": 41.28861,
+      "longitude": 123.765,
+      "source": "GeoNames",
+      "source_id": "2038300"
+    },
+    "毕节市": {
+      "latitude": 27.30193,
+      "longitude": 105.28627,
+      "source": "GeoNames",
+      "source_id": "1816373"
+    },
+    "滨州市": {
+      "latitude": 37.36667,
+      "longitude": 118.01667,
+      "source": "GeoNames",
+      "source_id": "1816336"
+    },
+    "亳州市": {
+      "latitude": 33.87722,
+      "longitude": 115.77028,
+      "source": "GeoNames",
+      "source_id": "1816234"
+    },
+    "博尔塔拉蒙古自治州": {
+      "latitude": 44.77363,
+      "longitude": 82.04477,
+      "source": "GeoNames",
+      "source_id": "1529581"
+    },
+    "沧州市": {
+      "latitude": 38.31124,
+      "longitude": 116.85334,
+      "source": "GeoNames",
+      "source_id": "1816080"
+    },
+    "昌吉回族自治州": {
+      "latitude": 44.43802,
+      "longitude": 88.28429,
+      "source": "GeoNames",
+      "source_id": "1529568"
+    },
+    "常德市": {
+      "latitude": 29.03205,
+      "longitude": 111.69844,
+      "source": "GeoNames",
+      "source_id": "1791121"
+    },
+    "常州市": {
+      "latitude": 31.77359,
+      "longitude": 119.95401,
+      "source": "GeoNames",
+      "source_id": "1815456"
+    },
+    "朝阳市": {
+      "latitude": 41.57028,
+      "longitude": 120.45861,
+      "source": "GeoNames",
+      "source_id": "2038120"
+    },
+    "潮州市": {
+      "latitude": 23.65396,
+      "longitude": 116.62262,
+      "source": "GeoNames",
+      "source_id": "1815395"
+    },
+    "郴州市": {
+      "latitude": 25.84347,
+      "longitude": 113.05378,
+      "source": "GeoNames",
+      "source_id": "1815056"
+    },
+    "成都市": {
+      "latitude": 30.66667,
+      "longitude": 104.06667,
+      "source": "GeoNames",
+      "source_id": "1815286"
+    },
+    "承德市": {
+      "latitude": 40.9519,
+      "longitude": 117.95883,
+      "source": "GeoNames",
+      "source_id": "2038087"
+    },
+    "澄迈县": {
+      "latitude": 19.73782,
+      "longitude": 110.00928,
+      "source": "GeoNames",
+      "source_id": "1805505"
+    },
+    "池州市": {
+      "latitude": 30.66134,
+      "longitude": 117.47783,
+      "source": "GeoNames",
+      "source_id": "1814934"
+    },
+    "赤峰市": {
+      "latitude": 42.26833,
+      "longitude": 118.96361,
+      "source": "GeoNames",
+      "source_id": "2038067"
+    },
+    "重庆市": {
+      "latitude": 29.56026,
+      "longitude": 106.55771,
+      "source": "GeoNames",
+      "source_id": "1814906"
+    },
+    "崇左市": {
+      "latitude": 22.57165,
+      "longitude": 107.36921,
+      "source": "GeoNames",
+      "source_id": "7909220"
+    },
+    "滁州市": {
+      "latitude": 32.32194,
+      "longitude": 118.29778,
+      "source": "GeoNames",
+      "source_id": "1814757"
+    },
+    "楚雄彝族自治州": {
+      "latitude": 25.43204,
+      "longitude": 101.70479,
+      "source": "GeoNames",
+      "source_id": "1814758"
+    },
+    "达州市": {
+      "latitude": 31.2106,
+      "longitude": 107.46308,
+      "source": "GeoNames",
+      "source_id": "1813325"
+    },
+    "大理白族自治州": {
+      "latitude": 25.68548,
+      "longitude": 100.13104,
+      "source": "GeoNames",
+      "source_id": "1814065"
+    },
+    "大连市": {
+      "latitude": 38.91222,
+      "longitude": 121.60222,
+      "source": "GeoNames",
+      "source_id": "1814087"
+    },
+    "大庆市": {
+      "latitude": 46.58333,
+      "longitude": 125,
+      "source": "GeoNames",
+      "source_id": "2037860"
+    },
+    "大同市": {
+      "latitude": 40.09361,
+      "longitude": 113.29139,
+      "source": "GeoNames",
+      "source_id": "2037799"
+    },
+    "大兴安岭地区": {
+      "latitude": 52.54064,
+      "longitude": 124.26987,
+      "source": "GeoNames",
+      "source_id": "2037961"
+    },
+    "丹东市": {
+      "latitude": 40.12917,
+      "longitude": 124.39472,
+      "source": "GeoNames",
+      "source_id": "2037886"
+    },
+    "儋州市": {
+      "latitude": 19.52134,
+      "longitude": 109.57895,
+      "source": "GeoNames",
+      "source_id": "1800234"
+    },
+    "德宏傣族景颇族自治州": {
+      "latitude": 24.66347,
+      "longitude": 98.03964,
+      "source": "GeoNames",
+      "source_id": "1281381"
+    },
+    "德阳市": {
+      "latitude": 31.13019,
+      "longitude": 104.38198,
+      "source": "GeoNames",
+      "source_id": "1812961"
+    },
+    "德州市": {
+      "latitude": 37.44661,
+      "longitude": 116.36706,
+      "source": "GeoNames",
+      "source_id": "1812955"
+    },
+    "迪庆藏族自治州": {
+      "latitude": 27.91694,
+      "longitude": 99.54841,
+      "source": "GeoNames",
+      "source_id": "1281365"
+    },
+    "定西市": {
+      "latitude": 35.57088,
+      "longitude": 104.62303,
+      "source": "GeoNames",
+      "source_id": "1812749"
+    },
+    "东方市": {
+      "latitude": 19.10267,
+      "longitude": 108.66565,
+      "source": "GeoNames",
+      "source_id": "1816858"
+    },
+    "东莞市": {
+      "latitude": 23.01797,
+      "longitude": 113.74866,
+      "source": "GeoNames",
+      "source_id": "1812545"
+    },
+    "东营市": {
+      "latitude": 37.46271,
+      "longitude": 118.49165,
+      "source": "GeoNames",
+      "source_id": "1812101"
+    },
+    "鄂尔多斯市": {
+      "latitude": 39.6086,
+      "longitude": 109.78157,
+      "source": "GeoNames",
+      "source_id": "8347664"
+    },
+    "鄂州市": {
+      "latitude": 30.39607,
+      "longitude": 114.88655,
+      "source": "GeoNames",
+      "source_id": "6642286"
+    },
+    "恩施土家族苗族自治州": {
+      "latitude": 30.1981,
+      "longitude": 109.67555,
+      "source": "GeoNames",
+      "source_id": "1811624"
+    },
+    "防城港市": {
+      "latitude": 21.76945,
+      "longitude": 108.35661,
+      "source": "GeoNames",
+      "source_id": "12269572"
+    },
+    "佛山市": {
+      "latitude": 23.02677,
+      "longitude": 113.13148,
+      "source": "GeoNames",
+      "source_id": "1811103"
+    },
+    "福州市": {
+      "latitude": 26.06139,
+      "longitude": 119.30611,
+      "source": "GeoNames",
+      "source_id": "1810821"
+    },
+    "抚顺市": {
+      "latitude": 41.88669,
+      "longitude": 123.94363,
+      "source": "GeoNames",
+      "source_id": "2037355"
+    },
+    "抚州市": {
+      "latitude": 27.95999,
+      "longitude": 116.33333,
+      "source": "GeoNames",
+      "source_id": "1810820"
+    },
+    "阜新市": {
+      "latitude": 42.01556,
+      "longitude": 121.65889,
+      "source": "GeoNames",
+      "source_id": "2037346"
+    },
+    "阜阳市": {
+      "latitude": 32.9,
+      "longitude": 115.81667,
+      "source": "GeoNames",
+      "source_id": "1810845"
+    },
+    "甘南藏族自治州": {
+      "latitude": 34.51779,
+      "longitude": 102.65909,
+      "source": "GeoNames",
+      "source_id": "1810686"
+    },
+    "甘孜藏族自治州": {
+      "latitude": 31.02407,
+      "longitude": 100.40553,
+      "source": "GeoNames",
+      "source_id": "1810269"
+    },
+    "赣州市": {
+      "latitude": 25.84664,
+      "longitude": 114.9326,
+      "source": "GeoNames",
+      "source_id": "1810638"
+    },
+    "固原市": {
+      "latitude": 36.00667,
+      "longitude": 106.28083,
+      "source": "GeoNames",
+      "source_id": "1809152"
+    },
+    "广安市": {
+      "latitude": 30.47413,
+      "longitude": 106.63696,
+      "source": "GeoNames",
+      "source_id": "1799194"
+    },
+    "广元市": {
+      "latitude": 32.44201,
+      "longitude": 105.823,
+      "source": "GeoNames",
+      "source_id": "1806466"
+    },
+    "广州市": {
+      "latitude": 23.11667,
+      "longitude": 113.25,
+      "source": "GeoNames",
+      "source_id": "1809858"
+    },
+    "贵港市": {
+      "latitude": 23.11603,
+      "longitude": 109.59472,
+      "source": "GeoNames",
+      "source_id": "1809532"
+    },
+    "贵阳市": {
+      "latitude": 26.58333,
+      "longitude": 106.71667,
+      "source": "GeoNames",
+      "source_id": "1809461"
+    },
+    "桂林市": {
+      "latitude": 25.28022,
+      "longitude": 110.29639,
+      "source": "GeoNames",
+      "source_id": "1809498"
+    },
+    "哈尔滨市": {
+      "latitude": 45.75,
+      "longitude": 126.65,
+      "source": "GeoNames",
+      "source_id": "2037013"
+    },
+    "哈密市": {
+      "latitude": 42.83393,
+      "longitude": 93.50601,
+      "source": "GeoNames",
+      "source_id": "1529484"
+    },
+    "海东市": {
+      "latitude": 36.48,
+      "longitude": 102.41639,
+      "source": "GeoNames",
+      "source_id": "1799471"
+    },
+    "海口市": {
+      "latitude": 20.03421,
+      "longitude": 110.34651,
+      "source": "GeoNames",
+      "source_id": "1809078"
+    },
+    "海西蒙古族藏族自治州": {
+      "latitude": 37.08248,
+      "longitude": 95.45972,
+      "source": "GeoNames",
+      "source_id": "1281075"
+    },
+    "邯郸市": {
+      "latitude": 36.60999,
+      "longitude": 114.48764,
+      "source": "GeoNames",
+      "source_id": "1808963"
+    },
+    "汉中市": {
+      "latitude": 33.07507,
+      "longitude": 107.02214,
+      "source": "GeoNames",
+      "source_id": "1808857"
+    },
+    "杭州市": {
+      "latitude": 30.29365,
+      "longitude": 120.16142,
+      "source": "GeoNames",
+      "source_id": "1808926"
+    },
+    "合肥市": {
+      "latitude": 31.86389,
+      "longitude": 117.28083,
+      "source": "GeoNames",
+      "source_id": "1808722"
+    },
+    "和田地区": {
+      "latitude": 37.22423,
+      "longitude": 81.51233,
+      "source": "GeoNames",
+      "source_id": "1281018"
+    },
+    "河池市": {
+      "latitude": 24.69285,
+      "longitude": 108.08376,
+      "source": "GeoNames",
+      "source_id": "12358476"
+    },
+    "河源市": {
+      "latitude": 23.73333,
+      "longitude": 114.68333,
+      "source": "GeoNames",
+      "source_id": "1786112"
+    },
+    "菏泽市": {
+      "latitude": 35.23929,
+      "longitude": 115.47358,
+      "source": "GeoNames",
+      "source_id": "1808198"
+    },
+    "贺州市": {
+      "latitude": 24.40357,
+      "longitude": 111.56675,
+      "source": "GeoNames",
+      "source_id": "7576887"
+    },
+    "鹤壁市": {
+      "latitude": 35.73231,
+      "longitude": 114.28616,
+      "source": "GeoNames",
+      "source_id": "1808770"
+    },
+    "鹤岗市": {
+      "latitude": 47.34727,
+      "longitude": 130.29033,
+      "source": "GeoNames",
+      "source_id": "2036986"
+    },
+    "黑河市": {
+      "latitude": 50.24413,
+      "longitude": 127.49016,
+      "source": "GeoNames",
+      "source_id": "2036973"
+    },
+    "衡水市": {
+      "latitude": 37.73908,
+      "longitude": 115.68348,
+      "source": "GeoNames",
+      "source_id": "1808392"
+    },
+    "衡阳市": {
+      "latitude": 26.88946,
+      "longitude": 112.61888,
+      "source": "GeoNames",
+      "source_id": "1808370"
+    },
+    "红河哈尼族彝族自治州": {
+      "latitude": 23.51675,
+      "longitude": 102.97389,
+      "source": "GeoNames",
+      "source_id": "1808130"
+    },
+    "呼和浩特市": {
+      "latitude": 40.81056,
+      "longitude": 111.65222,
+      "source": "GeoNames",
+      "source_id": "2036892"
+    },
+    "呼伦贝尔市": {
+      "latitude": 49.21141,
+      "longitude": 119.75582,
+      "source": "GeoNames",
+      "source_id": "12548253"
+    },
+    "胡杨河市": {
+      "latitude": 44.6984,
+      "longitude": 84.83362,
+      "source": "GeoNames",
+      "source_id": "13561750"
+    },
+    "湖州市": {
+      "latitude": 30.8703,
+      "longitude": 120.0933,
+      "source": "GeoNames",
+      "source_id": "1806535"
+    },
+    "葫芦岛市": {
+      "latitude": 40.75243,
+      "longitude": 120.83552,
+      "source": "GeoNames",
+      "source_id": "2036662"
+    },
+    "怀化市": {
+      "latitude": 27.56337,
+      "longitude": 110.00404,
+      "source": "GeoNames",
+      "source_id": "1807689"
+    },
+    "淮安市": {
+      "latitude": 33.58861,
+      "longitude": 119.01917,
+      "source": "GeoNames",
+      "source_id": "1797873"
+    },
+    "淮北市": {
+      "latitude": 33.97444,
+      "longitude": 116.79167,
+      "source": "GeoNames",
+      "source_id": "1807700"
+    },
+    "淮南市": {
+      "latitude": 32.62639,
+      "longitude": 116.99694,
+      "source": "GeoNames",
+      "source_id": "1807681"
+    },
+    "黄冈市": {
+      "latitude": 30.45143,
+      "longitude": 114.87035,
+      "source": "GeoNames",
+      "source_id": "8537264"
+    },
+    "黄山市": {
+      "latitude": 29.71139,
+      "longitude": 118.3125,
+      "source": "GeoNames",
+      "source_id": "1792359"
+    },
+    "黄石市": {
+      "latitude": 30.24706,
+      "longitude": 115.04814,
+      "source": "GeoNames",
+      "source_id": "1807234"
+    },
+    "惠州市": {
+      "latitude": 23.11147,
+      "longitude": 114.41523,
+      "source": "GeoNames",
+      "source_id": "1806776"
+    },
+    "鸡西市": {
+      "latitude": 45.29322,
+      "longitude": 130.96217,
+      "source": "GeoNames",
+      "source_id": "2036389"
+    },
+    "吉安市": {
+      "latitude": 27.11716,
+      "longitude": 114.97927,
+      "source": "GeoNames",
+      "source_id": "1806445"
+    },
+    "吉林市": {
+      "latitude": 43.84652,
+      "longitude": 126.5608,
+      "source": "GeoNames",
+      "source_id": "2036502"
+    },
+    "济南市": {
+      "latitude": 36.66833,
+      "longitude": 116.99722,
+      "source": "GeoNames",
+      "source_id": "1805753"
+    },
+    "济宁市": {
+      "latitude": 35.405,
+      "longitude": 116.58139,
+      "source": "GeoNames",
+      "source_id": "1805518"
+    },
+    "济源市": {
+      "latitude": 35.08912,
+      "longitude": 112.58815,
+      "source": "GeoNames",
+      "source_id": "1805012"
+    },
+    "佳木斯市": {
+      "latitude": 46.79711,
+      "longitude": 130.31118,
+      "source": "GeoNames",
+      "source_id": "2036581"
+    },
+    "嘉兴市": {
+      "latitude": 30.7522,
+      "longitude": 120.75,
+      "source": "GeoNames",
+      "source_id": "1805953"
+    },
+    "嘉峪关市": {
+      "latitude": 39.81121,
+      "longitude": 98.28618,
+      "source": "GeoNames",
+      "source_id": "1280957"
+    },
+    "江门市": {
+      "latitude": 22.58333,
+      "longitude": 113.08333,
+      "source": "GeoNames",
+      "source_id": "1806299"
+    },
+    "焦作市": {
+      "latitude": 35.23925,
+      "longitude": 113.23914,
+      "source": "GeoNames",
+      "source_id": "1805987"
+    },
+    "揭阳市": {
+      "latitude": 23.5418,
+      "longitude": 116.36581,
+      "source": "GeoNames",
+      "source_id": "1797121"
+    },
+    "金昌市": {
+      "latitude": 38.50062,
+      "longitude": 102.19379,
+      "source": "GeoNames",
+      "source_id": "1805733"
+    },
+    "金华市": {
+      "latitude": 29.10678,
+      "longitude": 119.64421,
+      "source": "GeoNames",
+      "source_id": "1805528"
+    },
+    "锦州市": {
+      "latitude": 41.10778,
+      "longitude": 121.14167,
+      "source": "GeoNames",
+      "source_id": "2036427"
+    },
+    "晋城市": {
+      "latitude": 35.50222,
+      "longitude": 112.83278,
+      "source": "GeoNames",
+      "source_id": "1805741"
+    },
+    "晋中市": {
+      "latitude": 37.68403,
+      "longitude": 112.75471,
+      "source": "GeoNames",
+      "source_id": "10942283"
+    },
+    "荆门市": {
+      "latitude": 31.03361,
+      "longitude": 112.20472,
+      "source": "GeoNames",
+      "source_id": "1805611"
+    },
+    "荆州市": {
+      "latitude": 30.35028,
+      "longitude": 112.19028,
+      "source": "GeoNames",
+      "source_id": "1805540"
+    },
+    "景德镇市": {
+      "latitude": 29.2947,
+      "longitude": 117.20789,
+      "source": "GeoNames",
+      "source_id": "1805680"
+    },
+    "九江市": {
+      "latitude": 29.70475,
+      "longitude": 116.00206,
+      "source": "GeoNames",
+      "source_id": "1805179"
+    },
+    "酒泉市": {
+      "latitude": 39.74318,
+      "longitude": 98.51736,
+      "source": "GeoNames",
+      "source_id": "1279945"
+    },
+    "喀什地区": {
+      "latitude": 38.46299,
+      "longitude": 77.10982,
+      "source": "GeoNames",
+      "source_id": "1280848"
+    },
+    "开封市": {
+      "latitude": 34.7986,
+      "longitude": 114.30742,
+      "source": "GeoNames",
+      "source_id": "1804879"
+    },
+    "可克达拉市": {
+      "latitude": 43.9340611,
+      "longitude": 80.9981611,
+      "source": "Wikidata",
+      "source_id": "Q18651998"
+    },
+    "克拉玛依市": {
+      "latitude": 45.58473,
+      "longitude": 84.88724,
+      "source": "GeoNames",
+      "source_id": "1529401"
+    },
+    "克孜勒苏柯尔克孜自治州": {
+      "latitude": 39.73086,
+      "longitude": 75.14384,
+      "source": "GeoNames",
+      "source_id": "1280828"
+    },
+    "昆明市": {
+      "latitude": 25.03889,
+      "longitude": 102.71833,
+      "source": "GeoNames",
+      "source_id": "1804651"
+    },
+    "昆山市": {
+      "latitude": 31.37762,
+      "longitude": 120.95431,
+      "source": "GeoNames",
+      "source_id": "1785623"
+    },
+    "昆玉市": {
+      "latitude": 37.21003,
+      "longitude": 79.30571,
+      "source": "GeoNames",
+      "source_id": "12258642"
+    },
+    "拉萨市": {
+      "latitude": 29.65,
+      "longitude": 91.1,
+      "source": "GeoNames",
+      "source_id": "1280737"
+    },
+    "来宾市": {
+      "latitude": 23.74743,
+      "longitude": 109.22222,
+      "source": "GeoNames",
+      "source_id": "1804609"
+    },
+    "兰州市": {
+      "latitude": 36.05701,
+      "longitude": 103.83987,
+      "source": "GeoNames",
+      "source_id": "1804430"
+    },
+    "廊坊市": {
+      "latitude": 39.52079,
+      "longitude": 116.71471,
+      "source": "GeoNames",
+      "source_id": "1804540"
+    },
+    "乐山市": {
+      "latitude": 29.56227,
+      "longitude": 103.76386,
+      "source": "GeoNames",
+      "source_id": "1804153"
+    },
+    "丽江市": {
+      "latitude": 26.86879,
+      "longitude": 100.22072,
+      "source": "GeoNames",
+      "source_id": "1813253"
+    },
+    "丽水市": {
+      "latitude": 28.46042,
+      "longitude": 119.91029,
+      "source": "GeoNames",
+      "source_id": "1803245"
+    },
+    "连云港市": {
+      "latitude": 34.59845,
+      "longitude": 119.21556,
+      "source": "GeoNames",
+      "source_id": "10859300"
+    },
+    "凉山彝族自治州": {
+      "latitude": 27.87644,
+      "longitude": 102.1018,
+      "source": "GeoNames",
+      "source_id": "1803984"
+    },
+    "辽阳市": {
+      "latitude": 41.27194,
+      "longitude": 123.17306,
+      "source": "GeoNames",
+      "source_id": "2036113"
+    },
+    "辽源市": {
+      "latitude": 42.88545,
+      "longitude": 125.1367,
+      "source": "GeoNames",
+      "source_id": "2036109"
+    },
+    "聊城市": {
+      "latitude": 36.45064,
+      "longitude": 116.00247,
+      "source": "GeoNames",
+      "source_id": "1803834"
+    },
+    "林芝市": {
+      "latitude": 29.65812,
+      "longitude": 94.35892,
+      "source": "GeoNames",
+      "source_id": "1281650"
+    },
+    "临沧市": {
+      "latitude": 23.87972,
+      "longitude": 100.09455,
+      "source": "GeoNames",
+      "source_id": "1803590"
+    },
+    "临汾市": {
+      "latitude": 36.08889,
+      "longitude": 111.51889,
+      "source": "GeoNames",
+      "source_id": "1803567"
+    },
+    "临夏州": {
+      "latitude": 35.66597,
+      "longitude": 103.2408,
+      "source": "GeoNames",
+      "source_id": "1803330"
+    },
+    "临沂市": {
+      "latitude": 35.06306,
+      "longitude": 118.34278,
+      "source": "GeoNames",
+      "source_id": "1803318"
+    },
+    "柳州市": {
+      "latitude": 24.32405,
+      "longitude": 109.40698,
+      "source": "GeoNames",
+      "source_id": "1803300"
+    },
+    "六安市": {
+      "latitude": 31.73561,
+      "longitude": 116.51688,
+      "source": "GeoNames",
+      "source_id": "1802206"
+    },
+    "六盘水市": {
+      "latitude": 26.59444,
+      "longitude": 104.83333,
+      "source": "GeoNames",
+      "source_id": "8533133"
+    },
+    "龙岩市": {
+      "latitude": 25.07485,
+      "longitude": 117.01775,
+      "source": "GeoNames",
+      "source_id": "1802276"
+    },
+    "陇南市": {
+      "latitude": 33.39791,
+      "longitude": 104.91703,
+      "source": "GeoNames",
+      "source_id": "11778484"
+    },
+    "娄底市": {
+      "latitude": 27.73444,
+      "longitude": 111.99444,
+      "source": "GeoNames",
+      "source_id": "1802238"
+    },
+    "泸州市": {
+      "latitude": 28.8903,
+      "longitude": 105.42575,
+      "source": "GeoNames",
+      "source_id": "1801640"
+    },
+    "吕梁市": {
+      "latitude": 37.5192,
+      "longitude": 111.14436,
+      "source": "GeoNames",
+      "source_id": "13512505"
+    },
+    "洛阳市": {
+      "latitude": 34.67345,
+      "longitude": 112.43684,
+      "source": "GeoNames",
+      "source_id": "1801792"
+    },
+    "漯河市": {
+      "latitude": 33.57424,
+      "longitude": 114.03261,
+      "source": "GeoNames",
+      "source_id": "1801934"
+    },
+    "马鞍山市": {
+      "latitude": 31.68579,
+      "longitude": 118.51008,
+      "source": "GeoNames",
+      "source_id": "1801620"
+    },
+    "茂名市": {
+      "latitude": 21.66625,
+      "longitude": 110.91364,
+      "source": "GeoNames",
+      "source_id": "1801180"
+    },
+    "眉山市": {
+      "latitude": 30.04392,
+      "longitude": 103.83696,
+      "source": "GeoNames",
+      "source_id": "1800818"
+    },
+    "梅州市": {
+      "latitude": 24.28859,
+      "longitude": 116.11768,
+      "source": "GeoNames",
+      "source_id": "1800779"
+    },
+    "绵阳市": {
+      "latitude": 31.46784,
+      "longitude": 104.68168,
+      "source": "GeoNames",
+      "source_id": "1800627"
+    },
+    "牡丹江市": {
+      "latitude": 44.54804,
+      "longitude": 129.62594,
+      "source": "GeoNames",
+      "source_id": "2035715"
+    },
+    "南昌市": {
+      "latitude": 28.68396,
+      "longitude": 115.85306,
+      "source": "GeoNames",
+      "source_id": "1800163"
+    },
+    "南充市": {
+      "latitude": 30.79508,
+      "longitude": 106.08473,
+      "source": "GeoNames",
+      "source_id": "1800146"
+    },
+    "南京市": {
+      "latitude": 32.06167,
+      "longitude": 118.77778,
+      "source": "GeoNames",
+      "source_id": "1799962"
+    },
+    "南宁市": {
+      "latitude": 22.81667,
+      "longitude": 108.31667,
+      "source": "GeoNames",
+      "source_id": "1799869"
+    },
+    "南平市": {
+      "latitude": 26.645,
+      "longitude": 118.17361,
+      "source": "GeoNames",
+      "source_id": "1799846"
+    },
+    "南通市": {
+      "latitude": 32.03028,
+      "longitude": 120.87472,
+      "source": "GeoNames",
+      "source_id": "1799722"
+    },
+    "南阳市": {
+      "latitude": 33.00524,
+      "longitude": 112.54659,
+      "source": "GeoNames",
+      "source_id": "1799629"
+    },
+    "内江市": {
+      "latitude": 29.58354,
+      "longitude": 105.06216,
+      "source": "GeoNames",
+      "source_id": "1799491"
+    },
+    "宁波市": {
+      "latitude": 29.87819,
+      "longitude": 121.54945,
+      "source": "GeoNames",
+      "source_id": "1799397"
+    },
+    "宁德市": {
+      "latitude": 26.66167,
+      "longitude": 119.52278,
+      "source": "GeoNames",
+      "source_id": "1806097"
+    },
+    "怒江傈僳族自治州": {
+      "latitude": 26.61738,
+      "longitude": 99.14062,
+      "source": "GeoNames",
+      "source_id": "1280418"
+    },
+    "攀枝花市": {
+      "latitude": 26.58509,
+      "longitude": 101.71276,
+      "source": "GeoNames",
+      "source_id": "6929460"
+    },
+    "盘锦市": {
+      "latitude": 41.121,
+      "longitude": 122.0739,
+      "source": "GeoNames",
+      "source_id": "10794003"
+    },
+    "平顶山市": {
+      "latitude": 33.73091,
+      "longitude": 113.31554,
+      "source": "GeoNames",
+      "source_id": "1798827"
+    },
+    "平凉市": {
+      "latitude": 35.53917,
+      "longitude": 106.68611,
+      "source": "GeoNames",
+      "source_id": "1798760"
+    },
+    "萍乡市": {
+      "latitude": 27.61672,
+      "longitude": 113.85353,
+      "source": "GeoNames",
+      "source_id": "1798654"
+    },
+    "莆田市": {
+      "latitude": 25.43944,
+      "longitude": 119.01028,
+      "source": "GeoNames",
+      "source_id": "1798449"
+    },
+    "濮阳市": {
+      "latitude": 35.75641,
+      "longitude": 115.04363,
+      "source": "GeoNames",
+      "source_id": "9181182"
+    },
+    "普洱市": {
+      "latitude": 22.78863,
+      "longitude": 100.97481,
+      "source": "GeoNames",
+      "source_id": "1794209"
+    },
+    "七台河市": {
+      "latitude": 45.768,
+      "longitude": 130.9953,
+      "source": "GeoNames",
+      "source_id": "2035261"
+    },
+    "齐齐哈尔市": {
+      "latitude": 47.33922,
+      "longitude": 123.96154,
+      "source": "GeoNames",
+      "source_id": "2035265"
+    },
+    "潜江市": {
+      "latitude": 30.32306,
+      "longitude": 112.73275,
+      "source": "GeoNames",
+      "source_id": "12324199"
+    },
+    "黔东南苗族侗族自治州": {
+      "latitude": 26.5738,
+      "longitude": 108.59914,
+      "source": "GeoNames",
+      "source_id": "1798360"
+    },
+    "黔南布依族苗族自治州": {
+      "latitude": 26.06596,
+      "longitude": 107.11856,
+      "source": "GeoNames",
+      "source_id": "1798280"
+    },
+    "黔西南布依族苗族自治州": {
+      "latitude": 25.38808,
+      "longitude": 105.3874,
+      "source": "GeoNames",
+      "source_id": "1798226"
+    },
+    "钦州市": {
+      "latitude": 21.98247,
+      "longitude": 108.65061,
+      "source": "GeoNames",
+      "source_id": "1797551"
+    },
+    "秦皇岛市": {
+      "latitude": 39.94104,
+      "longitude": 119.58936,
+      "source": "GeoNames",
+      "source_id": "1797595"
+    },
+    "青岛市": {
+      "latitude": 36.06488,
+      "longitude": 120.38042,
+      "source": "GeoNames",
+      "source_id": "1797929"
+    },
+    "清远市": {
+      "latitude": 23.7,
+      "longitude": 113.03333,
+      "source": "GeoNames",
+      "source_id": "1797945"
+    },
+    "庆阳市": {
+      "latitude": 35.70976,
+      "longitude": 107.64455,
+      "source": "GeoNames",
+      "source_id": "12359313"
+    },
+    "琼海市": {
+      "latitude": 19.2425,
+      "longitude": 110.46417,
+      "source": "GeoNames",
+      "source_id": "1806488"
+    },
+    "曲靖市": {
+      "latitude": 25.48333,
+      "longitude": 103.78333,
+      "source": "GeoNames",
+      "source_id": "1797318"
+    },
+    "衢州市": {
+      "latitude": 28.95944,
+      "longitude": 118.86861,
+      "source": "GeoNames",
+      "source_id": "1797264"
+    },
+    "泉州市": {
+      "latitude": 24.91389,
+      "longitude": 118.58583,
+      "source": "GeoNames",
+      "source_id": "1797353"
+    },
+    "日喀则市": {
+      "latitude": 29.25,
+      "longitude": 88.88333,
+      "source": "GeoNames",
+      "source_id": "1279715"
+    },
+    "日照市": {
+      "latitude": 35.41414,
+      "longitude": 119.52908,
+      "source": "GeoNames",
+      "source_id": "9072919"
+    },
+    "三门峡市": {
+      "latitude": 34.78081,
+      "longitude": 111.19287,
+      "source": "GeoNames",
+      "source_id": "1796669"
+    },
+    "三明市": {
+      "latitude": 26.24861,
+      "longitude": 117.61861,
+      "source": "GeoNames",
+      "source_id": "1796663"
+    },
+    "三亚市": {
+      "latitude": 18.25435,
+      "longitude": 109.50947,
+      "source": "GeoNames",
+      "source_id": "1796556"
+    },
+    "厦门市": {
+      "latitude": 24.47979,
+      "longitude": 118.08187,
+      "source": "GeoNames",
+      "source_id": "1790645"
+    },
+    "汕头市": {
+      "latitude": 23.35489,
+      "longitude": 116.67876,
+      "source": "GeoNames",
+      "source_id": "1795940"
+    },
+    "汕尾市": {
+      "latitude": 22.78199,
+      "longitude": 115.3475,
+      "source": "GeoNames",
+      "source_id": "1795928"
+    },
+    "商洛市": {
+      "latitude": 33.86667,
+      "longitude": 109.93056,
+      "source": "GeoNames",
+      "source_id": "1796068"
+    },
+    "商丘市": {
+      "latitude": 34.4143,
+      "longitude": 115.65613,
+      "source": "GeoNames",
+      "source_id": "1796134"
+    },
+    "上海市": {
+      "latitude": 31.22222,
+      "longitude": 121.45806,
+      "source": "GeoNames",
+      "source_id": "1796236"
+    },
+    "上饶市": {
+      "latitude": 28.45179,
+      "longitude": 117.94287,
+      "source": "GeoNames",
+      "source_id": "1787858"
+    },
+    "韶关市": {
+      "latitude": 24.8,
+      "longitude": 113.58333,
+      "source": "GeoNames",
+      "source_id": "1795874"
+    },
+    "邵阳市": {
+      "latitude": 27.23818,
+      "longitude": 111.46214,
+      "source": "GeoNames",
+      "source_id": "1816920"
+    },
+    "绍兴市": {
+      "latitude": 30.00237,
+      "longitude": 120.57864,
+      "source": "GeoNames",
+      "source_id": "1795855"
+    },
+    "深圳市": {
+      "latitude": 22.54554,
+      "longitude": 114.0683,
+      "source": "GeoNames",
+      "source_id": "1795565"
+    },
+    "沈阳市": {
+      "latitude": 41.79222,
+      "longitude": 123.43278,
+      "source": "GeoNames",
+      "source_id": "2034937"
+    },
+    "十堰市": {
+      "latitude": 32.6475,
+      "longitude": 110.77806,
+      "source": "GeoNames",
+      "source_id": "1794903"
+    },
+    "石河子市": {
+      "latitude": 44.3023,
+      "longitude": 86.03694,
+      "source": "GeoNames",
+      "source_id": "1529195"
+    },
+    "石家庄市": {
+      "latitude": 38.04139,
+      "longitude": 114.47861,
+      "source": "GeoNames",
+      "source_id": "1795270"
+    },
+    "石嘴山市": {
+      "latitude": 38.98082,
+      "longitude": 106.3892,
+      "source": "GeoNames",
+      "source_id": "12324556"
+    },
+    "双河市": {
+      "latitude": 44.8425757,
+      "longitude": 82.3527369,
+      "source": "ABCDTools city coordinates",
+      "source_id": "18136290"
+    },
+    "双鸭山市": {
+      "latitude": 46.67686,
+      "longitude": 131.13273,
+      "source": "GeoNames",
+      "source_id": "2034786"
+    },
+    "朔州市": {
+      "latitude": 39.31583,
+      "longitude": 112.4225,
+      "source": "GeoNames",
+      "source_id": "1794328"
+    },
+    "四平市": {
+      "latitude": 43.16143,
+      "longitude": 124.37785,
+      "source": "GeoNames",
+      "source_id": "2034714"
+    },
+    "松原市": {
+      "latitude": 45.12902,
+      "longitude": 124.82769,
+      "source": "GeoNames",
+      "source_id": "2035399"
+    },
+    "苏州市": {
+      "latitude": 31.30408,
+      "longitude": 120.59538,
+      "source": "GeoNames",
+      "source_id": "1886760"
+    },
+    "宿迁市": {
+      "latitude": 33.94917,
+      "longitude": 118.29583,
+      "source": "GeoNames",
+      "source_id": "1793771"
+    },
+    "宿州市": {
+      "latitude": 33.63611,
+      "longitude": 116.97889,
+      "source": "GeoNames",
+      "source_id": "1793743"
+    },
+    "绥化市": {
+      "latitude": 46.64814,
+      "longitude": 126.96656,
+      "source": "GeoNames",
+      "source_id": "2034655"
+    },
+    "随州市": {
+      "latitude": 31.71111,
+      "longitude": 113.36306,
+      "source": "GeoNames",
+      "source_id": "1793879"
+    },
+    "遂宁市": {
+      "latitude": 30.50802,
+      "longitude": 105.57332,
+      "source": "GeoNames",
+      "source_id": "1793900"
+    },
+    "塔城地区": {
+      "latitude": 45.7563,
+      "longitude": 84.59968,
+      "source": "GeoNames",
+      "source_id": "1529166"
+    },
+    "台州市": {
+      "latitude": 28.66266,
+      "longitude": 121.43312,
+      "source": "GeoNames",
+      "source_id": "8400694"
+    },
+    "太原市": {
+      "latitude": 37.86944,
+      "longitude": 112.56028,
+      "source": "GeoNames",
+      "source_id": "1793511"
+    },
+    "泰安市": {
+      "latitude": 36.18528,
+      "longitude": 117.12,
+      "source": "GeoNames",
+      "source_id": "1793724"
+    },
+    "泰州市": {
+      "latitude": 32.49069,
+      "longitude": 119.90812,
+      "source": "GeoNames",
+      "source_id": "1793505"
+    },
+    "唐山市": {
+      "latitude": 39.64381,
+      "longitude": 118.18319,
+      "source": "GeoNames",
+      "source_id": "1793346"
+    },
+    "天津市": {
+      "latitude": 39.14222,
+      "longitude": 117.17667,
+      "source": "GeoNames",
+      "source_id": "1792947"
+    },
+    "天门市": {
+      "latitude": 30.63627,
+      "longitude": 113.07995,
+      "source": "GeoNames",
+      "source_id": "12324193"
+    },
+    "天水市": {
+      "latitude": 34.57952,
+      "longitude": 105.74238,
+      "source": "GeoNames",
+      "source_id": "1792892"
+    },
+    "铁岭市": {
+      "latitude": 42.29306,
+      "longitude": 123.84139,
+      "source": "GeoNames",
+      "source_id": "2034439"
+    },
+    "铁门关市": {
+      "latitude": 41.8628528,
+      "longitude": 85.6682293,
+      "source": "ABCDTools city coordinates",
+      "source_id": "14003708"
+    },
+    "通化市": {
+      "latitude": 41.71972,
+      "longitude": 125.92639,
+      "source": "GeoNames",
+      "source_id": "2034414"
+    },
+    "通辽市": {
+      "latitude": 43.6125,
+      "longitude": 122.26528,
+      "source": "GeoNames",
+      "source_id": "2034400"
+    },
+    "铜川市": {
+      "latitude": 34.8988,
+      "longitude": 108.95056,
+      "source": "GeoNames",
+      "source_id": "7064006"
+    },
+    "铜陵市": {
+      "latitude": 30.95,
+      "longitude": 117.78333,
+      "source": "GeoNames",
+      "source_id": "1792621"
+    },
+    "铜仁市": {
+      "latitude": 27.71722,
+      "longitude": 109.18528,
+      "source": "GeoNames",
+      "source_id": "1792592"
+    },
+    "图木舒克市": {
+      "latitude": 39.86984,
+      "longitude": 79.06118,
+      "source": "GeoNames",
+      "source_id": "12022102"
+    },
+    "吐鲁番市": {
+      "latitude": 42.94769,
+      "longitude": 89.17886,
+      "source": "GeoNames",
+      "source_id": "1529114"
+    },
+    "万宁市": {
+      "latitude": 18.79931,
+      "longitude": 110.3841,
+      "source": "GeoNames",
+      "source_id": "1791779"
+    },
+    "威海市": {
+      "latitude": 37.50914,
+      "longitude": 122.11356,
+      "source": "GeoNames",
+      "source_id": "1791673"
+    },
+    "潍坊市": {
+      "latitude": 36.71,
+      "longitude": 119.10194,
+      "source": "GeoNames",
+      "source_id": "1791681"
+    },
+    "渭南市": {
+      "latitude": 34.50355,
+      "longitude": 109.50891,
+      "source": "GeoNames",
+      "source_id": "1791636"
+    },
+    "温州市": {
+      "latitude": 27.99942,
+      "longitude": 120.66682,
+      "source": "GeoNames",
+      "source_id": "1791388"
+    },
+    "文昌市": {
+      "latitude": 19.55158,
+      "longitude": 110.80279,
+      "source": "GeoNames",
+      "source_id": "1791544"
+    },
+    "文山壮族苗族自治州": {
+      "latitude": 23.6513,
+      "longitude": 104.7083,
+      "source": "GeoNames",
+      "source_id": "1791424"
+    },
+    "乌海市": {
+      "latitude": 39.68442,
+      "longitude": 106.81583,
+      "source": "GeoNames",
+      "source_id": "1791249"
+    },
+    "乌兰察布市": {
+      "latitude": 40.993,
+      "longitude": 113.133,
+      "source": "GeoNames",
+      "source_id": "8335361"
+    },
+    "乌鲁木齐市": {
+      "latitude": 43.80096,
+      "longitude": 87.60046,
+      "source": "GeoNames",
+      "source_id": "1529102"
+    },
+    "无锡市": {
+      "latitude": 31.56887,
+      "longitude": 120.28857,
+      "source": "GeoNames",
+      "source_id": "1790923"
+    },
+    "吴忠市": {
+      "latitude": 37.9867,
+      "longitude": 106.201,
+      "source": "GeoNames",
+      "source_id": "1790842"
+    },
+    "芜湖市": {
+      "latitude": 31.35259,
+      "longitude": 118.42947,
+      "source": "GeoNames",
+      "source_id": "1791236"
+    },
+    "梧州市": {
+      "latitude": 23.48054,
+      "longitude": 111.28848,
+      "source": "GeoNames",
+      "source_id": "1790840"
+    },
+    "五家渠市": {
+      "latitude": 44.16279,
+      "longitude": 87.52174,
+      "source": "GeoNames",
+      "source_id": "1529085"
+    },
+    "武汉市": {
+      "latitude": 30.58333,
+      "longitude": 114.26667,
+      "source": "GeoNames",
+      "source_id": "1791247"
+    },
+    "武威市": {
+      "latitude": 37.92672,
+      "longitude": 102.63202,
+      "source": "GeoNames",
+      "source_id": "1803936"
+    },
+    "西安市": {
+      "latitude": 34.25833,
+      "longitude": 108.92861,
+      "source": "GeoNames",
+      "source_id": "1790630"
+    },
+    "西宁市": {
+      "latitude": 36.62554,
+      "longitude": 101.75739,
+      "source": "GeoNames",
+      "source_id": "1788852"
+    },
+    "西双版纳傣族自治州": {
+      "latitude": 22.00322,
+      "longitude": 100.80317,
+      "source": "GeoNames",
+      "source_id": "9795645"
+    },
+    "锡林郭勒盟": {
+      "latitude": 44.85493,
+      "longitude": 115.72789,
+      "source": "GeoNames",
+      "source_id": "2033827"
+    },
+    "仙桃市": {
+      "latitude": 30.27726,
+      "longitude": 113.35372,
+      "source": "GeoNames",
+      "source_id": "12324200"
+    },
+    "咸宁市": {
+      "latitude": 29.84347,
+      "longitude": 114.32201,
+      "source": "GeoNames",
+      "source_id": "1790396"
+    },
+    "咸阳市": {
+      "latitude": 34.33778,
+      "longitude": 108.70261,
+      "source": "GeoNames",
+      "source_id": "1790353"
+    },
+    "湘潭市": {
+      "latitude": 27.85,
+      "longitude": 112.9,
+      "source": "GeoNames",
+      "source_id": "1790492"
+    },
+    "湘西土家族苗族自治州": {
+      "latitude": 28.70573,
+      "longitude": 109.73329,
+      "source": "GeoNames",
+      "source_id": "1790468"
+    },
+    "襄阳市": {
+      "latitude": 32.0422,
+      "longitude": 112.14479,
+      "source": "GeoNames",
+      "source_id": "1790587"
+    },
+    "孝感市": {
+      "latitude": 30.92689,
+      "longitude": 113.92221,
+      "source": "GeoNames",
+      "source_id": "1790254"
+    },
+    "忻州市": {
+      "latitude": 38.40917,
+      "longitude": 112.73333,
+      "source": "GeoNames",
+      "source_id": "1788450"
+    },
+    "新乡市": {
+      "latitude": 35.19033,
+      "longitude": 113.80151,
+      "source": "GeoNames",
+      "source_id": "1788572"
+    },
+    "新星市": {
+      "latitude": 42.7952781,
+      "longitude": 93.7463889,
+      "source": "Wikidata",
+      "source_id": "Q105300298"
+    },
+    "新余市": {
+      "latitude": 27.80429,
+      "longitude": 114.93335,
+      "source": "GeoNames",
+      "source_id": "1788508"
+    },
+    "信阳市": {
+      "latitude": 32.12278,
+      "longitude": 114.06556,
+      "source": "GeoNames",
+      "source_id": "1788534"
+    },
+    "邢台市": {
+      "latitude": 37.06217,
+      "longitude": 114.49272,
+      "source": "GeoNames",
+      "source_id": "1788927"
+    },
+    "兴安盟": {
+      "latitude": 46.64839,
+      "longitude": 121.24169,
+      "source": "GeoNames",
+      "source_id": "2036898"
+    },
+    "徐州市": {
+      "latitude": 34.20442,
+      "longitude": 117.28386,
+      "source": "GeoNames",
+      "source_id": "10630003"
+    },
+    "许昌市": {
+      "latitude": 34.03189,
+      "longitude": 113.86299,
+      "source": "GeoNames",
+      "source_id": "1788046"
+    },
+    "宣城市": {
+      "latitude": 30.9525,
+      "longitude": 118.75528,
+      "source": "GeoNames",
+      "source_id": "1788081"
+    },
+    "雅安市": {
+      "latitude": 29.98521,
+      "longitude": 102.999,
+      "source": "GeoNames",
+      "source_id": "1787816"
+    },
+    "烟台市": {
+      "latitude": 37.47649,
+      "longitude": 121.44081,
+      "source": "GeoNames",
+      "source_id": "1787093"
+    },
+    "延安市": {
+      "latitude": 36.59889,
+      "longitude": 109.49167,
+      "source": "GeoNames",
+      "source_id": "1787765"
+    },
+    "延边朝鲜族自治州": {
+      "latitude": 43.12604,
+      "longitude": 129.12894,
+      "source": "GeoNames",
+      "source_id": "2033525"
+    },
+    "盐城市": {
+      "latitude": 33.3575,
+      "longitude": 120.1573,
+      "source": "GeoNames",
+      "source_id": "1787746"
+    },
+    "扬州市": {
+      "latitude": 32.39722,
+      "longitude": 119.43583,
+      "source": "GeoNames",
+      "source_id": "1787227"
+    },
+    "阳江市": {
+      "latitude": 21.85563,
+      "longitude": 111.96272,
+      "source": "GeoNames",
+      "source_id": "1806408"
+    },
+    "阳泉市": {
+      "latitude": 37.8575,
+      "longitude": 113.56333,
+      "source": "GeoNames",
+      "source_id": "1787351"
+    },
+    "伊春市": {
+      "latitude": 47.72143,
+      "longitude": 128.87529,
+      "source": "GeoNames",
+      "source_id": "2033413"
+    },
+    "伊犁哈萨克自治州": {
+      "latitude": 43.91515,
+      "longitude": 81.32151,
+      "source": "GeoNames",
+      "source_id": "1529435"
+    },
+    "宜宾市": {
+      "latitude": 28.7593,
+      "longitude": 104.63994,
+      "source": "GeoNames",
+      "source_id": "1786770"
+    },
+    "宜昌市": {
+      "latitude": 30.71444,
+      "longitude": 111.28472,
+      "source": "GeoNames",
+      "source_id": "1786764"
+    },
+    "宜春市": {
+      "latitude": 27.83333,
+      "longitude": 114.4,
+      "source": "GeoNames",
+      "source_id": "1786746"
+    },
+    "益阳市": {
+      "latitude": 28.56938,
+      "longitude": 112.34733,
+      "source": "GeoNames",
+      "source_id": "1808316"
+    },
+    "银川市": {
+      "latitude": 38.46806,
+      "longitude": 106.27306,
+      "source": "GeoNames",
+      "source_id": "1786657"
+    },
+    "鹰潭市": {
+      "latitude": 28.23333,
+      "longitude": 117,
+      "source": "GeoNames",
+      "source_id": "1786577"
+    },
+    "营口市": {
+      "latitude": 40.66472,
+      "longitude": 122.23176,
+      "source": "GeoNames",
+      "source_id": "2033370"
+    },
+    "永州市": {
+      "latitude": 26.42389,
+      "longitude": 111.61306,
+      "source": "GeoNames",
+      "source_id": "1786217"
+    },
+    "榆林市": {
+      "latitude": 38.29181,
+      "longitude": 109.73753,
+      "source": "GeoNames",
+      "source_id": "1785777"
+    },
+    "玉林市": {
+      "latitude": 22.6305,
+      "longitude": 110.14686,
+      "source": "GeoNames",
+      "source_id": "1785781"
+    },
+    "玉溪市": {
+      "latitude": 24.355,
+      "longitude": 102.54222,
+      "source": "GeoNames",
+      "source_id": "1784185"
+    },
+    "岳阳市": {
+      "latitude": 29.36778,
+      "longitude": 113.12019,
+      "source": "GeoNames",
+      "source_id": "13457912"
+    },
+    "云浮市": {
+      "latitude": 22.92787,
+      "longitude": 112.03809,
+      "source": "GeoNames",
+      "source_id": "1785725"
+    },
+    "运城市": {
+      "latitude": 35.02306,
+      "longitude": 110.99278,
+      "source": "GeoNames",
+      "source_id": "1785738"
+    },
+    "枣庄市": {
+      "latitude": 34.86472,
+      "longitude": 117.55417,
+      "source": "GeoNames",
+      "source_id": "1785453"
+    },
+    "湛江市": {
+      "latitude": 21.23391,
+      "longitude": 110.38749,
+      "source": "GeoNames",
+      "source_id": "1784990"
+    },
+    "张家界市": {
+      "latitude": 29.12944,
+      "longitude": 110.47833,
+      "source": "GeoNames",
+      "source_id": "1813171"
+    },
+    "张家口市": {
+      "latitude": 40.78341,
+      "longitude": 114.87139,
+      "source": "GeoNames",
+      "source_id": "2033196"
+    },
+    "张掖市": {
+      "latitude": 38.93417,
+      "longitude": 100.45167,
+      "source": "GeoNames",
+      "source_id": "1785036"
+    },
+    "漳州市": {
+      "latitude": 24.51333,
+      "longitude": 117.65556,
+      "source": "GeoNames",
+      "source_id": "1785018"
+    },
+    "长春市": {
+      "latitude": 43.88,
+      "longitude": 125.32278,
+      "source": "GeoNames",
+      "source_id": "2038180"
+    },
+    "长沙市": {
+      "latitude": 28.19874,
+      "longitude": 112.97087,
+      "source": "GeoNames",
+      "source_id": "1815577"
+    },
+    "长治市": {
+      "latitude": 36.18389,
+      "longitude": 113.10528,
+      "source": "GeoNames",
+      "source_id": "1808956"
+    },
+    "昭通市": {
+      "latitude": 27.31667,
+      "longitude": 103.71667,
+      "source": "GeoNames",
+      "source_id": "1784841"
+    },
+    "肇庆市": {
+      "latitude": 23.04893,
+      "longitude": 112.46091,
+      "source": "GeoNames",
+      "source_id": "1784853"
+    },
+    "镇江市": {
+      "latitude": 32.21086,
+      "longitude": 119.45508,
+      "source": "GeoNames",
+      "source_id": "1784642"
+    },
+    "郑州市": {
+      "latitude": 34.75778,
+      "longitude": 113.64861,
+      "source": "GeoNames",
+      "source_id": "1784658"
+    },
+    "中山市": {
+      "latitude": 22.52306,
+      "longitude": 113.37912,
+      "source": "GeoNames",
+      "source_id": "6986104"
+    },
+    "舟山市": {
+      "latitude": 29.98869,
+      "longitude": 122.20488,
+      "source": "GeoNames",
+      "source_id": "1886762"
+    },
+    "周口市": {
+      "latitude": 33.63333,
+      "longitude": 114.63333,
+      "source": "GeoNames",
+      "source_id": "1784130"
+    },
+    "株洲市": {
+      "latitude": 27.83333,
+      "longitude": 113.15,
+      "source": "GeoNames",
+      "source_id": "1783763"
+    },
+    "珠海市": {
+      "latitude": 22.27694,
+      "longitude": 113.56778,
+      "source": "GeoNames",
+      "source_id": "1790437"
+    },
+    "驻马店市": {
+      "latitude": 32.98385,
+      "longitude": 114.02586,
+      "source": "GeoNames",
+      "source_id": "1783873"
+    },
+    "资阳市": {
+      "latitude": 30.12108,
+      "longitude": 104.64811,
+      "source": "GeoNames",
+      "source_id": "1783683"
+    },
+    "淄博市": {
+      "latitude": 36.79056,
+      "longitude": 118.06333,
+      "source": "GeoNames",
+      "source_id": "1785286"
+    },
+    "自贡市": {
+      "latitude": 29.34162,
+      "longitude": 104.77689,
+      "source": "GeoNames",
+      "source_id": "1783745"
+    },
+    "遵义市": {
+      "latitude": 27.68667,
+      "longitude": 106.90722,
+      "source": "GeoNames",
+      "source_id": "1783621"
+    }
+  }
+}

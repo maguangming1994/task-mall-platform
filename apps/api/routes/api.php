@@ -98,7 +98,8 @@ Route::get('/health/ready', [HealthController::class, 'ready'])->name('api.healt
 Route::get('/internal/metrics', [MonitoringController::class, 'metrics'])->middleware('throttle:60,1');
 
 Route::get('/client-capabilities', [ClientCapabilitiesController::class, 'show']);
-Route::get('/campuses', [CampusController::class, 'index']);
+Route::get('/campuses', [CampusController::class, 'index'])->middleware('throttle:campus-list');
+Route::post('/campuses/nearby', [CampusController::class, 'nearby'])->middleware('throttle:campus-nearby');
 Route::get('/home-content', [HomeContentController::class, 'show']);
 Route::get('/appearance-content', [AppearanceContentController::class, 'show']);
 Route::get('/app-navigation', [AppNavigationController::class, 'show']);
