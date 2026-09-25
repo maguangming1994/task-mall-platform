@@ -349,7 +349,7 @@ class AuthService
             'id' => $user->public_id,
             'nickname' => $user->nickname,
             'avatar_file_id' => $avatar?->public_id,
-            'avatar_url' => $avatar === null ? null : '/api/v1/files/'.$avatar->public_id.'/content',
+            'avatar_url' => $avatar === null ? null : rtrim((string) config('app.url'), '/').route('user-avatars.show', ['file' => $avatar], false),
             'phone_masked' => is_string($phone) ? $this->maskPhone($phone) : null,
             'phone_bound' => $user->phone_verified_at !== null,
             'status' => $user->status,

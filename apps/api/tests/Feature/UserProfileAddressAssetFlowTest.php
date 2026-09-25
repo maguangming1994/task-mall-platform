@@ -8,6 +8,7 @@ use App\Modules\Upload\Models\UploadedFile;
 use Database\Seeders\LegalDocumentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class UserProfileAddressAssetFlowTest extends TestCase
@@ -17,6 +18,7 @@ class UserProfileAddressAssetFlowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('s3');
         $this->seed(LegalDocumentSeeder::class);
     }
 
@@ -25,7 +27,15 @@ class UserProfileAddressAssetFlowTest extends TestCase
         [$user, $token] = $this->loginAndConsent('13800138071');
         $avatar = $this->avatar($user->id, 'owned-avatar');
         $this->withToken($token)->putJson('/api/v1/me', ['nickname' => '新昵称', 'avatar_file_id' => $avatar->public_id])
-            ->assertOk()->assertJsonPath('data.profile_completed', true)->assertJsonPath('data.avatar_file_id', $avatar->public_id);
+            ->assertOk()
+            ->assertJsonPath('data.profile_completed', true)
+            ->assertJsonPath('data.avatar_file_id', $avatar->public_id)
+            ->assertJsonPath('data.avatar_url', rtrim((string) config('app.url'), '/').route('user-avatars.show', ['file' => $avatar], false));
+        $this->get('/api/v1/avatars/'.$avatar->public_id)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/png')
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
         $this->assertDatabaseHas('user_milestones', ['user_id' => $user->id, 'milestone_code' => 'profile_completed', 'reward_status' => 'pending']);
         $this->withToken($token)->putJson('/api/v1/me', ['nickname' => '再次修改'])
             ->assertOk()->assertJsonPath('data.profile_completed', true);
@@ -35,6 +45,32 @@ class UserProfileAddressAssetFlowTest extends TestCase
         $otherAvatar = $this->avatar($other->id, 'other-avatar');
         $this->withToken($token)->putJson('/api/v1/me', ['avatar_file_id' => $otherAvatar->public_id])
             ->assertUnprocessable()->assertJsonPath('code', 'VALIDATION_FAILED');
+    }
+
+    public function test_public_avatar_only_serves_a_clean_image_currently_referenced_by_its_active_owner(): void
+    {
+        [$user, $token] = $this->loginAndConsent('13800138079');
+        $first = $this->avatar($user->id, 'first-public');
+        $second = $this->avatar($user->id, 'second-public');
+        $wrongPurpose = $this->avatar($user->id, 'private-evidence', 'task_submission');
+        $unscanned = $this->avatar($user->id, 'pending-scan', 'avatar', 'scanning');
+
+        $this->get('/api/v1/avatars/'.$first->public_id)->assertNotFound();
+        $this->withToken($token)->putJson('/api/v1/me', ['avatar_file_id' => $first->public_id])->assertOk();
+        $this->get('/api/v1/avatars/'.$first->public_id)->assertOk();
+
+        $this->withToken($token)->putJson('/api/v1/me', ['avatar_file_id' => $second->public_id])->assertOk();
+        $this->get('/api/v1/avatars/'.$first->public_id)->assertNotFound();
+        $this->get('/api/v1/avatars/'.$second->public_id)->assertOk();
+
+        $user->update(['avatar_file_id' => $wrongPurpose->id]);
+        $this->get('/api/v1/avatars/'.$wrongPurpose->public_id)->assertNotFound();
+        $user->update(['avatar_file_id' => $unscanned->id]);
+        $this->get('/api/v1/avatars/'.$unscanned->public_id)->assertNotFound();
+
+        $user->update(['avatar_file_id' => $second->id]);
+        $user->update(['status' => 'disabled']);
+        $this->get('/api/v1/avatars/'.$second->public_id)->assertNotFound();
     }
 
     public function test_address_book_is_idempotent_encrypted_owner_scoped_and_keeps_one_default(): void
@@ -66,12 +102,15 @@ class UserProfileAddressAssetFlowTest extends TestCase
             ->assertOk()->assertJsonPath('data.eligible', false)->assertJsonFragment(['wallet_balance_not_zero']);
     }
 
-    private function avatar(int $userId, string $key): UploadedFile
+    private function avatar(int $userId, string $key, string $purpose = 'avatar', string $status = 'clean'): UploadedFile
     {
+        $path = 'avatar/'.$key.'.png';
+        Storage::disk('s3')->put($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='));
+
         return UploadedFile::query()->create([
-            'owner_user_id' => $userId, 'purpose' => 'avatar', 'original_name' => $key.'.png', 'extension' => 'png',
+            'owner_user_id' => $userId, 'purpose' => $purpose, 'original_name' => $key.'.png', 'extension' => 'png',
             'declared_mime' => 'image/png', 'detected_mime' => 'image/png', 'declared_size' => 8, 'actual_size' => 8,
-            'sha256' => hash('sha256', $key), 'disk' => 's3', 'quarantine_path' => 'avatar/'.$key.'.png', 'status' => 'clean',
+            'sha256' => hash('sha256', $key), 'disk' => 's3', 'quarantine_path' => $path, 'status' => $status,
             'idempotency_key_hash' => hash('sha256', $key), 'ticket_expires_at' => now()->addHour(), 'uploaded_at' => now(), 'scanned_at' => now(),
         ]);
     }

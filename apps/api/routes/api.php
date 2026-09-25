@@ -4,6 +4,7 @@ use App\Http\Controllers\ClientCapabilitiesController;
 use App\Modules\Account\Http\Controllers\AdminUserCenterController;
 use App\Modules\Account\Http\Controllers\UserAddressController;
 use App\Modules\Account\Http\Controllers\UserAssetOverviewController;
+use App\Modules\Account\Http\Controllers\UserAvatarController;
 use App\Modules\Account\Http\Controllers\UserProfileController;
 use App\Modules\Admin\Http\Controllers\AdminAuthController;
 use App\Modules\Admin\Http\Controllers\AdminCurrentUserController;
@@ -110,6 +111,9 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/product-categories', [ProductController::class, 'categories']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::get('/media/assets/{mediaAsset}', [MediaAssetController::class, 'show']);
+Route::get('/avatars/{file}', [UserAvatarController::class, 'show'])
+    ->middleware('throttle:120,1')
+    ->name('user-avatars.show');
 Route::get('/community/home', [CommunityHomepageController::class, 'show']);
 Route::get('/community/categories', [CommunityPostController::class, 'categories']);
 Route::get('/community/posts', [CommunityPostController::class, 'index'])->middleware('auth.optional');
