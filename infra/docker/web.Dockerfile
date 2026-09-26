@@ -8,10 +8,11 @@ ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 ENV VITE_H5_PUBLIC_URL=${VITE_H5_PUBLIC_URL}
 ENV VITE_WECHAT_OA_APP_ID=${VITE_WECHAT_OA_APP_ID}
 RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/user-app/package.json apps/user-app/package.json
 COPY apps/admin-web/package.json apps/admin-web/package.json
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=task-mall-production-pnpm-v11,target=/pnpm/store,sharing=locked \
+    pnpm install --frozen-lockfile --prefer-offline --store-dir=/pnpm/store --network-concurrency=4
 COPY apps/user-app apps/user-app
 COPY apps/admin-web apps/admin-web
 RUN pnpm run build:user:h5 && pnpm run build:admin
