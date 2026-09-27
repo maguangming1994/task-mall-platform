@@ -72,7 +72,10 @@ echo "[1/9] 校验生产 Compose 配置"
 compose config --quiet
 
 echo "[2/9] 构建版本镜像：$RELEASE_VERSION"
-compose build --pull api nginx
+# Routine releases should reuse the server's verified base-image cache.  Forcing
+# a base-image pull invalidates every downstream layer and can exceed the CI SSH
+# time limit even when only application code changed.
+compose build api nginx
 
 echo "[3/9] 等待 PostgreSQL 与 Redis"
 compose up -d --wait --wait-timeout 180 postgres redis
