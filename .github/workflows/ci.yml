@@ -110,7 +110,10 @@ jobs:
     concurrency:
       group: task-mall-production
       cancel-in-progress: false
-    timeout-minutes: 45
+    # The production host builds release images locally.  Keep a bounded but
+    # realistic allowance so a slow package mirror cannot cancel a healthy
+    # deployment midway through its rollback-protected sequence.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
