@@ -76,7 +76,7 @@ class CampusController extends Controller
                 $location = $this->locations->resolve($campus);
                 // City centroids help discover schools, but are not a campus location.
                 // Never present the same city-centre distance as an exact school distance.
-                $distance = $nearby && $location['accuracy'] === 'campus'
+                $sortDistance = $nearby && $location['accuracy'] !== 'unavailable'
                     ? $this->distance(
                         (float) $data['latitude'],
                         (float) $data['longitude'],
@@ -85,14 +85,16 @@ class CampusController extends Controller
                     )
                     : null;
 
-                return compact('campus', 'location', 'distance');
+                $distance = $location['accuracy'] === 'campus' ? $sortDistance : null;
+
+                return compact('campus', 'location', 'distance', 'sortDistance');
             });
 
         if ($nearby) {
             $located = $located->sortBy(function (array $item): float {
                 return match ($item['location']['accuracy']) {
                     'campus' => $item['distance'] ?? PHP_FLOAT_MAX,
-                    'city' => PHP_FLOAT_MAX / 2,
+                    'city' => $item['sortDistance'] ?? PHP_FLOAT_MAX / 2,
                     default => PHP_FLOAT_MAX,
                 };
             });
