@@ -2,13 +2,15 @@ FROM php:8.5-fpm-alpine AS runtime
 
 ARG ALPINE_MIRROR=https://mirrors.cloud.tencent.com/alpine
 RUN sed -i "s|https://dl-cdn.alpinelinux.org/alpine|${ALPINE_MIRROR}|g" /etc/apk/repositories \
-    && apk add --no-cache curl curl-dev icu-dev libxml2-dev libzip-dev oniguruma-dev postgresql-dev \
+    && apk add --no-cache curl curl-dev git icu-dev libxml2-dev libzip-dev oniguruma-dev postgresql-dev \
     && docker-php-ext-install curl intl mbstring pcntl pdo_pgsql simplexml xmlwriter zip \
     && php -r 'foreach (["curl", "intl", "mbstring", "Zend OPcache", "pcntl", "pdo_pgsql", "SimpleXML", "xmlwriter", "zip"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing PHP extension: {$extension}\n"); exit(1); } }'
 COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY apps/api/composer.json apps/api/composer.lock ./
-RUN composer install --no-dev --no-interaction --no-scripts --prefer-dist --classmap-authoritative
+RUN --mount=type=cache,id=task-mall-production-composer-v1,target=/tmp/composer-cache,sharing=locked \
+    COMPOSER_CACHE_DIR=/tmp/composer-cache COMPOSER_MAX_PARALLEL_HTTP=4 \
+    composer install --no-dev --no-interaction --no-scripts --prefer-dist --classmap-authoritative
 COPY apps/api/ ./
 COPY infra/php/production.ini /usr/local/etc/php/conf.d/zz-task-mall.ini
 RUN composer dump-autoload --no-dev --classmap-authoritative \
