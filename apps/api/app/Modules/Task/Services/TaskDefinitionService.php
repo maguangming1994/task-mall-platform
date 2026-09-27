@@ -9,6 +9,7 @@ use App\Modules\Settings\Services\SystemSettingService;
 use App\Modules\Task\Models\RewardBudgetPool;
 use App\Modules\Task\Models\Task;
 use App\Modules\Task\Models\TaskPublishApproval;
+use App\Modules\Task\Models\TaskPublisher;
 use App\Modules\Task\Models\TaskRewardBudget;
 use App\Modules\Task\Models\TaskTemplate;
 use App\Modules\Task\Models\TaskVersion;
@@ -340,10 +341,7 @@ class TaskDefinitionService
                 'id' => TaskTemplate::query()->whereKey($task->source_task_template_id)->value('public_id'),
                 'version_no' => $task->source_task_template_version_no,
             ],
-            'publisher' => [
-                'id' => AdminUser::query()->whereKey($task->created_by_admin_id)->value('public_id'),
-                'publisher_type' => 'platform_admin', 'display_name' => '平台任务运营', 'verification_status' => 'verified', 'publisher_badge' => '平台发布',
-            ],
+            'publisher' => $this->presentPublisher($task),
             'status' => $task->status, 'version' => $task->lock_version, 'current_published_version' => $task->published_version_no,
             'has_unpublished_changes' => $task->published_version_no !== null && $task->current_version_no !== $task->published_version_no,
             'historical_claim_count' => 0, 'active_reservation_count' => 0, 'successful_reward_count' => 0,
@@ -363,6 +361,33 @@ class TaskDefinitionService
             ],
             'reward_budget_bindings' => $version->content['reward_budgets'] ?? [],
             'reward_budgets' => $budgets, 'reward_budget_summaries' => $budgets,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function presentPublisher(Task $task): array
+    {
+        $publisher = TaskPublisher::query()
+            ->with('linkedUser')
+            ->where('admin_user_id', $task->created_by_admin_id)
+            ->first();
+
+        if ($publisher?->publisher_type === 'user' && $publisher->linkedUser !== null) {
+            return [
+                'id' => $publisher->public_id,
+                'publisher_type' => 'user',
+                'display_name' => $publisher->linkedUser->nickname,
+                'verification_status' => $publisher->verification_status,
+                'publisher_badge' => '用户发布',
+            ];
+        }
+
+        return [
+            'id' => AdminUser::query()->whereKey($task->created_by_admin_id)->value('public_id'),
+            'publisher_type' => 'platform_admin',
+            'display_name' => '平台任务运营',
+            'verification_status' => 'verified',
+            'publisher_badge' => '平台发布',
         ];
     }
 

@@ -29,6 +29,7 @@ import {
   Avatar,
   Button,
   Card,
+  Checkbox,
   ConfigProvider,
   Dropdown,
   Drawer,
@@ -38,6 +39,7 @@ import {
   Menu,
   Modal,
   Result,
+  Select,
   Skeleton,
   Space,
   Statistic,
@@ -47,7 +49,7 @@ import {
 } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
-import { ApiError, changeAdminPassword, getOperationsDashboard, type AdminMfaChallenge, type NavigationItem, type OperationsMetrics } from './api/admin'
+import { ApiError, changeAdminPassword, getAdminCampusScope, getOperationsDashboard, getRememberedAdminAccount, setAdminCampusScope, type AdminMfaChallenge, type NavigationItem, type OperationsMetrics } from './api/admin'
 import { useAdminAuth } from './features/auth/AdminAuthContext'
 import { AdminAuthProvider } from './features/auth/AdminAuthProvider'
 import './App.css'
@@ -96,18 +98,22 @@ const roleNames: Record<string, string> = {
 
 function LoginPage() {
   const { login, verifyMfa } = useAdminAuth()
+  const rememberedAccount = getRememberedAdminAccount()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [challenge, setChallenge] = useState<AdminMfaChallenge | null>(null)
+  const [rememberLogin, setRememberLogin] = useState(Boolean(rememberedAccount))
 
-  const submit = async (values: { account: string; password: string; code?: string }) => {
+  const submit = async (values: { account: string; password: string; code?: string; remember?: boolean }) => {
     setSubmitting(true)
     setError(null)
     try {
       if (challenge) {
-        await verifyMfa(challenge, values.code ?? '')
+        await verifyMfa(challenge, values.code ?? '', rememberLogin)
       } else {
-        setChallenge(await login(values.account, values.password))
+        const remember = values.remember ?? false
+        setRememberLogin(remember)
+        setChallenge(await login(values.account, values.password, remember))
       }
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : '登录失败，请检查网络后重试。')
@@ -127,16 +133,24 @@ function LoginPage() {
         </Typography.Paragraph>
         <div className="security-note"><SafetyCertificateOutlined /> 独立后台会话 · 最小权限 · 全程审计</div>
       </section>
-      <Card className="login-card" bordered={false}>
+      <Card className="login-card" variant="borderless">
         <Typography.Title level={2}>{challenge ? '完成二次验证' : '登录管理后台'}</Typography.Title>
         <Typography.Paragraph type="secondary">{challenge ? '输入验证器动态码或一次性恢复码' : '请输入管理员账号和密码'}</Typography.Paragraph>
-        {error && <Alert showIcon type="error" message={error} className="login-alert" />}
-        <Form layout="vertical" requiredMark={false} onFinish={submit} size="large">
+        {error && <Alert showIcon type="error" title={error} className="login-alert" />}
+        <Form name="admin-login" autoComplete="on" layout="vertical" requiredMark={false} initialValues={{ account: rememberedAccount, remember: Boolean(rememberedAccount) }} onFinish={submit} size="large">
           {!challenge && <Form.Item label="管理员账号" name="account" rules={[{ required: true, message: '请输入管理员账号' }]}>
             <Input prefix={<UserOutlined />} autoComplete="username" placeholder="请输入账号" />
           </Form.Item>}
           {!challenge && <Form.Item label="密码" name="password" rules={[{ required: true, message: '请输入密码' }]}>
             <Input.Password prefix={<LockOutlined />} autoComplete="current-password" placeholder="请输入密码" />
+          </Form.Item>}
+          {!challenge && <Form.Item
+            className="login-remember-item"
+            name="remember"
+            valuePropName="checked"
+            extra="账号会自动回填；密码由浏览器密码管理器安全保存，系统不会明文记录。"
+          >
+            <Checkbox>记住账号并保持登录（30 天）</Checkbox>
           </Form.Item>}
           {challenge && <Form.Item label="验证码或恢复码" name="code" rules={[{ required: true, message: '请输入验证码或恢复码' }]}>
             <Input prefix={<SafetyCertificateOutlined />} autoComplete="one-time-code" placeholder="6 位动态码" />
@@ -176,7 +190,7 @@ function Workbench() {
           </div>
           <Tag color="processing"><SafetyCertificateOutlined /> 权限已加载</Tag>
         </div>
-        <Card bordered={false}>
+        <Card variant="borderless">
           <Result
             status="info"
             title="请选择左侧已授权的业务模块"
@@ -205,19 +219,19 @@ function Workbench() {
         <Space><Tag color="processing">本地预览</Tag><Tag color="success"><CheckCircleOutlined /> 服务正常</Tag></Space>
       </div>
       <div className="stat-grid stat-grid-four">
-        <Card bordered={false}><Statistic title="活跃用户" value={metrics?.users.active_total ?? 0} suffix="人" prefix={<TeamOutlined />} /></Card>
-        <Card bordered={false}><Statistic title="已发布任务" value={metrics?.tasks.published ?? 0} suffix="个" prefix={<ProfileOutlined />} /></Card>
-        <Card bordered={false}><Statistic title="今日实付订单" value={metrics?.orders.paid_today ?? 0} suffix="单" prefix={<ShopOutlined />} /></Card>
-        <Card bordered={false}><Statistic title="未读业务消息" value={metrics?.notifications.unread_total ?? 0} suffix="条" prefix={<NotificationOutlined />} /></Card>
+        <Card variant="borderless"><Statistic title="活跃用户" value={metrics?.users.active_total ?? 0} suffix="人" prefix={<TeamOutlined />} /></Card>
+        <Card variant="borderless"><Statistic title="已发布任务" value={metrics?.tasks.published ?? 0} suffix="个" prefix={<ProfileOutlined />} /></Card>
+        <Card variant="borderless"><Statistic title="今日实付订单" value={metrics?.orders.paid_today ?? 0} suffix="单" prefix={<ShopOutlined />} /></Card>
+        <Card variant="borderless"><Statistic title="未读业务消息" value={metrics?.notifications.unread_total ?? 0} suffix="条" prefix={<NotificationOutlined />} /></Card>
       </div>
       <div className="workbench-grid">
-        <Card bordered={false} className="milestone-card" title="待处理事项" extra={<Typography.Text type="secondary">实时汇总</Typography.Text>}>
+        <Card variant="borderless" className="milestone-card" title="待处理事项" extra={<Typography.Text type="secondary">实时汇总</Typography.Text>}>
           <div className="pending-grid">
             {pending.map((item) => <div className="pending-item" key={item.label}><span className="pending-icon">{item.icon}</span><span><strong>{item.value}</strong><small>{item.label}</small></span></div>)}
           </div>
         </Card>
-        <Card bordered={false} className="milestone-card" title="资产与系统">
-          <Space direction="vertical" size={16} className="system-summary">
+        <Card variant="borderless" className="milestone-card" title="资产与系统">
+          <Space orientation="vertical" size={16} className="system-summary">
             <Typography.Text><SafetyCertificateOutlined /> 余额与积分流水采用不可变账本</Typography.Text>
             <Typography.Text><AuditOutlined /> 高风险配置、调账和发布支持四眼复核</Typography.Text>
             <Typography.Text><CheckCircleOutlined /> 本地自动化 UAT 与一致性审计已接入</Typography.Text>
@@ -262,14 +276,35 @@ function AdminShell() {
   const [activeCode, setActiveCode] = useState('workbench')
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [passwordSubmitting, setPasswordSubmitting] = useState(false)
+  const [campusScope, setCampusScopeState] = useState<string | null>(() => getAdminCampusScope())
   const [passwordForm] = Form.useForm()
   const [messageApi, contextHolder] = message.useMessage()
   const activeItem = navigation.find((item) => item.code === activeCode) ?? navigation[0]
   const navigationItems = navigation.map((item) => ({ key: item.code, icon: iconMap[item.icon], label: item.label }))
+  const usesCampusScope = Boolean(admin?.roles.includes('campus_agent') && !admin.roles.includes('super_admin'))
+
+  useEffect(() => {
+    if (!usesCampusScope || !admin?.campuses.length) {
+      setCampusScopeState(null)
+      setAdminCampusScope(null)
+      return
+    }
+    const stored = getAdminCampusScope()
+    const next = admin.campuses.some((campus) => campus.id === stored)
+      ? stored
+      : (admin.campuses.find((campus) => campus.is_primary)?.id ?? admin.campuses[0].id)
+    setCampusScopeState(next)
+    setAdminCampusScope(next)
+  }, [admin, usesCampusScope])
 
   const selectNavigation = (key: string) => {
     setActiveCode(key)
     setMobileNavOpen(false)
+  }
+
+  const selectCampusScope = (campusId: string) => {
+    setAdminCampusScope(campusId)
+    setCampusScopeState(campusId)
   }
 
   const signOut = async () => {
@@ -323,30 +358,40 @@ function AdminShell() {
             icon={<MenuOutlined />}
             onClick={() => setMobileNavOpen(true)}
           />
-          <Dropdown
-            trigger={['click']}
-            placement="bottomRight"
-            arrow
-            menu={{ items: [
-              { key: 'password', icon: <KeyOutlined />, label: '修改密码', onClick: () => setPasswordOpen(true) },
-              { type: 'divider' },
-              { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', danger: true, onClick: signOut },
-            ] }}
-          >
-            <Button type="text" className="profile-button" aria-label="打开管理员账号菜单">
-              <Avatar>{admin?.display_name.slice(0, 1)}</Avatar>
-              <span><strong>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
-            </Button>
-          </Dropdown>
+          <div className="admin-header-actions">
+            {usesCampusScope && admin?.campuses.length ? <Select
+              className="campus-scope-select"
+              aria-label="切换当前运营学校"
+              value={campusScope ?? undefined}
+              onChange={selectCampusScope}
+              options={admin.campuses.map((campus) => ({ value: campus.id, label: `${campus.name}${campus.is_primary ? ' · 主负责' : ''}` }))}
+              popupMatchSelectWidth={260}
+            /> : null}
+            <Dropdown
+              trigger={['click']}
+              placement="bottomRight"
+              arrow
+              menu={{ items: [
+                { key: 'password', icon: <KeyOutlined />, label: '修改密码', onClick: () => setPasswordOpen(true) },
+                { type: 'divider' },
+                { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', danger: true, onClick: signOut },
+              ] }}
+            >
+              <Button type="text" className="profile-button" aria-label="打开管理员账号菜单">
+                <Avatar>{admin?.display_name.slice(0, 1)}</Avatar>
+                <span><strong>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
+              </Button>
+            </Dropdown>
+          </div>
         </Layout.Header>
         <Layout.Content className="admin-content">
-          {activeItem && <div className="workspace-stage" key={activeItem.code}><Suspense fallback={<Skeleton active paragraph={{ rows: 5 }} />}><Workspace item={activeItem} /></Suspense></div>}
+          {activeItem && <div className="workspace-stage" key={`${activeItem.code}:${campusScope ?? 'global'}`}><Suspense fallback={<Skeleton active paragraph={{ rows: 5 }} />}><Workspace item={activeItem} /></Suspense></div>}
         </Layout.Content>
       </Layout>
       <Drawer
         className="mobile-navigation"
         placement="left"
-        width={300}
+        size={300}
         open={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
         title={<span className="mobile-navigation-title"><AppstoreOutlined />校园任务商城</span>}
@@ -379,7 +424,7 @@ function AdminShell() {
         confirmLoading={passwordSubmitting}
         destroyOnHidden
       >
-        <Alert type="info" showIcon message="新密码至少 12 位，必须同时包含字母和数字；修改后其他设备将退出登录。" style={{ marginBottom: 16 }} />
+        <Alert type="info" showIcon title="新密码至少 12 位，必须同时包含字母和数字；修改后其他设备将退出登录。" style={{ marginBottom: 16 }} />
         <Form form={passwordForm} layout="vertical" onFinish={submitPasswordChange}>
           <Form.Item name="current_password" label="当前密码" rules={[{ required: true, message: '请输入当前密码' }]}>
             <Input.Password autoComplete="current-password" />

@@ -38,11 +38,15 @@ class AuthenticateAdminAccessToken
             || $session->revoked_at !== null
             || $session->expires_at->isPast()
             || $session->idle_expires_at->isPast()
-            || $session->adminUser->status !== 'active') {
+            || $session->adminUser->status !== 'active'
+            || $session->adminUser->is_service_account) {
             return ApiResponse::error('ADMIN_AUTH_SESSION_REVOKED', '后台登录状态已失效。', 401);
         }
 
-        $idleExpiry = now()->addSeconds(max(60, (int) config('admin_auth.idle_ttl_seconds')));
+        $idleConfig = $session->remembered
+            ? 'admin_auth.remember_idle_ttl_seconds'
+            : 'admin_auth.idle_ttl_seconds';
+        $idleExpiry = now()->addSeconds(max(60, (int) config($idleConfig)));
         if ($idleExpiry->greaterThan($session->expires_at)) {
             $idleExpiry = $session->expires_at;
         }

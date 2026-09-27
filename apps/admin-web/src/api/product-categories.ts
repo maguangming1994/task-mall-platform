@@ -1,9 +1,4 @@
-import { ApiError } from './admin'
-
-const ACCESS_KEY = 'task_mall_admin_access'
-
-interface ApiEnvelope<T> { data: T }
-interface ApiFailure { message?: string; code?: string; request_id?: string; details?: { errors?: Record<string, string[]> } }
+import { adminRequest } from './admin'
 
 export interface ManagedProductCategory {
   id: string
@@ -26,20 +21,7 @@ export interface ProductCategoryInput {
 }
 
 async function categoryRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const headers = new Headers(init.headers)
-  headers.set('Accept', 'application/json')
-  if (init.body) headers.set('Content-Type', 'application/json')
-  const accessToken = sessionStorage.getItem(ACCESS_KEY)
-  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
-  const response = await fetch(`/api/v1${path}`, { ...init, headers })
-  if (response.status === 204) return undefined as T
-  const payload = await response.json().catch(() => ({})) as Partial<ApiEnvelope<T>> & ApiFailure
-  if (!response.ok) {
-    const errors = payload.details?.errors ?? {}
-    const firstValidationMessage = Object.values(errors).flat()[0]
-    throw new ApiError(firstValidationMessage || payload.message || '商品分类操作失败，请稍后重试。', response.status, payload.code || 'HTTP_ERROR', payload.request_id, errors)
-  }
-  return payload.data as T
+  return adminRequest<T>(path, init)
 }
 
 export function listProductCategories(): Promise<{ items: ManagedProductCategory[] }> {

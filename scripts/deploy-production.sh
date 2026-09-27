@@ -68,28 +68,31 @@ verify_service() {
   fi
 }
 
-echo "[1/8] 校验生产 Compose 配置"
+echo "[1/9] 校验生产 Compose 配置"
 compose config --quiet
 
-echo "[2/8] 构建版本镜像：$RELEASE_VERSION"
+echo "[2/9] 构建版本镜像：$RELEASE_VERSION"
 compose build --pull api nginx
 
-echo "[3/8] 等待 PostgreSQL 与 Redis"
+echo "[3/9] 等待 PostgreSQL 与 Redis"
 compose up -d --wait --wait-timeout 180 postgres redis
 
-echo "[4/8] 执行前向数据库迁移"
+echo "[4/9] 执行前向数据库迁移"
 compose run --rm --no-deps api php artisan migrate --force
 
-echo "[5/8] 同步全国高校公开名录"
+echo "[5/9] 同步全国高校公开名录"
 compose run --rm --no-deps api php artisan campuses:sync-directory
 
-echo "[6/8] 启动 API、队列、调度器和 Web"
+echo "[6/9] 转存已核验的学校校徽"
+compose run --rm --no-deps api php artisan campuses:sync-branding
+
+echo "[7/9] 启动 API、队列、调度器和 Web"
 compose up -d --remove-orphans --wait --wait-timeout 240
 
-echo "[7/8] 生成 Laravel 生产缓存"
+echo "[8/9] 生成 Laravel 生产缓存"
 compose exec -T api php artisan optimize
 
-echo "[8/8] 验证全部服务与页面"
+echo "[9/9] 验证全部服务与页面"
 for service in postgres redis api queue scheduler nginx; do
   verify_service "$service"
 done
@@ -109,6 +112,17 @@ case "$campus_smoke" in
   *'"code":"moe-4111010001"'*) ;;
   *)
     echo "高校公开列表校验失败：未找到北京大学。" >&2
+    exit 1
+    ;;
+esac
+case "$campus_smoke" in
+  *'"emblem_url":null'*)
+    echo "高校校徽校验失败：北京大学尚未配置校徽。" >&2
+    exit 1
+    ;;
+  *'"emblem_url":"'*) ;;
+  *)
+    echo "高校校徽校验失败：公开列表没有返回校徽字段。" >&2
     exit 1
     ;;
 esac

@@ -21,7 +21,7 @@ class AdminUserManagementController extends Controller
     public function index(Request $request, AdminAuthService $auth): JsonResponse
     {
         $data = $request->validate(['status' => ['sometimes', 'in:active,disabled'], 'keyword' => ['sometimes', 'string', 'max:100']]);
-        $items = AdminUser::query()->with('roles')->withCount(['sessions as active_sessions_count' => fn ($query) => $query->whereNull('revoked_at')->where('expires_at', '>', now())])
+        $items = AdminUser::query()->where('is_service_account', false)->with('roles')->withCount(['sessions as active_sessions_count' => fn ($query) => $query->whereNull('revoked_at')->where('expires_at', '>', now())])
             ->when(isset($data['status']), fn ($query) => $query->where('status', $data['status']))
             ->when(isset($data['keyword']), fn ($query) => $query->where(fn ($nested) => $nested->where('account', 'like', '%'.$data['keyword'].'%')->orWhere('display_name', 'like', '%'.$data['keyword'].'%')))
             ->orderBy('account')->get()->map(fn (AdminUser $admin) => [...$auth->present($admin), 'active_sessions_count' => $admin->active_sessions_count, 'last_login_at' => $admin->last_login_at?->toIso8601String()]);

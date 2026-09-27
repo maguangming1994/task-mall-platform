@@ -9,6 +9,7 @@ export interface CurrentUser {
   avatar_file_id: string | null
   phone_masked: string | null
   phone_bound: boolean
+  can_publish_tasks: boolean
   status: 'active' | 'disabled' | 'cancelled'
   profile_completed: boolean
   real_name_status: 'not_submitted' | 'pending' | 'verified' | 'failed' | 'provider_error'

@@ -354,6 +354,7 @@ class AuthService
             'phone_bound' => $user->phone_verified_at !== null,
             'status' => $user->status,
             'profile_completed' => $user->profile_completed_at !== null,
+            'can_publish_tasks' => $user->status === 'active' && $user->can_publish_tasks,
             'real_name_status' => $identityVerification?->status ?? 'not_submitted',
             'campus' => $user->campus === null ? null : [
                 'id' => $user->campus->public_id,

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Common\Support\ApiResponse;
+use App\Modules\Admin\Models\AdminSession;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Admin\Models\Role;
 use Database\Seeders\RbacSeeder;
@@ -59,6 +60,69 @@ class AdminAuthFlowTest extends TestCase
         $this->assertDatabaseCount('admin_sessions', 2);
         $this->assertDatabaseHas('operation_logs', ['action' => 'admin.auth.login']);
         $this->assertDatabaseHas('operation_logs', ['action' => 'admin.auth.logout']);
+    }
+
+    public function test_remembered_admin_login_uses_a_thirty_day_http_only_session(): void
+    {
+        config([
+            'admin_auth.remember_refresh_ttl_days' => 30,
+            'admin_auth.remember_idle_ttl_seconds' => 2_592_000,
+        ]);
+        $admin = $this->createAdmin('platform_admin');
+
+        $login = $this->postJson('/api/v1/admin/auth/login', [
+            'account' => $admin->account,
+            'password' => 'StrongPassword123!',
+            'remember' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.remembered', true)
+            ->assertJsonMissingPath('data.refresh_token');
+
+        $cookieName = (string) config('admin_auth.remember_cookie_name');
+        $login->assertCookie($cookieName);
+        $cookie = collect($login->headers->getCookies())
+            ->first(fn ($candidate) => $candidate->getName() === $cookieName);
+        $this->assertNotNull($cookie);
+        $this->assertTrue($cookie->isHttpOnly());
+        $this->assertSame('lax', $cookie->getSameSite());
+        $this->assertSame('/api/v1/admin/auth', $cookie->getPath());
+
+        $session = AdminSession::query()->where('admin_user_id', $admin->id)->firstOrFail();
+        $this->assertTrue($session->remembered);
+        $this->assertTrue($session->expires_at->greaterThan(now()->addDays(29)));
+        $this->assertTrue($session->idle_expires_at->greaterThan(now()->addDays(29)));
+
+        $this->withToken($login->json('data.access_token'))
+            ->getJson('/api/v1/admin/me')
+            ->assertOk();
+        $session->refresh();
+        $this->assertTrue($session->idle_expires_at->greaterThan(now()->addDays(29)));
+
+        $this->withCredentials()
+            ->withUnencryptedCookie($cookieName, $cookie->getValue())
+            ->postJson('/api/v1/admin/auth/refresh', [])
+            ->assertOk()
+            ->assertJsonPath('data.remembered', true)
+            ->assertJsonMissingPath('data.refresh_token')
+            ->assertCookie($cookieName);
+
+        // The stable HttpOnly credential lets simultaneous browser tabs refresh safely.
+        $this->withCredentials()
+            ->withUnencryptedCookie($cookieName, $cookie->getValue())
+            ->postJson('/api/v1/admin/auth/refresh', [])
+            ->assertOk()
+            ->assertJsonPath('data.remembered', true);
+
+        $this->assertDatabaseCount('admin_sessions', 1);
+        $this->assertEquals($session->expires_at, $session->fresh()->expires_at);
+
+        $this->withCredentials()
+            ->withUnencryptedCookie($cookieName, $cookie->getValue())
+            ->withToken($login->json('data.access_token'))
+            ->postJson('/api/v1/admin/auth/logout')
+            ->assertNoContent()
+            ->assertCookieExpired($cookieName);
+        $this->assertNotNull($session->fresh()->revoked_at);
     }
 
     public function test_login_failures_temporarily_lock_the_account_and_ip_pair(): void

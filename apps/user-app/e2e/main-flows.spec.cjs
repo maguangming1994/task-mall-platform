@@ -62,6 +62,27 @@ describe('WeChat mini program production smoke flows', () => {
     await openPage(path, selector)
   })
 
+  test('campus selector row stays between the safe area and home content', async () => {
+    const page = await openPage('/pages/index/index', '.home-v4')
+    const safeArea = await page.$('.home-v4-safe')
+    const selector = await page.$('.home-campus-context')
+    const homeContent = (await page.$('.home-v10-auth-shell')) || (await page.$('.home-v4-header'))
+
+    expect(safeArea).not.toBeNull()
+    expect(selector).not.toBeNull()
+    expect(homeContent).not.toBeNull()
+
+    const safeAreaOffset = await safeArea.offset()
+    const safeAreaSize = await safeArea.size()
+    const selectorOffset = await selector.offset()
+    const selectorSize = await selector.size()
+    const contentOffset = await homeContent.offset()
+
+    expect(selectorSize.height).toBeGreaterThanOrEqual(48)
+    expect(selectorOffset.top).toBeGreaterThanOrEqual(safeAreaOffset.top + safeAreaSize.height - 1)
+    expect(contentOffset.top).toBeGreaterThanOrEqual(selectorOffset.top + selectorSize.height - 1)
+  })
+
   test('all five home tabs reach the expected page', async () => {
     const expectedPaths = routes.map(item => item.path.slice(1))
 
@@ -83,6 +104,13 @@ describe('WeChat mini program production smoke flows', () => {
 
     if (!isGuest) {
       expect(guestAccount).toBeNull()
+
+      const avatarControl = await account.$('.profile-avatar-control')
+      const nicknameControl = await account.$('.profile-nickname')
+      expect(avatarControl).not.toBeNull()
+      expect(nicknameControl).not.toBeNull()
+      expect(await avatarControl.attribute('open-type')).toBe('chooseAvatar')
+      expect(await nicknameControl.attribute('type')).toBe('nickname')
       return
     }
 

@@ -100,7 +100,11 @@ class AdminGovernanceAndMfaTest extends TestCase
             ->assertStatus(202)->assertJsonPath('data.mfa_required', true);
         $mfaLogin = $this->postJson('/api/v1/admin/auth/mfa/verify', [
             'challenge_id' => $challenge->json('data.challenge_id'), 'challenge_token' => $challenge->json('data.challenge_token'), 'code' => app(TotpService::class)->currentCode($secret),
-        ])->assertOk();
+            'remember' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.remembered', true)
+            ->assertJsonMissingPath('data.refresh_token')
+            ->assertCookie((string) config('admin_auth.remember_cookie_name'));
         $this->withToken($mfaLogin->json('data.access_token'))->getJson('/api/v1/admin/me')->assertOk();
         $this->postJson('/api/v1/admin/auth/mfa/verify', [
             'challenge_id' => $challenge->json('data.challenge_id'), 'challenge_token' => $challenge->json('data.challenge_token'), 'code' => app(TotpService::class)->currentCode($secret),

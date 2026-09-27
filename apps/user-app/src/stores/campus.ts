@@ -43,6 +43,7 @@ export const useCampusStore = defineStore('campus', {
         const items = Array.isArray(result.items) ? result.items : []
         if (loadId !== latestLoadId) return items
         this.items = items
+        this.refreshSelectedBranding(items)
         return items
       } catch (error) {
         if (loadId !== latestLoadId) return this.items
@@ -63,6 +64,7 @@ export const useCampusStore = defineStore('campus', {
         const items = Array.isArray(result.items) ? result.items : []
         if (loadId !== latestLoadId) return items
         this.items = items
+        this.refreshSelectedBranding(items)
         return items
       } catch (error) {
         if (loadId !== latestLoadId) return this.items
@@ -79,6 +81,15 @@ export const useCampusStore = defineStore('campus', {
     },
     syncFromAccount(campus: Campus | null | undefined) {
       if (campus?.id) this.setLocal(campus)
+    },
+    refreshSelectedBranding(items: Campus[]) {
+      if (!this.selected) return
+      const current = items.find(item => item.id === this.selected?.id)
+      if (!current) return
+      const emblemUrl = 'emblem_url' in current ? current.emblem_url : this.selected.emblem_url
+      const logoUrl = 'logo_url' in current ? current.logo_url : this.selected.logo_url
+      if (emblemUrl === this.selected.emblem_url && logoUrl === this.selected.logo_url) return
+      this.setLocal({ ...this.selected, emblem_url: emblemUrl, logo_url: logoUrl })
     },
     async select(campus: Campus, accessToken = '') {
       const selected = accessToken

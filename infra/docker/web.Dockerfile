@@ -18,7 +18,9 @@ COPY apps/admin-web apps/admin-web
 RUN pnpm run build:user:h5 && pnpm run build:admin
 
 FROM nginx:1.27-alpine
+ARG RELEASE_VERSION=unknown
 COPY --from=assets /workspace/apps/user-app/dist/build/h5/ /usr/share/nginx/html/
 COPY --from=assets /workspace/apps/admin-web/dist/ /usr/share/nginx/admin/
 COPY infra/nginx/task-mall.conf /etc/nginx/conf.d/default.conf
+RUN printf '{"release":"%s"}\n' "$RELEASE_VERSION" > /usr/share/nginx/html/release.json
 EXPOSE 8080

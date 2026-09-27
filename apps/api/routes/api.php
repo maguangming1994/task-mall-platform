@@ -160,6 +160,7 @@ Route::middleware('auth.publisher')->prefix('task-publisher')->group(function ()
 Route::middleware('auth.access')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/me', [CurrentUserController::class, 'show']);
+    Route::post('/me/task-publisher-session', [TaskPublisherAuthController::class, 'storeForUser'])->middleware('throttle:10,1');
     Route::put('/me', [UserProfileController::class, 'update'])->middleware('legal.consent:account');
     Route::put('/me/campus', [CampusController::class, 'select']);
     Route::get('/me/identity-verification', [UserIdentityVerificationController::class, 'show'])
@@ -281,12 +282,18 @@ Route::prefix('admin')->group(function () {
         Route::get('/navigation', [AdminCurrentUserController::class, 'navigation']);
         Route::get('/campuses', [AdminCampusController::class, 'index'])->middleware('admin.permission:campus.manage');
         Route::post('/campuses', [AdminCampusController::class, 'store'])->middleware('admin.permission:rbac.manage');
+        Route::get('/campuses/{campus}', [AdminCampusController::class, 'show'])->middleware('admin.permission:campus.manage');
         Route::put('/campuses/{campus}', [AdminCampusController::class, 'update'])->middleware('admin.permission:campus.manage');
         Route::put('/campuses/{campus}/agents', [AdminCampusController::class, 'agents'])->middleware('admin.permission:rbac.manage');
+        Route::get('/campus-agents', [AdminCampusController::class, 'agentIndex'])->middleware('admin.permission:rbac.manage');
         Route::get('/campus-agent-options', [AdminCampusController::class, 'agentOptions'])->middleware('admin.permission:rbac.manage');
         Route::get('/user-center/overview', [AdminUserCenterController::class, 'overview'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
         Route::get('/user-center/users', [AdminUserCenterController::class, 'users'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
+        Route::put('/user-center/users/{user:public_id}/task-publishing-permission', [AdminUserCenterController::class, 'updateTaskPublishingPermission'])
+            ->middleware(['admin.permission:rbac.manage', 'admin.recent_verification']);
         Route::get('/user-center/referrals', [AdminUserCenterController::class, 'referrals'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
+        Route::get('/user-center/referral-teams', [AdminUserCenterController::class, 'referralTeams'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
+        Route::get('/user-center/referral-teams/{leader:public_id}', [AdminUserCenterController::class, 'referralTeam'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
         Route::get('/user-center/verifications', [AdminUserCenterController::class, 'verifications'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
         Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->middleware('admin.permission:audit.view|audit.view_own');
         Route::post('/mfa/totp/enroll', [AdminMfaController::class, 'enroll'])->middleware('admin.recent_verification');
@@ -356,8 +363,8 @@ Route::prefix('admin')->group(function () {
         Route::post('/media/storage/providers/{mediaStorageProvider}/activate', [AdminMediaController::class, 'activate'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
         Route::get('/media/storage/migrations', [AdminMediaController::class, 'migrations'])->middleware('admin.permission:settings.manage');
         Route::post('/media/storage/migrations', [AdminMediaController::class, 'migrate'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
-        Route::post('/media/assets/upload', [AdminMediaController::class, 'upload'])->middleware(['admin.permission:product.manage|task.manage|community.review|legal.manage|privacy.manage|settings.manage', 'throttle:60,1']);
-        Route::post('/media/assets/import-url', [AdminMediaController::class, 'importUrl'])->middleware(['admin.permission:product.manage|task.manage|community.review|legal.manage|privacy.manage|settings.manage', 'throttle:30,1']);
+        Route::post('/media/assets/upload', [AdminMediaController::class, 'upload'])->middleware(['admin.permission:product.manage|task.manage|community.review|legal.manage|privacy.manage|settings.manage|campus.manage', 'throttle:60,1']);
+        Route::post('/media/assets/import-url', [AdminMediaController::class, 'importUrl'])->middleware(['admin.permission:product.manage|task.manage|community.review|legal.manage|privacy.manage|settings.manage|campus.manage', 'throttle:30,1']);
         Route::get('/production-readiness', [AdminProductionReadinessController::class, 'show'])
             ->middleware('admin.permission:settings.manage');
         Route::get('/operations/dashboard', [AdminOperationsController::class, 'dashboard'])->middleware('admin.permission:operations.manage');

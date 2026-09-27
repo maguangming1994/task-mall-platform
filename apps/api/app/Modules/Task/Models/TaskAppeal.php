@@ -2,12 +2,15 @@
 
 namespace App\Modules\Task\Models;
 
+use App\Modules\Campus\Models\Concerns\ScopesAdminCampusThroughRelation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class TaskAppeal extends Model
 {
+    use ScopesAdminCampusThroughRelation;
+
     protected $fillable = ['public_id', 'task_claim_id', 'task_submission_id', 'appeal_no', 'user_id', 'status', 'reason', 'evidence_file_public_ids', 'original_reviewer_admin_id', 'reviewer_admin_id', 'decision', 'result_reason', 'create_idempotency_key_hash', 'review_idempotency_key_hash', 'appeal_deadline_at', 'reviewed_at'];
 
     protected $hidden = ['create_idempotency_key_hash', 'review_idempotency_key_hash'];
@@ -30,5 +33,10 @@ class TaskAppeal extends Model
     public function claim(): BelongsTo
     {
         return $this->belongsTo(TaskClaim::class, 'task_claim_id');
+    }
+
+    protected static function adminCampusRelation(): string
+    {
+        return 'claim.task';
     }
 }

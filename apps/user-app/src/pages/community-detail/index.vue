@@ -41,10 +41,22 @@
       <view class="comment-section tm-panel">
         <view class="section-head"><text>全部评论</text><text>{{ comments.length }}</text></view>
         <view v-if="commentsLoading" class="state">评论加载中…</view><view v-else-if="commentsError" class="state error"><text>{{ commentsError }}</text><text @click="retryComments">重新加载</text></view><view v-else-if="!comments.length" class="state">还没有评论，来坐第一排吧。</view>
-        <view v-for="item in comments" v-else :key="item.id" class="comment-row"><view class="comment-avatar">{{ avatarText(item.author.nickname) }}</view><view class="comment-main"><view class="comment-head"><text>{{ item.author.nickname }}</text><text>{{ formatTime(item.created_at) }}</text></view><text class="comment-content">{{ item.content }}</text><view class="comment-actions"><text @click="writeComment(item)">回复</text><text v-if="auth.user?.id!==item.author.id" @click="report('comment',item.id)">举报</text></view></view></view>
+        <view v-for="item in comments" v-else :key="item.id" :class="['comment-row', { 'reply-row': item.parent_comment_id }]"><view class="comment-avatar">{{ avatarText(item.author.nickname) }}</view><view class="comment-main"><view class="comment-head"><text>{{ item.author.nickname }}<text v-if="item.parent_comment_id" class="comment-reply-target"> 回复 @{{ parentCommentAuthor(item) }}</text></text><text>{{ formatTime(item.created_at) }}</text></view><text class="comment-content">{{ item.content }}</text><view class="comment-actions"><text v-if="!item.parent_comment_id" @click="openCommentComposer(item)">回复</text><text v-if="auth.user?.id!==item.author.id" @click="report('comment',item.id)">举报</text></view></view></view>
       </view>
-      <view class="composer"><view @click="writeComment()">友善评论，说说你的想法…</view><button :class="{liked:post.liked_by_me}" @click="toggleLike">{{ post.liked_by_me ? '♥' : '♡' }}</button><button @click="openSharePanel">分享</button></view>
+      <view class="composer"><view @click="openCommentComposer()">友善评论，说说你的想法…</view><button :class="{liked:post.liked_by_me}" @click="toggleLike">{{ post.liked_by_me ? '♥' : '♡' }}</button><button @click="openSharePanel">分享</button></view>
     </template>
+
+    <CommunityCommentComposer
+      v-model="commentDraft"
+      :visible="commentComposerVisible"
+      :reply-to="commentReply?.author.nickname || ''"
+      :submitting="commentSubmitting"
+      :error="commentSubmitError"
+      :min-length="publishingRules.comment.min_length"
+      :max-length="publishingRules.comment.max_length"
+      @close="closeCommentComposer"
+      @submit="submitComment"
+    />
 
     <view v-if="shareVisible" class="share-mask" @click.self="closeSharePanel">
       <view class="share-sheet">
@@ -81,7 +93,8 @@
 import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import qrcode from 'qrcode-generator'
 import { computed, nextTick, ref } from 'vue'
-import { communityAttachmentUrl, createCommunityComment, getCommunityPost, likeCommunityPost, listCommunityComments, reportCommunityContent, unlikeCommunityPost, type CommunityComment, type CommunityPost } from '@/api/community'
+import CommunityCommentComposer from '@/components/CommunityCommentComposer.vue'
+import { communityAttachmentUrl, createCommunityComment, createCommunityRequestKey, DEFAULT_COMMUNITY_PUBLISHING_RULES, getCommunityPost, likeCommunityPost, listCommunityCategories, listCommunityComments, reportCommunityContent, unlikeCommunityPost, type CommunityComment, type CommunityPost, type CommunityPublishingRules } from '@/api/community'
 import { ApiError } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
@@ -89,6 +102,13 @@ import { navigateToLogin } from '@/utils/authRedirect'
 const auth = useAuthStore()
 const post = ref<CommunityPost | null>(null)
 const comments = ref<CommunityComment[]>([])
+const publishingRules = ref<CommunityPublishingRules>(DEFAULT_COMMUNITY_PUBLISHING_RULES)
+const commentReply = ref<CommunityComment | null>(null)
+const commentDraft = ref('')
+const commentComposerVisible = ref(false)
+const commentSubmitting = ref(false)
+const commentSubmitError = ref('')
+const commentRequestKey = ref('')
 const loading = ref(true)
 const commentsLoading = ref(false)
 const commentsError = ref('')
@@ -107,6 +127,7 @@ const posterPreviewStyle = computed(() => `width:${posterWidth.value}px;height:$
 const sharePath = computed(() => `/pages/community-detail/index?id=${encodeURIComponent(post.value?.id || postId.value)}`)
 
 onLoad((query) => {
+  void loadPublishingRules()
   postId.value = typeof query?.id === 'string' ? query.id.trim() : ''
   invalidId.value = !postId.value
   if (invalidId.value) { loading.value = false; return }
@@ -118,6 +139,14 @@ onLoad((query) => {
 
 onShareAppMessage(() => ({ title: shareTitle(), path: sharePath.value }))
 onShareTimeline(() => ({ title: shareTitle(), query: `id=${encodeURIComponent(post.value?.id || postId.value)}` }))
+
+async function loadPublishingRules() {
+  try {
+    publishingRules.value = (await listCommunityCategories()).publishing_rules || DEFAULT_COMMUNITY_PUBLISHING_RULES
+  } catch {
+    publishingRules.value = DEFAULT_COMMUNITY_PUBLISHING_RULES
+  }
+}
 
 async function loadPost() {
   if (!postId.value) return
@@ -146,32 +175,57 @@ async function loadComments(id: string) {
 }
 
 function retryComments() { if (post.value) void loadComments(post.value.id) }
+function parentCommentAuthor(comment: CommunityComment) { return comments.value.find(item => item.id === comment.parent_comment_id)?.author.nickname || '原评论' }
 function ensureAuth() {
   if (auth.isAuthenticated) return true
   uni.showModal({ title: '登录后参与社区', content: '登录后可以点赞、评论和举报内容。', confirmText: '去登录', success: (result) => { if (result.confirm) navigateToLogin() } })
   return false
 }
 async function toggleLike() {
-  if (!post.value || !auth.accessToken || !ensureAuth()) return
+  if (!post.value || !ensureAuth() || !auth.accessToken) return
   try {
     const result = post.value.liked_by_me ? await unlikeCommunityPost(auth.accessToken, post.value.id) : await likeCommunityPost(auth.accessToken, post.value.id)
     post.value.liked_by_me = result.liked_by_me
     post.value.like_count = result.like_count
   } catch (error) { toast(error) }
 }
-async function writeComment(parent?: CommunityComment) {
-  if (!post.value || !auth.accessToken || !ensureAuth()) return
-  const result = await uni.showModal({ title: parent ? `回复 ${parent.author.nickname}` : '发表评论', editable: true, placeholderText: '保持友善，分享真实有用的信息' })
-  if (!result.confirm || !result.content?.trim()) return
+function openCommentComposer(parent?: CommunityComment) {
+  if (!post.value || !ensureAuth() || !auth.accessToken) return
+  const sameTarget = commentReply.value?.id === parent?.id
+  if (!sameTarget) {
+    commentDraft.value = ''
+    commentRequestKey.value = createCommunityRequestKey('comment')
+  } else if (!commentRequestKey.value) {
+    commentRequestKey.value = createCommunityRequestKey('comment')
+  }
+  commentReply.value = parent || null
+  commentSubmitError.value = ''
+  commentComposerVisible.value = true
+}
+function closeCommentComposer() {
+  if (!commentSubmitting.value) commentComposerVisible.value = false
+}
+async function submitComment(content: string) {
+  if (!post.value || !auth.accessToken || commentSubmitting.value) return
+  commentSubmitting.value = true
+  commentSubmitError.value = ''
   try {
-    await createCommunityComment(auth.accessToken, post.value.id, result.content.trim(), parent?.id)
-    uni.showToast({ title: '评论已提交', icon: 'success' })
+    const result = await createCommunityComment(auth.accessToken, post.value.id, content, commentReply.value?.id, commentRequestKey.value)
+    commentComposerVisible.value = false
+    commentDraft.value = ''
+    commentReply.value = null
+    commentRequestKey.value = ''
+    uni.showToast({ title: result.status === 'published' ? '评论成功' : '评论已提交审核', icon: 'success' })
     await loadComments(post.value.id)
     post.value.comment_count = comments.value.length
-  } catch (error) { toast(error) }
+  } catch (error) {
+    commentSubmitError.value = error instanceof Error ? error.message : '评论提交失败，请稍后重试。'
+  } finally {
+    commentSubmitting.value = false
+  }
 }
 async function report(type: 'post' | 'comment', id: string) {
-  if (!auth.accessToken || !ensureAuth()) return
+  if (!ensureAuth() || !auth.accessToken) return
   const result = await uni.showModal({ title: '举报内容', editable: true, placeholderText: '请说明具体问题，平台会保护你的隐私' })
   if (!result.confirm || !result.content?.trim()) return
   try { await reportCommunityContent(auth.accessToken, type, id, 'other', result.content.trim()); uni.showToast({ title: '举报已提交', icon: 'success' }) }
@@ -273,4 +327,8 @@ function goCommunity() { uni.reLaunch({ url: '/pages/community/index' }) }
 @media screen and (max-width:380px){.share-options{gap:6rpx}.share-option-icon{width:72rpx;height:72rpx;border-radius:22rpx}.share-option-name{font-size:13px}}
 .page{background:radial-gradient(circle at 94% 0,rgba(55,205,212,.18),transparent 27%),linear-gradient(180deg,#eefaff 0,#f7fbfd 44%,#f4f8fa 100%)!important}.post-card,.comment-section,.state-card{border:1rpx solid #dce9ef!important;box-shadow:0 12rpx 30rpx rgba(34,78,103,.075)!important;background:rgba(255,255,255,.97)!important}.avatar,.comment-avatar{border:0!important;background:linear-gradient(145deg,#dff5ff,#e7faef)!important;color:#1475c5!important}.category-chip{border:0;background:#e8f8fb;color:#14758a}.share-inline,.more{border:1rpx solid #cfe1e9!important;background:#fff;color:#1475c5}.metrics,.section-head{border-color:#e1edf1!important}.composer{border-top:1rpx solid #dce9ef!important;background:rgba(255,255,255,.95)!important;box-shadow:0 -10rpx 28rpx rgba(31,76,101,.08)}.composer>view,.composer button{border:1rpx solid #cfe1e9!important;background:#fff!important;box-shadow:none!important}.composer button:last-child{border:0!important;background:linear-gradient(135deg,#1268c9,#19a7c8)!important}.state-card{margin-top:120rpx}.state-icon{border:0;background:#e8f7fb;color:#1477c7}.error-card .state-icon{background:#fff0ed;color:#c53c31}.state-action{border:1rpx solid #b9dbe5!important;border-radius:999rpx!important;background:#fff!important;color:#1475c5!important;box-shadow:none!important}.share-mask,.poster-mask{background:rgba(9,35,57,.46)!important}.share-sheet,.poster-sheet{border:1rpx solid #dce9ef;background:#fff!important;box-shadow:0 24rpx 60rpx rgba(13,67,91,.2)}.poster-save{border:0!important;background:linear-gradient(135deg,#08a967,#0abca1)!important;box-shadow:0 8rpx 18rpx rgba(8,169,103,.16)!important}.poster-copy{border:1rpx solid #cfe1e9!important;background:#f5fafc!important;color:#28708a!important}
 .community-topbar{display:flex;align-items:center;justify-content:space-between;gap:14rpx;margin:-18rpx -28rpx 18rpx;padding:14rpx 22rpx 12rpx;border-bottom:1rpx solid #dce9ef;background:rgba(255,255,255,.96);box-sizing:border-box}.community-back,.community-topbar-share{display:flex;align-items:center;justify-content:center;flex:none;margin:0;border:1rpx solid #cfe1e9;border-radius:999rpx;background:#fff;color:#1475c5;box-shadow:none}.community-back{width:62rpx;height:58rpx;font-size:24px;line-height:50rpx}.community-topbar-share{height:54rpx;padding:0 18rpx;font-size:13px;font-weight:850;line-height:52rpx}.community-back::after,.community-topbar-share::after{border:0}.community-topbar-title{min-width:0;flex:1;text-align:center}.community-topbar-title text,.community-topbar-title small{display:block}.community-topbar-title text{color:#14344c;font-size:17px;font-weight:900}.community-topbar-title small{margin-top:2rpx;color:#7892a1;font-size:10px;letter-spacing:1.8rpx}
+</style>
+<style scoped>
+.comment-row.reply-row{margin-left:34rpx;padding-left:12rpx;border-left:3rpx solid #d8ecef}
+.comment-reply-target{margin-left:6rpx;color:#1686a2;font-size:12px;font-weight:700}
 </style>

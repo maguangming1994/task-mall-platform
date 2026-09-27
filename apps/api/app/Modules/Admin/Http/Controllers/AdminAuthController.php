@@ -12,14 +12,18 @@ use App\Modules\Admin\Services\AdminMfaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Cookie;
 
 class AdminAuthController extends Controller
 {
+    private const REMEMBER_COOKIE_PATH = '/api/v1/admin/auth';
+
     public function login(Request $request, AdminAuthService $auth): JsonResponse
     {
         $data = $request->validate([
             'account' => ['required', 'string', 'min:3', 'max:100'],
             'password' => ['required', 'string', 'min:8', 'max:200'],
+            'remember' => ['sometimes', 'boolean'],
         ]);
 
         try {
@@ -28,9 +32,10 @@ class AdminAuthController extends Controller
                 $data['password'],
                 $request->ip(),
                 $request->userAgent(),
+                (bool) ($data['remember'] ?? false),
             );
 
-            return ApiResponse::success($result, ($result['mfa_required'] ?? false) ? 202 : 200);
+            return $this->authResponse($request, $result, ($result['mfa_required'] ?? false) ? 202 : 200);
         } catch (AdminAuthException $exception) {
             return ApiResponse::error($exception->errorCode, $exception->getMessage(), $exception->status);
         }
@@ -42,12 +47,16 @@ class AdminAuthController extends Controller
             'challenge_id' => ['required', 'string', 'size:26'],
             'challenge_token' => ['required', 'string', 'min:32', 'max:100'],
             'code' => ['required', 'string', 'min:6', 'max:20'],
+            'remember' => ['sometimes', 'boolean'],
         ]);
         try {
             $challenge = AdminMfaChallenge::query()->where('public_id', $data['challenge_id'])->firstOrFail();
             $admin = $mfa->verifyChallenge($challenge, $data['challenge_token'], $data['code']);
 
-            return ApiResponse::success($auth->completeMfaLogin($admin, $request->ip(), $request->userAgent()));
+            return $this->authResponse(
+                $request,
+                $auth->completeMfaLogin($admin, $request->ip(), $request->userAgent(), (bool) ($data['remember'] ?? false)),
+            );
         } catch (AdminAuthException $exception) {
             return ApiResponse::error($exception->errorCode, $exception->getMessage(), $exception->status);
         }
@@ -55,16 +64,23 @@ class AdminAuthController extends Controller
 
     public function refresh(Request $request, AdminAuthService $auth): JsonResponse
     {
-        $data = $request->validate(['refresh_token' => ['required', 'string', 'min:32', 'max:200']]);
+        $data = $request->validate(['refresh_token' => ['sometimes', 'string', 'min:32', 'max:200']]);
+        $refreshToken = $data['refresh_token'] ?? $request->cookie($this->rememberCookieName());
+        if (! is_string($refreshToken) || $refreshToken === '') {
+            return ApiResponse::error('ADMIN_AUTH_SESSION_REVOKED', '后台登录状态无效或已过期。', 401);
+        }
 
         try {
-            return ApiResponse::success($auth->refresh(
-                $data['refresh_token'],
+            return $this->authResponse($request, $auth->refresh(
+                $refreshToken,
                 $request->ip(),
                 $request->userAgent(),
             ));
         } catch (AdminAuthException $exception) {
-            return ApiResponse::error($exception->errorCode, $exception->getMessage(), $exception->status);
+            $response = ApiResponse::error($exception->errorCode, $exception->getMessage(), $exception->status);
+            $this->expireRememberCookie($response, $request);
+
+            return $response;
         }
     }
 
@@ -75,7 +91,10 @@ class AdminAuthController extends Controller
         $session = $request->attributes->get('admin_session');
         $auth->logout($session, (bool) ($data['all_sessions'] ?? false));
 
-        return response()->noContent();
+        $response = response()->noContent();
+        $this->expireRememberCookie($response, $request);
+
+        return $response;
     }
 
     public function verifyRecent(Request $request, AdminAuthService $auth): JsonResponse
@@ -112,5 +131,64 @@ class AdminAuthController extends Controller
         } catch (AdminAuthException $exception) {
             return ApiResponse::error($exception->errorCode, $exception->getMessage(), $exception->status);
         }
+    }
+
+    /** @param array<string, mixed> $result */
+    private function authResponse(Request $request, array $result, int $status = 200): JsonResponse
+    {
+        if (($result['mfa_required'] ?? false) === true) {
+            return ApiResponse::success($result, $status);
+        }
+
+        $remembered = (bool) ($result['remembered'] ?? false);
+        $refreshToken = $result['refresh_token'] ?? null;
+        if ($remembered) {
+            unset($result['refresh_token']);
+        }
+
+        $response = ApiResponse::success($result, $status);
+        if ($remembered && is_string($refreshToken) && $refreshToken !== '') {
+            $expiresAt = new \DateTimeImmutable((string) $result['refresh_expires_at']);
+            $response->headers->setCookie(Cookie::create(
+                $this->rememberCookieName(),
+                $refreshToken,
+                $expiresAt,
+                self::REMEMBER_COOKIE_PATH,
+                null,
+                $this->secureCookie($request),
+                true,
+                false,
+                Cookie::SAMESITE_LAX,
+            ));
+        } else {
+            $this->expireRememberCookie($response, $request);
+        }
+
+        return $response;
+    }
+
+    private function expireRememberCookie(JsonResponse|Response $response, Request $request): void
+    {
+        $response->headers->setCookie(Cookie::create(
+            $this->rememberCookieName(),
+            '',
+            1,
+            self::REMEMBER_COOKIE_PATH,
+            null,
+            $this->secureCookie($request),
+            true,
+            false,
+            Cookie::SAMESITE_LAX,
+        ));
+    }
+
+    private function rememberCookieName(): string
+    {
+        return (string) config('admin_auth.remember_cookie_name');
+    }
+
+    private function secureCookie(Request $request): bool
+    {
+        return $request->isSecure() || app()->environment('production');
     }
 }

@@ -6,6 +6,27 @@ export interface CommunityCategory {
   label: string
 }
 
+export interface CommunityPublishingRuleRange {
+  min_length: number
+  max_length: number
+}
+
+export interface CommunityPublishingRules {
+  post: {
+    title: CommunityPublishingRuleRange
+    content: CommunityPublishingRuleRange
+  }
+  comment: CommunityPublishingRuleRange
+}
+
+export const DEFAULT_COMMUNITY_PUBLISHING_RULES: CommunityPublishingRules = {
+  post: {
+    title: { min_length: 5, max_length: 60 },
+    content: { min_length: 20, max_length: 5000 },
+  },
+  comment: { min_length: 2, max_length: 500 },
+}
+
 export interface CommunityAttachment {
   file_id: string
   type: 'image' | 'video'
@@ -174,7 +195,7 @@ interface PaginatedPosts {
 }
 
 export function listCommunityCategories() {
-  return apiRequest<{ items: CommunityCategory[] }>({ path: '/community/categories' })
+  return apiRequest<{ items: CommunityCategory[]; publishing_rules: CommunityPublishingRules }>({ path: '/community/categories' })
 }
 
 export function loadCommunityHome() {
@@ -204,13 +225,17 @@ export function listCommunityComments(postId: string) {
   return apiRequest<{ items: CommunityComment[] }>({ path: `/community/posts/${postId}/comments` })
 }
 
-export function createCommunityPost(token: string, payload: CommunityPostPayload) {
+export function createCommunityRequestKey(scope: 'post' | 'comment') {
+  return `community-${scope}-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+}
+
+export function createCommunityPost(token: string, payload: CommunityPostPayload, idempotencyKey = createCommunityRequestKey('post')) {
   return apiRequest<CommunityPost>({
     path: '/community/posts',
     method: 'POST',
     accessToken: token,
     data: { ...payload },
-    headers: { 'Idempotency-Key': `community-post-${Date.now()}-${Math.random()}` },
+    headers: { 'Idempotency-Key': idempotencyKey },
   })
 }
 
@@ -226,8 +251,8 @@ export function communityAttachmentUrl(attachment: CommunityAttachment) {
   return attachment.url ? apiUrl(attachment.url) : ''
 }
 
-export function createCommunityComment(token: string, postId: string, content: string, parentId?: string) {
-  return apiRequest<CommunityComment>({ path: `/community/posts/${postId}/comments`, method: 'POST', accessToken: token, data: { content, parent_comment_id: parentId }, headers: { 'Idempotency-Key': `community-comment-${Date.now()}-${Math.random()}` } })
+export function createCommunityComment(token: string, postId: string, content: string, parentId?: string, idempotencyKey = createCommunityRequestKey('comment')) {
+  return apiRequest<CommunityComment>({ path: `/community/posts/${postId}/comments`, method: 'POST', accessToken: token, data: { content, parent_comment_id: parentId }, headers: { 'Idempotency-Key': idempotencyKey } })
 }
 
 export function likeCommunityPost(token: string, postId: string) {

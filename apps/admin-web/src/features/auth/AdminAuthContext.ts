@@ -5,8 +5,8 @@ export interface AdminAuthContextValue {
   admin: AdminProfile | null
   navigation: NavigationItem[]
   loading: boolean
-  login: (account: string, password: string) => Promise<AdminMfaChallenge | null>
-  verifyMfa: (challenge: AdminMfaChallenge, code: string) => Promise<void>
+  login: (account: string, password: string, remember: boolean) => Promise<AdminMfaChallenge | null>
+  verifyMfa: (challenge: AdminMfaChallenge, code: string, remember: boolean) => Promise<void>
   logout: () => Promise<void>
 }
 

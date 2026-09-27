@@ -142,6 +142,21 @@ class MediaStorageService
         return $this->storeBytes($this->readRemoteBody($response), $name, 'url_import', $admin, $response->header('Content-Type'));
     }
 
+    /** @param array<string, mixed> $metadata */
+    public function storeBundledImage(string $path, AdminUser $admin, array $metadata = []): MediaAsset
+    {
+        if (! is_file($path) || ! is_readable($path)) {
+            throw ValidationException::withMessages(['file' => '仓库内图片不存在或不可读。']);
+        }
+
+        $bytes = @file_get_contents($path);
+        if ($bytes === false) {
+            throw ValidationException::withMessages(['file' => '无法读取仓库内图片。']);
+        }
+
+        return $this->storeBytes($bytes, basename($path), 'bundled_import', $admin, null, $metadata);
+    }
+
     /** @return array<string,mixed> */
     public function presentAsset(MediaAsset $asset): array
     {
@@ -240,7 +255,8 @@ class MediaStorageService
         ];
     }
 
-    private function storeBytes(string $bytes, string $originalName, string $sourceType, AdminUser $admin, ?string $declaredMime): MediaAsset
+    /** @param array<string, mixed> $metadata */
+    private function storeBytes(string $bytes, string $originalName, string $sourceType, AdminUser $admin, ?string $declaredMime, array $metadata = []): MediaAsset
     {
         if ($bytes === '' || strlen($bytes) > self::MAX_IMAGE_BYTES) {
             throw ValidationException::withMessages(['file' => '图片不能为空且不能超过 10MB。']);
@@ -268,7 +284,7 @@ class MediaStorageService
             'source_type' => $sourceType, 'original_name' => Str::limit(basename(str_replace('\\', '/', $originalName)), 255, ''),
             'mime_type' => $mime, 'size_bytes' => strlen($bytes), 'sha256' => hash('sha256', $bytes),
             'storage_provider' => $provider->provider, 'object_path' => $path, 'public_url' => $this->publicUrl($provider, $path),
-            'status' => 'active', 'metadata' => ['width' => $width, 'height' => $height, 'delivery_url_version' => 1], 'created_by_admin_id' => $admin->id,
+            'status' => 'active', 'metadata' => [...$metadata, 'width' => $width, 'height' => $height, 'delivery_url_version' => 1], 'created_by_admin_id' => $admin->id,
         ]);
     }
 

@@ -18,6 +18,7 @@ class AdminUser extends Authenticatable
         'email',
         'password',
         'status',
+        'is_service_account',
         'requires_mfa',
         'last_login_at',
         'last_verified_at',
@@ -36,6 +37,7 @@ class AdminUser extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'is_service_account' => 'boolean',
             'requires_mfa' => 'boolean',
             'last_login_at' => 'datetime',
             'last_verified_at' => 'datetime',

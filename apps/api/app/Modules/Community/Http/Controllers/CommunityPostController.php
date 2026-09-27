@@ -53,9 +53,12 @@ class CommunityPostController extends Controller
         return ApiResponse::success($this->data($post, likedByViewer: $liked));
     }
 
-    public function categories(): JsonResponse
+    public function categories(CommunityContentService $service): JsonResponse
     {
-        return ApiResponse::success(['items' => collect(self::CATEGORIES)->map(fn (string $label, string $code) => ['code' => $code, 'label' => $label])->values()]);
+        return ApiResponse::success([
+            'items' => collect(self::CATEGORIES)->map(fn (string $label, string $code) => ['code' => $code, 'label' => $label])->values(),
+            'publishing_rules' => $service->publishingRules(),
+        ]);
     }
 
     public function media(UploadedFile $file): StreamedResponse

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
+  ApiError,
   clearTokens,
   hasStoredSession,
   loadSession,
@@ -27,7 +28,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         setAdmin(session.admin)
         setNavigation(session.navigation)
       })
-      .catch(() => clearTokens())
+      .catch((cause) => {
+        if (cause instanceof ApiError && cause.status === 401) clearTokens()
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -35,22 +38,25 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     admin,
     navigation,
     loading,
-    login: async (account, password) => {
-      const session = await loginRequest(account, password)
+    login: async (account, password, remember) => {
+      const session = await loginRequest(account, password, remember)
       if ('mfa_required' in session) return session
       setAdmin(session.admin)
       setNavigation(session.navigation)
       return null
     },
-    verifyMfa: async (challenge, code) => {
-      const session = await verifyAdminMfa(challenge, code)
+    verifyMfa: async (challenge, code, remember) => {
+      const session = await verifyAdminMfa(challenge, code, remember)
       setAdmin(session.admin)
       setNavigation(session.navigation)
     },
     logout: async () => {
-      await logoutRequest()
-      setAdmin(null)
-      setNavigation([])
+      try {
+        await logoutRequest()
+      } finally {
+        setAdmin(null)
+        setNavigation([])
+      }
     },
   }), [admin, navigation, loading])
 

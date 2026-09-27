@@ -1,7 +1,7 @@
 <template>
   <view class="page">
     <view v-if="loading" class="detail-loading"><view class="detail-skeleton hero-skeleton" /><view class="detail-skeleton card-skeleton" /><view class="detail-skeleton card-skeleton short" /></view>
-    <view v-else-if="loadError" class="state-card error-state"><text class="state-icon">!</text><text class="state-title">发布任务加载失败</text><text class="state-copy">{{ loadError }}</text><view class="state-actions"><button class="retry-button" @click="load">重试</button><button class="back-button" @click="backToPublisher">返回发布中心</button></view></view>
+    <view v-else-if="loadError" class="state-card error-state"><text class="state-icon">!</text><text class="state-title">发布任务加载失败</text><text class="state-copy">{{ loadError }}</text><view class="state-actions"><button class="retry-button" @click="initialize">重试</button><button class="back-button" @click="backToPublisher">返回发布中心</button></view></view>
     <template v-else-if="task">
       <view class="hero">
         <view class="hero-top"><text class="eyebrow">发布管理</text><text class="status">{{ statusText(task.status) }}</text></view>
@@ -14,7 +14,7 @@
 
       <view class="tool-row"><button class="tool-button" :disabled="actionWorking" @click="loadVersions">版本快照</button><button class="tool-button" :disabled="actionWorking" @click="loadAudit">审核轨迹</button></view>
       <view v-if="historyMode==='versions'" class="panel history-panel"><view class="panel-head"><text>版本快照</text><text>不可覆盖历史版本</text></view><text v-if="historyError" class="history-error">{{ historyError }}</text><view v-for="item in versions" :key="item.version_no" class="history-row"><view><text class="step-title">v{{ item.version_no }} · {{ versionStatusText(item.status) }}</text><text class="muted">{{ changeTypeText(item.change_type) }} · {{ (item.changed_fields||[]).join('、') || '无字段变化' }}</text></view><text class="history-time">{{ formatTime(item.created_at) }}</text></view><view v-if="!versions.length && !historyError" class="empty">暂无版本记录</view></view>
-      <view v-if="historyMode==='audit'" class="panel history-panel"><view class="panel-head"><text>审核轨迹</text><text>仅当前发布身份可见</text></view><text v-if="historyError" class="history-error">{{ historyError }}</text><view v-for="item in auditRows" :key="item.id" class="history-row"><view><text class="step-title">{{ auditActionText(item.action) }}</text><text class="muted">{{ item.reason || '未填写原因' }} · {{ item.actor || '平台管理员' }}</text></view><text class="history-time">{{ formatTime(item.created_at) }}</text></view><view v-if="!auditRows.length && !historyError" class="empty">暂无轨迹记录</view></view>
+      <view v-if="historyMode==='audit'" class="panel history-panel"><view class="panel-head"><text>审核轨迹</text><text>仅当前发布身份可见</text></view><text v-if="historyError" class="history-error">{{ historyError }}</text><view v-for="item in auditRows" :key="item.id" class="history-row"><view><text class="step-title">{{ auditActionText(item.action) }}</text><text class="muted">{{ item.reason || '未填写原因' }} · {{ item.actor || '任务发布管理员' }}</text></view><text class="history-time">{{ formatTime(item.created_at) }}</text></view><view v-if="!auditRows.length && !historyError" class="empty">暂无轨迹记录</view></view>
 
       <view v-if="task.publish_approval" class="panel approval"><view class="panel-head"><text>发布审核</text><text>{{ approvalText(task.publish_approval.status) }}</text></view><text v-if="task.publish_approval.review_note" class="muted">审核说明：{{ task.publish_approval.review_note }}</text><text v-if="task.publish_approval.triggered_rules?.length" class="muted">触发规则：{{ task.publish_approval.triggered_rules.join('、') }}</text></view>
 
@@ -34,20 +34,44 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
-import { changePublisherTaskStatus, getPublisherTask, listPublisherTaskAudit, listPublisherTaskVersions, type PublisherAuditEvent, type PublisherTask, type PublisherTaskVersion } from '@/api/publisher'
+import { onLoad, onShow } from '@dcloudio/uni-app'
+import { changePublisherTaskStatus, createMyPublisherSession, getPublisherTask, listPublisherTaskAudit, listPublisherTaskVersions, type PublisherAuditEvent, type PublisherTask, type PublisherTaskVersion } from '@/api/publisher'
+import { useAuthStore } from '@/stores/auth'
+import { navigateToLogin } from '@/utils/authRedirect'
+import { clearPublisherSession, isPublisherAccessError, persistPublisherSession, readPublisherSession } from '@/utils/publisherSession'
 
+const auth=useAuthStore()
 const task=ref<PublisherTask|null>(null);const loading=ref(true);const loadError=ref('');const actionWorking=ref(false);const historyError=ref('');const historyMode=ref<'versions'|'audit'|''>('');const versions=ref<PublisherTaskVersion[]>([]);const auditRows=ref<PublisherAuditEvent[]>([]);let taskId='';let token=''
+let initializing=false;let leavingForAccess=false
 const workflowStages=['草稿','审核','发布','领取','验收']
 const workflowIndex=computed(()=>{if(!task.value)return 0;if((task.value.successful_reward_count||0)>0)return 4;if((task.value.active_reservation_count||0)>0)return 3;if(['published','scheduled','paused','closed','archived'].includes(task.value.status))return 2;if(task.value.status==='pending_approval')return 1;return 0})
 const currentFlowLabel=computed(()=>workflowStages[workflowIndex.value])
-onLoad(async(options)=>{taskId=String(options?.id||'');const saved=uni.getStorageSync('publisher_session') as {token?:string}|'';token=saved&&typeof saved==='object'?saved.token||'':'';await load()})
-async function load(){loading.value=true;loadError.value='';try{if(!token||!taskId)throw new Error('请先返回发布中心验证身份');task.value=await getPublisherTask(token,taskId)}catch(error){task.value=null;loadError.value=error instanceof Error?error.message:'请检查网络后重试'}finally{loading.value=false}}
+onLoad((options)=>{taskId=String(options?.id||'')})
+onShow(()=>{void initialize()})
+async function initialize(){
+  if(initializing||leavingForAccess)return
+  initializing=true;loading.value=true;loadError.value=''
+  try{
+    if(!auth.isAuthenticated){clearPublisherSession();navigateToLogin(detailReturnUrl());return}
+    await auth.fetchCurrentUser()
+    if(!auth.isAuthenticated){clearPublisherSession();navigateToLogin(detailReturnUrl());return}
+    if(auth.user?.can_publish_tasks!==true){await exitForAccess('当前账号暂无任务发布权限。');return}
+    const saved=readPublisherSession(auth.user.id)
+    if(saved)token=saved.token
+    else{const session=await createMyPublisherSession(auth.accessToken);token=session.access_token;persistPublisherSession(session,auth.user.id)}
+    await load()
+  }catch(error){if(!handlePublisherAccessError(error))loadError.value=error instanceof Error?error.message:'请检查网络后重试'}
+  finally{loading.value=false;initializing=false}
+}
+async function load(){loading.value=true;loadError.value='';try{if(!token||!taskId)throw new Error('请先返回发布中心验证身份');task.value=await getPublisherTask(token,taskId)}catch(error){task.value=null;if(!handlePublisherAccessError(error))loadError.value=error instanceof Error?error.message:'请检查网络后重试'}finally{loading.value=false}}
+function detailReturnUrl(){return `/pages/publisher-task-detail/index?id=${encodeURIComponent(taskId)}`}
+async function exitForAccess(message:string){if(leavingForAccess)return;leavingForAccess=true;clearPublisherSession();token='';task.value=null;await uni.showModal({title:'无法管理发布任务',content:message,showCancel:false,confirmText:'返回我的'});uni.reLaunch({url:'/pages/account/index'})}
+function handlePublisherAccessError(error:unknown){if(!isPublisherAccessError(error))return false;void exitForAccess(error instanceof Error?error.message:'发布身份已失效，请重新进入。');return true}
 function backToPublisher(){const pages=getCurrentPages();const previous=pages[pages.length-2] as {route?:string}|undefined;const previousRoute=String(previous?.route||'');if(previousRoute==='pages/publisher/index'||previousRoute==='/pages/publisher/index'){uni.navigateBack({delta:1});return}uni.redirectTo({url:'/pages/publisher/index'})}
-async function change(action:'publish'|'pause'|'resume'|'close'){const labels={publish:'申请发布',pause:'暂停发布',resume:'恢复发布',close:'结束任务'};uni.showModal({title:labels[action],editable:true,placeholderText:'请输入本次操作原因',content:`发布方${labels[action]}`,success:async result=>{if(!result.confirm)return;const reason=(result.content||'').trim();if(!reason)return uni.showToast({title:'请填写操作原因',icon:'none'});actionWorking.value=true;try{task.value=await changePublisherTaskStatus(token,taskId,action,reason,action==='close'?'continue':undefined);historyMode.value='';uni.showToast({title:'状态已更新',icon:'success'})}catch(error){uni.showToast({title:error instanceof Error?error.message:'操作失败',icon:'none'})}finally{actionWorking.value=false}}})}
+async function change(action:'publish'|'pause'|'resume'|'close'){const labels={publish:'申请发布',pause:'暂停发布',resume:'恢复发布',close:'结束任务'};uni.showModal({title:labels[action],editable:true,placeholderText:'请输入本次操作原因',content:`发布方${labels[action]}`,success:async result=>{if(!result.confirm)return;const reason=(result.content||'').trim();if(!reason)return uni.showToast({title:'请填写操作原因',icon:'none'});actionWorking.value=true;try{task.value=await changePublisherTaskStatus(token,taskId,action,reason,action==='close'?'continue':undefined);historyMode.value='';uni.showToast({title:'状态已更新',icon:'success'})}catch(error){if(!handlePublisherAccessError(error))uni.showToast({title:error instanceof Error?error.message:'操作失败',icon:'none'})}finally{actionWorking.value=false}}})}
 function editTask(){uni.navigateTo({url:`/pages/publisher/index?edit=${encodeURIComponent(taskId)}`})}
-async function loadVersions(){historyError.value='';try{versions.value=await listPublisherTaskVersions(token,taskId);historyMode.value='versions'}catch(error){historyError.value=error instanceof Error?error.message:'版本读取失败';uni.showToast({title:historyError.value,icon:'none'})}}
-async function loadAudit(){historyError.value='';try{auditRows.value=(await listPublisherTaskAudit(token,taskId)).items;historyMode.value='audit'}catch(error){historyError.value=error instanceof Error?error.message:'审核轨迹读取失败';uni.showToast({title:historyError.value,icon:'none'})}}
+async function loadVersions(){historyError.value='';try{versions.value=await listPublisherTaskVersions(token,taskId);historyMode.value='versions'}catch(error){if(handlePublisherAccessError(error))return;historyError.value=error instanceof Error?error.message:'版本读取失败';uni.showToast({title:historyError.value,icon:'none'})}}
+async function loadAudit(){historyError.value='';try{auditRows.value=(await listPublisherTaskAudit(token,taskId)).items;historyMode.value='audit'}catch(error){if(handlePublisherAccessError(error))return;historyError.value=error instanceof Error?error.message:'审核轨迹读取失败';uni.showToast({title:historyError.value,icon:'none'})}}
 function formatTime(value?:string|null){return value?new Date(value).toLocaleString():'未设置'}
 function statusText(value:string){return({draft:'草稿',pending_approval:'待财务复核',published:'已发布',scheduled:'已排期',paused:'已暂停',closed:'已结束',archived:'已归档'} as Record<string,string>)[value]||'状态待同步'}
 function approvalText(value:string){return({pending:'待审核',approved:'已通过',rejected:'已驳回'} as Record<string,string>)[value]||'待平台确认'}

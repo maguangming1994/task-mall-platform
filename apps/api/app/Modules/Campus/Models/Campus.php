@@ -4,7 +4,9 @@ namespace App\Modules\Campus\Models;
 
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Media\Models\MediaAsset;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -15,7 +17,8 @@ class Campus extends Model
         'public_id', 'code', 'official_school_code', 'name', 'catalog_type',
         'education_level', 'supervising_authority', 'official_note', 'catalog_status',
         'catalog_version', 'catalog_source_url', 'catalog_synced_at', 'province', 'city',
-        'district', 'address', 'latitude', 'longitude', 'status', 'sort_order',
+        'district', 'address', 'latitude', 'longitude', 'emblem_asset_id', 'emblem_url',
+        'logo_asset_id', 'logo_url', 'status', 'sort_order',
     ];
 
     protected static function booted(): void
@@ -50,5 +53,15 @@ class Campus extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function emblemAsset(): BelongsTo
+    {
+        return $this->belongsTo(MediaAsset::class, 'emblem_asset_id', 'public_id');
+    }
+
+    public function logoAsset(): BelongsTo
+    {
+        return $this->belongsTo(MediaAsset::class, 'logo_asset_id', 'public_id');
     }
 }

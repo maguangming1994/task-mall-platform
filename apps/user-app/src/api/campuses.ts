@@ -6,6 +6,8 @@ export interface Campus {
   id: string
   code: string
   name: string
+  emblem_url: string | null
+  logo_url: string | null
   province: string | null
   city: string | null
   district: string | null

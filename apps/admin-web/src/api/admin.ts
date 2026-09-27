@@ -28,7 +28,18 @@ export interface CampusAgentOption {
 export interface ManagedCampus {
   id: string
   code: string
+  official_school_code: string | null
   name: string
+  emblem_asset_id: string | null
+  emblem_url: string | null
+  logo_asset_id: string | null
+  logo_url: string | null
+  catalog_type: 'ordinary' | 'adult' | 'manual'
+  education_level: string | null
+  supervising_authority: string | null
+  official_note: string | null
+  catalog_status: 'listed' | 'unlisted' | 'manual'
+  catalog_version: string | null
   province: string | null
   city: string | null
   district: string | null
@@ -38,7 +49,58 @@ export interface ManagedCampus {
   status: 'active' | 'disabled'
   sort_order: number
   users_count: number
+  updated_at: string | null
   agents: ManagedCampusAgent[]
+}
+
+export interface CampusOperationSummary {
+  total: number
+  active: number
+  disabled: number
+  official_listed: number
+  branding_configured: number
+  branding_missing: number
+  without_primary_agent: number
+  agent_total: number
+  user_total: number
+}
+
+export interface CampusCatalogMetadata {
+  source_name: string
+  source_page_url: string
+  published_on: string
+  as_of: string
+  excludes_hong_kong_macao_taiwan: boolean
+  counts: { total: number; ordinary: number; adult: number; undergraduate: number; vocational: number }
+  files: Array<{ catalog_type: 'ordinary' | 'adult'; url: string; sha256: string; records: number }>
+  database: { listed: number; unlisted: number; last_synced_at: string | null }
+}
+
+export interface ManagedCampusList {
+  items: ManagedCampus[]
+  pagination: { page: number; page_size: number; total: number; last_page: number }
+  summary: CampusOperationSummary
+  filters: { provinces: string[] }
+  catalog: CampusCatalogMetadata
+}
+
+export interface ManagedCampusAgentOverview {
+  id: string
+  account: string
+  display_name: string
+  email: string | null
+  status: 'active' | 'disabled'
+  requires_mfa: boolean
+  last_login_at: string | null
+  campuses_count: number
+  covered_users_count: number
+  campuses: Array<{ id: string; code: string; name: string; status: 'active' | 'disabled'; is_primary: boolean }>
+}
+
+export interface ManagedCampusAgentList {
+  items: ManagedCampusAgentOverview[]
+  pagination: { page: number; page_size: number; total: number; last_page: number }
+  summary: { total: number; active: number; unassigned: number; campuses_covered: number; users_covered: number }
 }
 
 export interface NavigationItem {
@@ -51,9 +113,11 @@ export interface NavigationItem {
 
 export interface AdminTokens {
   access_token: string
-  refresh_token: string
+  refresh_token?: string
   token_type: 'Bearer'
   expires_in: number
+  remembered?: boolean
+  refresh_expires_at?: string
   admin: AdminProfile
   navigation: NavigationItem[]
 }
@@ -731,15 +795,81 @@ export interface UserCenterOverview {
   generated_at: string
 }
 export interface UserLevelRule { code: string; name: string; approved_tasks: number; cash_orders: number; profile_required: boolean; benefits: string[] }
+export interface ManagedTaskPublishingPermission {
+  granted: boolean
+  status: string | null
+  publisher_id: string | null
+  updated_at: string | null
+}
 export interface ManagedEndUser {
   id: string; nickname: string; phone_masked: string | null; status: string; level: { code: string; name: string }
   assets: { points_available: number; points_frozen: number; wallet_available_cents: number; wallet_frozen_cents: number; coupons_available: number }
   task_metrics: { claimed: number; approved: number }; cash_order_count: number; referral_count: number
   verification: { phone: boolean; profile: boolean; wechat: boolean }; created_at: string; last_login_at: string | null
+  task_publishing_permission: ManagedTaskPublishingPermission
 }
 export interface ManagedReferral {
   id: string; inviter: { id: string; nickname: string; phone_masked: string | null }; referred_user: { id: string; nickname: string; phone_masked: string | null }
   status: string; first_task_completed: boolean; first_cash_order_completed: boolean; reward_points: number; bound_at: string; rewarded_at: string | null
+}
+export interface ReferralTeamPerformance {
+  approved_tasks: number
+  task_reward_points: number
+  task_reward_wallet_cents: number
+  task_reward_coupons: number
+  paid_orders: number
+  paid_order_gross_amount_cents: number
+  paid_order_refunded_amount_cents: number
+  paid_order_net_amount_cents: number
+  paid_order_amount_cents: number
+  referral_reward_count: number
+  referral_reward_points: number
+}
+export interface ReferralTeamMetricDefinitions {
+  effective_member: string
+  approved_tasks: string
+  task_rewards: string
+  paid_orders: string
+  paid_order_amount: string
+  referral_rewards: string
+}
+export interface ManagedReferralTeam {
+  id: string
+  leader: { id: string; nickname: string; phone_masked: string | null; status: string }
+  direct_member_count: number
+  member_count: number
+  active_member_count: number
+  effective_member_count: number
+  max_depth: number
+  performance: ReferralTeamPerformance
+  metric_scope: 'descendants_only'
+  updated_at: string | null
+  traversal: { truncated: boolean; max_depth_limit: number; member_limit: number }
+}
+export interface ManagedReferralTeamList {
+  items: ManagedReferralTeam[]
+  pagination: { page: number; page_size: number; total: number; last_page: number }
+  metric_scope: 'descendants_only'
+  metric_definitions: ReferralTeamMetricDefinitions
+}
+export interface ManagedReferralTeamMember {
+  user: { id: string; nickname: string; phone_masked: string | null; status: string }
+  parent: { id: string; nickname: string } | null
+  level: number
+  direct: boolean
+  effective: boolean
+  referral_status: string
+  joined_at: string | null
+  performance: ReferralTeamPerformance
+}
+export interface ManagedReferralTeamDetail {
+  team: ManagedReferralTeam
+  members: {
+    items: ManagedReferralTeamMember[]
+    pagination: { page: number; page_size: number; total: number; last_page: number }
+  }
+  metric_scope: 'descendants_only'
+  metric_definitions: ReferralTeamMetricDefinitions
 }
 export interface ManagedAccountVerification {
   user: { id: string; nickname: string; phone_masked: string | null }; phone_verified: boolean; profile_completed: boolean; wechat_bound: boolean
@@ -871,19 +1001,67 @@ function friendlyValidationMessage(errors: Record<string, string[]>): string | u
 
 const ACCESS_KEY = 'task_mall_admin_access'
 const REFRESH_KEY = 'task_mall_admin_refresh'
+const REMEMBER_KEY = 'task_mall_admin_remember'
+const REMEMBERED_ACCOUNT_KEY = 'task_mall_admin_account'
+const CAMPUS_SCOPE_KEY = 'task_mall_admin_campus_scope'
 
-function saveTokens(tokens: Pick<AdminTokens, 'access_token' | 'refresh_token'>) {
+function removeTokenValues() {
+  sessionStorage.removeItem(ACCESS_KEY)
+  sessionStorage.removeItem(REFRESH_KEY)
+  localStorage.removeItem(ACCESS_KEY)
+  localStorage.removeItem(REFRESH_KEY)
+}
+
+function isRememberedSession() {
+  return localStorage.getItem(REMEMBER_KEY) === '1'
+}
+
+export function getRememberedAdminAccount() {
+  return localStorage.getItem(REMEMBERED_ACCOUNT_KEY) ?? ''
+}
+
+function saveRememberedAdminAccount(account: string, remember: boolean) {
+  const normalizedAccount = account.trim()
+  if (remember && normalizedAccount) localStorage.setItem(REMEMBERED_ACCOUNT_KEY, normalizedAccount)
+  else localStorage.removeItem(REMEMBERED_ACCOUNT_KEY)
+}
+
+function legacyRememberedToken(key: string) {
+  return isRememberedSession() ? localStorage.getItem(key) : null
+}
+
+function saveTokens(tokens: Pick<AdminTokens, 'access_token' | 'refresh_token' | 'remembered'>, remember = tokens.remembered ?? isRememberedSession()) {
+  removeTokenValues()
   sessionStorage.setItem(ACCESS_KEY, tokens.access_token)
-  sessionStorage.setItem(REFRESH_KEY, tokens.refresh_token)
+  if (remember) localStorage.setItem(REMEMBER_KEY, '1')
+  else {
+    if (tokens.refresh_token) sessionStorage.setItem(REFRESH_KEY, tokens.refresh_token)
+    localStorage.removeItem(REMEMBER_KEY)
+  }
 }
 
 export function clearTokens() {
-  sessionStorage.removeItem(ACCESS_KEY)
-  sessionStorage.removeItem(REFRESH_KEY)
+  removeTokenValues()
+  localStorage.removeItem(REMEMBER_KEY)
+  localStorage.removeItem(CAMPUS_SCOPE_KEY)
+}
+
+export function getAdminCampusScope() {
+  return localStorage.getItem(CAMPUS_SCOPE_KEY)
+}
+
+export function setAdminCampusScope(campusId: string | null) {
+  if (campusId) localStorage.setItem(CAMPUS_SCOPE_KEY, campusId)
+  else localStorage.removeItem(CAMPUS_SCOPE_KEY)
 }
 
 export function hasStoredSession() {
+  if (isRememberedSession()) return true
   return Boolean(sessionStorage.getItem(ACCESS_KEY) && sessionStorage.getItem(REFRESH_KEY))
+}
+
+function getAdminAccessToken() {
+  return sessionStorage.getItem(ACCESS_KEY) || legacyRememberedToken(ACCESS_KEY)
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -904,68 +1082,107 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return payload.data
 }
 
-async function refreshSession(): Promise<boolean> {
-  const refreshToken = sessionStorage.getItem(REFRESH_KEY)
-  if (!refreshToken) return false
+let refreshInFlight: Promise<boolean> | null = null
+
+async function performRefresh(): Promise<boolean> {
+  const remembered = isRememberedSession()
+  const refreshToken = sessionStorage.getItem(REFRESH_KEY) || legacyRememberedToken(REFRESH_KEY)
+  if (!remembered && !refreshToken) return false
 
   const response = await fetch('/api/v1/admin/auth/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken }),
+    credentials: 'same-origin',
+    body: JSON.stringify(refreshToken ? { refresh_token: refreshToken } : {}),
   })
 
   if (!response.ok) {
-    clearTokens()
-    return false
+    if (response.status === 401) {
+      clearTokens()
+      return false
+    }
+
+    return await parseResponse<never>(response)
   }
 
   const tokens = await parseResponse<AdminTokens>(response)
-  saveTokens(tokens)
+  saveTokens(tokens, tokens.remembered ?? remembered)
   return true
 }
 
+async function refreshSession(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = performRefresh().finally(() => {
+      refreshInFlight = null
+    })
+  }
+
+  return refreshInFlight
+}
+
 async function request<T>(path: string, init: RequestInit = {}, canRetry = true): Promise<T> {
-  const accessToken = sessionStorage.getItem(ACCESS_KEY)
+  const accessToken = getAdminAccessToken()
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json')
   if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json')
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
+  const campusScope = getAdminCampusScope()
+  if (campusScope && !/^\/admin\/(auth(?:\/|$)|me$|navigation$)/.test(path)) headers.set('X-Campus-Id', campusScope)
 
   const response = await fetch(`/api/v1${path}`, { ...init, headers })
-  if (response.status === 401 && canRetry && (await refreshSession())) {
-    return request<T>(path, init, false)
+  if (response.status === 401 && canRetry) {
+    const latestAccessToken = getAdminAccessToken()
+    if (latestAccessToken && latestAccessToken !== accessToken) {
+      return request<T>(path, init, false)
+    }
+    if (await refreshSession()) return request<T>(path, init, false)
   }
 
   return parseResponse<T>(response)
 }
 
 async function requestBlob(path: string, canRetry = true): Promise<Blob> {
-  const accessToken = sessionStorage.getItem(ACCESS_KEY)
+  const accessToken = getAdminAccessToken()
   const headers = new Headers({ Accept: '*/*' })
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
+  const campusScope = getAdminCampusScope()
+  if (campusScope) headers.set('X-Campus-Id', campusScope)
   const response = await fetch(`/api/v1${path}`, { headers })
-  if (response.status === 401 && canRetry && (await refreshSession())) {
-    return requestBlob(path, false)
+  if (response.status === 401 && canRetry) {
+    const latestAccessToken = getAdminAccessToken()
+    if (latestAccessToken && latestAccessToken !== accessToken) {
+      return requestBlob(path, false)
+    }
+    if (await refreshSession()) return requestBlob(path, false)
   }
   if (!response.ok) await parseResponse<never>(response)
   return response.blob()
 }
 
-export async function login(account: string, password: string): Promise<AdminTokens | AdminMfaChallenge> {
+export function adminRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  return request<T>(path, init)
+}
+
+export async function login(account: string, password: string, remember = false): Promise<AdminTokens | AdminMfaChallenge> {
   const result = await request<AdminTokens | AdminMfaChallenge>('/admin/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ account, password }),
+    body: JSON.stringify({ account, password, remember }),
   }, false)
-  if (!('mfa_required' in result)) saveTokens(result)
+  saveRememberedAdminAccount(account, remember)
+  if (!('mfa_required' in result)) {
+    setAdminCampusScope(null)
+    saveTokens(result, result.remembered ?? false)
+  }
   return result
 }
 
-export async function verifyAdminMfa(challenge: AdminMfaChallenge, code: string): Promise<AdminTokens> {
+export async function verifyAdminMfa(challenge: AdminMfaChallenge, code: string, remember = false): Promise<AdminTokens> {
   const tokens = await request<AdminTokens>('/admin/auth/mfa/verify', {
     method: 'POST',
-    body: JSON.stringify({ challenge_id: challenge.challenge_id, challenge_token: challenge.challenge_token, code }),
+    body: JSON.stringify({ challenge_id: challenge.challenge_id, challenge_token: challenge.challenge_token, code, remember }),
   }, false)
-  saveTokens(tokens)
+  setAdminCampusScope(null)
+  saveTokens(tokens, tokens.remembered ?? false)
   return tokens
 }
 
@@ -980,7 +1197,7 @@ export async function loadSession(): Promise<{ admin: AdminProfile; navigation: 
 
 export async function logout(): Promise<void> {
   try {
-    await request<void>('/admin/auth/logout', { method: 'POST', body: JSON.stringify({}) }, false)
+    await request<void>('/admin/auth/logout', { method: 'POST', body: JSON.stringify({}) })
   } finally {
     clearTokens()
   }
@@ -1542,10 +1759,30 @@ export async function listManagedEndUsers(filters: { keyword?: string; status?: 
   const search = query.toString()
   return request(`/admin/user-center/users${search ? `?${search}` : ''}`)
 }
+export async function updateManagedEndUserTaskPublishingPermission(userId: string, granted: boolean, reason: string): Promise<ManagedTaskPublishingPermission> {
+  return request(`/admin/user-center/users/${encodeURIComponent(userId)}/task-publishing-permission`, {
+    method: 'PUT',
+    body: JSON.stringify({ granted, reason }),
+  })
+}
 export async function listManagedReferrals(filters: { keyword?: string; status?: string } = {}): Promise<{ items: ManagedReferral[]; pagination: { total: number } }> {
   const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => Boolean(value)) as Array<[string, string]>)
   const search = query.toString()
   return request(`/admin/user-center/referrals${search ? `?${search}` : ''}`)
+}
+export async function listManagedReferralTeams(filters: { keyword?: string; status?: string; page?: number; page_size?: number } = {}): Promise<ManagedReferralTeamList> {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  })
+  return request(`/admin/user-center/referral-teams${query.size ? `?${query.toString()}` : ''}`)
+}
+export async function getManagedReferralTeam(teamId: string, filters: { keyword?: string; status?: string; level?: number; effective?: boolean; page?: number; page_size?: number } = {}): Promise<ManagedReferralTeamDetail> {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') query.set(key, typeof value === 'boolean' ? (value ? '1' : '0') : String(value))
+  })
+  return request(`/admin/user-center/referral-teams/${encodeURIComponent(teamId)}${query.size ? `?${query.toString()}` : ''}`)
 }
 export async function listManagedAccountVerifications(status = ''): Promise<{ items: ManagedAccountVerification[]; pagination: { total: number }; identity_policy: { collect_id_number: boolean; collect_id_images: boolean; note: string } }> {
   return request(`/admin/user-center/verifications${status ? `?status=${encodeURIComponent(status)}` : ''}`)
@@ -1564,12 +1801,30 @@ export async function createNotificationCampaign(input: Record<string, unknown>)
 export async function cancelNotificationCampaign(id: string, reason: string): Promise<ManagedNotificationCampaign> { return request(`/admin/notification-campaigns/${encodeURIComponent(id)}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) }) }
 export async function listNotificationDeliveries(): Promise<{ items: ManagedNotificationDelivery[] }> { return request('/admin/notification-deliveries') }
 export async function retryNotificationDelivery(id: number, reason: string): Promise<ManagedNotificationDelivery> { return request(`/admin/notification-deliveries/${id}/retry`, { method: 'POST', body: JSON.stringify({ reason }) }) }
-export async function listManagedCampuses(): Promise<{ items: ManagedCampus[] }> { return request('/admin/campuses') }
+export async function listManagedCampuses(filters: {
+  keyword?: string; province?: string; catalog_type?: string; education_level?: string; catalog_status?: string;
+  status?: string; agent_coverage?: string; branding_status?: string; page?: number; page_size?: number
+} = {}): Promise<ManagedCampusList> {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  })
+  return request(`/admin/campuses${query.size ? `?${query.toString()}` : ''}`)
+}
+export async function listManagedCampusAgents(filters: { keyword?: string; status?: string; assignment?: string; page?: number; page_size?: number } = {}): Promise<ManagedCampusAgentList> {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  })
+  return request(`/admin/campus-agents${query.size ? `?${query.toString()}` : ''}`)
+}
 export async function listCampusAgentOptions(): Promise<{ items: CampusAgentOption[] }> { return request('/admin/campus-agent-options') }
-export async function createManagedCampus(input: Omit<ManagedCampus, 'id' | 'users_count' | 'agents'>): Promise<ManagedCampus> {
+type ManagedCampusWriteInput = Pick<ManagedCampus, 'code' | 'name' | 'emblem_asset_id' | 'emblem_url' | 'logo_asset_id' | 'logo_url' | 'province' | 'city' | 'district' | 'address' | 'latitude' | 'longitude' | 'status' | 'sort_order'>
+
+export async function createManagedCampus(input: ManagedCampusWriteInput): Promise<ManagedCampus> {
   return request('/admin/campuses', { method: 'POST', body: JSON.stringify(input) })
 }
-export async function updateManagedCampus(id: string, input: Omit<ManagedCampus, 'id' | 'users_count' | 'agents'>): Promise<ManagedCampus> {
+export async function updateManagedCampus(id: string, input: ManagedCampusWriteInput): Promise<ManagedCampus> {
   return request(`/admin/campuses/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
 }
 export async function updateManagedCampusAgents(id: string, adminUserIds: string[], primaryAdminUserId?: string): Promise<ManagedCampus> {

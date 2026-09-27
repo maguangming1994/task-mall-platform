@@ -376,7 +376,7 @@ class MediaStorageFlowTest extends TestCase
         Storage::build(['driver' => 'local', 'root' => storage_path('app/public')])->delete($asset->object_path);
     }
 
-    public function test_remote_import_rejects_private_addresses_and_oversized_streams_without_trusting_headers(): void
+    public function test_remote_import_rejects_private_addresses_and_declared_oversized_images(): void
     {
         $token = $this->adminToken('media-import-security');
         $this->withToken($token)->postJson('/api/v1/admin/media/assets/import-url', [
@@ -387,7 +387,10 @@ class MediaStorageFlowTest extends TestCase
 
         $this->fakePublicDns(['8.8.8.8']);
         Http::fake([
-            'https://images.example.test/*' => Http::response(str_repeat('x', 10 * 1024 * 1024 + 1), 200, ['Content-Type' => 'image/png']),
+            'https://images.example.test/*' => Http::response('', 200, [
+                'Content-Type' => 'image/png',
+                'Content-Length' => (string) (10 * 1024 * 1024 + 1),
+            ]),
         ]);
         $this->withToken($token)->postJson('/api/v1/admin/media/assets/import-url', [
             'url' => 'https://images.example.test/oversized.png',

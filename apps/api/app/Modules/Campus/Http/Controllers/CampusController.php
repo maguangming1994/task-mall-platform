@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Campus\Models\Campus;
 use App\Modules\Campus\Services\CampusLocationResolver;
+use App\Modules\Media\Models\MediaAsset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -47,6 +48,7 @@ class CampusController extends Controller
     private function list(array $data, bool $nearby = false): Collection
     {
         $query = Campus::query()
+            ->with(['emblemAsset', 'logoAsset'])
             ->where('status', 'active')
             ->whereIn('catalog_status', ['manual', 'listed'])
             ->when(isset($data['province']), fn ($query) => $query->where('province', $data['province']))
@@ -72,7 +74,9 @@ class CampusController extends Controller
             ->get()
             ->map(function (Campus $campus) use ($data, $nearby): array {
                 $location = $this->locations->resolve($campus);
-                $distance = $nearby && $location['latitude'] !== null && $location['longitude'] !== null
+                // City centroids help discover schools, but are not a campus location.
+                // Never present the same city-centre distance as an exact school distance.
+                $distance = $nearby && $location['accuracy'] === 'campus'
                     ? $this->distance(
                         (float) $data['latitude'],
                         (float) $data['longitude'],
@@ -85,7 +89,13 @@ class CampusController extends Controller
             });
 
         if ($nearby) {
-            $located = $located->sortBy(fn (array $item) => $item['distance'] ?? PHP_FLOAT_MAX);
+            $located = $located->sortBy(function (array $item): float {
+                return match ($item['location']['accuracy']) {
+                    'campus' => $item['distance'] ?? PHP_FLOAT_MAX,
+                    'city' => PHP_FLOAT_MAX / 2,
+                    default => PHP_FLOAT_MAX,
+                };
+            });
         }
 
         return $located
@@ -132,11 +142,24 @@ class CampusController extends Controller
             'city' => $campus->city,
             'district' => $campus->district,
             'address' => $campus->address,
+            'emblem_url' => $this->brandUrl($campus->emblem_asset_id, $campus->emblemAsset, $campus->emblem_url),
+            'logo_url' => $this->brandUrl($campus->logo_asset_id, $campus->logoAsset, $campus->logo_url),
             'latitude' => $location['latitude'],
             'longitude' => $location['longitude'],
             'location_accuracy' => $location['accuracy'],
             'distance_km' => $distanceKm === null ? null : round($distanceKm, 1),
         ];
+    }
+
+    private function brandUrl(?string $assetId, ?MediaAsset $asset, ?string $fallback): ?string
+    {
+        if (filled($assetId)) {
+            return $asset?->status === 'active' && filled($asset->public_url)
+                ? $asset->public_url
+                : null;
+        }
+
+        return $fallback;
     }
 
     private function distance(float $latitude, float $longitude, float $targetLatitude, float $targetLongitude): float

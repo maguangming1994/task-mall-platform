@@ -1,0 +1,5361 @@
+{
+  "version": 1,
+  "source": {
+    "source_name": "xioajiumi/Chinese_Universities",
+    "source_url": "https://github.com/xioajiumi/Chinese_Universities",
+    "revision": "e088fddc329a6f0148ca72fd3b4d0fe069f13e3a",
+    "license": "MIT",
+    "source_asset_name": "logo.zip"
+  },
+  "items": [
+    {
+      "official_school_code": "4111010001",
+      "name": "北京大学",
+      "file": "4111010001.png",
+      "sha256": "c9c0cd70d1d80e32a7310f71e6421ab30608abc9acb12c89cbc40af87e9b7f36",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010002",
+      "name": "中国人民大学",
+      "file": "4111010002.png",
+      "sha256": "69cdd80c95c856f5a4a178a9f62d7e4bf3f3ada03b9aaddf85da1fb8fabbce7b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010003",
+      "name": "清华大学",
+      "file": "4111010003.png",
+      "sha256": "78e5d877c63632101e5fc8c155282a5487ab785f4b988a8b47eda364f279d216",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010004",
+      "name": "北京交通大学",
+      "file": "4111010004.png",
+      "sha256": "a3979fec72c8154ff1c2220297a2a23d55a18751de19713f8134beb6950b5287",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010005",
+      "name": "北京工业大学",
+      "file": "4111010005.png",
+      "sha256": "24a50048bf386bba29c2c1f351edb1ec1838702ad156ca9cb9af0c8980a0df45",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010006",
+      "name": "北京航空航天大学",
+      "file": "4111010006.png",
+      "sha256": "1b1e6eb74b30404ed3b3c07339d2be5aed5266a15e5c0b311ac51fa9d82429f8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010007",
+      "name": "北京理工大学",
+      "file": "4111010007.png",
+      "sha256": "d1cecf06b38b24fe5bd0634f160170da93028314c27c3aee0d6530a159557217",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010008",
+      "name": "北京科技大学",
+      "file": "4111010008.png",
+      "sha256": "8ec5812e495ab7cf7b8a73a7ee038ec1c473c7559ea492b4e916f3fb2567c68d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010009",
+      "name": "北方工业大学",
+      "file": "4111010009.png",
+      "sha256": "b43694e436f9087834057e9d7d78c4b0392111a9238ed233b26f97eb9c61a0a2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010010",
+      "name": "北京化工大学",
+      "file": "4111010010.png",
+      "sha256": "1eeaab1d175306a13df3365eb3f75fbcd17ba255b455b2b1e681748cf00721c9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010011",
+      "name": "北京工商大学",
+      "file": "4111010011.png",
+      "sha256": "b5262357480f50aa78e33c1d57f897b9beb7028b0d202ddc7dd8bb56dbca9252",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010013",
+      "name": "北京邮电大学",
+      "file": "4111010013.png",
+      "sha256": "6a9f8a2cb15bced6baf0d63742bd769c4201a72686216f95528de82776fcd979",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010015",
+      "name": "北京印刷学院",
+      "file": "4111010015.png",
+      "sha256": "13a0783210ff72a9a349537634cdfac685c60840fcbba1e0e16cbebf83a4bb4d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010016",
+      "name": "北京建筑大学",
+      "file": "4111010016.png",
+      "sha256": "d4fbc5f408c0df4104c877c8e63f5fc58e3796e66df7d2b0755e05c3c52e5ae7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010017",
+      "name": "北京石油化工学院",
+      "file": "4111010017.png",
+      "sha256": "9472b06d18b1c2ff6a73d7e494ded96add677774d8ad54f874d55d5854342aaf",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010018",
+      "name": "北京电子科技学院",
+      "file": "4111010018.png",
+      "sha256": "b8b01033d67d36f0b950128f970635b7daa3b6f1b594577781e44170536f7205",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010019",
+      "name": "中国农业大学",
+      "file": "4111010019.png",
+      "sha256": "68792a2a9360fba5455ec23a6af2050524cf70f3186e3fec0a8eddc9c5eac2ab",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010020",
+      "name": "北京农学院",
+      "file": "4111010020.png",
+      "sha256": "a587d4c99c728c21b87a7f7b5d5062873b0d8ddec67ee2dab45aa2d45cbeec9e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010022",
+      "name": "北京林业大学",
+      "file": "4111010022.png",
+      "sha256": "9c20696705641b9088e5c5dc02f0f801cb6bd5cb79ba75ecd9fdec32f6c53944",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010023",
+      "name": "北京协和医学院",
+      "file": "4111010023.png",
+      "sha256": "67ae327c12a2e296403ae83819a453ea2549e43b7c03fa7f3dec52f148e820b9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010025",
+      "name": "首都医科大学",
+      "file": "4111010025.png",
+      "sha256": "ea59de12ba74d03bd1e15b0a981b84efe6abd3318b1407e22ddcf01bdc827405",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010026",
+      "name": "北京中医药大学",
+      "file": "4111010026.png",
+      "sha256": "6c4bbd79330bfd1f0c6662de1e4caf3c66399e1e958599d33fd306a6480896dc",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010027",
+      "name": "北京师范大学",
+      "file": "4111010027.png",
+      "sha256": "5bdc1226afec2bbd848153c61e463a845b8ac9c83aeb053163fa2162e9fe5e45",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010028",
+      "name": "首都师范大学",
+      "file": "4111010028.png",
+      "sha256": "665baa3ba94d2997cc3cf825ade81a8b060dc1b2b15d9cd048ea360cd34e9526",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010029",
+      "name": "首都体育学院",
+      "file": "4111010029.png",
+      "sha256": "37100aa6b68cac8ca8e71aa07322ee6a131a6235cc9a7d9475e9b32341174141",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010030",
+      "name": "北京外国语大学",
+      "file": "4111010030.png",
+      "sha256": "aa5c751518ea8a7c2b6c70984be6eb7de62ea8fc9419c44581421abf7d0cb326",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010031",
+      "name": "北京第二外国语学院",
+      "file": "4111010031.png",
+      "sha256": "6e717596ca5e4df94e57eb519afc4336e484db3433da744bc7a9ba0a2452916d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010032",
+      "name": "北京语言大学",
+      "file": "4111010032.png",
+      "sha256": "15c0b162b2fd85491b3370a4e8eee41d58d395e367df19c21c6cddeb819387dc",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010033",
+      "name": "中国传媒大学",
+      "file": "4111010033.png",
+      "sha256": "758277370a62c62fd98580cf0155828306fe926a2dd3c7cef4ed6c7b19d89641",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010034",
+      "name": "中央财经大学",
+      "file": "4111010034.png",
+      "sha256": "f1c461d62add3fd9341a9b96832313ac44149f55d162d4d951b067259931ff44",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010036",
+      "name": "对外经济贸易大学",
+      "file": "4111010036.png",
+      "sha256": "87c2bdb9a97e691fc8d2079cd951221677aed2b431b038aab7f33befe1341220",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010037",
+      "name": "北京物资学院",
+      "file": "4111010037.png",
+      "sha256": "472cd14a464da83577ca99ae25a4cf7e0bc231a9f50529fb6c0df2aee87d9af4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010038",
+      "name": "首都经济贸易大学",
+      "file": "4111010038.png",
+      "sha256": "b2bf26c5b5ab31b562c7aac7af4f3f589f9c74f9ae70d2077f25d2f00b1d6327",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010040",
+      "name": "外交学院",
+      "file": "4111010040.png",
+      "sha256": "1362d96b05a8ec795150d5aba623c7d81c3cf01b8ce461ba904adef8e7e355b1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010041",
+      "name": "中国人民公安大学",
+      "file": "4111010041.png",
+      "sha256": "c2a6bf8f3ab71883ceee4a754baf3f3454809f6191fe6fff291b80718685a35b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010042",
+      "name": "国际关系学院",
+      "file": "4111010042.png",
+      "sha256": "736eea4e37c2b045a08ac2892519fdcef0d791cfec5aa2e7ce28454db8dc4aef",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010043",
+      "name": "北京体育大学",
+      "file": "4111010043.png",
+      "sha256": "f2f67835085af48fba2f5ecdd5a66fadcb7f14b588f421695b51788f0604c0c3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010052",
+      "name": "中央民族大学",
+      "file": "4111010052.png",
+      "sha256": "6c0cff08bfe6affba5ec8ae86c3bdcf986b16e36f4bda632f72bf997bb6be24a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010053",
+      "name": "中国政法大学",
+      "file": "4111010053.png",
+      "sha256": "87714f29ba862f33e57f4c2b5e8c8e527584e2b455c8b564ba2b6c23d53d71d2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111010054",
+      "name": "华北电力大学",
+      "file": "4111010054.png",
+      "sha256": "57123a983f48d601b4b69cb3dd144aa3b7bf2ab1b87add788543d0cf6807001d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111011149",
+      "name": "中华女子学院",
+      "file": "4111011149.png",
+      "sha256": "5bb0313a0ffe274ab70b3e071288c9e60a2374e217cf2ad631c2c7e2ae1ad846",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111011232",
+      "name": "北京信息科技大学",
+      "file": "4111011232.png",
+      "sha256": "4b69fe7da6f8fbafa4b15095338839553fe3eaa8107bdb96ea3814f1eaadb80d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111011413",
+      "name": "中国矿业大学（北京）",
+      "file": "4111011413.png",
+      "sha256": "58fcd94a86c49406cb4a4b61df75ef5c8a18323b394a5082598223cbffd4c3e4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111011414",
+      "name": "中国石油大学（北京）",
+      "file": "4111011414.png",
+      "sha256": "0127b708d709856f34b805ff74c7111e8f523a2dd34440b030b0ffc02427af45",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111011415",
+      "name": "中国地质大学（北京）",
+      "file": "4111011415.png",
+      "sha256": "1aa256feba823ff37e441a2448a3abe4bf2c0eec0401f7d9c5b4282698e7aea2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111011417",
+      "name": "北京联合大学",
+      "file": "4111011417.png",
+      "sha256": "cfd490c7f68ad9ccb6ad0832fe9258288bd0a32189be54dfcb78c720e6394a8b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111012453",
+      "name": "中国劳动关系学院",
+      "file": "4111012453.png",
+      "sha256": "3f71f81c2d45d4c2f57fe3fba58abd07df1992d0c6b8f8421ac99e5dc2277472",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4111014019",
+      "name": "北京警察学院",
+      "file": "4111014019.png",
+      "sha256": "76f3083a70eebec4b577147d6f52f3b9062321a98775275312cbdb3a34c47ac9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010055",
+      "name": "南开大学",
+      "file": "4112010055.png",
+      "sha256": "22204f180b51126bb6bc81a770d0e7fd04b67e1bcdf15733f99817821fb872d4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010056",
+      "name": "天津大学",
+      "file": "4112010056.png",
+      "sha256": "97ffb39e9f2312c6aa351119e5281074414d45d9a680a8bc7c0986b1977005d3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010057",
+      "name": "天津科技大学",
+      "file": "4112010057.png",
+      "sha256": "84024cbe43682e0f69f735d70857ec32580365ec7fbbee955e7168c21009668c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010058",
+      "name": "天津工业大学",
+      "file": "4112010058.png",
+      "sha256": "ab258b4488c2086d4fef7732632ec6d765984cdbed887056c458e49390afd8c6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010059",
+      "name": "中国民航大学",
+      "file": "4112010059.png",
+      "sha256": "23ca79801d7a5707c1a10d53afdfe3bf6ea554420abf207d567a7e208837dfe3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010060",
+      "name": "天津理工大学",
+      "file": "4112010060.png",
+      "sha256": "ad87dc79dfa003db41273739c77340e4c87a42583ac7556ee59898182f024e6a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010061",
+      "name": "天津农学院",
+      "file": "4112010061.png",
+      "sha256": "eac136f4f9fb3aabb3dbb96c382c33b747ef6cc54bc3acd2b4456a501946c48a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010062",
+      "name": "天津医科大学",
+      "file": "4112010062.png",
+      "sha256": "7575cb079f82e2dc62e5ab1410195fcbe6ab54238f0e57fae5b191ef0d5d8a2d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010063",
+      "name": "天津中医药大学",
+      "file": "4112010063.png",
+      "sha256": "2669e6bf4e3d122e3f2bc1a71d60f589fc0a9e92ab05a1fea728231942b6b939",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010065",
+      "name": "天津师范大学",
+      "file": "4112010065.png",
+      "sha256": "cd9821736ab455bf63d445b31b8ea2864d98f223a85a1600be95d2e8ae0efffb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010066",
+      "name": "天津职业技术师范大学",
+      "file": "4112010066.png",
+      "sha256": "52168f3b3d1d1e855836523a71ff3a8840f686859b1e52cf0f2ec53fceaeaea1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010068",
+      "name": "天津外国语大学",
+      "file": "4112010068.png",
+      "sha256": "03e2d757aac63353e0c52b839fa683a6deb7534f28f51ada6c20c39d61fc2c21",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010069",
+      "name": "天津商业大学",
+      "file": "4112010069.png",
+      "sha256": "f0adcf63c281611fbe6da99360e900212fdd7d26fd55ff5713cdc44713f7c2c4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010070",
+      "name": "天津财经大学",
+      "file": "4112010070.png",
+      "sha256": "f8cacc565e6f082ae7ac5d74f7f042591bb79adab547f4e68e2e0aa12406a4f0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010071",
+      "name": "天津体育学院",
+      "file": "4112010071.png",
+      "sha256": "bcec9f27363111209b51a646032474f20d7c928a0c3959f9efc3a2eabce0503d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112010792",
+      "name": "天津城建大学",
+      "file": "4112010792.png",
+      "sha256": "94aa19d4f65b303ce5f35fc75ccbcb44a8ddd69bb6f7644ac9d1164c55b9f89e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4112012105",
+      "name": "天津中德应用技术大学",
+      "file": "4112012105.png",
+      "sha256": "c3d518bb2515a70819eec276dc6663fd6901ed4a708f8b72a75bec6da973cb14",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010075",
+      "name": "河北大学",
+      "file": "4113010075.png",
+      "sha256": "b176048018671280fa9dc79ceb38fe9ac8562b6c4a47e892f3330e48cd107ccf",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010076",
+      "name": "河北工程大学",
+      "file": "4113010076.png",
+      "sha256": "957f0e90aeb8b7b209bd2caab3a71c0fd94ab78c19e47487499a360c17c2ac71",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010077",
+      "name": "河北地质大学",
+      "file": "4113010077.png",
+      "sha256": "1437bc0a09593b23c365add7116c1650f1d5eb92a41022e40ee97a9c444cf3cc",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010080",
+      "name": "河北工业大学",
+      "file": "4113010080.png",
+      "sha256": "6cc2754ac2ea056a160cd11361216ebefa386745cdade2581c930b89eb7a5b25",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010081",
+      "name": "华北理工大学",
+      "file": "4113010081.png",
+      "sha256": "712bdea68aa8de415a4790a96e33f880457e82342caf6c44f1fad4e64a630ebc",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010082",
+      "name": "河北科技大学",
+      "file": "4113010082.png",
+      "sha256": "0c52ae4254b2cc5fed7282e00a128d4cd99504ab592b5ada65d7fba79e8441d0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010084",
+      "name": "河北建筑工程学院",
+      "file": "4113010084.png",
+      "sha256": "ad1d12123d12c54a76874dbea7561a38c1e3d639f3fbb7435c38593f070d3a5c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010085",
+      "name": "河北水利电力学院",
+      "file": "4113010085.png",
+      "sha256": "652ffcc8bccbb6dd05fb322281382262186fccb01e562e99ef361045da9780f0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010086",
+      "name": "河北农业大学",
+      "file": "4113010086.png",
+      "sha256": "e1fc543135389b910f2045632fdb8493ccbee51748c2dc1afc0884f810a4060c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010089",
+      "name": "河北医科大学",
+      "file": "4113010089.png",
+      "sha256": "4d0d8d1655e9052e4ea7d2cc942876c9fb3efd6125d915a052f53068efedf4f4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010092",
+      "name": "河北北方学院",
+      "file": "4113010092.png",
+      "sha256": "42c4b7c3dce7d63b7e6447a4ad277ca7b270820a3310086c3b1b57ac2ec442bd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010093",
+      "name": "承德医学院",
+      "file": "4113010093.png",
+      "sha256": "6a4a23689d924dd339ffde37a0e3fb8a444d62287f23f573d1f0dcc9974b0cf6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010094",
+      "name": "河北师范大学",
+      "file": "4113010094.png",
+      "sha256": "44ff89b094df488e689cd6259d5f7980d03d6191fa3d8ca9accc5d1b5b11ef71",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010096",
+      "name": "保定学院",
+      "file": "4113010096.png",
+      "sha256": "288091a62e6a82ca8d7db24007d166cab6212995fe9df166a122eb0e21f61551",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010098",
+      "name": "河北民族师范学院",
+      "file": "4113010098.png",
+      "sha256": "a453045d93e564fd254fda152cf79214954ab27e4e986bdf7c1a9a0734421e18",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010099",
+      "name": "唐山师范学院",
+      "file": "4113010099.png",
+      "sha256": "9d5bc7f509d9b1077dd9ebe06940d6bd8838c0e01dccef817734e3bcc7032705",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010100",
+      "name": "廊坊师范学院",
+      "file": "4113010100.png",
+      "sha256": "e005aceff0cc205b10a2c28ee4768c32d2b11ed9aec9c67fb237f8e896cac059",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010101",
+      "name": "衡水学院",
+      "file": "4113010101.png",
+      "sha256": "b64def974403d9c9e7628919ef72ee4646c0bce3d0719ba638105168c3ecad4f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010102",
+      "name": "石家庄学院",
+      "file": "4113010102.png",
+      "sha256": "2bcdb96cfc6aa0d431fc0bac7fd38922cf10937d0aa8d8d1e047d929a8a11ddb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010103",
+      "name": "邯郸学院",
+      "file": "4113010103.png",
+      "sha256": "9550870f8f2b65d82e93d71a5da2b710d172f8aa548ae051548451fa2c8a5abf",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010104",
+      "name": "邢台学院",
+      "file": "4113010104.png",
+      "sha256": "94dd149645b74c77bfadfad75b8c443475fcfc90127d7956c531bcccb990d9a2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010105",
+      "name": "沧州师范学院",
+      "file": "4113010105.png",
+      "sha256": "7cc3c069c2612ead0f63b5755ff3591cdbaf8e9641edbc119413c3ee49846f18",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010107",
+      "name": "石家庄铁道大学",
+      "file": "4113010107.png",
+      "sha256": "61ddf413c97a1ebd615e8d2f0eb562f1bbbfed8bef6803ace6602b584695658a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010216",
+      "name": "燕山大学",
+      "file": "4113010216.png",
+      "sha256": "0e24eafed080959cf1c6801464b0d82b7fd5fb68a46daeddd543a8b850b582ee",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113010798",
+      "name": "河北科技师范学院",
+      "file": "4113010798.png",
+      "sha256": "16e9f207ddeb4d119b7baccc36afdb4dfe6b23e77bf73517d79d2504d68fad67",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113011033",
+      "name": "唐山学院",
+      "file": "4113011033.png",
+      "sha256": "9822cdec85dbf44dbf4c22d793f2c5d9c0cfbade30da5e3dfd7d22bc95b25fe4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113011105",
+      "name": "中国人民警察大学",
+      "file": "4113011105.png",
+      "sha256": "965127dedd72c238674995db82e86ea6e94d61db500425084194a5c2198d510f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113011236",
+      "name": "河北体育学院",
+      "file": "4113011236.png",
+      "sha256": "a802c0d9c214fc781a615f6fe1444db32c9c919024e7ad14eb84afd9aae07c56",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113011420",
+      "name": "河北金融学院",
+      "file": "4113011420.png",
+      "sha256": "ce5ad5b82d9cb6cb3a5cfeaca2337b23747afe230ab061153c61ce995d8030df",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113011629",
+      "name": "北华航天工业学院",
+      "file": "4113011629.png",
+      "sha256": "07bcf2e1774d5c3931d05d6b093746b6e7ff306798057a175e0366bd2dbf990a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113011832",
+      "name": "河北经贸大学",
+      "file": "4113011832.png",
+      "sha256": "c590ae21ad95e2804b1cca20a14b89b36b3b921e6df5e0f6cbcf7d203c1a81e3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113011903",
+      "name": "中央司法警官学院",
+      "file": "4113011903.png",
+      "sha256": "66adcb78eaa4b8014968436fd0282f37b70866e5b735546e5453cdbff0ddb5fe",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113014458",
+      "name": "张家口学院",
+      "file": "4113014458.png",
+      "sha256": "ca294301aa7b2fe42515450bfd8c7d56cf7c983e0dfd898302b8bf132206a942",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113016202",
+      "name": "河北石油职业技术大学",
+      "file": "4113016202.png",
+      "sha256": "63ced41e794b7d55295f6fb1e3d443f7384133daab3dcc9d88bcc1c630ebe24a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113016203",
+      "name": "河北科技工程职业技术大学",
+      "file": "4113016203.png",
+      "sha256": "c513dcb7aec50bc3641d89d7845154c9bf29037c62b99673eeba9f199e804a76",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4113016204",
+      "name": "河北工业职业技术大学",
+      "file": "4113016204.png",
+      "sha256": "c669c9abb94496a3ef0e50ea7c149e189222499842c8def9d35dcc075bd5cb43",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010108",
+      "name": "山西大学",
+      "file": "4114010108.png",
+      "sha256": "43d9d84b6509bf878358084e065016ff02322a726d5509250639673a70d56428",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010109",
+      "name": "太原科技大学",
+      "file": "4114010109.png",
+      "sha256": "8df966c221156905b1a2aac5710317b35e7ebf2c8b1eb5c24d1d5c8a1fc20587",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010110",
+      "name": "中北大学",
+      "file": "4114010110.png",
+      "sha256": "35b8bb17eda71f566abb1348360cafa2ce284a5a049c95da0854c642e4e6450d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010112",
+      "name": "太原理工大学",
+      "file": "4114010112.png",
+      "sha256": "dc8a58a8358469c2208acf2a1f35fdc0aa8f08d6d69e739ed8a2012fb8042450",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010113",
+      "name": "山西农业大学",
+      "file": "4114010113.png",
+      "sha256": "48f389db9d7fd6495d9d4cba07a49b9c109bf38399dd47ca6f3925a3cf29b3f8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010114",
+      "name": "山西医科大学",
+      "file": "4114010114.png",
+      "sha256": "9e74fd22acd6bb47d6001e01ecd2ea9ad78bb924d1e73aad7a269efef9ee3869",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010117",
+      "name": "长治医学院",
+      "file": "4114010117.png",
+      "sha256": "a5c082d3baef1bb52d311e535a70746bed171ff1eb3419c12a0c04eddd23beb4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010118",
+      "name": "山西师范大学",
+      "file": "4114010118.png",
+      "sha256": "3130d0da2676693a4857531a3792ac73e32044bc9c426f1c15d22dd0dddc2ce0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010119",
+      "name": "太原师范学院",
+      "file": "4114010119.png",
+      "sha256": "8df34906a279ff23037323817eb40e4b5bbdad4d63e342a25bf175bb3befd1b1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010120",
+      "name": "山西大同大学",
+      "file": "4114010120.png",
+      "sha256": "ff00aa94cb2c8a39ea581462fe31131381f298a4f5328dcc30e040cf88468446",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010121",
+      "name": "晋中学院",
+      "file": "4114010121.png",
+      "sha256": "35dcedf7ef15f181033101b78b60e4cd97605084722de31ae9e16735d839ef96",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010122",
+      "name": "长治学院",
+      "file": "4114010122.png",
+      "sha256": "84a49a3da35558e06e0d7ab9371bff58a2035a8a69b4a73708d77206026d34d0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010123",
+      "name": "运城学院",
+      "file": "4114010123.png",
+      "sha256": "239b228a5388364d64050046fb13237f3f4cf275effcd18b8aaf1bdc376b59e5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010124",
+      "name": "忻州师范学院",
+      "file": "4114010124.png",
+      "sha256": "767df50cdac97dde554ec83ab00e68eacf8025f8d52c2ab472497e046e2688c1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010125",
+      "name": "山西财经大学",
+      "file": "4114010125.png",
+      "sha256": "46accaebde4365602a37325642c81c8cb24298f75a1170b1abcba10f5775576c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010809",
+      "name": "山西中医药大学",
+      "file": "4114010809.png",
+      "sha256": "e80fcaba8d5387dc6fbedf5d7dd672710686d70884d501128388ab4302c2e572",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114010812",
+      "name": "吕梁学院",
+      "file": "4114010812.png",
+      "sha256": "b2a0150b53107b85b9af18bb776238101dc095f0c28d4906b03eb199ea061bcb",
+      "source_name": "official_website",
+      "source_url": "https://yzbgs.llu.edu.cn/__local/9/F9/FD/DD15C2A0BA94FFCF7E5FCF131CB_2BA283D1_23DF9.png"
+    },
+    {
+      "official_school_code": "4114011242",
+      "name": "太原学院",
+      "file": "4114011242.png",
+      "sha256": "23c6f6159bc497dae49dbfee0fc73ff328e7a8da06ecaf592c481c69af7a134b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114012111",
+      "name": "山西警察学院",
+      "file": "4114012111.png",
+      "sha256": "6c99f9ebbd8c342ff4faefb5ee9bafec7472907997e6d2f908391b8f09618247",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114014101",
+      "name": "太原工业学院",
+      "file": "4114014101.png",
+      "sha256": "e7db755a8220461ad816e4529c38908720656356b5b1acd8a4069cbd19fdd26d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114014527",
+      "name": "山西工程技术学院",
+      "file": "4114014527.png",
+      "sha256": "1ebb521e1d01ce314387b98d48d226129ab4c0a437195a9d65263f2cdd612eca",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4114016201",
+      "name": "山西工程科技职业大学",
+      "file": "4114016201.png",
+      "sha256": "038878745a0422930dc229c0c691a1a21bd2ee294593a3a66cb38967c05782be",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115010126",
+      "name": "内蒙古大学",
+      "file": "4115010126.png",
+      "sha256": "1ef4bace37f58b0778ffef51a789f8d815d04be8fe210fa63cb1e27d37a9f8dc",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115010127",
+      "name": "内蒙古科技大学",
+      "file": "4115010127.png",
+      "sha256": "24ea824eb7b4fed84f0c06e2c6aa0e9fe65961660dcd61586a761955a29f7756",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115010128",
+      "name": "内蒙古工业大学",
+      "file": "4115010128.png",
+      "sha256": "4149b6cc26b41e6e8bedcf60bd12f1ee76e7553756b9456fe8f7ec07f88ab1b9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115010129",
+      "name": "内蒙古农业大学",
+      "file": "4115010129.png",
+      "sha256": "801e6f185614c23bf39f72786d27a5a634ad6de7e56d8436e4f7c63e97c779f3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115010132",
+      "name": "内蒙古医科大学",
+      "file": "4115010132.png",
+      "sha256": "49679d74d32b0bc07039f6f249a63c21aa8ee14e4e861c8f3927346c37860700",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115010135",
+      "name": "内蒙古师范大学",
+      "file": "4115010135.png",
+      "sha256": "064d7b2b32a28ad0f63d70ce0daef200ba9982b1c5b63ff63ee8d8509bb07917",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115010136",
+      "name": "内蒙古民族大学",
+      "file": "4115010136.png",
+      "sha256": "f9dcfb523063c0aa266bf5842e3e501416ea9663e2031aec5f32d4813c745362",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115010139",
+      "name": "内蒙古财经大学",
+      "file": "4115010139.png",
+      "sha256": "283f26dffce9b0b340de5ca3ec873bc7dc91886001f20fb3bc8bc6fe830123b5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115010819",
+      "name": "呼伦贝尔学院",
+      "file": "4115010819.png",
+      "sha256": "19ce9fd1bbfc0f1b800a17975d007b3f9d6bfeba37fc39c1350c6fa5d2beb696",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115011427",
+      "name": "集宁师范学院",
+      "file": "4115011427.png",
+      "sha256": "cac5a74460a5e5250f5f1ad0cd87083cec2d07c0783f26c6585c6271fe2a68eb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115011631",
+      "name": "河套学院",
+      "file": "4115011631.png",
+      "sha256": "0560dcdc697d9ded45410995f03e1a671785277825b996c3dc488e60ca80195d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115011709",
+      "name": "呼和浩特民族学院",
+      "file": "4115011709.png",
+      "sha256": "d61b16652176d3019ff03001879dbfc087a1d0a21de025af3594a745817c2f33",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4115014532",
+      "name": "鄂尔多斯应用技术学院",
+      "file": "4115014532.png",
+      "sha256": "af181bb8350227a82d541372488b657a2d503586f0d81bca12e429ac41e339a4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010140",
+      "name": "辽宁大学",
+      "file": "4121010140.png",
+      "sha256": "7e0f2ad3b59a03de350acc62630902aa84d0a54d6d6e15401e9667cf25c9a72d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010141",
+      "name": "大连理工大学",
+      "file": "4121010141.png",
+      "sha256": "6c4c9992f11a47820c711bc634c6c0eeacc56ef6688bff8dd6fe2842de06f176",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010142",
+      "name": "沈阳工业大学",
+      "file": "4121010142.png",
+      "sha256": "36403bc62ac3e8feef866671c7da440def023eef9de99d2da4a984a93af3f04f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010143",
+      "name": "沈阳航空航天大学",
+      "file": "4121010143.png",
+      "sha256": "196dd65f640cd5570cf6b0a2e2f8a13cedd3774a7c1eb3a84e6bff407511590e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010144",
+      "name": "沈阳理工大学",
+      "file": "4121010144.png",
+      "sha256": "8dfb4086fd084f32013cab5e09f457bf8aa3b135529a02fda6ae0b044cbbe945",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010145",
+      "name": "东北大学",
+      "file": "4121010145.png",
+      "sha256": "3a7658e7752ca3ccf25210a8063c6908c3bb0e8101890709fbc8360cd18f8b53",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010146",
+      "name": "辽宁科技大学",
+      "file": "4121010146.png",
+      "sha256": "037ed9c2adfe262211de1166ab00774a0b3712076591c649c1c9e1b73eefe5de",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010147",
+      "name": "辽宁工程技术大学",
+      "file": "4121010147.png",
+      "sha256": "be260d6e0820fd2ce83ebcd43bcb287a7849568b4aaf3c0c34cf8ab0de2f7b8f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010148",
+      "name": "辽宁石油化工大学",
+      "file": "4121010148.png",
+      "sha256": "1e216753cdb69e69f386e618a4cddd444c9529203d0667181ba9bd27bf45dc48",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010149",
+      "name": "沈阳化工大学",
+      "file": "4121010149.png",
+      "sha256": "6866e978fe45b48b256baba31d503900ea3108a682ee998b8fd7c7b2d8dd769f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010150",
+      "name": "大连交通大学",
+      "file": "4121010150.png",
+      "sha256": "691e21302ee8fafcebd28b9fc9f76d946df74cbc0e7b975af746fe781c8ead4b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010151",
+      "name": "大连海事大学",
+      "file": "4121010151.png",
+      "sha256": "168eef2cde3fc0c84be18f060f710a6a1eb97b91646a23c47a0e281e089b40d4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010152",
+      "name": "大连工业大学",
+      "file": "4121010152.png",
+      "sha256": "c4bfe27b52419e1c2fad7c61104e839732ce0ddd0b524536779f93839bfc0e2c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010153",
+      "name": "沈阳建筑大学",
+      "file": "4121010153.png",
+      "sha256": "285a089be2d73d78ce584420d13ef66c13aa9aec181b840a16b37d2f71732260",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010154",
+      "name": "辽宁工业大学",
+      "file": "4121010154.png",
+      "sha256": "89befd63247062ba38b15f9bd35c32e3ae027a8a25ab640bc2684a2109e0b625",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010157",
+      "name": "沈阳农业大学",
+      "file": "4121010157.png",
+      "sha256": "4d5c2b42bb230c02cd760792b5182996a7378cca8fcf04e57795ea506074c152",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010158",
+      "name": "大连海洋大学",
+      "file": "4121010158.png",
+      "sha256": "88c6f0342b8a2d29b6c2157df73cfc1c12e4fd7b905b9f4ac47d8c8b6c7f4516",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010159",
+      "name": "中国医科大学",
+      "file": "4121010159.png",
+      "sha256": "ec859d46fbd399f932fe2d1dfa81e38789338f23a75e0a2dbacdbb52825c7925",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010160",
+      "name": "锦州医科大学",
+      "file": "4121010160.png",
+      "sha256": "d7522bbd0dda462517b8bda80c4b79e881a331e8124d76a232d2b3b08098fc95",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010161",
+      "name": "大连医科大学",
+      "file": "4121010161.png",
+      "sha256": "b3ef74d14b8ef682b1dcfee94bbfcf23a984128aada15136065c6954111d2fd9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010162",
+      "name": "辽宁中医药大学",
+      "file": "4121010162.png",
+      "sha256": "1073cd866a2629918cb749ac2257bbde15e4f86f9eeb4605d86132f8a75ff4df",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010163",
+      "name": "沈阳药科大学",
+      "file": "4121010163.png",
+      "sha256": "cb495251a90e60bf4f1198a084db00d7d5f7ae39035743dc79697537655404d2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010164",
+      "name": "沈阳医学院",
+      "file": "4121010164.png",
+      "sha256": "e649cd566421aaed1cc3b917a270601c03ec733259f9d62d38e24cebce8daac6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010165",
+      "name": "辽宁师范大学",
+      "file": "4121010165.png",
+      "sha256": "8956e6160a0a7c50d163560de1b5008aa2c994ae3c88206b27fb10ef296a915c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010166",
+      "name": "沈阳师范大学",
+      "file": "4121010166.png",
+      "sha256": "5d327752c170d533fae140364b01ff70debc6351f85eeeb7870beb6ed65503d6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010167",
+      "name": "渤海大学",
+      "file": "4121010167.png",
+      "sha256": "5b72583d68d0b7376cc24dbdef0508905771f707ad024591d73e36d3a48d6ba9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010169",
+      "name": "鞍山师范学院",
+      "file": "4121010169.png",
+      "sha256": "0892a265485608a3976383e0d68b96131aa013f64fc5d250e5fd38d6d428ba1d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010172",
+      "name": "大连外国语大学",
+      "file": "4121010172.png",
+      "sha256": "ce1fb8ce96ac80dc5836e7bcad87bf30e54b3e5cf207f942aa9b8c9b6cae7db5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010173",
+      "name": "东北财经大学",
+      "file": "4121010173.png",
+      "sha256": "6a267ade64a75a09efc0c2ad388bfe3afcd9a5cc59a6ce34161ff1689ffe3cbf",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010175",
+      "name": "中国刑事警察学院",
+      "file": "4121010175.png",
+      "sha256": "508f8768d736fe4eeeae25c29c86e28eec79c7329e99b836ec541e71eb96b75f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121010176",
+      "name": "沈阳体育学院",
+      "file": "4121010176.png",
+      "sha256": "da76fcd1024931a1a51e55d07f38b68a35c0d7e5196291ecd48b4febb05d124e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121011035",
+      "name": "沈阳大学",
+      "file": "4121011035.png",
+      "sha256": "0a283cc96b40bd39ce90234ad2328a64fc4e5385983d8a27abf95b5139906bf4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121011258",
+      "name": "大连大学",
+      "file": "4121011258.png",
+      "sha256": "f93b9bd31c1e92d643da85140ea9ffee0340d1d8fb83a0b15ab4497156a396f6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121011430",
+      "name": "辽宁科技学院",
+      "file": "4121011430.png",
+      "sha256": "d52b0535ac2651a6c5df9fc4d7da5d09b6633e87443fb3897a6bbaa1fa2e1aa1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121011432",
+      "name": "辽宁警察学院",
+      "file": "4121011432.png",
+      "sha256": "34913c8cdd8ff574bb5f25d3637e4008435cc30c25a1635859567f71b5a7479c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121011632",
+      "name": "沈阳工程学院",
+      "file": "4121011632.png",
+      "sha256": "486171c7636ee312659db138d18020ec148d7aeb0ad85ad5cac04b0fc217d7b9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121011779",
+      "name": "辽东学院",
+      "file": "4121011779.png",
+      "sha256": "6ee4e296d67deac0fc165afd16f4dda895a5d231c10b7b55000475e92fd616bb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121012026",
+      "name": "大连民族大学",
+      "file": "4121012026.png",
+      "sha256": "1cbf53be6b75b6ec88b803b3e3a59989b48b5fa2f045195ec7e8142e1b309fed",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4121014435",
+      "name": "营口理工学院",
+      "file": "4121014435.png",
+      "sha256": "0e19555510aec5b3d661cf7f17c81247dc0f8db1c1e9f47e9717a59f20069b02",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010183",
+      "name": "吉林大学",
+      "file": "4122010183.png",
+      "sha256": "c2ff595b39793e181391d2ce2dc41220624e2ebb60dbef2b6b58ff9050d8d4a5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010184",
+      "name": "延边大学",
+      "file": "4122010184.png",
+      "sha256": "178d1aba486402738239bc49a77880a34c7e4e24706257c7b2588411a7947d93",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010186",
+      "name": "长春理工大学",
+      "file": "4122010186.png",
+      "sha256": "9392d01a622dfeca4cc7fa9cadaec9c722ea0300468b92be3f13a9a1226725c5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010188",
+      "name": "东北电力大学",
+      "file": "4122010188.png",
+      "sha256": "cc9a68fc9f2315642a043dcea56ecf40576ff236a5cd39882b9ddf335870e557",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010190",
+      "name": "长春工业大学",
+      "file": "4122010190.png",
+      "sha256": "533d8c30448b6f7a0d586d4e2c0db725cf0d55df7ae2c368f776cb016acac351",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010191",
+      "name": "吉林建筑大学",
+      "file": "4122010191.png",
+      "sha256": "190c7a30ad7c6c8f9eabac896c9af5a58c5b8d04050aba0250d629258b5d0e1b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010193",
+      "name": "吉林农业大学",
+      "file": "4122010193.png",
+      "sha256": "c5058567d7dba289284b5695e49f41ffd05b96c3731998cc0836cf8f5a544088",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010199",
+      "name": "长春中医药大学",
+      "file": "4122010199.png",
+      "sha256": "77764d7d8ea72ea1185b6e66c247256fd4e3a85ca97fa400051caac435cf73d5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010200",
+      "name": "东北师范大学",
+      "file": "4122010200.png",
+      "sha256": "17c8c40b978e20606b38582f69f9293b372a233de39fc4922113451d7c924165",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010201",
+      "name": "北华大学",
+      "file": "4122010201.png",
+      "sha256": "5fd23b7aca23e5698098bcd95ae357aab80ca65d7cd6193cb77d9d44ed4491e5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010202",
+      "name": "通化师范学院",
+      "file": "4122010202.png",
+      "sha256": "d612c7ba6e64d3598381299941b3603f69b630a772d0dea136e61b6838b07f38",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010203",
+      "name": "吉林师范大学",
+      "file": "4122010203.png",
+      "sha256": "eb8df6f9d3d5cb1b4acd81e3b7cc7e03a3f7029d842b1885423a42450c8fcccd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010204",
+      "name": "吉林工程技术师范学院",
+      "file": "4122010204.png",
+      "sha256": "66b98315a4e2507eb1155a18caaf36831d67cca1543f2aa02e2134e2b3a4fb02",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010205",
+      "name": "长春师范大学",
+      "file": "4122010205.png",
+      "sha256": "bc75a4e58067c2219104533582ec2da365f5c38f6721760b5ae2b72295d19246",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010206",
+      "name": "白城师范学院",
+      "file": "4122010206.png",
+      "sha256": "9884d317c39d2d7d06f0cc83ad62430b641f58df221dba925c908bcf83750f18",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010207",
+      "name": "吉林财经大学",
+      "file": "4122010207.png",
+      "sha256": "1156977284691e178649c398d4e1fa61a451d3db957da46668af4a94742a324b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122010208",
+      "name": "吉林体育学院",
+      "file": "4122010208.png",
+      "sha256": "6e2f1e8f3e210023c0ff17909d6b61585e8ecea48ac4aeae80ff83426a9e056b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122011261",
+      "name": "吉林工商学院",
+      "file": "4122011261.png",
+      "sha256": "fa52b17aa52b2e62baf489b89e0ca306d4bd2294243a2d755bb3fd14310f4eb8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122011437",
+      "name": "长春工程学院",
+      "file": "4122011437.png",
+      "sha256": "e7e9c7bec0823f867d23fdc59ee283f11cdb31eea98baa6a22e51bee2f921d6c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122011439",
+      "name": "吉林农业科技学院",
+      "file": "4122011439.png",
+      "sha256": "146d3b0f1c63b61d38a614d4dae44e1a7c91fd6c141021a805ba7f9db57797e1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122011441",
+      "name": "吉林警察学院",
+      "file": "4122011441.png",
+      "sha256": "3dcf1f6df90f7ab68540128937e9fd49b14b2b7d4de2b3a2af012d7bb6fa2cf8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122011726",
+      "name": "长春大学",
+      "file": "4122011726.png",
+      "sha256": "76425aab0dfee70acb961e1bacade56c59d8a5f8aa170bfe028b0ad423961d6e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4122013706",
+      "name": "吉林医药学院",
+      "file": "4122013706.png",
+      "sha256": "5f1a375d3b897bfcc82f570c25e167346c5ee769566c611cf321e34f41705deb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010212",
+      "name": "黑龙江大学",
+      "file": "4123010212.png",
+      "sha256": "7a9fa5399dd7dfaedb7f7c14cadc49f3bfb2f441e75b5a613d1395d16f843e7a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010213",
+      "name": "哈尔滨工业大学",
+      "file": "4123010213.png",
+      "sha256": "b7b14fc8d2c26da288bd9dfe938e1897760f5ba0a7b1b2c1294901d435e187b9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010214",
+      "name": "哈尔滨理工大学",
+      "file": "4123010214.png",
+      "sha256": "b17eeca6bf92ffed96b84fe9eae5d7915b28272257f9ee8b3bff0b6c2489fded",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010217",
+      "name": "哈尔滨工程大学",
+      "file": "4123010217.png",
+      "sha256": "e7b60bf1b8ba11619cd9e65fc2a1cb7478855e32a4199eb992aa584d8ffa20c3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010219",
+      "name": "黑龙江科技大学",
+      "file": "4123010219.png",
+      "sha256": "aff9c65b426c8a107f4b1b7e28c5cdb7efd397c00a2b3a442254a5ffbc1ed88a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010220",
+      "name": "东北石油大学",
+      "file": "4123010220.png",
+      "sha256": "908b7343ac4719fc3d2fc698b800b96f3b90aa7488235bcf1bfa91e07cb9b581",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010222",
+      "name": "佳木斯大学",
+      "file": "4123010222.png",
+      "sha256": "b5ccb9b5ee61208633678310fcfa52f750826368701a06e7a9340c32cba3e73d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010223",
+      "name": "黑龙江八一农垦大学",
+      "file": "4123010223.png",
+      "sha256": "3f83ef72c0729b30aab2eb8ef54da8548bb92b2044308f120144d21509e464c7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010224",
+      "name": "东北农业大学",
+      "file": "4123010224.png",
+      "sha256": "924aa98e2a37e9b818e50783866f3f43b0062081d8abb250c921562e8f3a0d75",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010225",
+      "name": "东北林业大学",
+      "file": "4123010225.png",
+      "sha256": "62b14e588c574fd16fd12d4c66ab05fce9cb6057373c015f9f3d0a8c116e95ed",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010226",
+      "name": "哈尔滨医科大学",
+      "file": "4123010226.png",
+      "sha256": "b0157bc5f52eb18d06e7d8dd810f17246ba5bafe40b7d2f968b02f16cd2d0f64",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010228",
+      "name": "黑龙江中医药大学",
+      "file": "4123010228.png",
+      "sha256": "bbc1c1f1d03e739da1da9c3d67a44041827b26873a4c5260b1d036cace954749",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010231",
+      "name": "哈尔滨师范大学",
+      "file": "4123010231.png",
+      "sha256": "77c3971a51f220308c7c1d68965f1d006e369320970058694797ba943d75d1c4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010232",
+      "name": "齐齐哈尔大学",
+      "file": "4123010232.png",
+      "sha256": "a1725b898f23798ac233437d416d1a12833299888f0d03977d6678bb1b75f849",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010233",
+      "name": "牡丹江师范学院",
+      "file": "4123010233.png",
+      "sha256": "4770913cf5467b1c2b79387ffc28208595b9ab7ca1b61fdbba6a261051aaa7ac",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010234",
+      "name": "哈尔滨学院",
+      "file": "4123010234.png",
+      "sha256": "2397d4ad19e5c090c12e942727e3a7cd0a45e8e6612581528c5794cd6c769dae",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010235",
+      "name": "大庆师范学院",
+      "file": "4123010235.png",
+      "sha256": "9776ca498cda76f23f31a0bb5e0b85cfebdb3ab38c153140e6fb14f958973e24",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010236",
+      "name": "绥化学院",
+      "file": "4123010236.png",
+      "sha256": "e8326a563a7f79ea296fc73f17e1b70b2aa2a3a8af3b999db2efd4bd3dce6e83",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010240",
+      "name": "哈尔滨商业大学",
+      "file": "4123010240.png",
+      "sha256": "d1e3a6ad74a6301470262c62db75d7188203817f5a13d6a2310eb6989ac1ff5b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010242",
+      "name": "哈尔滨体育学院",
+      "file": "4123010242.png",
+      "sha256": "5f3f7b375f9cfd300598f6deec8813c13bd92a49178bfe9cc21e1241a455bf56",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123010245",
+      "name": "哈尔滨金融学院",
+      "file": "4123010245.png",
+      "sha256": "f6a92f1bdab8036e309ad86896a2c6983c2937f1cef508e6b8186ef5156ba9b5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123011230",
+      "name": "齐齐哈尔医学院",
+      "file": "4123011230.png",
+      "sha256": "98d01d43ce04817c8592b26063f15e2f23f6d0567d53be21201c46d47a7f0bbb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123011445",
+      "name": "黑龙江工业学院",
+      "file": "4123011445.png",
+      "sha256": "d25ff9d7473d8d8b1650c12988dab0c980c3c87f8cc8d91084d7d7565bd8ab4e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123011802",
+      "name": "黑龙江工程学院",
+      "file": "4123011802.png",
+      "sha256": "4b1230ae5ca099a039edda207282d2ee2f3377817c28cb067696d7d0aea35b65",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4123013744",
+      "name": "黑河学院",
+      "file": "4123013744.png",
+      "sha256": "972b74a98c7994384f937666f86e5d8bfea04a747ae532f8afa71e064dfe4713",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010246",
+      "name": "复旦大学",
+      "file": "4131010246.png",
+      "sha256": "10805b40f0acafb2b565032d5cb73136af812ed5e2fea928980ac1cb96f5ca45",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010247",
+      "name": "同济大学",
+      "file": "4131010247.png",
+      "sha256": "2e8820896f7e366119e420615c3e1c6a05b25494c7ad7221edbfab58197229d3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010248",
+      "name": "上海交通大学",
+      "file": "4131010248.png",
+      "sha256": "7e025c2d69c1c7fd150ee1cc1abc6f84f58525cc3c85153774f7a958da0e211d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010251",
+      "name": "华东理工大学",
+      "file": "4131010251.png",
+      "sha256": "7f7fdd15a76a68e457896b13717433544e1b7f6b25e29cdafd49af0d217fa2bb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010252",
+      "name": "上海理工大学",
+      "file": "4131010252.png",
+      "sha256": "1e4f93bfb6b5f452f3260d9038a030088352b8c9b30798c52b1a6406121bf44c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010254",
+      "name": "上海海事大学",
+      "file": "4131010254.png",
+      "sha256": "21b4347fca52ec8bb90e9cc675d02e09b0bd32052fdb5d84cf119c50991b3ba9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010255",
+      "name": "东华大学",
+      "file": "4131010255.png",
+      "sha256": "f025ac56a4e38fb222eb69d09b895e82fb59fffe6c8abee4928b3ebbeea5dc7f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010256",
+      "name": "上海电力大学",
+      "file": "4131010256.png",
+      "sha256": "ea16f9c17ab6303537c6f1f031398c510b7a77d6446b6bbd4ae3d796048d33a9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010259",
+      "name": "上海应用技术大学",
+      "file": "4131010259.png",
+      "sha256": "b82f6076be1cd6ef6d97043a4c8e83d8343a4b41297ae32c8f2241a2e9a1ba6e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010262",
+      "name": "上海健康医学院",
+      "file": "4131010262.png",
+      "sha256": "714b3aac6f546201f882c5fe3254315b04f99153928f08248b8723c854d1c269",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010264",
+      "name": "上海海洋大学",
+      "file": "4131010264.png",
+      "sha256": "14a0cb4c1d6a92c421cad798dbb619de7b49b47ec7da6ef993ede7d945bd6003",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010268",
+      "name": "上海中医药大学",
+      "file": "4131010268.png",
+      "sha256": "7c9b224e659a68ae52d1eb012160c4966a82d7e29bb91ba3fcd798a55486e885",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010269",
+      "name": "华东师范大学",
+      "file": "4131010269.png",
+      "sha256": "fd41fbd4ad76fe34f8c674610166230fcbabd70f9477fe22a3f89b56ee266821",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010270",
+      "name": "上海师范大学",
+      "file": "4131010270.png",
+      "sha256": "9ccc3758f2d82f4c46e5a2bee7914e822cd046926def7de7d6d28ba0dec9e89e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010271",
+      "name": "上海外国语大学",
+      "file": "4131010271.png",
+      "sha256": "5f816c68be3268d45966ee270195337ab613ccc082650b60f011af10bbcb2a33",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010272",
+      "name": "上海财经大学",
+      "file": "4131010272.png",
+      "sha256": "31ff88373f4463d29e1ac5b283ec860a4e7b64b4a600173828c0c28ea63b7f3f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010273",
+      "name": "上海对外经贸大学",
+      "file": "4131010273.png",
+      "sha256": "0b7c04c81e9b22b78409389350be1f393806bc8edea511e766ce1b4755dc15f1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010274",
+      "name": "上海海关学院",
+      "file": "4131010274.png",
+      "sha256": "6fb24bfd6a081d1bcec90bab433e3e044cc2fa57e1eb1c2fc77e9c7dd186ad6a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010276",
+      "name": "华东政法大学",
+      "file": "4131010276.png",
+      "sha256": "90ef5e18522e6071e3d4cd88f97ced09c6974d257c9e4a9d62a9deedad009579",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010280",
+      "name": "上海大学",
+      "file": "4131010280.png",
+      "sha256": "feac231be7fa5d204fd4870106835aaaa538e0e52a3c6afae7a50c5a6b8f7114",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131010856",
+      "name": "上海工程技术大学",
+      "file": "4131010856.png",
+      "sha256": "32bc63af76a2ac3123539ed85832a997e187e5876155a27c69f5f9102baaca9c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131011047",
+      "name": "上海立信会计金融学院",
+      "file": "4131011047.png",
+      "sha256": "724561a2446a6d7ce3ebeb7b60424dad976b8c4e08513a4b437f8ed8754d2e24",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131011458",
+      "name": "上海电机学院",
+      "file": "4131011458.png",
+      "sha256": "bb44e37727166c80ad3938138cd6e2088fafaf578dded9216c20131e5bdcebdd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131011835",
+      "name": "上海政法学院",
+      "file": "4131011835.png",
+      "sha256": "c3f7e9ac805dde5a187d162f49fce961c09d046a59bb7a0246201f3d8d670033",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131012044",
+      "name": "上海第二工业大学",
+      "file": "4131012044.png",
+      "sha256": "a8175ea2fffb7263b12b0546728ed789eb4489a37008cb591fdf1bf9e0648f74",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131012050",
+      "name": "上海商学院",
+      "file": "4131012050.png",
+      "sha256": "905ffebbebb3fc06a3697741952d2ab62da906850fc5ea13b50f6593dff0e8d4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131014423",
+      "name": "上海科技大学",
+      "file": "4131014423.png",
+      "sha256": "0ac13a0072f845b158d42c83f7618fb46fc9073904af92576043292664eadf2a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4131016404",
+      "name": "上海纽约大学",
+      "file": "4131016404.png",
+      "sha256": "85fa481c064aae24550d46bf5bb4bd91cd6a70ef3f36f4fa1d5ef7a25bafaccd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010284",
+      "name": "南京大学",
+      "file": "4132010284.png",
+      "sha256": "3335924b96f8322670e674108d113fff9c2d377d67dc59d1a3940309ec906b11",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010285",
+      "name": "苏州大学",
+      "file": "4132010285.png",
+      "sha256": "c8b695e2625d27e0b38b0ca83687297a3762de375958a3d5a0f7f317fa1127a3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010286",
+      "name": "东南大学",
+      "file": "4132010286.png",
+      "sha256": "5db1888ff01d39b2474284f9c4f056728a2370262651239742cbabe66c685671",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010287",
+      "name": "南京航空航天大学",
+      "file": "4132010287.png",
+      "sha256": "f4cd3f62bdd913bfffaea13afd1639695d679f9d41dc6ead098b43e52df333fd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010288",
+      "name": "南京理工大学",
+      "file": "4132010288.png",
+      "sha256": "e61b6af0c89e9add381d431b17e477a9cd93c0767b6e0d19c8c5b539cb2190b0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010289",
+      "name": "江苏科技大学",
+      "file": "4132010289.png",
+      "sha256": "e9b037eb91bb56819e7a3d441a34d86c1c681985be347004fa84661000021306",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010290",
+      "name": "中国矿业大学",
+      "file": "4132010290.png",
+      "sha256": "264ffcb8414699a63cb5032c52dace41bcfe2bb15544fcac0cbd4b12557b7c9e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010291",
+      "name": "南京工业大学",
+      "file": "4132010291.png",
+      "sha256": "fae82b4b1f96cbc19c7efbbd17f4b1db7e9b4073902dd585bba371bdb2f9fa96",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010292",
+      "name": "常州大学",
+      "file": "4132010292.png",
+      "sha256": "2ee013e6416766e09adc0687c4b80901aa645867103f31424b4ed99d36b80f95",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010293",
+      "name": "南京邮电大学",
+      "file": "4132010293.png",
+      "sha256": "d34fe66e3801a548e9d9cac79435fcbf0d3f7e2e2ad990b90f9d7a39bda3f432",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010294",
+      "name": "河海大学",
+      "file": "4132010294.png",
+      "sha256": "774e7ce6cbcb93de38b71d377422b06719810edc275698e6450c870684b4133f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010295",
+      "name": "江南大学",
+      "file": "4132010295.png",
+      "sha256": "7013da76bf20a6068f50fdd64a8b3ba8e08069fb90642644f87527b2e5b4d6f0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010298",
+      "name": "南京林业大学",
+      "file": "4132010298.png",
+      "sha256": "0e6e7384c60c7f812e3763e5782f4fb239acdb69d76d3b69d9631cea1649c1b6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010299",
+      "name": "江苏大学",
+      "file": "4132010299.png",
+      "sha256": "fc48a1788810091b285116e52e6b657c59734b2c4fb6f8623ad95c4502b8bd81",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010300",
+      "name": "南京信息工程大学",
+      "file": "4132010300.png",
+      "sha256": "ab53300d131614abd904827b7f01e98f227bc291d4df898cb569c71f62bc2773",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010304",
+      "name": "南通大学",
+      "file": "4132010304.png",
+      "sha256": "27041e590ad89646c5a1fd706bf6fbda49d3b4dbfccd566e9b9ee5fde15a234a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010305",
+      "name": "盐城工学院",
+      "file": "4132010305.png",
+      "sha256": "9f33e52a21722a021eb2778ba6c9fc016ea717bf987dda5f02dacb9821156ef6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010307",
+      "name": "南京农业大学",
+      "file": "4132010307.png",
+      "sha256": "737f639f9f510e55f67fdef129c465c81362b3244888a37ce6903aaeab74d25c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010312",
+      "name": "南京医科大学",
+      "file": "4132010312.png",
+      "sha256": "d30d0ce791c8cd492c0b6999e2a65c639e9bee82a057eb7b2b3ca401e6ae6fb7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010313",
+      "name": "徐州医科大学",
+      "file": "4132010313.png",
+      "sha256": "0582743262f8f5f5fb2b8605369d19e8f0d05c44cd18e0876ae9385857b5e667",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010315",
+      "name": "南京中医药大学",
+      "file": "4132010315.png",
+      "sha256": "42d95f8172f7188ff93e2c31788f794263a086293018b89666fd4b1c67b91f46",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010316",
+      "name": "中国药科大学",
+      "file": "4132010316.png",
+      "sha256": "66c108ea74e0c8b04b1c766a491c0be0527d49c9e7cc6dd78c44321e15f411b7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010319",
+      "name": "南京师范大学",
+      "file": "4132010319.png",
+      "sha256": "11fa74e97cf36586c8f58a5972cce0c5e26e13763b2181ea256d095bf311a2f6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010320",
+      "name": "江苏师范大学",
+      "file": "4132010320.png",
+      "sha256": "31a955e5ce65da11fbe9b394a649880aa0b8587436553692be34c84efe46eb28",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010323",
+      "name": "淮阴师范学院",
+      "file": "4132010323.png",
+      "sha256": "529ec312f1715bf6bd58c4ac63027b00ed0dca946635dbd237a4bdb2d505e0c2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010324",
+      "name": "盐城师范学院",
+      "file": "4132010324.png",
+      "sha256": "e7fda76380921682190b859c54393aebe1602c615f4a04e09fba9e7de428cc01",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010327",
+      "name": "南京财经大学",
+      "file": "4132010327.png",
+      "sha256": "d5ee1c57418ea1160809c1c2c023e82731d6324e00260549138b41bcd86bef2b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010329",
+      "name": "江苏警官学院",
+      "file": "4132010329.png",
+      "sha256": "edc120c1397da72f8a02807b1e3d7ce0486e1a57bf01a793fa86999a18ad86a1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010330",
+      "name": "南京体育学院",
+      "file": "4132010330.png",
+      "sha256": "0d59fea9f3354ed3b52e5dc57b577bfde6addf50f2b60a4d0d070e8f5ae7aea3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132010332",
+      "name": "苏州科技大学",
+      "file": "4132010332.png",
+      "sha256": "448008fb2f0538a8e93fcf8fb8f3a02b3b57480c40f65ed02728c8ea17b30c83",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132011055",
+      "name": "常州工学院",
+      "file": "4132011055.png",
+      "sha256": "7bc010d168b99e82d7e03624fd939e4c07e52f2a4de3f79aca911dad9b62dd20",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132011117",
+      "name": "扬州大学",
+      "file": "4132011117.png",
+      "sha256": "bde8e3d37b0b16da8550af0aa2202d8b728c3cbaa35496eb47b5fc7f32a114d7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132011276",
+      "name": "南京工程学院",
+      "file": "4132011276.png",
+      "sha256": "de040e3c1b20ac05c61d38f6fe80d549ac21057c206926801a775c8ca7ab4cd9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132011287",
+      "name": "南京审计大学",
+      "file": "4132011287.png",
+      "sha256": "6e6dc21483a19a1519b4525993f24695dc7eb4da82ea1c2b110dbc95ab64190a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132011460",
+      "name": "南京晓庄学院",
+      "file": "4132011460.png",
+      "sha256": "7ccac0831a12970d826c20e2dc8f89688c889ba54446c40e998c2feed4fc4a67",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132011463",
+      "name": "江苏理工学院",
+      "file": "4132011463.png",
+      "sha256": "c02b5d3f721cf88c74037b3d0dbc0c242e18504d054116c5da7715674b034662",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132011641",
+      "name": "江苏海洋大学",
+      "file": "4132011641.png",
+      "sha256": "fd9e2430407f25687b0c9df4a2df92dd45609f26d7a8138059f142f58867d61b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132011998",
+      "name": "徐州工程学院",
+      "file": "4132011998.png",
+      "sha256": "1d19547d47d08d0d3f03ef1cf5134ee353c95bcba16c0fee1eb0c66e849a28ed",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132012048",
+      "name": "南京特殊教育师范学院",
+      "file": "4132012048.png",
+      "sha256": "4cdb003dbc7c132f1bd770b46f9b48ef6a8f4fb3f01e58a3f9f5f652f40941ab",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132012917",
+      "name": "泰州学院",
+      "file": "4132012917.png",
+      "sha256": "006096b9f6b718502ec70a636100bfec3dfe59b8cef9dba0d988c835d2808e58",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132013573",
+      "name": "金陵科技学院",
+      "file": "4132013573.png",
+      "sha256": "55368d66dcf89bbdeb1ed9c61a9cbfb524bfcaf0e4016df2aac9debb2a8c17d3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132013982",
+      "name": "无锡学院",
+      "file": "4132013982.png",
+      "sha256": "a697982c3f2717aab79945fcf1221256961b606de46fe28d054698cd1b9163e9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132013983",
+      "name": "苏州城市学院",
+      "file": "4132013983.png",
+      "sha256": "867751116cee1b8dad96378f96d89cf180c59d706a59da185d57954425685f3d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132014160",
+      "name": "宿迁学院",
+      "file": "4132014160.png",
+      "sha256": "aba745f2f3ddfa8701e3a3c71ca602e9cd53ac0e1229a95130f75138fc6b4a4d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132014436",
+      "name": "江苏第二师范学院",
+      "file": "4132014436.png",
+      "sha256": "1dcee72c733ce83a75b0e7491d05e4af9b678251dc779211fb57062d9f9e8d92",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4132016403",
+      "name": "西交利物浦大学",
+      "file": "4132016403.png",
+      "sha256": "10bbc214158982396cc7ede1e4dc7cbf821df075c2592e9062abc258ce4d2da1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010335",
+      "name": "浙江大学",
+      "file": "4133010335.png",
+      "sha256": "84f43c4f4371f84872687d4e9b4cb74265b37d1e41c5735508febc867c9a8c1d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010336",
+      "name": "杭州电子科技大学",
+      "file": "4133010336.png",
+      "sha256": "ce5dd72dd544fe58e20440bc5202a4ebb72c56c43fc088f1ad7654d9f318b520",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010337",
+      "name": "浙江工业大学",
+      "file": "4133010337.png",
+      "sha256": "d63b248a94ec0dff73d89c31c5bb13a884b5fb29146a7441d8a9e0c53056b0c5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010338",
+      "name": "浙江理工大学",
+      "file": "4133010338.png",
+      "sha256": "c1ba55255bbe091ba118a64bb924c3004fc5dbe37c5cd57c928cd1102174945f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010340",
+      "name": "浙江海洋大学",
+      "file": "4133010340.png",
+      "sha256": "a43f6ef2810ab7057a99d1962f0b32085141f5b99ebf975c9b19e3d523fc15f7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010341",
+      "name": "浙江农林大学",
+      "file": "4133010341.png",
+      "sha256": "eee508cb8a8f6d986cb43cdee7addebcb21b840f509e401d098856cd76348bbb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010343",
+      "name": "温州医科大学",
+      "file": "4133010343.png",
+      "sha256": "9cd730cfd88b6fa2f980f9402dacbad1ff35a681642f6d595c61c62f36dfc014",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010344",
+      "name": "浙江中医药大学",
+      "file": "4133010344.png",
+      "sha256": "2cd5c65861a3385ebc3d5e61a05d3050818dfe57df9a298e34a8f522d87d0ae2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010345",
+      "name": "浙江师范大学",
+      "file": "4133010345.png",
+      "sha256": "a0b50435490c8f77d9138e27738cf5eaf7812710db667a0c897ff9ece83d0272",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010346",
+      "name": "杭州师范大学",
+      "file": "4133010346.png",
+      "sha256": "c4a1e33da2102eb35898d3b47537c25f88713458ea6b6ebffbca790946cadc27",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010350",
+      "name": "台州学院",
+      "file": "4133010350.png",
+      "sha256": "e5bc8cebd694b12f6b89f617daecb6ef5fbd8f093f2f131d8961f95e2f766d1c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010351",
+      "name": "温州大学",
+      "file": "4133010351.png",
+      "sha256": "b98dbeaba6f583fd7e64d5ab7ae3fe2c838164042769dac101a4a5fbc2791c8f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010352",
+      "name": "丽水学院",
+      "file": "4133010352.png",
+      "sha256": "0543e2742b044f7a7cc72f3277bc3029cbf33055994bb619122a040942516b55",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010353",
+      "name": "浙江工商大学",
+      "file": "4133010353.png",
+      "sha256": "c6f3313cb5c68bb6bbb7a154efc8dc864b3c75613834b0ca578e95b337cccbeb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010356",
+      "name": "中国计量大学",
+      "file": "4133010356.png",
+      "sha256": "b55094fa94fa88c27e4f076b74658134a1198b6d87a0f2c18a61f757cefd55a6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133010876",
+      "name": "浙江万里学院",
+      "file": "4133010876.png",
+      "sha256": "2cd53e36b5b5acce09fcc69c219485bcc1461b9e53d2f5ad4c9b8670978eb60b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133011058",
+      "name": "宁波工程学院",
+      "file": "4133011058.png",
+      "sha256": "3e971d5f818d4dbaf3ac56fc106ea1fff351b9391205a4614f84353f2225a442",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133011481",
+      "name": "浙江水利水电学院",
+      "file": "4133011481.png",
+      "sha256": "3ae1fff38d27963928260c62e945467c2a4dcb866d47f283bbb9f49e32f61766",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133011482",
+      "name": "浙江财经大学",
+      "file": "4133011482.png",
+      "sha256": "8276a29e11e37f8e9514363fbe5c052cfdfcc490b46baec2c857a562d3721900",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133011483",
+      "name": "浙江警察学院",
+      "file": "4133011483.png",
+      "sha256": "8142bc204c15eb8e886afb53e1edec450c90860567b2d88ac8a6e147551067b2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133011488",
+      "name": "衢州学院",
+      "file": "4133011488.png",
+      "sha256": "06af5fe285a6ea58cc373605082d5f61be13a89f991b572439eeadea5904c2e4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133011646",
+      "name": "宁波大学",
+      "file": "4133011646.png",
+      "sha256": "183869537ddf8688515c07340492e37dff9b20292e83ed275461eae3a79e973b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133011647",
+      "name": "浙江传媒学院",
+      "file": "4133011647.png",
+      "sha256": "516bb56218c7c4d8065f88aa82ba8232b92c45fe0bfab4c974f526d90b01220c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133013021",
+      "name": "浙大城市学院",
+      "file": "4133013021.png",
+      "sha256": "dcab81c7523d876001507fd2e849d4c3d792108b4349f21d192f75a1e0e4bccd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133013022",
+      "name": "浙大宁波理工学院",
+      "file": "4133013022.png",
+      "sha256": "51d964d715ab5ab7dcd7767d67df164374f64bdcd701a9f71be64e620df3476d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133013023",
+      "name": "杭州医学院",
+      "file": "4133013023.png",
+      "sha256": "dd42bfbac299715d6a291343c88e286c03fda65a87f5cc21bf1e141a92efb7cd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133013287",
+      "name": "湖州学院",
+      "file": "4133013287.png",
+      "sha256": "db718d4160b04b40b0ebcd828a973c0552a181907cb0d9d0612b2abdfc4cf3c2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133013289",
+      "name": "温州理工学院",
+      "file": "4133013289.png",
+      "sha256": "e768e8f66682c15fdce2bef96027d848372574f4727717eb024387431b202357",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133013291",
+      "name": "嘉兴南湖学院",
+      "file": "4133013291.png",
+      "sha256": "390278e60b93dfa5b66792cb5c099eecae83eda62c24907755111ef0eac0e0f0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133014275",
+      "name": "浙江外国语学院",
+      "file": "4133014275.png",
+      "sha256": "5d14b21b3bcda8040f9a8947dfd7578bcbae1e866bc49c2f5fa491be90bd10d4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133016301",
+      "name": "宁波诺丁汉大学",
+      "file": "4133016301.png",
+      "sha256": "947bac2306a20a34bc27c4e0b1f676cf5ebc739838b2aab64a0c115ee0d2e522",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4133016405",
+      "name": "温州肯恩大学",
+      "file": "4133016405.png",
+      "sha256": "6611097c6479d37cda58fad360c2cfc4e835766b1d9160833354aa2abfefafeb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010357",
+      "name": "安徽大学",
+      "file": "4134010357.png",
+      "sha256": "ee3ce432ce237847aae503687c3469dfbb44c70aad0f1554b12008c899881bb3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010358",
+      "name": "中国科学技术大学",
+      "file": "4134010358.png",
+      "sha256": "efe25a382fd8d81740bdcdafbcc1728c781a5e9427727a7da5cd816d6c0cc654",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010359",
+      "name": "合肥工业大学",
+      "file": "4134010359.png",
+      "sha256": "7dd5b34f9de0fc23a39ef9b092c8868d051c88b46dba1f154047f3dcfebf0bd5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010360",
+      "name": "安徽工业大学",
+      "file": "4134010360.png",
+      "sha256": "b333228923bd9d9aea421e979605ac89a109671b9993205ec65b9df9af4d52dd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010361",
+      "name": "安徽理工大学",
+      "file": "4134010361.png",
+      "sha256": "bb5abf14f71907cf3d23c888a226e3f75becfe4a1d1779eaff3296ecad1272b0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010363",
+      "name": "安徽工程大学",
+      "file": "4134010363.png",
+      "sha256": "bb50b6681415ab81182b48aa92931b8f30ee8ba4caff58281d75fa89c6d40268",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010364",
+      "name": "安徽农业大学",
+      "file": "4134010364.png",
+      "sha256": "95e13e2ba69d343bf07bbe2b1fcc30b9a20fc5eb6e08e8a9f620c87894a3fd82",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010366",
+      "name": "安徽医科大学",
+      "file": "4134010366.png",
+      "sha256": "5fc68295693776a0e126a4045a66bc4a8e8aff92a4722c2f5527f66c20986bdb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010369",
+      "name": "安徽中医药大学",
+      "file": "4134010369.png",
+      "sha256": "e169e1e5adf19f753f70250a987c528f7e8d94c37bb2f3c43fa17320841ebaa2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010370",
+      "name": "安徽师范大学",
+      "file": "4134010370.png",
+      "sha256": "1666e2889e7b6e108831bf85def151d4eeb23deb791ef3c55ba26d1fda4d94e3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010371",
+      "name": "阜阳师范大学",
+      "file": "4134010371.png",
+      "sha256": "b284a3764df9710b321f583f3b1c2a10dbab4b7cb23beefeb577b87e3daed3c0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010372",
+      "name": "安庆师范大学",
+      "file": "4134010372.png",
+      "sha256": "b75773272eac34d036c9d2a4dde93491690e851aca406eb8e5bee49993daa462",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010373",
+      "name": "淮北师范大学",
+      "file": "4134010373.png",
+      "sha256": "354348bb4033094cebc51f978aa4b770ccb8c096bbd2ccde1bf2fcb10f23c098",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010375",
+      "name": "黄山学院",
+      "file": "4134010375.png",
+      "sha256": "bffba06d033dcd85129f0206948288f95a3ba32444f39e10445349398e509564",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010376",
+      "name": "皖西学院",
+      "file": "4134010376.png",
+      "sha256": "9d9c67e465c2aeb31f1dcbb4fddb278c6b26e6069882434c2bf0ac714855e902",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010377",
+      "name": "滁州学院",
+      "file": "4134010377.png",
+      "sha256": "0eeed673c6dc48ce2ee8d30cd7c04e5fbae4a65ce74a1a35528d982128f0e25f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010378",
+      "name": "安徽财经大学",
+      "file": "4134010378.png",
+      "sha256": "2546f30bc6694da9037db0d2fb1fce7cfc4025222a907bf7653d9d0331779552",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010379",
+      "name": "宿州学院",
+      "file": "4134010379.png",
+      "sha256": "ae9bac85cb294bf9392062593ef986fb8dfda082b1780b7b46454cb04aea7804",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010380",
+      "name": "巢湖学院",
+      "file": "4134010380.png",
+      "sha256": "9130c87edf3d74d1617ebe33e1664b46227b0289ba267c27231ff5a06780b501",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010381",
+      "name": "淮南师范学院",
+      "file": "4134010381.png",
+      "sha256": "2e84b6ba69c71c529103d088ad5059ce233001bb40090ce6f9565fb88c2667d4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010383",
+      "name": "铜陵学院",
+      "file": "4134010383.png",
+      "sha256": "b80387a19434f3d0d6654637c783a7900bc061b927623da071cf59ff224ec5b3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134010878",
+      "name": "安徽建筑大学",
+      "file": "4134010878.png",
+      "sha256": "d2ffac9687fe9d58ec76166dc09c503c42100dd44444e7609b4e45059cb833ff",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134011305",
+      "name": "蚌埠学院",
+      "file": "4134011305.png",
+      "sha256": "aca03dc3ab508b42ffc8eedb21caae07d513f10b98bccefa95f1b5a4d60d4f03",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134011306",
+      "name": "池州学院",
+      "file": "4134011306.png",
+      "sha256": "fad7302a05f38d277ae7ffa309902f9ed3f43b03599d8d530e89d988b4f80879",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134012926",
+      "name": "亳州学院",
+      "file": "4134012926.png",
+      "sha256": "d49c7c6b3d36a54a7f3d1284d74aa2637a00d1e62f1d77aa843685e7d012fb59",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4134014098",
+      "name": "合肥师范学院",
+      "file": "4134014098.png",
+      "sha256": "9eb25bed01b0867da80e0b30409683fe3dd514770b129539e60721ec7a9b5089",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010384",
+      "name": "厦门大学",
+      "file": "4135010384.png",
+      "sha256": "eea1bfcd18fa56fe78a006010fcc856b80f2a4eef34cc361c2ad44a4d263627b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010385",
+      "name": "华侨大学",
+      "file": "4135010385.png",
+      "sha256": "9561bbb8145b5cdae4fe566d95a9bd6d501b9be63f7efaf83ee022ce962ed64b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010386",
+      "name": "福州大学",
+      "file": "4135010386.png",
+      "sha256": "d4fb29f18ca2c8a635a29d4cd4f2575e5a841cacd1d73622caf2cdd374c03b32",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010389",
+      "name": "福建农林大学",
+      "file": "4135010389.png",
+      "sha256": "3c52b8bfabfb3ffb799d1c011e32b2d8d5ee72c2b6f16df85927801aef33a618",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010390",
+      "name": "集美大学",
+      "file": "4135010390.png",
+      "sha256": "5939fa29a5e2af7b667a94756c1241c149bb6ba8a40a643f9241beb92dc13d38",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010392",
+      "name": "福建医科大学",
+      "file": "4135010392.png",
+      "sha256": "e2a4c5b4ae106b7febac169ec4096188d3ae297b651ef063876063041517a568",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010393",
+      "name": "福建中医药大学",
+      "file": "4135010393.png",
+      "sha256": "41aa919ae03f2c55b189e36af34110fb4677642c98ae54ba4d7c67a06a9b83f1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010394",
+      "name": "福建师范大学",
+      "file": "4135010394.png",
+      "sha256": "1d94ade643e9489af4e1a5b53cae1c16a52c41e0068de715ef02b4ffff807668",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010397",
+      "name": "武夷学院",
+      "file": "4135010397.png",
+      "sha256": "b803b0fd2c695727cfb6d3f6522e2b4655677e670703be6337b81ae0557b8ee9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010398",
+      "name": "宁德师范学院",
+      "file": "4135010398.png",
+      "sha256": "c2f21fab20582e87546977a2d196c9bb63333531874a3df1f8c0038f14ba99ef",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010399",
+      "name": "泉州师范学院",
+      "file": "4135010399.png",
+      "sha256": "eb0e79946d6e845b69b6bd82d14b69956c0f6bccdcd84d810325644c8aeb8c28",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135010402",
+      "name": "闽南师范大学",
+      "file": "4135010402.png",
+      "sha256": "febb452b856c8aee7259cd9dd252ef2471270ac6b392512f0d246c0123d1c549",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135011062",
+      "name": "厦门理工学院",
+      "file": "4135011062.png",
+      "sha256": "3cf251ebc1085a7a655b66b6302f4084041ab0f253860744b9527583387b49d4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135011311",
+      "name": "三明学院",
+      "file": "4135011311.png",
+      "sha256": "622c20ccae25c8f0217c33dbc4e4be00a25624eed632ae24f91a60b38efba298",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135011312",
+      "name": "龙岩学院",
+      "file": "4135011312.png",
+      "sha256": "263719348d00d4f5b56be0a4ffb0d51e74fa7abd5a346ec6f8f3e42ec577fd6b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135011313",
+      "name": "福建商学院",
+      "file": "4135011313.png",
+      "sha256": "59e974396c5be560f2b808f408eadea8b7a92bc020f751aa23e997a64ea1cd19",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135011495",
+      "name": "福建警察学院",
+      "file": "4135011495.png",
+      "sha256": "7cb20c0b18673f1edbd26446f3410b121a7de117299a71116ba84255b69ad655",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135011498",
+      "name": "莆田学院",
+      "file": "4135011498.png",
+      "sha256": "d5b90a22941250c7fc6edc7fac7966a819234107b93bd5a00aeebf868613f864",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135012631",
+      "name": "厦门医学院",
+      "file": "4135012631.png",
+      "sha256": "2497f53e9f841ca1d62f63c389312cd724e838900dc47f9f1a75fc81c39c5833",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135013763",
+      "name": "福建江夏学院",
+      "file": "4135013763.png",
+      "sha256": "4cdc2643674a0e8141a5311d7a4d735945c2c828a5b93ab0fb5200282ba51ede",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4135014683",
+      "name": "福建技术师范学院",
+      "file": "4135014683.png",
+      "sha256": "b88d2512679eb825afcf31c316ecb5c3ae05ff2a9d1e4b4a1aede661b6d63af9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010403",
+      "name": "南昌大学",
+      "file": "4136010403.png",
+      "sha256": "41692227e0eda870fc3bd4b23d4838a48c044843dcf125e4599f5a1891a618fc",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010404",
+      "name": "华东交通大学",
+      "file": "4136010404.png",
+      "sha256": "2989db8af3fa98fdcd21cd8cd218fb85f3b58404aeb9159f6af888270b5e2b66",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010405",
+      "name": "东华理工大学",
+      "file": "4136010405.png",
+      "sha256": "827cbb49169313d39c0cb02a11bb802eb7713685b567cf909e00c3ab9c9411e2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010406",
+      "name": "南昌航空大学",
+      "file": "4136010406.png",
+      "sha256": "17ac19bffdc4a06252d15d535ffc4416ec23a3374e2cfe2a8d99910bb3753e2c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010407",
+      "name": "江西理工大学",
+      "file": "4136010407.png",
+      "sha256": "80ab55d7fe47d806513fc7b798751ab002d0f866d480e8f5674542a8f89880db",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010408",
+      "name": "景德镇陶瓷大学",
+      "file": "4136010408.png",
+      "sha256": "ec756e0dc8037aec07c725103148cd365cbe1503a2bbb28d90bde7a3f1a093f1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010410",
+      "name": "江西农业大学",
+      "file": "4136010410.png",
+      "sha256": "7fd7cdd9b768157a270761a74313373f487872bf05086ba9cee1f943cd74056a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010412",
+      "name": "江西中医药大学",
+      "file": "4136010412.png",
+      "sha256": "4db3be4619849be9291ffc5a38c4226ab9a4ae297b375c2dfdf27456b6cb2c31",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010414",
+      "name": "江西师范大学",
+      "file": "4136010414.png",
+      "sha256": "d4f2a32199283690f59febd77f27d57b81577ae9ed64013744a98fd2f48f16c6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010416",
+      "name": "上饶师范学院",
+      "file": "4136010416.png",
+      "sha256": "bc96b4ff02301da63c34a517bd7a2bf3eff432ec7dce204ac7057669d02ff813",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010417",
+      "name": "宜春学院",
+      "file": "4136010417.png",
+      "sha256": "7edf24b93841b2cb642428a457a433002def5e9ca208c0581ebb697c5e5daa42",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010418",
+      "name": "赣南师范大学",
+      "file": "4136010418.png",
+      "sha256": "59d7c9fac865a74bac46338d009b3cf0c49b0ae64d9846d0b5c9711427745a73",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010419",
+      "name": "井冈山大学",
+      "file": "4136010419.png",
+      "sha256": "3fb08df40e0fcb25f63d9eac6eb583f31280e29bd751dbe5a2bb2a8cca8f3e48",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010421",
+      "name": "江西财经大学",
+      "file": "4136010421.png",
+      "sha256": "7205d4147f0ef4e045161ff1e14fe21a578edbbf4128b05874d667de7c91dde5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010894",
+      "name": "景德镇学院",
+      "file": "4136010894.png",
+      "sha256": "452a9d14cf03b51a87695463f3bd2c4319baaf284b9b325d62aa510942bbea5e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136010895",
+      "name": "萍乡学院",
+      "file": "4136010895.png",
+      "sha256": "60b8842a5de12b0868253e23d854cf9a09054379190d82986538f01083f03cb6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136011318",
+      "name": "江西科技师范大学",
+      "file": "4136011318.png",
+      "sha256": "0566f100e9ed39b862d0459150b3a432e452a339ec8b0ab7e2a130e62417c45a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136011504",
+      "name": "江西警察学院",
+      "file": "4136011504.png",
+      "sha256": "ef7fbab59364f3d75951982728c41d92f920f146e4e165afc5e51e51512a0485",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136011508",
+      "name": "新余学院",
+      "file": "4136011508.png",
+      "sha256": "14f8d50485633db19d5b8b2763fac53bcd34a597f2c9b1d3c75852b2a2b9885c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136011843",
+      "name": "九江学院",
+      "file": "4136011843.png",
+      "sha256": "624544159f06dd5ee6f413ba0496c76aa102d04a7ef4a5e352b21eec0f992ca9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136013432",
+      "name": "赣东学院",
+      "file": "4136013432.png",
+      "sha256": "a7f250fe4c59dca96a181c2dae9deda46235894e5598ef35ddbf3d526d171005",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136013434",
+      "name": "赣南科技学院",
+      "file": "4136013434.png",
+      "sha256": "be2db6b5866cd4c042300485d2f1e1380d536030982f6ff1dd3134314a6df58a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136013437",
+      "name": "南昌医学院",
+      "file": "4136013437.png",
+      "sha256": "f6e298f9ecd7a3c410c6c6c7bf3ce5c55fdd6c2927324562d8a1d10aab662276",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136013774",
+      "name": "豫章师范学院",
+      "file": "4136013774.png",
+      "sha256": "f2e73f14ed49dde9848e65e9a130583de5395a4cb9b47d95a846fd1ad442e395",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4136014437",
+      "name": "南昌师范学院",
+      "file": "4136014437.png",
+      "sha256": "cd388a6e6589fb0ae2628d03cc04710705eb4e376c5ac850014680e32e9c66c1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010422",
+      "name": "山东大学",
+      "file": "4137010422.png",
+      "sha256": "aefee6c02dc0b08e70d11cdeffce4d6227d35ce236e9ab6b3c9d093390548aa8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010423",
+      "name": "中国海洋大学",
+      "file": "4137010423.png",
+      "sha256": "c4b6d62f644e722e503d2f9ecf67de821158af2bc2c10ef9ddc57ae42170a010",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010424",
+      "name": "山东科技大学",
+      "file": "4137010424.png",
+      "sha256": "5c74f86391848fba0b8d97a99ad77a56652d53ffe97d033a69ad2b67a41bafdf",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010425",
+      "name": "中国石油大学（华东）",
+      "file": "4137010425.png",
+      "sha256": "be2d61712c956d9da6c373ed0d10aba704edd3c464bdaf9c1884dc08bb0eb270",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010426",
+      "name": "青岛科技大学",
+      "file": "4137010426.png",
+      "sha256": "399a0b6d8d7f13dbb7f03df457e358d051d8a704ab5b8c1255c7e53b98cca674",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010427",
+      "name": "济南大学",
+      "file": "4137010427.png",
+      "sha256": "0da04a683c72afde444d7d9b9d0540f17faf11ab2b43bc06cc08b46cd22a2ce8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010429",
+      "name": "青岛理工大学",
+      "file": "4137010429.png",
+      "sha256": "02390b18207ff0a4caf809146523b77d019932d7243ea665c87e6bb0495049e9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010430",
+      "name": "山东建筑大学",
+      "file": "4137010430.png",
+      "sha256": "32f472a93df26089ba32ce4b595fae0d06b0421be37c186fc331c034c598632a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010431",
+      "name": "齐鲁工业大学",
+      "file": "4137010431.png",
+      "sha256": "fdce3fbef05abf14a160fe72d9a1397f78b7cfe1bd73776e19850e85f7b0331f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010433",
+      "name": "山东理工大学",
+      "file": "4137010433.png",
+      "sha256": "71b1f49331080f2cfad5399fab3451be3dd219fa1e39caf3106700da391e2fb9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010434",
+      "name": "山东农业大学",
+      "file": "4137010434.png",
+      "sha256": "546a42e0ece80719e13e63db95361901fe1c42dc26f736ea9ea2266c28fe6ad6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010435",
+      "name": "青岛农业大学",
+      "file": "4137010435.png",
+      "sha256": "971ad4cc57ca63533dbb0de0d78cccbc04733f2d3c86e89ba1ee7cc993e528e4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010439",
+      "name": "山东第一医科大学",
+      "file": "4137010439.png",
+      "sha256": "2c0c237f3bccc037ddb8639ccadde75f96cd55dec285af8672f196485357d8f9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010441",
+      "name": "山东中医药大学",
+      "file": "4137010441.png",
+      "sha256": "07c99f870d63dff47ec6ce8767d40b1f59935df229e044cef63a31b6ea022f73",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010443",
+      "name": "济宁医学院",
+      "file": "4137010443.png",
+      "sha256": "356507b4e072c26b63e5c5f008733cf34f1891609a881727fe4a351ee5e87958",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010445",
+      "name": "山东师范大学",
+      "file": "4137010445.png",
+      "sha256": "19a87890b91953c60c0e5888fb893e132e10fcdfc06cbaca98aa585498cdb5e5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010446",
+      "name": "曲阜师范大学",
+      "file": "4137010446.png",
+      "sha256": "715595b588bb82bd082ddc69ddf2ee910211071107e7af8d008222b8c87eb224",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010447",
+      "name": "聊城大学",
+      "file": "4137010447.png",
+      "sha256": "e19de5eb8ff090a3d6b643819a5cea2443eae24f6f2a9c798211b05365cbd237",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010448",
+      "name": "德州学院",
+      "file": "4137010448.png",
+      "sha256": "c87055bc6d5fce53714de212b65a281b35b38699735a4d358144d4a4a14ef99c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010451",
+      "name": "鲁东大学",
+      "file": "4137010451.png",
+      "sha256": "57ba6b6f9692dd722baf804e5125c3367447e9c4b10dab326402df01e2e4c307",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010452",
+      "name": "临沂大学",
+      "file": "4137010452.png",
+      "sha256": "d51501d7a5eef13a9e0a4e5761761a6821566a1ec709ae5ce587f86efde993cd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010453",
+      "name": "泰山学院",
+      "file": "4137010453.png",
+      "sha256": "0aebe59f00fc42397f0182934f8adee012ba368be465c5b6601a16f198871d8e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010454",
+      "name": "济宁学院",
+      "file": "4137010454.png",
+      "sha256": "a7bbc063f3d534b9a41579570bff877a34e466f53737ded65d29864440763510",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010455",
+      "name": "菏泽学院",
+      "file": "4137010455.png",
+      "sha256": "21ee7b579a80716884d2f09bc0caac7993352c75fc0aafd7c907ee150a2e5c04",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010456",
+      "name": "山东财经大学",
+      "file": "4137010456.png",
+      "sha256": "a28656fd85f08a34a1f38a086df0915f44af37403824352e7ecf687997bd9f88",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010457",
+      "name": "山东体育学院",
+      "file": "4137010457.png",
+      "sha256": "185ca6b858353e7f7cf529f336bee5e030f838749bdc3fdecdd3b99611de2024",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137010904",
+      "name": "枣庄学院",
+      "file": "4137010904.png",
+      "sha256": "97937c2746d9068dc5449f97e31e20419d69db810a7875435cb857f08b373215",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137011065",
+      "name": "青岛大学",
+      "file": "4137011065.png",
+      "sha256": "ed99167086fdb33169aa0accbf027bb9911c52741c6a636e1a089d20628cdca7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137011066",
+      "name": "烟台大学",
+      "file": "4137011066.png",
+      "sha256": "aec9845227846390d2b8eade856164c38bda4f7b140f08ad8ead8e47ea3a9ed8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137011067",
+      "name": "潍坊学院",
+      "file": "4137011067.png",
+      "sha256": "c8bbc39a872312902865a5582dedde1f3eed8a240c58cd71aafab5bab5daeed8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137011324",
+      "name": "山东警察学院",
+      "file": "4137011324.png",
+      "sha256": "8bcc90859413f8555c41d48087a37d948ac5e74855291182a288dc0c93ceee79",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137011510",
+      "name": "山东交通学院",
+      "file": "4137011510.png",
+      "sha256": "6e69c43e5500cf9cdf742d1a34bc7827fb7ff1bc1fb8f6254417e5e4e0735d56",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137011688",
+      "name": "山东工商学院",
+      "file": "4137011688.png",
+      "sha256": "0d1278bd84424973a30424bbc71b0c778d7fa9bc9dd07bf1d86d649ec53591b2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137012331",
+      "name": "山东女子学院",
+      "file": "4137012331.png",
+      "sha256": "f6948bac94427ad810af7768c81c7cec61f7bb2557eabfc2292a0643dc1bf102",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137013386",
+      "name": "山东石油化工学院",
+      "file": "4137013386.png",
+      "sha256": "24facd6756257e0a116d8bb6514a3d40b22bf32050ca3876f5ecc3942db8b1d7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137014100",
+      "name": "山东政法学院",
+      "file": "4137014100.png",
+      "sha256": "3baff18c63b2e28fd6a48f5a0608751aca4a5c5d0a8d81e61f5f98486a4629aa",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137014276",
+      "name": "齐鲁师范学院",
+      "file": "4137014276.png",
+      "sha256": "7dea090c381e2de34e4d054cddcc6d6e30abca6fac6038538109d67f97f7199e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137014277",
+      "name": "山东青年政治学院",
+      "file": "4137014277.png",
+      "sha256": "d641c9420960246f599c0a8792c8ccefa9389c8fd860442deb66dcb6df2f63de",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137014438",
+      "name": "山东管理学院",
+      "file": "4137014438.png",
+      "sha256": "a4fc4f4544b0dac3c90f7f6fe2e3fab4b82196fa6cfad74a3fc0579ba7badc34",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4137014439",
+      "name": "山东农业工程学院",
+      "file": "4137014439.png",
+      "sha256": "ccee5cd4b7146880f3c5ad97b03d86d5176c9853b017a89e44e894837d3c948c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010078",
+      "name": "华北水利水电大学",
+      "file": "4141010078.png",
+      "sha256": "f86e72d08deb30a4b8c404c905f52804321ab4e11359ff27a370f48d36e829b5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010459",
+      "name": "郑州大学",
+      "file": "4141010459.png",
+      "sha256": "e102c441d05358d9b6708e0795a1155b2c560d8c6623be9a4b1dd6a043929652",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010460",
+      "name": "河南理工大学",
+      "file": "4141010460.png",
+      "sha256": "845d3af3aa77b73e1a31393f38c20a30cb03e22c7fe6272d1b4554fd37293ed0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010462",
+      "name": "郑州轻工业大学",
+      "file": "4141010462.png",
+      "sha256": "fd42a13fc797516dfd2528729034221ebbcace0089a0bd9b72f95b0e37457776",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010463",
+      "name": "河南工业大学",
+      "file": "4141010463.png",
+      "sha256": "628c154c6f940672ae4d9c8d1693fe629ac9cf601a0af5a5b17f8c82e7baae43",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010464",
+      "name": "河南科技大学",
+      "file": "4141010464.png",
+      "sha256": "5784eb65d844e20d3f1ab61b98305c6cf884de237bcf3739071c763019e8bf58",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010465",
+      "name": "中原工学院",
+      "file": "4141010465.png",
+      "sha256": "dc9736452c31cbc2eeb12046656efe913f4eaf748aaac0f5062e875f17cb69e7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010466",
+      "name": "河南农业大学",
+      "file": "4141010466.png",
+      "sha256": "d25dfa3186d322769068b9dc5e3436a7285aa5071456188ce549f126782d5d0d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010467",
+      "name": "河南科技学院",
+      "file": "4141010467.png",
+      "sha256": "83991e1629bd959853b68ed0fc5d82e1e0c605a3bc020e309d9933e19801e1cf",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010469",
+      "name": "河南牧业经济学院",
+      "file": "4141010469.png",
+      "sha256": "9aabe3a54f4b913de921cf5b05cf106a2196da0f7eba315983730887bb1d5fee",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010471",
+      "name": "河南中医药大学",
+      "file": "4141010471.png",
+      "sha256": "2fc6f38550cb9a8cb7f57ec55ceb437b1365976880f80f4cf736c874f0914e39",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010475",
+      "name": "河南大学",
+      "file": "4141010475.png",
+      "sha256": "043b38ccb51d52fe223192718d0c4e1cb6ffe97a2311a6ac5fe973d8de38e2d4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010476",
+      "name": "河南师范大学",
+      "file": "4141010476.png",
+      "sha256": "9b289cb432c6462d6d0eea98da8c8dd7339d4d190eab07c54c62e182edda51d0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010478",
+      "name": "周口师范学院",
+      "file": "4141010478.png",
+      "sha256": "a7e25e1482eb8f8993808ced10d5284882f26c67b46a68cdd5e7995a52eae24f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010479",
+      "name": "安阳师范学院",
+      "file": "4141010479.png",
+      "sha256": "91f10b10cc5c38f755054a7829d0845f24f3dcd94e66ee77c04e475846ff43b6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010480",
+      "name": "许昌学院",
+      "file": "4141010480.png",
+      "sha256": "d2ee5a33de0c07132efc60ab65126e5ad5ab7bc8180eee1ff72063c2b5bcd69f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010481",
+      "name": "南阳师范学院",
+      "file": "4141010481.png",
+      "sha256": "8131257761e300edd9a3843b7c1527ad2d5ae1177c152a728fe9db14287176cf",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010482",
+      "name": "洛阳师范学院",
+      "file": "4141010482.png",
+      "sha256": "c587681af46d36aed1c990a0247aa3462d8e227128bf79fb017151c6b14c45ba",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010483",
+      "name": "商丘师范学院",
+      "file": "4141010483.png",
+      "sha256": "35bb84d42a11feddb37c25855c669503c8db1780b9551550e8f2cae3cdab8abe",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010484",
+      "name": "河南财经政法大学",
+      "file": "4141010484.png",
+      "sha256": "70a91dfdc54d9badfebb061081fdaa72742166ef9d6c015347e40c66c9176dfb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010485",
+      "name": "郑州航空工业管理学院",
+      "file": "4141010485.png",
+      "sha256": "d349b10a6cf455290a1e23be5d01b932051ecd08acefa83680a0e5832a2ca7eb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010918",
+      "name": "黄淮学院",
+      "file": "4141010918.png",
+      "sha256": "476348b942511bf48c804a26b19c52a41512733a30e02674de81244b08196c81",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141010919",
+      "name": "平顶山学院",
+      "file": "4141010919.png",
+      "sha256": "a12c07c2f8579e8183bbdd809775b3d5dd6bdafcf8f870da56c5b30b5951a9de",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141011068",
+      "name": "郑州工程技术学院",
+      "file": "4141011068.png",
+      "sha256": "2b12b4a7c7063e86575b008273e3121053a7b358a4872de5ec257df74427a19e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141011070",
+      "name": "洛阳理工学院",
+      "file": "4141011070.png",
+      "sha256": "eb41cfc89ea6a335050f78b7e4dff73cbbe7d30a604e558d70a0bee0c347ab1e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141011071",
+      "name": "新乡学院",
+      "file": "4141011071.png",
+      "sha256": "5c6bd047a6879dfc4a752a173cd08627cf9dbf074b2a8177664f41c3d0652824",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141011326",
+      "name": "信阳农林学院",
+      "file": "4141011326.png",
+      "sha256": "6c518d299140a8e92d9f6181944e882a64491061f5f6219f5a42cddcc7b95092",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141011329",
+      "name": "河南工学院",
+      "file": "4141011329.png",
+      "sha256": "c45c3887207a368777e7dbb82067652688dae52f8d9b9fa1ef23fdd4e18547ed",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141011330",
+      "name": "安阳工学院",
+      "file": "4141011330.png",
+      "sha256": "ae77a7a8a263c9d634460cf8c4049b28733ffd632ed35a6cf6a4d225d1507956",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141011517",
+      "name": "河南工程学院",
+      "file": "4141011517.png",
+      "sha256": "584053acc3ee16fd8077e0c1a8fa28fef1b6aacb0bfd4724ab9f17fa0bf99117",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141011652",
+      "name": "河南财政金融学院",
+      "file": "4141011652.png",
+      "sha256": "c7b96ff0e6086f8084682095b5770e597fdef9976c5fdfc469a2fcac1babbc69",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141011653",
+      "name": "南阳理工学院",
+      "file": "4141011653.png",
+      "sha256": "4bf19c480319949d0f78e1ee3f6f5e26398bfc94eab1b1f99d8de89e9b7b4dc7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141011765",
+      "name": "河南城建学院",
+      "file": "4141011765.png",
+      "sha256": "e8ae253065975915bfbf0b9a99ee46a8d1e39cdde817cc917dcc8217653c1b59",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141011788",
+      "name": "河南警察学院",
+      "file": "4141011788.png",
+      "sha256": "051a1de1fd78a5cad634ddebb9faec810cd42aaec2a6b7dca13bbdaad06385b5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4141012949",
+      "name": "郑州师范学院",
+      "file": "4141012949.png",
+      "sha256": "cac9c176f93e17dd3a07244e9f340f2748d74e85f027d396fe92af386b7cf661",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010486",
+      "name": "武汉大学",
+      "file": "4142010486.png",
+      "sha256": "d3f4933e4af430c7ef55c0eb4fbb5de8aa19ec3f2447c7b8db27bec8a65b6122",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010487",
+      "name": "华中科技大学",
+      "file": "4142010487.png",
+      "sha256": "dab0b59171f835db03ae52c3cf09c10523d41a7c36e03c902008b2fa79ef71df",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010488",
+      "name": "武汉科技大学",
+      "file": "4142010488.png",
+      "sha256": "ea20a50d9e0cc15bdeb04cb47f0094fb530af57baacfee3ea7dc377f925a9e01",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010489",
+      "name": "长江大学",
+      "file": "4142010489.png",
+      "sha256": "0d973443a839fa9d6f864119dcfd6a8dcb494ec065e8f63e825b7f02fea49876",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010490",
+      "name": "武汉工程大学",
+      "file": "4142010490.png",
+      "sha256": "1a9f08d286541fd99837903858e4b9d259286c4bf5f22201e1633f15347319c6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010491",
+      "name": "中国地质大学（武汉）",
+      "file": "4142010491.png",
+      "sha256": "f453b0926760680df9a55ddf303a4703ecf87232296d16bd507619bb26ddf135",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010495",
+      "name": "武汉纺织大学",
+      "file": "4142010495.png",
+      "sha256": "4c82bc216f41efc1cec1b6381e4fa1769cef68b6f7686e8b23f2c0b9dd17c95f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010496",
+      "name": "武汉轻工大学",
+      "file": "4142010496.png",
+      "sha256": "1c2cd4910dc476f50c62bac9ec162b352e747859f550b488352694ff2945291d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010497",
+      "name": "武汉理工大学",
+      "file": "4142010497.png",
+      "sha256": "a672c509b24f06e89d239a5ab0f558f6415669e1afaa1131a237ef04875bbafc",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010500",
+      "name": "湖北工业大学",
+      "file": "4142010500.png",
+      "sha256": "f352765418d4685e52ce9da7e3312a55c44b44362c9b3f1a7855282136888dfc",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010504",
+      "name": "华中农业大学",
+      "file": "4142010504.png",
+      "sha256": "60f64fe9f58cab3fcec2615dcd529d7aaeb0796552c27d7747572788ce0e13f4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010507",
+      "name": "湖北中医药大学",
+      "file": "4142010507.png",
+      "sha256": "9854a3d8c299355a02e6ac5f1ceb8706d66abcf0e54e8a7368ba36a7954057a2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010511",
+      "name": "华中师范大学",
+      "file": "4142010511.png",
+      "sha256": "1ce9dfd69f2ce1544a10cdf42560d44ec5f2f85f96d48512687b8f1c0ddaac25",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010512",
+      "name": "湖北大学",
+      "file": "4142010512.png",
+      "sha256": "1bb16993087b29e202583da8ba5bd8b000d4b8d5aa543065e0b7901ad1265f56",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010513",
+      "name": "湖北师范大学",
+      "file": "4142010513.png",
+      "sha256": "a837ae26f6c20f8189c3618164cbf13402c69ac29a7b1b15e9a4bf61342f0d49",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010514",
+      "name": "黄冈师范学院",
+      "file": "4142010514.png",
+      "sha256": "c6614040ec82d6d4738ea9b1e9962eb0b563e3952c8fd9defa68244fdae0f374",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010517",
+      "name": "湖北民族大学",
+      "file": "4142010517.png",
+      "sha256": "51bff90d6c140c83980ddd7d42d4fc7444ecfff6c6187ba90b1f39bd871c5fa4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010518",
+      "name": "汉江师范学院",
+      "file": "4142010518.png",
+      "sha256": "130fa564604e247ca4d8548583894cb21789004057488eb9d022fe4e092fca79",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010519",
+      "name": "湖北文理学院",
+      "file": "4142010519.png",
+      "sha256": "77d38ad43bac1a1a808116f3e15b5689d12965a3ea1fe5e64c6386afbe647684",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010520",
+      "name": "中南财经政法大学",
+      "file": "4142010520.png",
+      "sha256": "ad7cfaf648f23d666e225bdb7a352816901954b446d8c4b228ac3c0bd50162a0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010522",
+      "name": "武汉体育学院",
+      "file": "4142010522.png",
+      "sha256": "ece25ad7bee0fef82bde9a72c8f895428bd454c98613363857bfba355a9fe7e1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010524",
+      "name": "中南民族大学",
+      "file": "4142010524.png",
+      "sha256": "4e3a45a3b063d88b15bca564c40df3b89a51655b8e00a188fac615fb99ac7c2b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010525",
+      "name": "湖北汽车工业学院",
+      "file": "4142010525.png",
+      "sha256": "945627b89c53c27332c88f11f80897e9663e8d6fc599d6ff17f2a711ae4925a5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010528",
+      "name": "湖北工程学院",
+      "file": "4142010528.png",
+      "sha256": "1ac1ecde2437670217e278e351934eba0d2ae2fdfd743b681efcbac0bafa633f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010920",
+      "name": "湖北理工学院",
+      "file": "4142010920.png",
+      "sha256": "d38ab5d4f4b35af30521f75c42c67cbbad524931a8ea2df8843936efeb4a8510",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010927",
+      "name": "湖北科技学院",
+      "file": "4142010927.png",
+      "sha256": "c7cd404f73d9642a916454b8036f0b75ba899c666df4ee7e29d0ac2366fa9251",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142010929",
+      "name": "湖北医药学院",
+      "file": "4142010929.png",
+      "sha256": "11be24b693478e55b0955517fa9ca5d4d5b70b1866caf64afafa29374fff7a70",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142011072",
+      "name": "江汉大学",
+      "file": "4142011072.png",
+      "sha256": "776791633120c19460cfcf55b0ffdab0565fe5bbea1f8caeab2ca064450e933a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142011075",
+      "name": "三峡大学",
+      "file": "4142011075.png",
+      "sha256": "4ae3c30b9a9be946c6b20c3436537f06bde63a6e99fcd3100dd665d0a8eaf793",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142011332",
+      "name": "湖北警官学院",
+      "file": "4142011332.png",
+      "sha256": "5da64d7bcefd7229c58fbd80ff2cb419e09481c78c4ef3a3f26b283ee014f2b0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142011336",
+      "name": "荆楚理工学院",
+      "file": "4142011336.png",
+      "sha256": "12f8607b6323d46bb5fee355a3404781a9d535b88eb234a1f9a3e62e6f70d7db",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142011600",
+      "name": "湖北经济学院",
+      "file": "4142011600.png",
+      "sha256": "a46486b2c49054ce951293a3456fbffa386c83b13579da06a3d21ecc18276de3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142011654",
+      "name": "武汉商学院",
+      "file": "4142011654.png",
+      "sha256": "d7ad2f15b0aa3b61e503877b27594425d9fe93389e705a3ef7a6edea6791ceb9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4142014099",
+      "name": "湖北第二师范学院",
+      "file": "4142014099.png",
+      "sha256": "ce9940c53b743dca4a958415cccb9df5adb1f28cef4d2af927133ed73cf758aa",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010530",
+      "name": "湘潭大学",
+      "file": "4143010530.png",
+      "sha256": "fddce05d6fdba30a0e3cd3e4e6bd19e89d92d4d5c661743c6821db47f3b186e5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010531",
+      "name": "吉首大学",
+      "file": "4143010531.png",
+      "sha256": "4bd7b1e1dfbefd7d7871a0b6745d3951976a0df37a88842ec308feff3960dc7b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010532",
+      "name": "湖南大学",
+      "file": "4143010532.png",
+      "sha256": "eb905e8180f6e8ca016ca8b9225e023a93c411a83a72b843d95a1112e82b3e60",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010533",
+      "name": "中南大学",
+      "file": "4143010533.png",
+      "sha256": "72266e005b5c0ccdbde3f523bde52457f650577c0f3cdf21e1953ab04a403dc9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010534",
+      "name": "湖南科技大学",
+      "file": "4143010534.png",
+      "sha256": "dc13570b99bc63b3d7fd94262bc55999162c48f1a4acab39e614f19407b69123",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010536",
+      "name": "长沙理工大学",
+      "file": "4143010536.png",
+      "sha256": "dbcdad4b338221494f419e6a00b3d2d693d2af980b82f328774537469633fa26",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010537",
+      "name": "湖南农业大学",
+      "file": "4143010537.png",
+      "sha256": "9e02188a330373d0de0daaccad19845efc274206b4a6abdeeb37756df420ffa2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010538",
+      "name": "中南林业科技大学",
+      "file": "4143010538.png",
+      "sha256": "1f45aca1fe15d51c858fd67ac033a1541d6c8cc420434e90804c59a7859801c8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010541",
+      "name": "湖南中医药大学",
+      "file": "4143010541.png",
+      "sha256": "db61050b193634d6f20930fcaa44591518e3107f13a7d1420c8650963e5075c4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010542",
+      "name": "湖南师范大学",
+      "file": "4143010542.png",
+      "sha256": "ee3fd9191a531732995ae8a88d125609315aa75fdfbc94bceacc278d929783f1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010545",
+      "name": "湘南学院",
+      "file": "4143010545.png",
+      "sha256": "1b6da5cc014cdb707e2b18a6826e539a3ad3e2bcc95012be7d139a30a439d1cb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010546",
+      "name": "衡阳师范学院",
+      "file": "4143010546.png",
+      "sha256": "47998374ada83620bf7a31b52a0862e6402696a343ac143533d0db2e35355b9a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010547",
+      "name": "邵阳学院",
+      "file": "4143010547.png",
+      "sha256": "bac601dc33675492fb302e0e736c66221844f06d43210c15f34f58bf3d791b71",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010548",
+      "name": "怀化学院",
+      "file": "4143010548.png",
+      "sha256": "0c8b786bae47b36b872170008d52ce2b59dadd18c7b1c851353960e3f0817926",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010549",
+      "name": "湖南文理学院",
+      "file": "4143010549.png",
+      "sha256": "662d53bf9309f4c66719f667af1ae1c86f5a419012a185bbb04dd406839edeb8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010551",
+      "name": "湖南科技学院",
+      "file": "4143010551.png",
+      "sha256": "29030caef20a36b35196bdda83983fba90d577dca028ecb18e3a37b432601762",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010553",
+      "name": "湖南人文科技学院",
+      "file": "4143010553.png",
+      "sha256": "1a5f32ce990e986ae508d3a144957e4a40d2341028dee1ea1ce34e98ec26aefa",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010554",
+      "name": "湖南工商大学",
+      "file": "4143010554.png",
+      "sha256": "f09717cda5ff9a118ded1a149364f562e2e6d2e1bb81736d92a7be2dbf4454b8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143010555",
+      "name": "南华大学",
+      "file": "4143010555.png",
+      "sha256": "a280fe0c2476198482467764aaba668d13db40d9c93c9205c6cfe70921fe4c8b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143011077",
+      "name": "长沙学院",
+      "file": "4143011077.png",
+      "sha256": "a5a74b8546b97d0ad2b9ba311b7717087375ae4853fb2a0663e0718432ffb9d2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143011342",
+      "name": "湖南工程学院",
+      "file": "4143011342.png",
+      "sha256": "925293caa3a00d2c48edc9c70fb38ea083d9422ca558d3cd1d55a9d5c7660f65",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143011527",
+      "name": "湖南城市学院",
+      "file": "4143011527.png",
+      "sha256": "84166189362cf6e4a7885f3b46e39573647389b1c64b260234ed98aa8ff2db8b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143011528",
+      "name": "湖南工学院",
+      "file": "4143011528.png",
+      "sha256": "f5d9d4a214533068e0f83d8974c9794a5e617c6b6e253b098d6f9bb18c92bb09",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143011532",
+      "name": "湖南财政经济学院",
+      "file": "4143011532.png",
+      "sha256": "6347c74a6abec8167124e4ea14dc321f779206b427c026db255394a7c0ff99ae",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143011534",
+      "name": "湖南警察学院",
+      "file": "4143011534.png",
+      "sha256": "0b05b4cde12d7e13003afcab5f051e0f2c82a632b991cd03dcebd9c3ff8cdf3f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143011535",
+      "name": "湖南工业大学",
+      "file": "4143011535.png",
+      "sha256": "cb1092d786ba43ff3098ec53ab76dd5a960448d440c799d918778a77443b3512",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143011538",
+      "name": "湖南女子学院",
+      "file": "4143011538.png",
+      "sha256": "fae4f5a2c6b3e21ffb9bb8a6c9ecf43adbdf4e92e6f3c4e9b83dcdd9f365e4a3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143012034",
+      "name": "湖南第一师范学院",
+      "file": "4143012034.png",
+      "sha256": "6cb4b7272c5812efc3988d39beab81e724a683070c024ab7dea622f59657ead7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143012214",
+      "name": "湖南医药学院",
+      "file": "4143012214.png",
+      "sha256": "8e693532b0b4d26621a8917aa0a2fd4004d1deb70fd970e2a57f5f084567e16e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4143013806",
+      "name": "长沙师范学院",
+      "file": "4143013806.png",
+      "sha256": "fda5601b250c1474cfa30860d9ead590f294e2adbfd38efea90681f65eee2b70",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010558",
+      "name": "中山大学",
+      "file": "4144010558.png",
+      "sha256": "e92de561e22f979ecbe5b35b9425fa579b047a3b93a0e6bc58bfbabd4331da45",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010559",
+      "name": "暨南大学",
+      "file": "4144010559.png",
+      "sha256": "fc66dceef0df88d77ec7fe31cd20d17755e9dae6d4d6126b67948c4360b506ee",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010560",
+      "name": "汕头大学",
+      "file": "4144010560.png",
+      "sha256": "ce8e2f947c633c5b3cdce3264ccb0cab705732a13da4a4a6191e28126023bfd8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010561",
+      "name": "华南理工大学",
+      "file": "4144010561.png",
+      "sha256": "a59e809991b29a42154af932787545ef4ca9e05c10769a14c663f80bf58be932",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010564",
+      "name": "华南农业大学",
+      "file": "4144010564.png",
+      "sha256": "51ad823daefe335efc5caa48bccefd299115fc87a0d625191a0aeaee666b238c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010566",
+      "name": "广东海洋大学",
+      "file": "4144010566.png",
+      "sha256": "2812825f7e7928a18213953511cf57cc513a82672f888cf2fc12a5aca6c0df9f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010570",
+      "name": "广州医科大学",
+      "file": "4144010570.png",
+      "sha256": "b32c25bc9da467cf2d8c7a03a83a7d03b50016bfbf37228bd70f2a5db8f2fde3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010571",
+      "name": "广东医科大学",
+      "file": "4144010571.png",
+      "sha256": "c6fa3282ef36c8cb5d23f19f906492dc1c24beb2155e5f078071ba2b1df46812",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010572",
+      "name": "广州中医药大学",
+      "file": "4144010572.png",
+      "sha256": "bf6326538eceb3a0506d2af67fe1b9ef09a09701f521254bbbf8035779fc6d8e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010573",
+      "name": "广东药科大学",
+      "file": "4144010573.png",
+      "sha256": "85e65f0520e40631aefda7d9981fa093d369c91647844fb39f0f8fd6a17604c2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010574",
+      "name": "华南师范大学",
+      "file": "4144010574.png",
+      "sha256": "f5d1b66c6cfd07fdec87beaf53acaf19d1a954c7eb37816a43af7bb72637bb00",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010576",
+      "name": "韶关学院",
+      "file": "4144010576.png",
+      "sha256": "e6265c429066b9a989e0a85301983b6a4184867c8fe82c1234958cfad332792d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010577",
+      "name": "惠州学院",
+      "file": "4144010577.png",
+      "sha256": "7e21933da928626967ab7e7ba8f02dcb38cce16f049bb1d92dda0fb99176f326",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010578",
+      "name": "韩山师范学院",
+      "file": "4144010578.png",
+      "sha256": "5cbcef2277064b8750c77f5c13e68987164373baa01c2ec3fb43b3a346a966d2",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010579",
+      "name": "岭南师范学院",
+      "file": "4144010579.png",
+      "sha256": "e8d39cd074ca76456ff90db4f6baef76a4acd4add8cb256c9fbc4ad4290fdc8a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010580",
+      "name": "肇庆学院",
+      "file": "4144010580.png",
+      "sha256": "cf8821185d11f027ee50d22d248e9dbb92078a757ae08a87c36dff0f61c264eb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010582",
+      "name": "嘉应学院",
+      "file": "4144010582.png",
+      "sha256": "1cb9d7e096f5d1f050766b1fd058ae0214225f213a0c579e31269ca0baacdf54",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010585",
+      "name": "广州体育学院",
+      "file": "4144010585.png",
+      "sha256": "0a89ca41e122c94e9525c25b2e0d48bf7a15196c725bbf7a9f67f6971ff0cba9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010588",
+      "name": "广东技术师范大学",
+      "file": "4144010588.png",
+      "sha256": "5929d1725b124d16a191b24a37814411827cd48b1ebcaef6004c2b41c374a258",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010590",
+      "name": "深圳大学",
+      "file": "4144010590.png",
+      "sha256": "67304564ca7652f0f729e3c9a0867927c6e72355277d2a4af6e1c1556d6060aa",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144010592",
+      "name": "广东财经大学",
+      "file": "4144010592.png",
+      "sha256": "a30e644654231cfd50426798ca67de200648cd8494593e1628f22cac5d1c044b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144011078",
+      "name": "广州大学",
+      "file": "4144011078.png",
+      "sha256": "356a46adc58248f1a3bf8281aadb09bd4c264761f929e93c6ebc108caa6a649f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144011106",
+      "name": "广州航海学院",
+      "file": "4144011106.png",
+      "sha256": "f879939051387758a94930ccb98286e1618a14b716f6631ae61f496704f62ae6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144011110",
+      "name": "广东警官学院",
+      "file": "4144011110.png",
+      "sha256": "f6e7e1f2151d8eb19b52b0891d74a89c7bf3cd793c6f52ccf645b10a53a9fab7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144011347",
+      "name": "仲恺农业工程学院",
+      "file": "4144011347.png",
+      "sha256": "4a673bc26a90200a1f4c7162f03054d17fda665a349910a00ca821ec837d22b4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144011349",
+      "name": "五邑大学",
+      "file": "4144011349.png",
+      "sha256": "9a776289dd0399e9d2568b5b764599cc179d9f234fc97dfc701dd0068636a1f6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144011540",
+      "name": "广东金融学院",
+      "file": "4144011540.png",
+      "sha256": "5eb8e19fafa1ba84e787080f4f685e23c76359e5760b49a0d80958a3bf41ce6e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144011656",
+      "name": "广东石油化工学院",
+      "file": "4144011656.png",
+      "sha256": "bdebb762a903bf433bca9e20b632442cea4962c52b7c900a5fce0cfc0dddc495",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144011819",
+      "name": "东莞理工学院",
+      "file": "4144011819.png",
+      "sha256": "34e78414534a4822e789dff73ba079fe7f0d35ced5701d7143262b4e5b7529ea",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144011845",
+      "name": "广东工业大学",
+      "file": "4144011845.png",
+      "sha256": "38ee50b0b2889c42d6b432791dfa4049085d52f44e9dc549ae4ca5482e54f39e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144011846",
+      "name": "广东外语外贸大学",
+      "file": "4144011846.png",
+      "sha256": "4505aa3ede27418a9fbcc5a87bb5b84a491042619a9a371dbab5670e217e86f8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144012121",
+      "name": "南方医科大学",
+      "file": "4144012121.png",
+      "sha256": "90242887c1278487e8b786b3bbe5a2ecad31fb277d06a919f3cf8446aea0a6ef",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144014278",
+      "name": "广东第二师范学院",
+      "file": "4144014278.png",
+      "sha256": "a8f1c46bc087907aa2953d1447a313c0d740a03f01bfdc23cff9405c144c6abd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144014325",
+      "name": "南方科技大学",
+      "file": "4144014325.png",
+      "sha256": "933dd23091b5bb0b139a9d89221a9d22978b34e76a9798b81dea2bd0d20b1dd5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4144016407",
+      "name": "香港中文大学（深圳）",
+      "file": "4144016407.png",
+      "sha256": "922d4fb9951b96c391b7523418e42fb344b7f4fbf01d05ae8972c6acfd830a75",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010593",
+      "name": "广西大学",
+      "file": "4145010593.png",
+      "sha256": "e1ed30e4c2af6e894193a602064aef22c84c3800168cf0e2124ad8d31fbd2dcd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010594",
+      "name": "广西科技大学",
+      "file": "4145010594.png",
+      "sha256": "9fc4e09e8166ef4728c5610744e03a6f3c0d14580c6fb06469631590c4a8851c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010595",
+      "name": "桂林电子科技大学",
+      "file": "4145010595.png",
+      "sha256": "fc375e5ebf629e9880853d0bb037c9140889de80f32e1fc9df50f70a2a6ec112",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010596",
+      "name": "桂林理工大学",
+      "file": "4145010596.png",
+      "sha256": "512e906c000fbbcecbefd5207ff384aed6a4b04e55e001c91f4155463ec3574a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010598",
+      "name": "广西医科大学",
+      "file": "4145010598.png",
+      "sha256": "a2a2e01835dcfe2e2f021517b40176ce0fd6900eb24cf2aad217b8acbc55bb36",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010599",
+      "name": "右江民族医学院",
+      "file": "4145010599.png",
+      "sha256": "d3023c3a5c15f24c4925b216b01ea076e194494c35432b3542c9c88eb1d7638a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010600",
+      "name": "广西中医药大学",
+      "file": "4145010600.png",
+      "sha256": "5137a3d433f9caa7bcb4ac2a658c18c2ba0a65e93f705ad92014637f5e393c80",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010602",
+      "name": "广西师范大学",
+      "file": "4145010602.png",
+      "sha256": "3be362c561d19cc871dab74efaedaab0b80ef427c2a3e0452e11946b0c159e2f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010603",
+      "name": "南宁师范大学",
+      "file": "4145010603.png",
+      "sha256": "d70b8325914dbfb26edefa7a691ef0690574e428d39f80acd815b8924cf1c0f0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010604",
+      "name": "广西民族师范学院",
+      "file": "4145010604.png",
+      "sha256": "f854ee797a894290b5740b57d4eac1f1bd9e43c15e04b5cd20823a9b97cffb1e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010605",
+      "name": "河池学院",
+      "file": "4145010605.png",
+      "sha256": "e1a995c3ec9029c9bb824cc184b17b99e9b66330f2fcea4d954640c14ad1b8c0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010606",
+      "name": "玉林师范学院",
+      "file": "4145010606.png",
+      "sha256": "c30456e92bd32fac6ddab7c6dae05a40357a6bbe16503c3b518cf04802164aff",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010608",
+      "name": "广西民族大学",
+      "file": "4145010608.png",
+      "sha256": "6d4e988890cd04e3dd7c282edb5097675f57af13c047170762757c5a7e9d477f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145010609",
+      "name": "百色学院",
+      "file": "4145010609.png",
+      "sha256": "304c57f5d61accaa69a9c38b3a931e5129ea093f4148f88135614d18b4629fa4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145011354",
+      "name": "梧州学院",
+      "file": "4145011354.png",
+      "sha256": "e5f321461003421ecedaa112f325ee2785ad05ed2d17ba7f981dc0f80347b72b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145011546",
+      "name": "广西科技师范学院",
+      "file": "4145011546.png",
+      "sha256": "a188ee6140b18a5e2344f6604b973385194c1da9d92b6838e6b9b36de778e401",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145011548",
+      "name": "广西财经学院",
+      "file": "4145011548.png",
+      "sha256": "9bee8bbe7085bc9ebe245f2e42f8fbdf9520d78bf76df8e31686a071f042f982",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145011607",
+      "name": "北部湾大学",
+      "file": "4145011607.png",
+      "sha256": "718b4f05079174d384f1f0674bd13a4c9b8d68a0b2c4a0154929f77eb342ff2b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145011825",
+      "name": "桂林航天工业学院",
+      "file": "4145011825.png",
+      "sha256": "70b2a7d8e4fbb2e61da16c5b2ab58316852639e3763d2afef67c767b965dfbfa",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145011837",
+      "name": "桂林旅游学院",
+      "file": "4145011837.png",
+      "sha256": "4254a283f60d0384e50717979402cdd005418b30a1aa291e174ef3f3e8ee8413",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145011838",
+      "name": "贺州学院",
+      "file": "4145011838.png",
+      "sha256": "5cf2fb9d65f65456f9c5ed7f5eb33dd1b49e75dd499a6de57388a9489f6b5933",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4145013520",
+      "name": "广西警察学院",
+      "file": "4145013520.png",
+      "sha256": "564831fe463a8249dfe111c43c84f13c5ac04e22864dec9e9cb85c86bdf7476c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4146010589",
+      "name": "海南大学",
+      "file": "4146010589.png",
+      "sha256": "713b6dc1dfdca4b3d6e42c2b482affce7b1cf6a0889fdbe0633ce3228bcd1c60",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4146011100",
+      "name": "海南热带海洋学院",
+      "file": "4146011100.png",
+      "sha256": "a42937e7d6ea73d12b415f7e196808a198851bfb98f0bec0429d019752561af3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4146011658",
+      "name": "海南师范大学",
+      "file": "4146011658.png",
+      "sha256": "651d1b0454436230401c41802a59814641e6fc90579fa073c5c4b8aa83122cfb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4146013811",
+      "name": "琼台师范学院",
+      "file": "4146013811.png",
+      "sha256": "679611c3c9490281aa8c8d158723cf5f8979294302b1f29e00154f1e2574fc91",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150010611",
+      "name": "重庆大学",
+      "file": "4150010611.png",
+      "sha256": "2494cb8ad686f313ed0b6ba58bc5d33869b84a448965b2d51a74f0d376dd892a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150010617",
+      "name": "重庆邮电大学",
+      "file": "4150010617.png",
+      "sha256": "87f8c8dde5f2bb268761cea05136ea3906dfeb1435264f3b27a6779b9fcd3c91",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150010618",
+      "name": "重庆交通大学",
+      "file": "4150010618.png",
+      "sha256": "8004e9f20b75b2c20e32025df2888bf9daef0dbda98c86496d16ac50ec74e4a8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150010631",
+      "name": "重庆医科大学",
+      "file": "4150010631.png",
+      "sha256": "8f298fb752f6fa32a9fa6bcdaad30b2cad111bd23ac18c438a2a432e6c4cb673",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150010635",
+      "name": "西南大学",
+      "file": "4150010635.png",
+      "sha256": "61236cab2a60eac75a6918bdacd4f742f3a626d1e2aa31a09457dd514804ef86",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150010637",
+      "name": "重庆师范大学",
+      "file": "4150010637.png",
+      "sha256": "bd66b91a6f57449aac6090ae0e240126f807c0a38e55af37dcc303cbdff34a84",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150010642",
+      "name": "重庆文理学院",
+      "file": "4150010642.png",
+      "sha256": "8087191b6eab4629d402fc1715f7add6b29d1b65060855f2cab8bfa9fd2a14a5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150010647",
+      "name": "长江师范学院",
+      "file": "4150010647.png",
+      "sha256": "6fd1de3ee7385276957be633644c1528c19f19e8e46001e7850cc49250b23393",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150010650",
+      "name": "四川外国语大学",
+      "file": "4150010650.png",
+      "sha256": "08cbe29427268c05c20fec252a36853021f45902c2d9e18536e006331748dcd6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150010652",
+      "name": "西南政法大学",
+      "file": "4150010652.png",
+      "sha256": "5e7f7ec9b5514bd287607b70e9b05ffcc5a96f9140e8fa13e870e012f743e560",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150011660",
+      "name": "重庆理工大学",
+      "file": "4150011660.png",
+      "sha256": "fa8e36cfbf625c90248f76d1b737303a9a08b0ded6131845fcf59a75b96c5ca8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150011799",
+      "name": "重庆工商大学",
+      "file": "4150011799.png",
+      "sha256": "2845c88a06edd810f55c48e4988fca60f80614b3e4cd052612f35c2687740d78",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150012757",
+      "name": "重庆警察学院",
+      "file": "4150012757.png",
+      "sha256": "b4a8f2cd7c92926269a56c46472a3bec936ebf41e56401b68eb460a59979fc2b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4150014388",
+      "name": "重庆第二师范学院",
+      "file": "4150014388.png",
+      "sha256": "9d9ba747b5d273852b24389a6ac2b9c0bea63a357ce8ab68a45d839ff22e6fb6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010610",
+      "name": "四川大学",
+      "file": "4151010610.png",
+      "sha256": "af70c00650c3ccbc7893f0acafbb41b4dbd9abbe31f0d7f1abaa4dbe4e54305d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010613",
+      "name": "西南交通大学",
+      "file": "4151010613.png",
+      "sha256": "444ef5f37d63d8e54ee60df319b63bac6910c19a7f2d88c44f035137311d55d8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010614",
+      "name": "电子科技大学",
+      "file": "4151010614.png",
+      "sha256": "c3de6f0d905bb6153361488d91db98d5f06c9bf60bb8e5d8fd6e5857ae04432e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010615",
+      "name": "西南石油大学",
+      "file": "4151010615.png",
+      "sha256": "507cd88de284ee4790fdff637a607a3194f4f7675370a517ca50818e2028283e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010616",
+      "name": "成都理工大学",
+      "file": "4151010616.png",
+      "sha256": "613e3e5e0cb65aaef03845e1dc61f91365570ec391a9305365f69f01c2711065",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010619",
+      "name": "西南科技大学",
+      "file": "4151010619.png",
+      "sha256": "5a7b33ad4324be8324db2f6454a3a73cdf80c6900280f2c1bc337c8a3e32640c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010621",
+      "name": "成都信息工程大学",
+      "file": "4151010621.png",
+      "sha256": "bc6d1ca2d43df620e3e2f4507554e29c61c882f9a039e8681fda48631f57f4d6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010622",
+      "name": "四川轻化工大学",
+      "file": "4151010622.png",
+      "sha256": "68252bc4c59f05ba0c14a608d52351094f6e88faaf58ace54d51cedbc70539a7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010623",
+      "name": "西华大学",
+      "file": "4151010623.png",
+      "sha256": "4aeacb8585291fb9c3be4d0c2072c49b66f30772ce296664de90893e1168d786",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010624",
+      "name": "中国民用航空飞行学院",
+      "file": "4151010624.png",
+      "sha256": "a73e24d272a96be36a62e645bfecaaa52f3ed4e79b58417cc3ee6ef9d8fd9e6a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010626",
+      "name": "四川农业大学",
+      "file": "4151010626.png",
+      "sha256": "a54c1650453a7ed3c09cfe005a8506bbae3fdd691cff3c11d821920b67912f4b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010628",
+      "name": "西昌学院",
+      "file": "4151010628.png",
+      "sha256": "50d85e944a3f4491cb117c4ed012f611a2919969aa2afa126c5dce8b51f3f955",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010632",
+      "name": "西南医科大学",
+      "file": "4151010632.png",
+      "sha256": "be0427e18133ad5b0ac29500bc14ab4027709a47c89431fe81f67d8b46f42a5c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010633",
+      "name": "成都中医药大学",
+      "file": "4151010633.png",
+      "sha256": "9c58ced341a33e9831194e1974b3cfbfec4d25832aa9d17a4161bd531a3097a1",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010634",
+      "name": "川北医学院",
+      "file": "4151010634.png",
+      "sha256": "4defd81b926489fab24d75c0dfb47bd53758f250888d5faa7a6c0592755e5e39",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010636",
+      "name": "四川师范大学",
+      "file": "4151010636.png",
+      "sha256": "5103d730a0d9a144aa0cb4047d5de6a8ab01a36fd68bbcb7e96d87f00c22c255",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010638",
+      "name": "西华师范大学",
+      "file": "4151010638.png",
+      "sha256": "b1610095c70bbc957b329a7796ffada373c22a3b3d5bccdd25a2ea54bc676293",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010639",
+      "name": "绵阳师范学院",
+      "file": "4151010639.png",
+      "sha256": "cfdf1e5a84b0a561e63248236d4450129f6a74365de2ff997065d924535fcc4f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010640",
+      "name": "内江师范学院",
+      "file": "4151010640.png",
+      "sha256": "b4f8b549fc1de8507fc834ba8a548425a71806cacd026e8d1d910c57db31192e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010641",
+      "name": "宜宾学院",
+      "file": "4151010641.png",
+      "sha256": "b9ee3eddaaee6e750142cf8df7bd9eeaf9d42ec920b31a496a17a7b585b48b48",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010644",
+      "name": "四川文理学院",
+      "file": "4151010644.png",
+      "sha256": "ffc3966777f897de92c445dbd1080d4f6efd26fe822a42f561ac023948361ebf",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010646",
+      "name": "阿坝师范学院",
+      "file": "4151010646.png",
+      "sha256": "57236e8c9f492d12d9386aefe597ca16750604b02318e83eade89f454936f7d4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010649",
+      "name": "乐山师范学院",
+      "file": "4151010649.png",
+      "sha256": "08ee6895f420a5e669a319c6719d337c3da2133cd834c3fff590250e325aea10",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010651",
+      "name": "西南财经大学",
+      "file": "4151010651.png",
+      "sha256": "39f879c7eff7c65997a2d152155448a035d92b81a14656b0ad3c6adc03cb0dae",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010653",
+      "name": "成都体育学院",
+      "file": "4151010653.png",
+      "sha256": "767e7cbc070a7bcede498716732580cd6fbcfa22a00e68a6646c6b2716de34e4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151010656",
+      "name": "西南民族大学",
+      "file": "4151010656.png",
+      "sha256": "e57c3fde7f09d1e3fb2ad95fe7d184d6855f3d6950802a419f0c951d8f3ff09e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151011079",
+      "name": "成都大学",
+      "file": "4151011079.png",
+      "sha256": "5758ae31061538052a7cf3cbf7f5e23215375808338b236ceb353e1e07d816d4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151011116",
+      "name": "成都工业学院",
+      "file": "4151011116.png",
+      "sha256": "1cff8252d1703d649b7c43f9449d4498ccfc2635a5caa00ae1df485098d96dae",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151011360",
+      "name": "攀枝花学院",
+      "file": "4151011360.png",
+      "sha256": "96db12f67fc977fb6c0fcbaaa2455532675b286b23bd839e0b0a8832893c92eb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151011552",
+      "name": "四川旅游学院",
+      "file": "4151011552.png",
+      "sha256": "497769df7bb6e23e64f2ac5d9fba18a602790f6239c62b032cd0906aa6df62da",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151011661",
+      "name": "四川民族学院",
+      "file": "4151011661.png",
+      "sha256": "eba9082be7586710f7315e24b25d2a21e37cb4891d6553f1ee3fa896bff3a0f7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151012212",
+      "name": "四川警察学院",
+      "file": "4151012212.png",
+      "sha256": "6e1c4569942a3a5a02ccdba5db239987616bde652a6e24626b2d3c6c51c1ab8b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151013705",
+      "name": "成都医学院",
+      "file": "4151013705.png",
+      "sha256": "10183740f847c3b3d0cb610e56cf68f5f9631be8ac75616cae54899c9a9cc4ba",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4151014389",
+      "name": "成都师范学院",
+      "file": "4151014389.png",
+      "sha256": "33b7d09b019b01b3d968dd59c42fba53ce77f68658af1880d0c45a5e6c05e563",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010657",
+      "name": "贵州大学",
+      "file": "4152010657.png",
+      "sha256": "28c49e88a46b1d98362d73f7f62538709245d493a66958c0d6d48ade3dfcac1d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010660",
+      "name": "贵州医科大学",
+      "file": "4152010660.png",
+      "sha256": "4dbbea1ebd54d156f06e8f121f179a09398ed4e3238d56d74ff7682fa0c6f721",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010661",
+      "name": "遵义医科大学",
+      "file": "4152010661.png",
+      "sha256": "e032d5485df9a6035c1bff3f6545e18a06a5cd50dd2db2031364a58ac8644e1c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010662",
+      "name": "贵州中医药大学",
+      "file": "4152010662.png",
+      "sha256": "ea896729b1c80755611912b93346fba166f33c2a703b1bf50acbc9cc9adad586",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010663",
+      "name": "贵州师范大学",
+      "file": "4152010663.png",
+      "sha256": "a2fde714fce697799290e6c85ac4565f73f2c03fa90d8f7bb9ff0e6e3d260924",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010664",
+      "name": "遵义师范学院",
+      "file": "4152010664.png",
+      "sha256": "7b7c9a94a20fef6b938666678e014f0978c3dad5774400040d0ceec669574490",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010665",
+      "name": "铜仁学院",
+      "file": "4152010665.png",
+      "sha256": "e0b1dda6f3c79f7bcebd1b412c083b445f05fe5cbbdbeab334bb3d260054e5fe",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010666",
+      "name": "兴义民族师范学院",
+      "file": "4152010666.png",
+      "sha256": "8ab4d6fbfb2852dc9219917deb2dfce55166befe2affe1dd8424a3b7b500386d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010667",
+      "name": "安顺学院",
+      "file": "4152010667.png",
+      "sha256": "b4ce52850191d1cbdfffa765272ef6bea397ea8d496f1d7c680cc332a4d1c8c4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010668",
+      "name": "贵州工程应用技术学院",
+      "file": "4152010668.png",
+      "sha256": "ebe23b6ceeb29bfada3e33a2db2e9892024d0a9b52e47a9c50d562f8d97ca8d6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010669",
+      "name": "凯里学院",
+      "file": "4152010669.png",
+      "sha256": "391fa461799611eda564f80f98580730cf77696c14ccd73f453960585763a92c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010670",
+      "name": "黔南民族师范学院",
+      "file": "4152010670.png",
+      "sha256": "b887fc8bc62438712d3dcfbc2cb7342d845fafdbd1defd79659c9ae043e0c8cd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010671",
+      "name": "贵州财经大学",
+      "file": "4152010671.png",
+      "sha256": "04b08d8394caaca60f96a2393ca6457f9ccc41621cec7cf29bde2ffff906e428",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010672",
+      "name": "贵州民族大学",
+      "file": "4152010672.png",
+      "sha256": "d19d5bdb636c08886405f22bee5566c966d61184bfe325cf5e25ad05c6443a3d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010976",
+      "name": "贵阳学院",
+      "file": "4152010976.png",
+      "sha256": "a0a08d167e1b1cfb8b0c224365dec6ed42eba84b9027359fa0145af1be98ee85",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152010977",
+      "name": "六盘水师范学院",
+      "file": "4152010977.png",
+      "sha256": "eb258c12289888953c85800f165b5b77293e1ee8056511864d675c081239c8af",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152011731",
+      "name": "贵州商学院",
+      "file": "4152011731.png",
+      "sha256": "02d4f6698a37dcc861472cf7299166112e250bb1143b4214a4f5e957ef708361",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152012107",
+      "name": "贵州警察学院",
+      "file": "4152012107.png",
+      "sha256": "ff132f8f075addbc77521b551a297ea5df530b16a1165f60b202ce324f2b431a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152014223",
+      "name": "贵州师范学院",
+      "file": "4152014223.png",
+      "sha256": "493371c8aff4a5d64fec7f3c0afbb76924912bc178a3b7a67f224e177307d18b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4152014440",
+      "name": "贵州理工学院",
+      "file": "4152014440.png",
+      "sha256": "e42be2346b994d4d32faf3c8c265cf2f7643162f92d574718af03fb0d2f132e7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010673",
+      "name": "云南大学",
+      "file": "4153010673.png",
+      "sha256": "d9208203a552dea4f23af30ef586404d8db803e3e706382e1b2df8087ec4d2ae",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010674",
+      "name": "昆明理工大学",
+      "file": "4153010674.png",
+      "sha256": "f1402ee4c6af033e4c9b495aea9488cc8f88a0e71a53537957b5599d4aa2762e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010676",
+      "name": "云南农业大学",
+      "file": "4153010676.png",
+      "sha256": "bc336736fbe7e271ffaa10d48d9abc077c148f84715b355e816ceb1dc3510ced",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010677",
+      "name": "西南林业大学",
+      "file": "4153010677.png",
+      "sha256": "042fdf965b69b9b6655500e605aa19a91ba8f143937184ce6111495c8346d973",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010678",
+      "name": "昆明医科大学",
+      "file": "4153010678.png",
+      "sha256": "d8f5cc775145be60be033c149a11834e275aa64b3203f4a8d2e826d447430ec7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010679",
+      "name": "大理大学",
+      "file": "4153010679.png",
+      "sha256": "1b8a1489a431046e5a9d17497b943c7f43cd50d8eb1ecfb3fdf9d335092ce5cd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010680",
+      "name": "云南中医药大学",
+      "file": "4153010680.png",
+      "sha256": "8c3949a17fec615ab9832b61b011646c29dfa0c128955ddf55adf0dcef480f67",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010681",
+      "name": "云南师范大学",
+      "file": "4153010681.png",
+      "sha256": "e50d22526e76efa2c5c0188114497392f9d6273ab4b36183f2305b3daa1f3450",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010683",
+      "name": "昭通学院",
+      "file": "4153010683.png",
+      "sha256": "f469c5f7c86a4605df49bf4fbdc8a3af1005d431fdadab1014a36126656b0dc4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010684",
+      "name": "曲靖师范学院",
+      "file": "4153010684.png",
+      "sha256": "af2aa51233dc5a93d7e9fdf1817ce76a20d74d62461fa32cf089338cda63b00a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010685",
+      "name": "普洱学院",
+      "file": "4153010685.png",
+      "sha256": "9b6d6a68d1829a84cbb9e2b0221ad5a059826c2d5da64a4f467dc3367925d5bd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010686",
+      "name": "保山学院",
+      "file": "4153010686.png",
+      "sha256": "b8d3de09a88c6cee5e939f00b857754034655f8037914c806789c71f1ff092cd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010687",
+      "name": "红河学院",
+      "file": "4153010687.png",
+      "sha256": "b2057f0a00a46a6007f6a98c9760a5186a2495e389c072107d8e5e5e25a74940",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010689",
+      "name": "云南财经大学",
+      "file": "4153010689.png",
+      "sha256": "bde7e21c619579f085a08e92917c3d5ae0476b5fd0e90234c2f5907a17236ba9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153010691",
+      "name": "云南民族大学",
+      "file": "4153010691.png",
+      "sha256": "8577196c1e564f3cb8ee8669905939db7880a94c8c0af955908ddbbbe49753f3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153011390",
+      "name": "玉溪师范学院",
+      "file": "4153011390.png",
+      "sha256": "0a0e4186527e20a0447de444f9d26daaa7629535f723e11386eddc0bc423363c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153011391",
+      "name": "楚雄师范学院",
+      "file": "4153011391.png",
+      "sha256": "797f95f7725602b2b4ccb89402a9e9753999bc7312813ee0f58ac31d328c0682",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153011392",
+      "name": "云南警官学院",
+      "file": "4153011392.png",
+      "sha256": "59907d38ac9b6d0853c13031e1a2506e936e1438d69a94478a582aa78a03df26",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153011393",
+      "name": "昆明学院",
+      "file": "4153011393.png",
+      "sha256": "ea595a9f2645ff880f93b03363bf5380cc4138d90d3eedff37be224dc36de30d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153011556",
+      "name": "文山学院",
+      "file": "4153011556.png",
+      "sha256": "1d31a63b893c766dcfbacf322dc86a665307a16b1f54e92f06060a6030799d28",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4153014092",
+      "name": "滇西科技师范学院",
+      "file": "4153014092.png",
+      "sha256": "efed8100371ef9e7460f0fe12ab37dddf49f7fc6749a0cf3f1b259b5057c08ca",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4154010694",
+      "name": "西藏大学",
+      "file": "4154010694.png",
+      "sha256": "7d7b3a30eb815e36288851508e355cc001bddf339addfc4ed724e40f01fe92fd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4154010695",
+      "name": "西藏民族大学",
+      "file": "4154010695.png",
+      "sha256": "5e25b07ef79f0ec3bd5ebbf9c5ff9414abe058b768fa2baf898dad2f5d1ed1f0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4154010696",
+      "name": "西藏藏医药大学",
+      "file": "4154010696.png",
+      "sha256": "f6d6f04dba34d4d618b7aa504e652f5a5641d145c8a614044c553bce378ee3ad",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010697",
+      "name": "西北大学",
+      "file": "4161010697.png",
+      "sha256": "6de1e65db6685103c50036f5e84fdf46578ff008786b26465f6903694cee3b17",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010698",
+      "name": "西安交通大学",
+      "file": "4161010698.png",
+      "sha256": "126f8f3dbf897f86e296a27f82c7de37cdc4b8f9347f95956feb51d0f67e11d8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010699",
+      "name": "西北工业大学",
+      "file": "4161010699.png",
+      "sha256": "f5fbd14da172c08433b53a53579dc8d011377c7d1695f276f4a3b56260b713f3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010700",
+      "name": "西安理工大学",
+      "file": "4161010700.png",
+      "sha256": "572a559e920f2f23291237705d116fdf63f2a182346a9ff40e887b272d34114f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010701",
+      "name": "西安电子科技大学",
+      "file": "4161010701.png",
+      "sha256": "9a09a52c3e7de280453aba1b0bf970a46b2058c38ca1e4a8b8b70e214d2a3c55",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010702",
+      "name": "西安工业大学",
+      "file": "4161010702.png",
+      "sha256": "03f8a2712e898a4cb2ec682a0f84837dcb8d0fa53b8a9cd267d9f68d173b3a0d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010703",
+      "name": "西安建筑科技大学",
+      "file": "4161010703.png",
+      "sha256": "bc64e128f0b2304bb3a2864d6d653fb302a121b3441eb8708ecbeae2761ac2a7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010704",
+      "name": "西安科技大学",
+      "file": "4161010704.png",
+      "sha256": "6b07a1b86254d2158e82917c7511818b6f9f1be75ee4b867a1390a559289a4df",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010705",
+      "name": "西安石油大学",
+      "file": "4161010705.png",
+      "sha256": "3dee09f3f399d3d58a036d627d154e58f185a547673bfdd59b47fbdbc0a86129",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010708",
+      "name": "陕西科技大学",
+      "file": "4161010708.png",
+      "sha256": "1c8c500d77b55f9ae0d0c5ce6ea39598da7fa72b266335a25332fcda47c86a86",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010709",
+      "name": "西安工程大学",
+      "file": "4161010709.png",
+      "sha256": "9cf6ed9756f4b4df972fb4864da061615180c1e7937424f283e47b23259b1e18",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010710",
+      "name": "长安大学",
+      "file": "4161010710.png",
+      "sha256": "c459c9c0b049c892ee0bf04018c15acc64d72c746d4db4e0536652994f5317f8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010712",
+      "name": "西北农林科技大学",
+      "file": "4161010712.png",
+      "sha256": "aa30c423aceb6899e7d51a7e81a74b748007358fac3602d84ab1ee591b02786e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010716",
+      "name": "陕西中医药大学",
+      "file": "4161010716.png",
+      "sha256": "280d50cc6a817b85526e538ac8d4bcf787547d32f11f5aa917064eb6856b54cb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010718",
+      "name": "陕西师范大学",
+      "file": "4161010718.png",
+      "sha256": "b865b5c3216c30bf25df9ead88f631d47e4a4253f24094569f392082f63336f3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010719",
+      "name": "延安大学",
+      "file": "4161010719.png",
+      "sha256": "f34680520b391b7775f011c90b54c648d513ce1c586366157e2f6a65c235d2ac",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010720",
+      "name": "陕西理工大学",
+      "file": "4161010720.png",
+      "sha256": "0ad3f4f584440afba30bfdfba318c8988912bb7a365978d91258ef962c389b31",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010721",
+      "name": "宝鸡文理学院",
+      "file": "4161010721.png",
+      "sha256": "43b1adeda7e35ed9540bce088ec46cca20667379491f2f704f408d45f8afec50",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010722",
+      "name": "咸阳师范学院",
+      "file": "4161010722.png",
+      "sha256": "f72f941ad65a6646aa2c31d149de3b4cba0cc40a7b866b39f13cabcfe5ede846",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010723",
+      "name": "渭南师范学院",
+      "file": "4161010723.png",
+      "sha256": "8e6bb516374195da116b2ed24e356af7a00b592df41191e9d44de549d7095003",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010724",
+      "name": "西安外国语大学",
+      "file": "4161010724.png",
+      "sha256": "237ba21976ac155bc854c746d7a861319515dbc301748f55dddb12bdbe778000",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010726",
+      "name": "西北政法大学",
+      "file": "4161010726.png",
+      "sha256": "bb607720545f0ead0cec2436f2eb1c92cb4e64ef4d4fe390ae376514d9c8c748",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161010727",
+      "name": "西安体育学院",
+      "file": "4161010727.png",
+      "sha256": "2778a36491a0ba97e21f136ad1e013ca9d9ce740d2365f0d6514765723bc319d",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161011080",
+      "name": "西安文理学院",
+      "file": "4161011080.png",
+      "sha256": "4d2acfe46d3f479583dd079c4934166786174789555d44580129fffd7fa08616",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161011396",
+      "name": "商洛学院",
+      "file": "4161011396.png",
+      "sha256": "106e98a157b962f464f898a1ea4a0b9be0a1781acba29c7a9f40f13f123fcf02",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161011397",
+      "name": "安康学院",
+      "file": "4161011397.png",
+      "sha256": "5f6ff72b8bcadece9a20cc8ab7d51f34f1c1d827a651daae01407f8f836165f4",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161011560",
+      "name": "西安财经大学",
+      "file": "4161011560.png",
+      "sha256": "40cce6928760e4902f71d52dca4720e5aeaa7cc7cc65dfcd22e27ae6463a67e0",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161011664",
+      "name": "西安邮电大学",
+      "file": "4161011664.png",
+      "sha256": "a9aa10665392ffeb6a17971cf234845df818e76f877248e3deb9af0bdcc8f6a7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161011736",
+      "name": "西安航空学院",
+      "file": "4161011736.png",
+      "sha256": "1ae11e12ef2181f2f8e73e5c394a1ce63efb5d9b3ca2b2859fb5d912d05b6f87",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161011840",
+      "name": "西安医学院",
+      "file": "4161011840.png",
+      "sha256": "5f65251aabf9513bf5dd7bff6f5e961bcc9516ed9d87e4f7762d21c35386889a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4161014390",
+      "name": "陕西学前师范学院",
+      "file": "4161014390.png",
+      "sha256": "c706ecb12794b3c065f320fb158f95b34f35ec187b84a239332621f99c84f22f",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162010730",
+      "name": "兰州大学",
+      "file": "4162010730.png",
+      "sha256": "14b39198f6568d4bd892320a8926eb8d494656f6d625db4aa11cc5b400ada438",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162010731",
+      "name": "兰州理工大学",
+      "file": "4162010731.png",
+      "sha256": "0fa900e8a4d28423b1d120a9c2039b811da7f14b213f815a5377dca0102fb0a6",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162010732",
+      "name": "兰州交通大学",
+      "file": "4162010732.png",
+      "sha256": "e25eefe6dccef6debec0220788756766912854f7e9b9a83bab1e8b48c94ef937",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162010733",
+      "name": "甘肃农业大学",
+      "file": "4162010733.png",
+      "sha256": "438a40728a82b6e0753fa0205a706f055181dd865666e963df0a00bd74d20fc3",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162010735",
+      "name": "甘肃中医药大学",
+      "file": "4162010735.png",
+      "sha256": "dac63eae03d318ed856be0b5532aa59a298358e2a9e70175e937d750f1b8dbbb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162010736",
+      "name": "西北师范大学",
+      "file": "4162010736.png",
+      "sha256": "6639b12757180648a14790ef9772686e30ec02bc0c3e7306a9b0b2614ad445bb",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162010737",
+      "name": "兰州城市学院",
+      "file": "4162010737.png",
+      "sha256": "6888599610e15941490a4cfbc87f4958430e8d5bb7fe6d725462aa7b22ea726a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162010738",
+      "name": "陇东学院",
+      "file": "4162010738.png",
+      "sha256": "d5f7c623fc7e50ebc86f483b1fb063a7c26b583bcc6731a42ccaa08f1bb9cefd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162010740",
+      "name": "河西学院",
+      "file": "4162010740.png",
+      "sha256": "3d313dd56e54801d7f69e5eb2de75b1f8c66ff3848643fd9b07a9ccd84c0be3a",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162010741",
+      "name": "兰州财经大学",
+      "file": "4162010741.png",
+      "sha256": "a3a8793bb54566a244bae18f911d520c0c9d80830964625fe4841cf32aae1592",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162010742",
+      "name": "西北民族大学",
+      "file": "4162010742.png",
+      "sha256": "6b8af9674ac9c3c4bbc1f9e750802ee166bcc8f881b06cfb10f280b2c401b471",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162011406",
+      "name": "甘肃政法大学",
+      "file": "4162011406.png",
+      "sha256": "327ad62486c006680655453f6131e7c0fb57b24c4fbb2a10d5525c356aac22b8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162011561",
+      "name": "甘肃民族师范学院",
+      "file": "4162011561.png",
+      "sha256": "393d0a14b97c7fea3102a03ee308101c00f26dd0a67c0168604fb0ed1617a3aa",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162011562",
+      "name": "兰州文理学院",
+      "file": "4162011562.png",
+      "sha256": "46f96ebf8b287e34aaf16321943c4c58a8d8255d9dfdd7b391eda681f9707a64",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162011805",
+      "name": "甘肃医学院",
+      "file": "4162011805.png",
+      "sha256": "de32842b3c8a325dfc014933a2e6295f0a2d71e82dd70d780eb2b327f8566281",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4162011807",
+      "name": "兰州工业学院",
+      "file": "4162011807.png",
+      "sha256": "032ae1dbf23fd37cbaa936e71a2d4da6cf6bd5f6a0055075cdf2e10304b66e02",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4163010743",
+      "name": "青海大学",
+      "file": "4163010743.png",
+      "sha256": "56734de40e47e391ed0e059a03d47d7211c0700ce9853b93e0ce7c2499af3898",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4163010746",
+      "name": "青海师范大学",
+      "file": "4163010746.png",
+      "sha256": "e3b7f4bfb8055a40462c9a2565400c9e8340d20d205485c1d58f7533942936ce",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4163010748",
+      "name": "青海民族大学",
+      "file": "4163010748.png",
+      "sha256": "fddc7192d489d1c4f5f9251a8833ae70349ecfdf30bb9f5e8e842d90e64c0bec",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4164010749",
+      "name": "宁夏大学",
+      "file": "4164010749.png",
+      "sha256": "74102c7be7ad1f754d3657e857cacd8a190ff271746c6b8819bcaabfeaddaff8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4164010752",
+      "name": "宁夏医科大学",
+      "file": "4164010752.png",
+      "sha256": "510ae92f5dc0cc91f6db72a2def65ef862ad3a23750ba20c9ef804a5502440dd",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4164011407",
+      "name": "北方民族大学",
+      "file": "4164011407.png",
+      "sha256": "273833f2d66f7d931d38626a9c900c4f8b81c2d010af6bcce4dae1f95b49c7e5",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165010755",
+      "name": "新疆大学",
+      "file": "4165010755.png",
+      "sha256": "65404cb8c63d965a2c88ca30ed32f692f0b9049765f7381ab774417163b0c3b8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165010757",
+      "name": "塔里木大学",
+      "file": "4165010757.png",
+      "sha256": "21252389f0e470d93a4cfb49e6aa434ce91a4c2268bf5f89902d9d732274e4c9",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165010758",
+      "name": "新疆农业大学",
+      "file": "4165010758.png",
+      "sha256": "55586feb128adfe29cb2e7994eec1bec689f3a077a515cf2205664d6f2ca6b4c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165010759",
+      "name": "石河子大学",
+      "file": "4165010759.png",
+      "sha256": "66bfb29aa2628aafcb3315de9978e793a955bcea13d6e82c4dde3784fc8d2d12",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165010760",
+      "name": "新疆医科大学",
+      "file": "4165010760.png",
+      "sha256": "85881cfbdad183194f8577f74cd4ce75b0fcfa4dc134e35e878ba8f8da126767",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165010762",
+      "name": "新疆师范大学",
+      "file": "4165010762.png",
+      "sha256": "646465862c3e528a280793f27ea63c084349510189a5afd44d579b0d98a99b51",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165010763",
+      "name": "喀什大学",
+      "file": "4165010763.png",
+      "sha256": "76157d0c31ae227e301af4587114036554d672e6713e3818da811c3aba79a520",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165010764",
+      "name": "伊犁师范大学",
+      "file": "4165010764.png",
+      "sha256": "d460af677d37ba9f011dca6ac3646da7fed1d809bdb801c10b93c19d431aa689",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165010766",
+      "name": "新疆财经大学",
+      "file": "4165010766.png",
+      "sha256": "70fe562b2af34df9b9be0d5c5ab4b1afc579e54524e9ced104629e647ee0bc9b",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165010994",
+      "name": "新疆工程学院",
+      "file": "4165010994.png",
+      "sha256": "5fe41cd123b0528af759d53d6aa76ff52ba6f0daabdcc1af8fca7d387dc86826",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165010997",
+      "name": "昌吉学院",
+      "file": "4165010997.png",
+      "sha256": "22c3df21f0d9a5e45018c25a5ab092498f140d80779f3d153db156569c9cd885",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165012734",
+      "name": "新疆警察学院",
+      "file": "4165012734.png",
+      "sha256": "c318545fd3e87b90db39e08193ae119cac7d8397b1b7375f3440ffc8e6dfc2c7",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165013558",
+      "name": "新疆理工学院",
+      "file": "4165013558.png",
+      "sha256": "208239d15982e2bbc827e902b14258a04c61a28dcba4c2aa7239f47f50fe6e0e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165013560",
+      "name": "新疆第二医学院",
+      "file": "4165013560.png",
+      "sha256": "19c321089d62e4a3dbab6a54ed632ae06a39b6d2ea750d4af0c92ebb1dad3eea",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165013561",
+      "name": "新疆科技学院",
+      "file": "4165013561.png",
+      "sha256": "74a40718e6cc3945d2a2232cec13aba589ea2868a8d9f1336eb4ce75634b0d4e",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4165013628",
+      "name": "新疆政法学院",
+      "file": "4165013628.png",
+      "sha256": "b9b77a268143bf9cee9cd5f6459546d3aa628de268b6b979d2bd9c578b6459d8",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4213051721",
+      "name": "河北环境工程学院",
+      "file": "4213051721.png",
+      "sha256": "ac83e0e1a023e6518ba8083a663e5e20e8bce57ecbb6ed45130b8768bb6735fa",
+      "source_name": "xioajiumi/Chinese_Universities"
+    },
+    {
+      "official_school_code": "4214051189",
+      "name": "山西能源学院",
+      "file": "4214051189.png",
+      "sha256": "c35a31a771168691ba0c62e93d13b7020743d6e342f070bc2611d1eb5e0c6a0c",
+      "source_name": "xioajiumi/Chinese_Universities"
+    }
+  ]
+}

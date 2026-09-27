@@ -34,6 +34,14 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'api/v1',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $trustedProxies = array_values(array_filter(array_map(
+            trim(...),
+            explode(',', (string) env('TRUSTED_PROXIES', '127.0.0.1,::1,172.16.0.0/12')),
+        )));
+        $middleware->trustProxies(
+            at: $trustedProxies,
+            headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO,
+        );
         $middleware->append(AttachRequestId::class);
         $middleware->append(AddSecurityHeaders::class);
         $middleware->append(MeasureRequestPerformance::class);

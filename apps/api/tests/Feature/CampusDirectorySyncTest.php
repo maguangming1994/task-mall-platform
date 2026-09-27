@@ -59,7 +59,7 @@ class CampusDirectorySyncTest extends TestCase
             ->assertJsonPath('data.items.0.code', 'moe-4111010001')
             ->assertJsonPath('data.items.0.location_accuracy', 'city');
 
-        $this->assertLessThan(2, $response->json('data.items.0.distance_km'));
+        $this->assertNull($response->json('data.items.0.distance_km'));
     }
 
     public function test_directory_sync_is_idempotent_and_preserves_operational_fields(): void

@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Modules\Account\Models\UserAddress;
 use App\Modules\Account\Models\UserAssetAccount;
+use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Auth\Models\IdentityConflict;
 use App\Modules\Auth\Models\UserDevice;
 use App\Modules\Auth\Models\UserIdentity;
@@ -12,6 +13,7 @@ use App\Modules\Auth\Models\UserSession;
 use App\Modules\Campus\Models\Campus;
 use App\Modules\Identity\Models\UserIdentityVerification;
 use App\Modules\Notification\Models\NotificationPreference;
+use App\Modules\Task\Models\TaskPublisher;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -36,6 +38,9 @@ class User extends Authenticatable
         'phone_hash',
         'phone_verified_at',
         'profile_completed_at',
+        'can_publish_tasks',
+        'task_publish_permission_granted_at',
+        'task_publish_permission_granted_by_admin_id',
         'status',
         'cancelled_at',
         'merged_into_user_id',
@@ -115,6 +120,16 @@ class User extends Authenticatable
         return $this->hasOne(UserIdentityVerification::class)->latestOfMany();
     }
 
+    public function taskPublisher(): HasOne
+    {
+        return $this->hasOne(TaskPublisher::class, 'linked_user_id');
+    }
+
+    public function taskPublishPermissionGrantedBy(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'task_publish_permission_granted_by_admin_id');
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -126,6 +141,8 @@ class User extends Authenticatable
             'phone' => 'encrypted',
             'phone_verified_at' => 'datetime',
             'profile_completed_at' => 'datetime',
+            'can_publish_tasks' => 'boolean',
+            'task_publish_permission_granted_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
     }

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Task\Models;
 
+use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,5 +25,10 @@ class TaskPublisher extends Model
     public function adminUser(): BelongsTo
     {
         return $this->belongsTo(AdminUser::class);
+    }
+
+    public function linkedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'linked_user_id');
     }
 }

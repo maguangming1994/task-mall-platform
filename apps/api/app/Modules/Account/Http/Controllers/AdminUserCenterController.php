@@ -5,10 +5,14 @@ namespace App\Modules\Account\Http\Controllers;
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Auth\Services\PhoneVerificationService;
 use App\Modules\Growth\Models\Referral;
+use App\Modules\Growth\Services\AdminReferralTeamService;
 use App\Modules\Identity\Services\IdentityVerificationSettingsService;
 use App\Modules\Settings\Services\SystemSettingService;
+use App\Modules\Task\Services\TaskPublishingPermissionService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -69,8 +73,12 @@ class AdminUserCenterController extends Controller
         ]);
     }
 
-    public function users(Request $request, PhoneVerificationService $phones, SystemSettingService $settings): JsonResponse
-    {
+    public function users(
+        Request $request,
+        PhoneVerificationService $phones,
+        SystemSettingService $settings,
+        TaskPublishingPermissionService $permissions,
+    ): JsonResponse {
         $filters = $request->validate([
             'keyword' => ['sometimes', 'string', 'max:100'],
             'status' => ['sometimes', 'in:active,disabled,cancelled,merged'],
@@ -82,7 +90,7 @@ class AdminUserCenterController extends Controller
         ]);
 
         $query = User::query()
-            ->with(['assetAccount', 'identities'])
+            ->with(['assetAccount', 'identities', 'taskPublisher'])
             ->select('users.*')
             ->selectSub(fn ($sub) => $sub->from('task_claims')->selectRaw('COUNT(*)')->whereColumn('task_claims.user_id', 'users.id'), 'task_claim_count')
             ->selectSub(fn ($sub) => $sub->from('task_claims')->selectRaw('COUNT(*)')->whereColumn('task_claims.user_id', 'users.id')->where('task_claims.status', 'approved'), 'approved_task_count')
@@ -93,7 +101,7 @@ class AdminUserCenterController extends Controller
         $this->applyUserFilters($query, $filters, $phones);
         $paginator = $query->latest('users.id')->paginate((int) ($filters['page_size'] ?? 20));
         $rules = $this->levelRules($settings);
-        $items = collect($paginator->items())->map(fn (User $user) => $this->presentUser($user, $rules));
+        $items = collect($paginator->items())->map(fn (User $user) => $this->presentUser($user, $rules, $permissions));
 
         return ApiResponse::success([
             'items' => $items,
@@ -111,6 +119,39 @@ class AdminUserCenterController extends Controller
         ]);
     }
 
+    public function updateTaskPublishingPermission(
+        Request $request,
+        User $user,
+        TaskPublishingPermissionService $permissions,
+        AuditLogger $audit,
+    ): JsonResponse {
+        $data = $request->validate([
+            'granted' => ['required', 'boolean'],
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
+        ]);
+        /** @var AdminUser $actor */
+        $actor = $request->user();
+
+        $presented = DB::transaction(function () use ($actor, $user, $data, $permissions, $audit): array {
+            $before = $permissions->present($user);
+            $updated = $permissions->update($actor, $user, (bool) $data['granted']);
+            $after = $permissions->present($updated);
+            $audit->record(
+                $actor,
+                $data['granted'] ? 'user.task_publishing_permission_granted' : 'user.task_publishing_permission_revoked',
+                'user',
+                $user->public_id,
+                $before,
+                $after,
+                trim($data['reason']),
+            );
+
+            return $after;
+        });
+
+        return ApiResponse::success($presented);
+    }
+
     public function referrals(Request $request, SystemSettingService $settings): JsonResponse
     {
         $filters = $request->validate([
@@ -118,7 +159,10 @@ class AdminUserCenterController extends Controller
             'status' => ['sometimes', 'string', 'max:30'],
             'page_size' => ['sometimes', 'integer', 'min:10', 'max:100'],
         ]);
-        $query = Referral::query()->with(['referrer', 'referred']);
+        $query = Referral::query()
+            ->whereHas('referrer')
+            ->whereHas('referred')
+            ->with(['referrer', 'referred']);
         if (($filters['keyword'] ?? '') !== '') {
             $keyword = trim($filters['keyword']);
             $query->where(function ($sub) use ($keyword): void {
@@ -148,6 +192,39 @@ class AdminUserCenterController extends Controller
             'items' => $items,
             'pagination' => ['page' => $paginator->currentPage(), 'page_size' => $paginator->perPage(), 'total' => $paginator->total(), 'last_page' => $paginator->lastPage()],
         ]);
+    }
+
+    public function referralTeams(Request $request, AdminReferralTeamService $teams): JsonResponse
+    {
+        $filters = $request->validate([
+            'keyword' => ['sometimes', 'string', 'max:100'],
+            'status' => ['sometimes', 'in:active,disabled,cancelled,merged'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'page_size' => ['sometimes', 'integer', 'min:10', 'max:50'],
+        ]);
+
+        return ApiResponse::success($teams->index($filters));
+    }
+
+    public function referralTeam(Request $request, User $leader, AdminReferralTeamService $teams): JsonResponse
+    {
+        if ($request->query->has('effective')) {
+            $effective = $request->query('effective');
+            $normalized = is_string($effective) ? strtolower(trim($effective)) : $effective;
+            if (in_array($normalized, [true, false, 1, 0, '1', '0', 'true', 'false'], true)) {
+                $request->merge(['effective' => filter_var($normalized, FILTER_VALIDATE_BOOLEAN)]);
+            }
+        }
+        $filters = $request->validate([
+            'keyword' => ['sometimes', 'string', 'max:100'],
+            'status' => ['sometimes', 'in:active,disabled,cancelled,merged'],
+            'level' => ['sometimes', 'integer', 'min:1', 'max:'.AdminReferralTeamService::MAX_DEPTH],
+            'effective' => ['sometimes', 'boolean'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'page_size' => ['sometimes', 'integer', 'min:10', 'max:100'],
+        ]);
+
+        return ApiResponse::success($teams->show($leader, $filters));
     }
 
     public function verifications(Request $request, IdentityVerificationSettingsService $identitySettings): JsonResponse
@@ -229,7 +306,7 @@ class AdminUserCenterController extends Controller
     }
 
     /** @param array<int,array<string,mixed>> $rules */
-    private function presentUser(User $user, array $rules): array
+    private function presentUser(User $user, array $rules, TaskPublishingPermissionService $permissions): array
     {
         $approved = (int) $user->getAttribute('approved_task_count');
         $cashOrders = (int) $user->getAttribute('completed_cash_order_count');
@@ -241,6 +318,8 @@ class AdminUserCenterController extends Controller
             'nickname' => $user->nickname,
             'phone_masked' => $this->maskPhone($user->phone),
             'status' => $user->status,
+            'can_publish_tasks' => $user->status === 'active' && $user->can_publish_tasks,
+            'task_publishing_permission' => $permissions->present($user),
             'level' => ['code' => $level['code'], 'name' => $level['name']],
             'assets' => [
                 'points_available' => $asset?->points_available ?? 0,

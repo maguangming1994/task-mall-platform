@@ -14,6 +14,7 @@ use App\Modules\Task\Models\Task;
 use App\Modules\Task\Models\TaskPublisher;
 use App\Modules\Task\Services\RewardBudgetService;
 use App\Modules\Task\Services\TaskDefinitionService;
+use App\Modules\Task\Services\TaskPublishingPermissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -38,9 +39,17 @@ class TaskPublisherTaskController extends Controller
         return ApiResponse::success(['items' => $items, 'pagination' => ['page' => 1, 'page_size' => $items->count(), 'total' => $items->count()]]);
     }
 
-    public function store(Request $request, TaskDefinitionService $tasks, SystemSettingService $settings, AuditLogger $audit): JsonResponse
-    {
+    public function store(
+        Request $request,
+        TaskDefinitionService $tasks,
+        SystemSettingService $settings,
+        AuditLogger $audit,
+        TaskPublishingPermissionService $permissions,
+    ): JsonResponse {
         $publisher = $this->publisher($request);
+        if (! $permissions->publisherCanPublish($publisher)) {
+            return ApiResponse::error('PUBLISHER_PERMISSION_REVOKED', '发布权限已撤销。', 403);
+        }
         $task = $tasks->create($publisher->adminUser, $this->definition($request, $settings), $this->key($request), 'user_frontend');
         $presented = $tasks->present($task);
         $audit->record($publisher->adminUser, 'task.create_draft', 'task', $task->public_id, null, $presented, '用户端发布管理员保存任务草稿。');

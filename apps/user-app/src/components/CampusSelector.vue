@@ -2,7 +2,19 @@
   <view class="campus-selector">
     <view class="campus-access-bar">
       <view class="campus-trigger" role="button" aria-label="选择当前学校" @click="openCampusList">
-        <view class="campus-pin"><view /></view>
+        <template v-if="campus.selected">
+          <view :class="['campus-brand-mark', 'campus-trigger-mark', campusFallbackTone(campus.selected)]">
+            <image
+              v-if="showCampusEmblem(campus.selected)"
+              class="campus-brand-image"
+              :src="campusEmblemSource(campus.selected)"
+              mode="aspectFit"
+              @error="handleCampusEmblemError(campus.selected)"
+            />
+            <text v-else>{{ campusInitials(campus.selected.name) }}</text>
+          </view>
+        </template>
+        <view v-else class="campus-pin"><view /></view>
         <text class="campus-trigger-name">{{ campus.selected?.name || '选择学校' }}</text>
         <view class="campus-chevron" />
       </view>
@@ -58,7 +70,16 @@
           </view>
           <view v-else class="campus-list-content">
             <view v-for="item in campus.items" :key="item.id" class="campus-option" :class="{ active: campus.selected?.id === item.id, pending: selectingId === item.id }" @click="choose(item)">
-              <view class="campus-option-mark">{{ item.name.slice(0, 1) }}</view>
+              <view :class="['campus-brand-mark', 'campus-option-mark', campusFallbackTone(item)]">
+                <image
+                  v-if="showCampusEmblem(item)"
+                  class="campus-brand-image"
+                  :src="campusEmblemSource(item)"
+                  mode="aspectFit"
+                  @error="handleCampusEmblemError(item)"
+                />
+                <text v-else>{{ campusInitials(item.name) }}</text>
+              </view>
               <view class="campus-option-copy">
                 <text>{{ item.name }}</text>
                 <text class="campus-option-location">{{ locationText(item) }}</text>
@@ -86,7 +107,44 @@ const searchFocused = ref(false)
 const keyword = ref('')
 const locating = ref(false)
 const selectingId = ref('')
+const failedEmblems = ref<Record<string, string>>({})
 const loadMode = ref<'all' | 'search' | 'location'>('all')
+
+const fallbackSeparators = /[\s\-_.·/]+/
+
+function campusEmblemSource(item: Campus) {
+  return item.emblem_url?.trim() || ''
+}
+
+function showCampusEmblem(item: Campus) {
+  const source = campusEmblemSource(item)
+  return Boolean(source && failedEmblems.value[item.id] !== source)
+}
+
+function handleCampusEmblemError(item: Campus) {
+  const source = campusEmblemSource(item)
+  if (!source) return
+  failedEmblems.value = { ...failedEmblems.value, [item.id]: source }
+}
+
+function campusInitials(name: string) {
+  const normalized = name.trim()
+  if (!normalized) return '校'
+  const words = normalized.split(fallbackSeparators).filter(Boolean)
+  if (words.length > 1 && words.every(word => /^[a-z0-9]+$/i.test(word))) {
+    return words.slice(0, 2).map(word => word.charAt(0)).join('').toUpperCase()
+  }
+  return Array.from(normalized.split(fallbackSeparators).join('')).slice(0, 2).join('').toUpperCase()
+}
+
+function campusFallbackTone(item: Campus) {
+  const seed = `${item.id}:${item.code}:${item.name}`
+  let hash = 0
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0
+  }
+  return `tone-${hash % 6}`
+}
 
 const emptyStateTitle = computed(() => {
   if (loadMode.value === 'location') return '定位成功，但附近暂无可选学校'
@@ -231,6 +289,7 @@ function normalizedAccuracy(item: Campus) {
 }
 
 function distanceText(item: Campus) {
+  if (normalizedAccuracy(item) === 'city') return '\u540c\u57ce\u5019\u9009'
   if (!hasComparableDistance(item)) return ''
   const prefix = normalizedAccuracy(item) === 'city' ? '约 ' : ''
   return `${prefix}${item.distance_km} km`
@@ -277,10 +336,10 @@ function locationText(item: Campus) {
 </script>
 
 <style scoped>
-.campus-selector{position:relative;width:100%;box-sizing:border-box}.campus-access-bar{display:grid;width:100%;min-width:0;grid-template-columns:minmax(110px,40%) minmax(0,1fr);gap:8px}.campus-trigger,.campus-search-trigger{display:flex;height:42px;min-width:0;box-sizing:border-box;align-items:center;border:1px solid #dde7e8;border-radius:9px;background:#fff}.campus-trigger{gap:8px;padding:0 11px}.campus-trigger-name{min-width:0;overflow:hidden;flex:1;color:var(--tm-ink-900);font-size:14px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}.campus-search-trigger{gap:9px;padding:0 13px;color:#6f7e8d}.campus-search-trigger>text{min-width:0;overflow:hidden;font-size:14px;text-overflow:ellipsis;white-space:nowrap}.campus-pin{position:relative;width:13px;height:16px;flex:none;box-sizing:border-box;border:2px solid var(--tm-growth-600);border-radius:50% 50% 50% 0;transform:rotate(-45deg)}.campus-pin view{position:absolute;top:3px;left:3px;width:3px;height:3px;border-radius:50%;background:var(--tm-growth-600)}.campus-chevron{width:7px;height:7px;flex:none;border-right:2px solid #607184;border-bottom:2px solid #607184;transform:rotate(-45deg)}.campus-trigger-search-icon{position:relative;width:14px;height:14px;flex:none;box-sizing:border-box;border:2px solid #617487;border-radius:50%}.campus-trigger-search-icon::after{content:'';position:absolute;width:6px;height:2px;right:-5px;bottom:-2px;border-radius:2px;background:#617487;transform:rotate(45deg)}
+.campus-selector{position:relative;width:100%;box-sizing:border-box}.campus-access-bar{display:grid;width:100%;min-width:0;grid-template-columns:minmax(110px,40%) minmax(0,1fr);gap:8px}.campus-trigger,.campus-search-trigger{display:flex;height:42px;min-width:0;box-sizing:border-box;align-items:center;border:1px solid #dde7e8;border-radius:9px;background:#fff}.campus-trigger{gap:8px;padding:0 11px}.campus-trigger-name{min-width:0;overflow:hidden;flex:1;color:var(--tm-ink-900);font-size:14px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}.campus-search-trigger{gap:9px;padding:0 13px;color:#6f7e8d}.campus-search-trigger>text{min-width:0;overflow:hidden;font-size:14px;text-overflow:ellipsis;white-space:nowrap}.campus-pin{position:relative;width:13px;height:16px;flex:none;box-sizing:border-box;border:2px solid var(--tm-growth-600);border-radius:50% 50% 50% 0;transform:rotate(-45deg)}.campus-pin view{position:absolute;top:3px;left:3px;width:3px;height:3px;border-radius:50%;background:var(--tm-growth-600)}.campus-brand-mark{display:flex;overflow:hidden;align-items:center;justify-content:center;flex:none;box-sizing:border-box;border:1rpx solid rgba(21,41,55,.08);background:#e8f2ff;color:#255b88;font-weight:900;letter-spacing:0}.campus-brand-mark.tone-1{background:#e8f7ee;color:#276a46}.campus-brand-mark.tone-2{background:#fff2dc;color:#8a581b}.campus-brand-mark.tone-3{background:#fdebea;color:#8a3f3a}.campus-brand-mark.tone-4{background:#e6f7f6;color:#216969}.campus-brand-mark.tone-5{background:#edf0f5;color:#4d5d70}.campus-brand-image{width:100%;height:100%;box-sizing:border-box;padding:3rpx;background:#fff}.campus-trigger-mark{width:26px;height:26px;border-radius:7px;font-size:10px}.campus-trigger-mark .campus-brand-image{padding:2px}.campus-chevron{width:7px;height:7px;flex:none;border-right:2px solid #607184;border-bottom:2px solid #607184;transform:rotate(-45deg)}.campus-trigger-search-icon{position:relative;width:14px;height:14px;flex:none;box-sizing:border-box;border:2px solid #617487;border-radius:50%}.campus-trigger-search-icon::after{content:'';position:absolute;width:6px;height:2px;right:-5px;bottom:-2px;border-radius:2px;background:#617487;transform:rotate(45deg)}
 .campus-mask{position:fixed;z-index:1300;inset:0;display:flex;align-items:flex-end;background:rgba(9,25,43,.48);backdrop-filter:blur(5px)}.campus-sheet{width:100%;max-height:82vh;overflow:hidden;box-sizing:border-box;padding:13rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));border-radius:34rpx 34rpx 0 0;background:#f8fbfd;box-shadow:0 -20rpx 60rpx rgba(9,25,43,.18)}.campus-sheet-handle{width:72rpx;height:8rpx;margin:0 auto 20rpx;border-radius:999rpx;background:#cfd8e2}.campus-sheet-head{display:flex;align-items:center;justify-content:space-between}.campus-sheet-head>view:first-child text{display:block}.campus-sheet-title{font-size:22px;font-weight:950}.campus-sheet-note{margin-top:6rpx;color:var(--tm-ink-500);font-size:13px}.campus-close{display:flex;width:58rpx;height:58rpx;align-items:center;justify-content:center;border:1rpx solid var(--tm-line);border-radius:50%;background:#fff;color:#5f6e80;font-size:25px}
 .campus-search{display:flex;height:82rpx;align-items:center;gap:14rpx;margin-top:24rpx;padding:0 20rpx;border:1rpx solid #d9e4ec;border-radius:20rpx;background:#fff}.campus-search input{min-width:0;flex:1;font-size:15px}.campus-search>text{color:var(--tm-growth-700);font-size:13px;font-weight:800}.campus-search-icon{width:23rpx;height:23rpx;border:4rpx solid #6f8193;border-radius:50%}.campus-search-icon::after{content:'';display:block;width:12rpx;height:4rpx;margin:18rpx 0 0 17rpx;border-radius:4rpx;background:#6f8193;transform:rotate(45deg)}
 .campus-locate{display:flex;height:auto;min-height:100rpx;align-items:center;gap:18rpx;margin:18rpx 0 0;padding:17rpx 20rpx;border:1rpx solid #cde9dd;border-radius:22rpx;background:#ecfaf4;color:var(--tm-ink-900);line-height:1.2;text-align:left}.campus-locate::after{border:0}.campus-locate>view:nth-child(2){min-width:0;flex:1}.campus-locate text{display:block}.campus-locate view>text:first-child{font-size:15px;font-weight:850}.campus-locate .campus-locate-note{margin-top:7rpx;color:#5e766c;font-size:11px;font-weight:400}.campus-locate>text{color:var(--tm-growth-700);font-size:24px}.campus-locate-icon{position:relative;width:52rpx;height:52rpx;flex:none;border:4rpx solid var(--tm-growth-600);border-radius:50%}.campus-locate-icon::before,.campus-locate-icon::after{content:'';position:absolute;background:var(--tm-growth-600)}.campus-locate-icon::before{top:-10rpx;bottom:-10rpx;left:22rpx;width:4rpx}.campus-locate-icon::after{top:22rpx;right:-10rpx;left:-10rpx;height:4rpx}.campus-locate-icon view{position:absolute;z-index:2;inset:14rpx;border-radius:50%;background:var(--tm-growth-600)}
-.campus-list{height:46vh;max-height:620rpx;min-height:300rpx;margin-top:15rpx}.campus-option{display:flex;min-height:92rpx;align-items:center;gap:16rpx;margin-top:11rpx;padding:14rpx 18rpx;border:1rpx solid #e1e8ee;border-radius:20rpx;background:#fff}.campus-option.active{border-color:#6bc7a2;background:#effbf5}.campus-option.pending{opacity:.58;pointer-events:none}.campus-option-mark{display:flex;width:54rpx;height:54rpx;align-items:center;justify-content:center;flex:none;border-radius:17rpx;background:var(--tm-brand-100);color:var(--tm-brand-700);font-size:16px;font-weight:950}.campus-option-copy{min-width:0;flex:1}.campus-option-copy text{display:block}.campus-option-copy>text:first-child{font-size:15px;font-weight:850}.campus-option-copy .campus-option-location{overflow:hidden;margin-top:5rpx;color:var(--tm-ink-500);font-size:12px;font-weight:400;text-overflow:ellipsis;white-space:nowrap}.campus-distance{flex:none;color:var(--tm-growth-700);font-size:12px}.campus-check{display:flex;width:38rpx;height:38rpx;align-items:center;justify-content:center;flex:none;border-radius:50%;background:var(--tm-growth-600);color:#fff;font-size:13px;font-weight:900}.campus-state{display:flex;min-height:280rpx;align-items:center;justify-content:center;flex-direction:column;padding:58rpx 20rpx;color:var(--tm-ink-500);text-align:center}.campus-state-title{color:var(--tm-ink-800);font-size:15px;font-weight:850}.campus-state-detail{max-width:560rpx;margin-top:12rpx;color:var(--tm-ink-500);font-size:12px;line-height:1.55}.campus-state-error .campus-state-title{color:#bd3b3b}.campus-state-action{height:62rpx;margin:24rpx 0 0;padding:0 28rpx;border-radius:18rpx;background:var(--tm-growth-600);color:#fff;font-size:13px;font-weight:850;line-height:62rpx}.campus-state-action::after{border:0}
+.campus-list{height:46vh;max-height:620rpx;min-height:300rpx;margin-top:15rpx}.campus-option{display:flex;min-height:92rpx;align-items:center;gap:16rpx;margin-top:11rpx;padding:14rpx 18rpx;border:1rpx solid #e1e8ee;border-radius:20rpx;background:#fff}.campus-option.active{border-color:#6bc7a2;background:#effbf5}.campus-option.pending{opacity:.58;pointer-events:none}.campus-option-mark{width:54rpx;height:54rpx;border-radius:14rpx;font-size:13px}.campus-option-copy{min-width:0;flex:1}.campus-option-copy text{display:block}.campus-option-copy>text:first-child{font-size:15px;font-weight:850}.campus-option-copy .campus-option-location{overflow:hidden;margin-top:5rpx;color:var(--tm-ink-500);font-size:12px;font-weight:400;text-overflow:ellipsis;white-space:nowrap}.campus-distance{flex:none;color:var(--tm-growth-700);font-size:12px}.campus-check{display:flex;width:38rpx;height:38rpx;align-items:center;justify-content:center;flex:none;border-radius:50%;background:var(--tm-growth-600);color:#fff;font-size:13px;font-weight:900}.campus-state{display:flex;min-height:280rpx;align-items:center;justify-content:center;flex-direction:column;padding:58rpx 20rpx;color:var(--tm-ink-500);text-align:center}.campus-state-title{color:var(--tm-ink-800);font-size:15px;font-weight:850}.campus-state-detail{max-width:560rpx;margin-top:12rpx;color:var(--tm-ink-500);font-size:12px;line-height:1.55}.campus-state-error .campus-state-title{color:#bd3b3b}.campus-state-action{height:62rpx;margin:24rpx 0 0;padding:0 28rpx;border-radius:18rpx;background:var(--tm-growth-600);color:#fff;font-size:13px;font-weight:850;line-height:62rpx}.campus-state-action::after{border:0}
 @media screen and (max-width:360px){.campus-access-bar{gap:7px}.campus-trigger{padding:0 9px}.campus-search-trigger{padding:0 10px}}
 </style>

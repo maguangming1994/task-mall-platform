@@ -26,8 +26,9 @@ class UserProfileAddressAssetFlowTest extends TestCase
     {
         [$user, $token] = $this->loginAndConsent('13800138071');
         $avatar = $this->avatar($user->id, 'owned-avatar');
-        $this->withToken($token)->putJson('/api/v1/me', ['nickname' => '新昵称', 'avatar_file_id' => $avatar->public_id])
+        $this->withToken($token)->putJson('/api/v1/me', ['nickname' => '  新昵称  ', 'avatar_file_id' => $avatar->public_id])
             ->assertOk()
+            ->assertJsonPath('data.nickname', '新昵称')
             ->assertJsonPath('data.profile_completed', true)
             ->assertJsonPath('data.avatar_file_id', $avatar->public_id)
             ->assertJsonPath('data.avatar_url', rtrim((string) config('app.url'), '/').route('user-avatars.show', ['file' => $avatar], false));
@@ -45,6 +46,41 @@ class UserProfileAddressAssetFlowTest extends TestCase
         $otherAvatar = $this->avatar($other->id, 'other-avatar');
         $this->withToken($token)->putJson('/api/v1/me', ['avatar_file_id' => $otherAvatar->public_id])
             ->assertUnprocessable()->assertJsonPath('code', 'VALIDATION_FAILED');
+    }
+
+    public function test_profile_update_requires_authentication_and_rejects_blank_or_missing_fields(): void
+    {
+        [$user, $token] = $this->loginAndConsent('13800138076');
+        $originalNickname = $user->nickname;
+
+        $this->withoutToken()->putJson('/api/v1/me', ['nickname' => '未授权修改'])
+            ->assertUnauthorized()
+            ->assertJsonPath('code', 'AUTH_REQUIRED');
+        $this->withToken($token)->putJson('/api/v1/me', ['nickname' => " \t\n\u{3000}\u{00A0} "])
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 'VALIDATION_FAILED');
+        $this->withToken($token)->putJson('/api/v1/me', [])
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 'VALIDATION_FAILED');
+
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'nickname' => $originalNickname]);
+    }
+
+    public function test_profile_rejects_non_avatar_unscanned_and_unowned_files(): void
+    {
+        [$user, $token] = $this->loginAndConsent('13800138077');
+        [$other] = $this->loginAndConsent('13800138078');
+        $wrongPurpose = $this->avatar($user->id, 'wrong-purpose', 'task_submission');
+        $unscanned = $this->avatar($user->id, 'unscanned', 'avatar', 'scanning');
+        $otherAvatar = $this->avatar($other->id, 'unowned');
+
+        foreach ([$wrongPurpose, $unscanned, $otherAvatar] as $file) {
+            $this->withToken($token)->putJson('/api/v1/me', ['avatar_file_id' => $file->public_id])
+                ->assertUnprocessable()
+                ->assertJsonPath('code', 'VALIDATION_FAILED');
+        }
+
+        $this->assertNull($user->fresh()->avatar_file_id);
     }
 
     public function test_public_avatar_only_serves_a_clean_image_currently_referenced_by_its_active_owner(): void

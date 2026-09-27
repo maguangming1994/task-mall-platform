@@ -1,23 +1,31 @@
 <template>
   <view class="page">
+    <view v-if="accessChecking" class="publisher-gate list-state">
+      <view class="loading-line" /><view class="loading-line short" /><view class="loading-line" />
+      <text class="state-copy">正在确认任务发布权限</text>
+    </view>
+    <view v-else-if="!accessGranted" class="publisher-gate list-state error-state">
+      <text class="state-icon">限</text><text class="state-title">无法进入任务发布中心</text><text class="state-copy">{{ accessDeniedReason }}</text>
+      <button class="refresh-button" @click="leavePublisher">返回我的</button>
+    </view>
+    <template v-else>
     <view class="hero">
       <text class="eyebrow">BOUNTY PUBLISHER</text>
       <text class="title">发布悬赏</text>
       <text class="hero-copy">把任务要求、奖励预算和验收材料一次说明清楚，发布后按步骤审核与结算。</text>
     </view>
 
-    <view v-if="!publisherToken" class="login-card">
-      <view class="security-head"><text class="security-icon">盾</text><view><text class="section-title">发布身份独立验证</text><text class="section-copy">当前仅开放后台“平台管理员”角色，普通用户不能发布悬赏。</text></view></view>
-      <input v-model="account" class="input" placeholder="后台管理员账号" />
-      <input v-model="password" class="input" password placeholder="后台管理员密码" />
-      <input v-model="mfaCode" class="input" placeholder="MFA 动态码（如已启用）" />
-      <text v-if="authError" class="auth-error">{{ authError }}</text>
-      <button class="primary-button" :disabled="working" :loading="working" @click="login">独立验证并进入</button>
-      <button class="normal-login-button" :disabled="working" @click="goNormalLogin">切换普通用户登录</button>
+    <view v-if="sessionWorking" class="login-card list-state">
+      <view class="loading-line" /><view class="loading-line short" />
+      <text class="state-copy">正在连接发布身份</text>
+    </view>
+    <view v-else-if="sessionError" class="login-card list-state error-state">
+      <text class="state-icon">!</text><text class="state-title">发布身份连接失败</text><text class="state-copy">{{ sessionError }}</text>
+      <button class="refresh-button" @click="retryPublisherSession">重新进入</button>
     </view>
 
-    <template v-else>
-      <view class="identity-strip"><view><text class="identity-label">当前发布身份</text><text class="identity-name">{{ publisherName }} · 平台管理员</text></view><text class="verified">已验证</text></view>
+    <template v-else-if="publisherToken">
+      <view class="identity-strip"><view><text class="identity-label">当前发布身份</text><text class="identity-name">{{ publisherName }} · 任务发布管理员</text></view><text class="verified">已验证</text></view>
       <view v-if="editingTaskId" class="edit-strip"><text>正在编辑：{{ editingTaskTitle }}</text><text>保存后生成新的任务版本快照，线上已发布版本不被覆盖。</text></view>
       <scroll-view class="stepper" scroll-x :show-scrollbar="false"><view class="stepper-inner"><view v-for="(item,index) in stages" :key="item" :class="['stage', {active:index===stage, done:index<stage}]" @click="jumpStage(index)"><text class="stage-index">{{ index < stage ? '✓' : index + 1 }}</text><text>{{ item }}</text></view></view></scroll-view>
 
@@ -68,7 +76,7 @@
       <view v-else class="form-card">
         <text class="section-title">5. 发布前确认</text><text class="section-copy">保存后生成不可变任务版本；发布时再次锁定预算并执行风险复核。</text>
         <view class="review-card"><text class="review-title">{{ title || '未填写任务标题' }}</text><text class="review-copy">{{ optionLabel(scenarioOptions,scenario) }} · {{ optionLabel(categoryOptions,category) }} · {{ optionLabel(taskTypeOptions,taskType) }}</text><view class="review-metrics"><view><strong>{{ rewardDisplay }}</strong><small>单人奖励</small></view><view><strong>{{ quota }}</strong><small>奖励名额</small></view><view><strong>{{ completionHours }}小时</strong><small>完成期限</small></view><view><strong>{{ steps.length }}</strong><small>验收步骤</small></view></view></view>
-        <view class="checklist"><text>✓ 发布者身份为平台管理员，发布会话与普通用户隔离</text><text>✓ 奖励预算足额后才允许发布，不向接单用户收取押金</text><text>✓ 任务步骤、截图/文字材料和审核期限形成完整快照</text><text>✓ 余额奖励、高额预算和敏感内容按规则进入复核</text><text>✓ 关闭任务时，未发放预算按实际占用情况释放</text></view>
+        <view class="checklist"><text>✓ 发布者身份为任务发布管理员，发布会话与普通用户隔离</text><text>✓ 奖励预算足额后才允许发布，不向接单用户收取押金</text><text>✓ 任务步骤、截图/文字材料和审核期限形成完整快照</text><text>✓ 余额奖励、高额预算和敏感内容按规则进入复核</text><text>✓ 关闭任务时，未发放预算按实际占用情况释放</text></view>
         <textarea v-model="rulesText" class="textarea" placeholder="补充发布规则，每行一条（选填）" />
         <view class="agreement-row" @click="agreed=!agreed"><text :class="['check',{checked:agreed}]">✓</text><text>已阅读并同意《悬赏发布规则》，确认信息真实、预算来源合规且验收标准明确。</text></view>
         <view class="publish-actions"><button class="draft-button" :disabled="working" :loading="working" @click="saveTask(false)">{{ editingTaskId ? '保存新版本' : '仅保存草稿' }}</button><button v-if="!editingTaskId" class="primary-button no-margin" :disabled="working || !agreed || !matchingPool" :loading="working" @click="saveTask(true)">校验预算并申请发布</button></view>
@@ -81,13 +89,17 @@
       <view v-else-if="!tasks.length" class="published-card list-state empty-state"><text class="state-icon">稿</text><text class="state-title">还没有发布任务</text><text class="state-copy">先保存草稿，再按预算、步骤和发布规则提交审核。</text></view>
       <view v-else class="published-card"><view class="published-head"><text class="section-title">我的发布</text><text class="section-copy">{{ tasks.length }} 个任务</text></view><view v-for="task in tasks" :key="task.id" class="published-row" @click="openTask(task.id)"><view><text class="published-title">{{ task.title }}</text><text class="published-status">{{ statusText(task.status) }} · 查看进度与管理</text></view><button v-if="task.status==='draft'" class="mini-publish" :disabled="working" @click.stop="publishExisting(task.id)">申请发布</button><text v-else class="row-arrow">›</text></view></view>
     </template>
+    </template>
   </view>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
-import { chooseAndUploadPublisherMedia, createPublisherTask, getPublisherTask, importPublisherMediaUrl, listPublisherPools, listPublisherTasks, loginPublisher, publishPublisherTask, updatePublisherTask, type PublisherPool, type PublisherStep, type PublisherTask } from '@/api/publisher'
+import { computed, ref } from 'vue'
+import { onLoad, onShow } from '@dcloudio/uni-app'
+import { chooseAndUploadPublisherMedia, createMyPublisherSession, createPublisherTask, getPublisherTask, importPublisherMediaUrl, listPublisherPools, listPublisherTasks, publishPublisherTask, updatePublisherTask, type PublisherPool, type PublisherStep, type PublisherTask } from '@/api/publisher'
+import { useAuthStore } from '@/stores/auth'
+import { navigateToLogin } from '@/utils/authRedirect'
+import { clearPublisherSession, isPublisherAccessError, persistPublisherSession, readPublisherSession } from '@/utils/publisherSession'
 
 const stages=['基础信息','时限频率','奖励预算','任务步骤','发布确认']
 const scenarioOptions=[{value:'user_bounty',label:'发布悬赏',tip:'按步骤提交材料并人工审核'},{value:'platform_task',label:'平台任务',tip:'平台运营发布的常规任务'},{value:'growth_challenge',label:'成长挑战',tip:'签到或阶段目标类活动'}]
@@ -96,7 +108,9 @@ const deviceOptions=[{value:'all',label:'全部'},{value:'android',label:'安卓
 const taskTypeOptions=[{value:'one_time',label:'每人一次',tip:'一个账号仅能领取一次'},{value:'daily',label:'每日一次',tip:'每天生成独立领取周期'},{value:'weekly',label:'每周一次',tip:'自然周内只能领取一次'},{value:'repeatable',label:'每日可重复',tip:'每日重置领取周期'}]
 const inputTypeOptions:[{value:PublisherStep['input_type'];label:string},...Array<{value:PublisherStep['input_type'];label:string}>]=[{value:'none',label:'完成确认'},{value:'text',label:'文字'},{value:'image',label:'截图'},{value:'text_image',label:'文字＋截图'},{value:'link',label:'访问/复制链接'}]
 
-const account=ref('');const password=ref('');const mfaCode=ref('');const publisherToken=ref('');const publisherName=ref('');const working=ref(false);const stage=ref(0);const tasks=ref<PublisherTask[]>([]);const pools=ref<PublisherPool[]>([]);const listLoading=ref(false);const listError=ref('');const authError=ref('')
+const auth=useAuthStore()
+const publisherToken=ref('');const publisherName=ref('');const working=ref(false);const stage=ref(0);const tasks=ref<PublisherTask[]>([]);const pools=ref<PublisherPool[]>([]);const listLoading=ref(false);const listError=ref('')
+const accessChecking=ref(true);const accessGranted=ref(false);const accessDeniedReason=ref('当前账号暂无任务发布权限。');const sessionWorking=ref(false);const sessionError=ref('')
 const pendingEditId=ref('');const editingTaskId=ref<string|null>(null);const editingTaskTitle=ref('');const editingVersion=ref<number|null>(null);const editingStatus=ref('');const selectedBudgetPoolId=ref('');const editClaimStartsAt=ref('');const editClaimEndsAt=ref('');const editSubmitEndsAt=ref('')
 const scenario=ref('user_bounty');const category=ref('campaign');const device=ref('all');const title=ref('');const projectName=ref('');const coverImageUrl=ref('');const coverAction=ref<'upload'|'import'|null>(null);const description=ref('');const tagsText=ref('悬赏,活动')
 const claimDays=ref(7);const completionHours=ref(24);const reviewHours=ref(48);const submissionLimit=ref(3);const taskType=ref('one_time')
@@ -109,12 +123,46 @@ const matchingPool=computed(()=>selectedPool.value||pools.value.find(item=>item.
 const budgetText=computed(()=>rewardType.value==='points'?`${requiredBudget.value} 积分`:`¥${(requiredBudget.value/100).toFixed(2)}`)
 const rewardDisplay=computed(()=>rewardType.value==='points'?`${rewardUnit.value}积分`:`¥${Number(rewardUnit.value||0).toFixed(2)}`)
 const coverWorking=computed(()=>coverAction.value!==null)
+let enteringPublisher=false
+let leavingPublisher=false
 
-async function login(){authError.value='';working.value=true;try{const data=await loginPublisher(account.value,password.value,mfaCode.value);publisherToken.value=data.access_token;publisherName.value=data.publisher.admin_display_name;persistPublisherSession();await Promise.all([load(),loadPools()]);if(pendingEditId.value)await loadEditTask(pendingEditId.value);uni.showToast({title:'发布身份验证成功',icon:'success'})}catch(error){authError.value=error instanceof Error?error.message:'管理员凭证验证失败，请重试';toastError(error,'验证失败')}finally{working.value=false}}
-function goNormalLogin(){uni.navigateTo({url:'/pages/login/index'})}
 onLoad((options)=>{pendingEditId.value=String(options?.edit||'')})
-onMounted(async()=>{const saved=uni.getStorageSync('publisher_session') as {token?:string;name?:string}|'';if(saved&&typeof saved==='object'&&saved.token){publisherToken.value=saved.token;publisherName.value=saved.name||'平台管理员';try{await Promise.all([load(),loadPools()]);if(pendingEditId.value)await loadEditTask(pendingEditId.value)}catch{uni.removeStorageSync('publisher_session');publisherToken.value=''}}})
-function persistPublisherSession(){uni.setStorageSync('publisher_session',{token:publisherToken.value,name:publisherName.value})}
+onShow(()=>{void enterPublisher()})
+
+async function enterPublisher(){
+  if(enteringPublisher||leavingPublisher)return
+  enteringPublisher=true;accessChecking.value=true;sessionError.value=''
+  try{
+    if(!auth.isAuthenticated){clearPublisherSession();publisherToken.value='';accessGranted.value=false;accessDeniedReason.value='请先登录后再进入任务发布中心。';navigateToLogin(publisherReturnUrl());return}
+    await auth.fetchCurrentUser()
+    if(!auth.isAuthenticated){clearPublisherSession();publisherToken.value='';accessGranted.value=false;accessDeniedReason.value='登录状态已失效，请重新登录。';navigateToLogin(publisherReturnUrl());return}
+    if(auth.user?.can_publish_tasks!==true){await exitPublisherWithMessage('当前账号暂无任务发布权限。');return}
+
+    accessGranted.value=true;accessChecking.value=false;sessionWorking.value=true
+    const saved=readPublisherSession(auth.user.id)
+    if(saved){publisherToken.value=saved.token;publisherName.value=saved.name}
+    else{
+      const session=await createMyPublisherSession(auth.accessToken)
+      publisherToken.value=session.access_token;publisherName.value=session.publisher.admin_display_name
+      persistPublisherSession(session,auth.user.id)
+    }
+    await Promise.all([load(),loadPools()])
+    if(pendingEditId.value&&editingTaskId.value!==pendingEditId.value)await loadEditTask(pendingEditId.value)
+  }catch(error){
+    if(!handlePublisherAccessError(error))sessionError.value=error instanceof Error?error.message:'发布身份连接失败，请稍后重试。'
+  }finally{accessChecking.value=false;sessionWorking.value=false;enteringPublisher=false}
+}
+
+function publisherReturnUrl(){return pendingEditId.value?`/pages/publisher/index?edit=${encodeURIComponent(pendingEditId.value)}`:'/pages/publisher/index'}
+function retryPublisherSession(){clearPublisherSession();publisherToken.value='';void enterPublisher()}
+function leavePublisher(){const pages=getCurrentPages();if(pages.length>1){uni.navigateBack({delta:1});return}uni.reLaunch({url:'/pages/account/index'})}
+async function exitPublisherWithMessage(message:string){
+  if(leavingPublisher)return
+  leavingPublisher=true;clearPublisherSession();publisherToken.value='';accessGranted.value=false;accessDeniedReason.value=message
+  await uni.showModal({title:'无法进入任务发布中心',content:message,showCancel:false,confirmText:'返回我的'})
+  uni.reLaunch({url:'/pages/account/index'})
+}
+function handlePublisherAccessError(error:unknown){if(!isPublisherAccessError(error))return false;void exitPublisherWithMessage(error instanceof Error?error.message:'发布身份已失效，请重新进入。');return true}
 function openTask(id:string){uni.navigateTo({url:`/pages/publisher-task-detail/index?id=${id}`})}
 async function load(){if(!publisherToken.value)return;listLoading.value=true;listError.value='';try{tasks.value=(await listPublisherTasks(publisherToken.value)).items}catch(error){listError.value=error instanceof Error?error.message:'请检查网络后重试';toastError(error,'发布列表加载失败')}finally{listLoading.value=false}}
 async function loadPools(){if(!publisherToken.value)return;try{pools.value=await listPublisherPools(publisherToken.value,rewardType.value==='points'?'points':'wallet_cash')}catch(error){toastError(error,'预算池加载失败')}}
@@ -146,10 +194,11 @@ function nextStage(){const error=validateStage(stage.value);if(error)return uni.
 async function saveTask(publishAfter:boolean){if(!publisherToken.value)return;for(let index=0;index<4;index++){const error=validateStage(index);if(error){stage.value=index;return uni.showToast({title:error,icon:'none'})}}if(publishAfter&&!agreed.value)return uni.showToast({title:'请先同意悬赏发布规则',icon:'none'});working.value=true;try{await loadPools();const budgetPool=matchingPool.value;if(!budgetPool)throw new Error('请先选择可用预算池');if(publishAfter&&budgetPool.available_amount<requiredBudget.value)throw new Error('奖励预算不足，请调整奖励或名额');const now=Date.now();const claimStart=editingTaskId.value&&editClaimStartsAt.value?editClaimStartsAt.value:new Date(now+60000).toISOString();const claimEnd=editingTaskId.value&&editClaimEndsAt.value?editClaimEndsAt.value:new Date(now+claimDays.value*86400000).toISOString();const submitEnd=editingTaskId.value&&editSubmitEndsAt.value?editSubmitEndsAt.value:new Date(new Date(claimEnd).getTime()+completionHours.value*3600000).toISOString();const reward=rewardType.value==='points'?{type:'points',points:Math.round(rewardUnit.value)}:{type:'wallet_balance',balance_amount:Math.round(rewardUnit.value*100)};const payload={business_scenario:scenario.value,project_name:projectName.value.trim()||null,cover_image_url:coverImageUrl.value.trim()||null,supported_devices:device.value==='all'?['android','ios']:[device.value],visibility:'public',category:category.value,task_type:taskType.value,participation_mode:'claim_and_submit',verification_mode:'manual',title:title.value.trim(),description:description.value.trim(),tags:tagsText.value.split(/[,，]/).map(item=>item.trim()).filter(Boolean).slice(0,10),rewards:[reward],reward_budgets:[{reward_sequence:1,budget_pool_id:budgetPool.id}],reward_quota_total:Math.round(quota.value),reward_quota_per_cycle:taskType.value==='one_time'?null:Math.round(quota.value),completion_window_hours:Math.round(completionHours.value),submission_limit:Math.round(submissionLimit.value),review_deadline_hours:Math.round(reviewHours.value),appeal_deadline_days:7,appeal_limit:1,attachment_rules:{max_count:9,max_images:9,max_image_bytes:10485760},steps:steps.value.map(item=>({...item,link_url:item.link_url||null,copy_text:item.copy_text||null})),claim_starts_at:claimStart,claim_ends_at:claimEnd,submit_ends_at:submitEnd,rules:rulesText.value.split('\n').map(item=>item.trim()).filter(Boolean)};const task=editingTaskId.value?await updatePublisherTask(publisherToken.value,editingTaskId.value,payload,editingVersion.value||1):await createPublisherTask(publisherToken.value,payload);if(publishAfter&&!editingTaskId.value)await publishPublisherTask(publisherToken.value,task.id);await load();const wasEditing=Boolean(editingTaskId.value);editingTaskId.value=null;editingTaskTitle.value='';editingVersion.value=null;editingStatus.value='';pendingEditId.value='';uni.showToast({title:wasEditing?'新版本已保存':'草稿已保存',icon:'success'})}catch(error){toastError(error,'保存失败')}finally{working.value=false}}
 async function publishExisting(id:string){if(!publisherToken.value)return;try{await publishPublisherTask(publisherToken.value,id);await load();uni.showToast({title:'已提交发布流程',icon:'success'})}catch(error){toastError(error,'发布失败')}}
 function statusText(value:string){return({draft:'草稿',pending_approval:'待财务复核',published:'发布中',scheduled:'待开始',paused:'已暂停',closed:'已关闭'} as Record<string,string>)[value]||'状态待同步'}
-function toastError(error:unknown,fallback:string){uni.showToast({title:error instanceof Error?error.message:fallback,icon:'none'})}
+function toastError(error:unknown,fallback:string){if(handlePublisherAccessError(error))return;uni.showToast({title:error instanceof Error?error.message:fallback,icon:'none'})}
 </script>
 
 <style scoped>
+.publisher-gate{min-height:300rpx;margin-top:20rpx;padding:36rpx 28rpx;box-sizing:border-box;border:1rpx solid #dce9ef;border-radius:28rpx;background:rgba(255,255,255,.97);box-shadow:0 12rpx 30rpx rgba(34,78,103,.075)}
 .page{min-height:100vh;padding:28rpx 28rpx 100rpx;box-sizing:border-box;background:#f4f6fa}.hero{position:relative;overflow:hidden;padding:36rpx 34rpx;border-radius:32rpx;background:linear-gradient(135deg,#173b87,#326be3);color:#fff}.hero::after{content:'';position:absolute;right:-70rpx;top:-90rpx;width:250rpx;height:250rpx;border-radius:50%;background:rgba(255,255,255,.1)}.eyebrow,.title,.hero-copy,.section-title,.section-copy,.field-label,.identity-label,.identity-name,.budget-label,.budget-value,.budget-free,.pool-title,.pool-ok,.pool-error,.review-title,.review-copy,.published-title,.published-status{display:block}.eyebrow{color:#cbdcff;font-size:13px;letter-spacing:3rpx}.title{margin-top:10rpx;font-size:26px;font-weight:850}.hero-copy{max-width:590rpx;margin-top:12rpx;color:rgba(255,255,255,.78);font-size:14px;line-height:1.6}.login-card,.form-card,.published-card{margin-top:20rpx;padding:28rpx;border:1rpx solid #e5e9f0;border-radius:28rpx;background:#fff;box-shadow:0 10rpx 30rpx rgba(30,45,80,.045)}.security-head{display:flex;gap:18rpx}.security-icon{display:flex;align-items:center;justify-content:center;width:72rpx;height:72rpx;flex:none;border-radius:20rpx;background:#eaf1ff;color:#245ccc;font-size:14px;font-weight:800}.section-title{font-size:17px;font-weight:850}.section-copy{margin-top:6rpx;color:#7b8495;font-size:13px;line-height:1.55}.input,.textarea,.picker-field{width:100%;margin-top:16rpx;padding:0 20rpx;box-sizing:border-box;border:1rpx solid #dce1e9;border-radius:16rpx;background:#fff;font-size:14px}.input{height:78rpx}.textarea{height:180rpx;padding-top:18rpx;line-height:1.55}.textarea.short{height:130rpx}.primary-button,.next-button{height:78rpx;margin-top:20rpx;border:0;border-radius:18rpx;background:#326be3;color:#fff;font-size:15px;font-weight:800;line-height:78rpx}.primary-button::after,.next-button::after,.back-button::after,.draft-button::after,.add-step::after,.refresh-button::after,.mini-publish::after{border:0}.identity-strip{display:flex;align-items:center;justify-content:space-between;margin-top:18rpx;padding:20rpx 24rpx;border-radius:20rpx;background:#eef4ff}.identity-label{color:#7890bf;font-size:13px}.identity-name{margin-top:3rpx;color:#1f3f80;font-size:14px;font-weight:800}.verified{padding:7rpx 14rpx;border-radius:12rpx;background:#d9f7e8;color:#087a4d;font-size:13px}.stepper{margin:22rpx -28rpx 0;padding:0 28rpx;box-sizing:border-box;white-space:nowrap}.stepper-inner{display:inline-flex;gap:12rpx}.stage{display:flex;align-items:center;gap:8rpx;padding:14rpx 18rpx;border-radius:16rpx;background:#e9edf4;color:#7b8495;font-size:14px}.stage.active{background:#326be3;color:#fff}.stage.done{background:#e8f7f0;color:#087a4d}.stage-index{display:flex;align-items:center;justify-content:center;width:32rpx;height:32rpx;border-radius:50%;background:rgba(255,255,255,.7);color:inherit;font-size:12px;font-weight:850}.field-label{margin-top:24rpx;color:#344054;font-size:14px;font-weight:750}.choice-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;margin-top:12rpx}.choice-chip{padding:18rpx 14rpx;border:1rpx solid #e0e5ed;border-radius:18rpx;background:#fafbfc}.choice-chip.active{border-color:#326be3;background:#eef4ff;color:#245ccc}.choice-chip text,.choice-chip small{display:block}.choice-chip text{font-size:14px;font-weight:800}.choice-chip small{margin-top:6rpx;color:#8b94a5;font-size:12px;line-height:1.35}.choice-chip.small{min-height:88rpx}.inline-choices{display:flex;gap:14rpx;margin-top:12rpx}.inline-choice{padding:14rpx 28rpx;border:1rpx solid #e0e5ed;border-radius:14rpx;color:#667085;font-size:14px}.inline-choice.active{border-color:#326be3;background:#eef4ff;color:#245ccc;font-weight:800}.picker-field{display:flex;align-items:center;justify-content:space-between;height:78rpx;color:#344054}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16rpx}.field-grid.two{margin-top:4rpx}.input.compact{margin-top:10rpx}.rule-note,.risk-note{margin-top:22rpx;padding:20rpx;border-radius:16rpx;background:#fff8e8;color:#8b651e;font-size:13px;line-height:1.6}.rule-note text{display:block}.rule-note text:first-child{font-weight:850}.budget-summary{display:grid;grid-template-columns:1fr 1fr;gap:14rpx;margin-top:22rpx}.budget-summary>view{padding:22rpx;border-radius:18rpx;background:#f6f8fc}.budget-label{color:#8b94a5;font-size:13px}.budget-value,.budget-free{margin-top:7rpx;font-size:19px;font-weight:850}.budget-value{color:#f05f22}.budget-free{color:#087a4d}.pool-card{margin-top:16rpx;padding:22rpx;border:1rpx dashed #b8c8e8;border-radius:18rpx;background:#f8faff}.pool-title{font-size:14px;font-weight:850}.pool-ok,.pool-error{margin-top:9rpx;font-size:13px}.pool-ok{color:#087a4d}.pool-error{color:#d92d20}.refresh-button{height:56rpx;margin:14rpx 0 0;padding:0 20rpx;border-radius:14rpx;background:#fff;color:#245ccc;font-size:13px;line-height:56rpx}.step-editor{margin-top:18rpx;padding:22rpx;border:1rpx solid #e4e8ef;border-radius:20rpx;background:#fafbfc}.step-editor-head{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:850}.delete-link{color:#d92d20;font-size:13px;font-weight:500}.required-row,.agreement-row{display:flex;align-items:flex-start;gap:12rpx;margin-top:18rpx;color:#475467;font-size:14px;line-height:1.55}.check{display:flex;align-items:center;justify-content:center;width:34rpx;height:34rpx;flex:none;border:1rpx solid #c8cfdb;border-radius:9rpx;color:transparent}.check.checked{border-color:#326be3;background:#326be3;color:#fff}.add-step{height:66rpx;margin-top:18rpx;border:1rpx dashed #326be3;border-radius:16rpx;background:#f5f8ff;color:#245ccc;font-size:14px;line-height:66rpx}.review-card{margin-top:20rpx;padding:24rpx;border-radius:22rpx;background:linear-gradient(135deg,#173b87,#326be3);color:#fff}.review-title{font-size:19px;font-weight:850}.review-copy{margin-top:7rpx;color:rgba(255,255,255,.72);font-size:13px}.review-metrics{display:grid;grid-template-columns:repeat(4,1fr);margin-top:24rpx}.review-metrics view{text-align:center;border-right:1rpx solid rgba(255,255,255,.2)}.review-metrics view:last-child{border-right:0}.review-metrics strong,.review-metrics small{display:block}.review-metrics strong{font-size:15px}.review-metrics small{margin-top:5rpx;color:rgba(255,255,255,.65);font-size:12px}.checklist{margin-top:18rpx;padding:20rpx;border-radius:18rpx;background:#effaf5}.checklist text{display:block;margin:8rpx 0;color:#176b4c;font-size:13px;line-height:1.5}.publish-actions{display:grid;grid-template-columns:.8fr 1.2fr;gap:14rpx;margin-top:20rpx}.draft-button{height:78rpx;margin:0;border:1rpx solid #d0d5dd;border-radius:18rpx;background:#fff;color:#475467;line-height:78rpx}.no-margin{margin:0}.nav-actions{display:flex;gap:14rpx;margin-top:20rpx}.back-button,.next-button{height:72rpx;flex:1;margin:0;border-radius:18rpx;line-height:72rpx}.back-button{border:1rpx solid #d0d5dd;background:#fff;color:#475467}.published-head,.published-row{display:flex;align-items:center;justify-content:space-between}.published-row{padding:20rpx 0;border-bottom:1rpx solid #edf0f4}.published-row:last-child{border-bottom:0}.published-title{font-size:14px;font-weight:800}.published-status{margin-top:4rpx;color:#8b94a5;font-size:13px}.mini-publish{height:54rpx;margin:0;padding:0 20rpx;border-radius:14rpx;background:#326be3;color:#fff;font-size:13px;line-height:54rpx}@media screen and (min-width:768px){.page{width:750rpx;margin:0 auto}}
 .page{background:var(--tm-canvas)}.hero{background:#071a33}.hero::after{content:'赏';right:26rpx;top:0;width:auto;height:auto;background:none;color:rgba(255,255,255,.08);font-size:95px;font-weight:900}.primary-button,.next-button,.mini-publish{background:var(--tm-brand-600)}.identity-strip{border:1rpx solid #d6e9e7;background:#f2f9f8}.identity-label{color:var(--tm-ink-500)}.identity-name{color:var(--tm-ink-900)}.stage.active{background:var(--tm-brand-600)}.choice-chip.active,.inline-choice.active{border-color:var(--tm-brand-600);background:var(--tm-brand-100);color:var(--tm-brand-700)}.check.checked{border-color:var(--tm-brand-600);background:var(--tm-brand-600)}.add-step{border-color:var(--tm-brand-600);background:#f2f9f8;color:var(--tm-brand-700)}.review-card{background:#071a33}
 .edit-strip{display:flex;flex-direction:column;gap:5rpx;margin-top:16rpx;padding:16rpx 20rpx;border:2rpx solid var(--tm-ink-900);border-radius:18rpx;background:var(--tm-campus-cyan-soft);color:var(--tm-ink-900);font-size:13px;line-height:1.45;box-shadow:0 4rpx 0 rgba(22,22,22,.12)}.edit-strip text:first-child{font-weight:850}

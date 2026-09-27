@@ -2,11 +2,15 @@
 
 namespace App\Modules\Task\Models;
 
+use App\Modules\Campus\Models\Concerns\ScopesAdminCampusThroughRelation;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class TaskRiskCase extends Model
 {
+    use ScopesAdminCampusThroughRelation;
+
     protected $fillable = ['public_id', 'task_id', 'task_claim_id', 'source', 'risk_level', 'status', 'reward_frozen', 'assigned_admin_id', 'conclusion', 'response_due_at', 'resolved_at'];
 
     protected static function booted(): void
@@ -22,5 +26,15 @@ class TaskRiskCase extends Model
     public function getRouteKeyName(): string
     {
         return 'public_id';
+    }
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class);
+    }
+
+    protected static function adminCampusRelation(): string
+    {
+        return 'task';
     }
 }

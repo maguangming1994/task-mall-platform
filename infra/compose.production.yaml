@@ -46,6 +46,7 @@ services:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
         VITE_H5_PUBLIC_URL: ${VITE_H5_PUBLIC_URL:-}
         VITE_WECHAT_OA_APP_ID: ${VITE_WECHAT_OA_APP_ID:-}
+        RELEASE_VERSION: ${RELEASE_VERSION:-unknown}
     ports:
       - "${HTTP_BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:8080"
     restart: unless-stopped

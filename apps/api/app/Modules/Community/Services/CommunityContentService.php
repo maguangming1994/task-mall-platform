@@ -19,6 +19,29 @@ class CommunityContentService
 {
     public function __construct(private readonly SystemSettingService $settings, private readonly AssetLedgerService $assets, private readonly NotificationService $notifications) {}
 
+    /**
+     * @return array{
+     *     post: array{
+     *         title: array{min_length: int, max_length: int},
+     *         content: array{min_length: int, max_length: int}
+     *     },
+     *     comment: array{min_length: int, max_length: int}
+     * }
+     */
+    public function publishingRules(): array
+    {
+        $post = $this->postRules();
+        $comment = $this->commentRules();
+
+        return [
+            'post' => [
+                'title' => ['min_length' => $post['title_min'], 'max_length' => $post['title_max']],
+                'content' => ['min_length' => $post['content_min'], 'max_length' => $post['content_max']],
+            ],
+            'comment' => ['min_length' => $comment['min_length'], 'max_length' => $comment['max_length']],
+        ];
+    }
+
     public function createPost(User $user, array $data, string $key): CommunityPost
     {
         $this->assertAllowed($user, 'post');

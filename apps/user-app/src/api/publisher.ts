@@ -48,6 +48,9 @@ export interface PublisherTask {
 export function loginPublisher(account: string, password: string, mfaCode?: string) {
   return apiRequest<PublisherSession>({ path: '/task-publisher/session', method: 'POST', data: { account, password, mfa_code: mfaCode || null } })
 }
+export function createMyPublisherSession(token: string) {
+  return apiRequest<PublisherSession>({ path: '/me/task-publisher-session', method: 'POST', accessToken: token, data: {} })
+}
 export function listPublisherPools(token: string, assetType: 'points' | 'wallet_cash' = 'points') { return apiRequest<PublisherPool[]>({ path: `/task-publisher/budget-pools?asset_type=${assetType}`, accessToken: token }) }
 export function listPublisherTasks(token: string) { return apiRequest<{ items: PublisherTask[] }>({ path: '/task-publisher/tasks', accessToken: token }) }
 export function getPublisherTask(token: string, taskId: string) { return apiRequest<PublisherTask>({ path: `/task-publisher/tasks/${taskId}`, accessToken: token }) }

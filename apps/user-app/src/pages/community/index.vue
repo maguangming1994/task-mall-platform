@@ -83,19 +83,19 @@
           </view>
           <text class="post-title" @click="openPost(post.id)"><text class="topic-prefix">#{{ post.category_label }}</text> {{ post.title }}</text>
           <text :class="['post-content', { collapsed: !isExpanded(post.id) }]" @click="toggleExpanded(post.id)">{{ post.content }}</text>
-          <text v-if="post.content.length > 92" class="expand-link" @click="toggleExpanded(post.id)">{{ isExpanded(post.id) ? '收起' : '展开全文' }}</text>
+          <text v-if="unicodeLength(post.content) > 92" class="expand-link" @click="toggleExpanded(post.id)">{{ isExpanded(post.id) ? '收起' : '展开全文' }}</text>
           <view v-if="postImages(post).length" :class="['media-grid', `count-${Math.min(postImages(post).length, 3)}`]">
             <image v-for="(attachment, imageIndex) in postImages(post).slice(0, 6)" :key="attachment.file_id" class="post-image" :src="communityAttachmentUrl(attachment)" mode="aspectFill" @click="previewPostImages(post, imageIndex)" />
           </view>
           <view class="post-meta"><text>◉ {{ postViewCount(post) }}</text><view><text :class="{ liked: post.liked_by_me }" @click="toggleLike(post)">{{ post.liked_by_me ? '♥' : '♡' }} {{ post.like_count || 0 }}</text><text @click="toggleComments(post)">▢ {{ post.comment_count }}</text></view></view>
           <view v-if="openedPostId === post.id" class="comments-panel">
-            <view class="comment-compose" @click="comment(post)">友善评论，说说你的想法…</view>
+            <view class="comment-compose" @click="openCommentComposer(post)">友善评论，说说你的想法…</view>
             <view v-if="commentsLoading" class="comments-state">评论加载中…</view>
             <view v-else-if="commentsError" class="comments-state error"><text>{{ commentsError }}</text><text @click="loadComments(post.id)">重试</text></view>
             <view v-else-if="!comments.length" class="comments-state">还没有评论，来坐第一排吧。</view>
-            <view v-for="item in comments" v-else :key="item.id" class="comment-row">
+            <view v-for="item in comments" v-else :key="item.id" :class="['comment-row', { 'reply-row': item.parent_comment_id }]">
               <view class="comment-avatar">{{ avatarText(item.author.nickname) }}</view>
-              <view class="comment-main"><text class="comment-author">{{ item.author.nickname }}</text><text class="comment-content">{{ item.content }}</text><view><text @click="comment(post, item)">回复</text><text v-if="auth.user?.id !== item.author.id" @click="report('comment', item.id)">举报</text></view></view>
+              <view class="comment-main"><text class="comment-author">{{ item.author.nickname }}<text v-if="item.parent_comment_id" class="comment-reply-target"> 回复 @{{ parentCommentAuthor(item) }}</text></text><text class="comment-content">{{ item.content }}</text><view><text v-if="!item.parent_comment_id" @click="openCommentComposer(post, item)">回复</text><text v-if="auth.user?.id !== item.author.id" @click="report('comment', item.id)">举报</text></view></view>
             </view>
           </view>
         </view>
@@ -136,6 +136,18 @@
       </view>
     </view>
 
+    <CommunityCommentComposer
+      v-model="commentDraft"
+      :visible="commentComposerVisible"
+      :reply-to="commentReply?.author.nickname || ''"
+      :submitting="commentSubmitting"
+      :error="commentSubmitError"
+      :min-length="publishingRules.comment.min_length"
+      :max-length="publishingRules.comment.max_length"
+      @close="closeCommentComposer"
+      @submit="submitComment"
+    />
+
     <view class="community-action-dock">
       <button class="secondary-action" @click="switchView(activeView === 'mine' ? 'square' : 'mine')">{{ activeView === 'mine' ? '逛校园广场' : '我的发布' }}</button>
       <button class="primary-action" @click="showPublishSheet = true">＋ 发布动态</button>
@@ -149,17 +161,20 @@
 import { computed, ref } from 'vue'
 import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import AppTabBar from '@/components/AppTabBar.vue'
+import CommunityCommentComposer from '@/components/CommunityCommentComposer.vue'
 import {
-  communityAttachmentUrl, communityHomeAssetUrl, createCommunityComment, deleteCommunityPost, likeCommunityPost,
+  communityAttachmentUrl, communityHomeAssetUrl, createCommunityComment, createCommunityRequestKey, deleteCommunityPost, likeCommunityPost,
+  DEFAULT_COMMUNITY_PUBLISHING_RULES,
   listCommunityCategories, listCommunityComments, listCommunityPosts, listMyCommunityPosts,
   loadCommunityHome, reportCommunityContent, unlikeCommunityPost,
   type CommunityAttachment, type CommunityCategory, type CommunityComment, type CommunityHomeBanner,
-  type CommunityHomeConfig, type CommunityHotTopic, type CommunityPost, type CommunityQuickEntry,
+  type CommunityHomeConfig, type CommunityHotTopic, type CommunityPost, type CommunityPublishingRules, type CommunityQuickEntry,
 } from '@/api/community'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { buildQueryString } from '@/utils/query'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
+import { unicodeLength } from '@/utils/textInput'
 
 const topSafeAreaStyle = createTopSafeAreaStyle()
 
@@ -187,9 +202,17 @@ const fallbackHome: CommunityHomeConfig = {
 const auth = useAuthStore()
 const home = ref<CommunityHomeConfig>(fallbackHome)
 const categories = ref<CommunityCategory[]>(fallbackCategories)
+const publishingRules = ref<CommunityPublishingRules>(DEFAULT_COMMUNITY_PUBLISHING_RULES)
 const posts = ref<CommunityPost[]>([])
 const myPosts = ref<CommunityPost[]>([])
 const comments = ref<CommunityComment[]>([])
+const commentComposerPost = ref<CommunityPost | null>(null)
+const commentReply = ref<CommunityComment | null>(null)
+const commentDraft = ref('')
+const commentComposerVisible = ref(false)
+const commentSubmitting = ref(false)
+const commentSubmitError = ref('')
+const commentRequestKey = ref('')
 const activeView = ref<'square' | 'mine'>('square')
 const activeCategory = ref<CommunityCategory['code'] | ''>('')
 const keyword = ref('')
@@ -240,7 +263,16 @@ onShow(async () => {
 onPullDownRefresh(async () => { try { await Promise.all([activeView.value === 'mine' ? loadMine() : refreshSquare(), loadHomeConfig(), loadCategories()]) } finally { uni.stopPullDownRefresh() } })
 
 async function loadHomeConfig() { try { const value = await loadCommunityHome(); home.value = { ...fallbackHome, ...value, brand: { ...fallbackHome.brand, ...(value.brand || {}) }, banner: value.banner?.title ? value.banner : fallbackHome.banner, quick_entries: value.quick_entries?.length ? value.quick_entries : fallbackHome.quick_entries, hot_topics: value.hot_topics?.length ? value.hot_topics : fallbackHome.hot_topics } } catch { home.value = fallbackHome } }
-async function loadCategories() { try { const value = await listCommunityCategories(); categories.value = value.items.length ? value.items : fallbackCategories } catch { categories.value = fallbackCategories } }
+async function loadCategories() {
+  try {
+    const value = await listCommunityCategories()
+    categories.value = value.items.length ? value.items : fallbackCategories
+    publishingRules.value = value.publishing_rules || DEFAULT_COMMUNITY_PUBLISHING_RULES
+  } catch {
+    categories.value = fallbackCategories
+    publishingRules.value = DEFAULT_COMMUNITY_PUBLISHING_RULES
+  }
+}
 async function refreshSquare() { loadingPublic.value = true; publicError.value = ''; page.value = 1; try { const result = await listCommunityPosts(1, 10, activeCategory.value || undefined, auth.accessToken || undefined); posts.value = result.items; total.value = result.pagination.total } catch (error) { publicError.value = errorMessage(error) } finally { loadingPublic.value = false } }
 async function loadMore() { if (loadingMore.value || !hasMore.value) return; loadingMore.value = true; try { const next = page.value + 1; const result = await listCommunityPosts(next, 10, activeCategory.value || undefined, auth.accessToken || undefined); posts.value.push(...result.items); page.value = next; total.value = result.pagination.total } catch (error) { toast(error) } finally { loadingMore.value = false } }
 async function loadMine() { if (!auth.accessToken) return; loadingMine.value = true; mineError.value = ''; try { myPosts.value = (await listMyCommunityPosts(auth.accessToken)).items } catch (error) { mineError.value = errorMessage(error) } finally { loadingMine.value = false } }
@@ -282,7 +314,43 @@ function previewPostImages(post: CommunityPost, current: number) { const urls = 
 async function toggleLike(post: CommunityPost) { if (!ensureAuth() || !auth.accessToken) return; const previous = { liked: post.liked_by_me, count: post.like_count || 0 }; post.liked_by_me = !previous.liked; post.like_count = Math.max(0, previous.count + (post.liked_by_me ? 1 : -1)); try { const result = post.liked_by_me ? await likeCommunityPost(auth.accessToken, post.id) : await unlikeCommunityPost(auth.accessToken, post.id); post.liked_by_me = result.liked_by_me; post.like_count = result.like_count } catch (error) { post.liked_by_me = previous.liked; post.like_count = previous.count; toast(error) } }
 async function toggleComments(post: CommunityPost) { if (openedPostId.value === post.id) { openedPostId.value = ''; comments.value = []; return } openedPostId.value = post.id; await loadComments(post.id) }
 async function loadComments(postId: string) { commentsLoading.value = true; commentsError.value = ''; try { comments.value = (await listCommunityComments(postId)).items } catch (error) { commentsError.value = errorMessage(error) } finally { commentsLoading.value = false } }
-async function comment(post: CommunityPost, parent?: CommunityComment) { if (!ensureAuth() || !auth.accessToken) return; const content = await input(parent ? `回复 ${parent.author.nickname}` : '发表评论'); if (!content) return; try { const result = await createCommunityComment(auth.accessToken, post.id, content, parent?.id); uni.showToast({ title: result.status === 'published' ? '评论成功' : '评论已提交审核', icon: 'success' }); await Promise.all([loadComments(post.id), refreshSquare()]) } catch (error) { toast(error) } }
+function parentCommentAuthor(comment: CommunityComment) { return comments.value.find(item => item.id === comment.parent_comment_id)?.author.nickname || '原评论' }
+function openCommentComposer(post: CommunityPost, parent?: CommunityComment) {
+  if (!ensureAuth() || !auth.accessToken) return
+  const sameTarget = commentComposerPost.value?.id === post.id && commentReply.value?.id === parent?.id
+  if (!sameTarget) {
+    commentDraft.value = ''
+    commentRequestKey.value = createCommunityRequestKey('comment')
+  } else if (!commentRequestKey.value) {
+    commentRequestKey.value = createCommunityRequestKey('comment')
+  }
+  commentComposerPost.value = post
+  commentReply.value = parent || null
+  commentSubmitError.value = ''
+  commentComposerVisible.value = true
+}
+function closeCommentComposer() {
+  if (!commentSubmitting.value) commentComposerVisible.value = false
+}
+async function submitComment(content: string) {
+  const targetPost = commentComposerPost.value
+  if (!targetPost || !auth.accessToken || commentSubmitting.value) return
+  commentSubmitting.value = true
+  commentSubmitError.value = ''
+  try {
+    const result = await createCommunityComment(auth.accessToken, targetPost.id, content, commentReply.value?.id, commentRequestKey.value)
+    commentComposerVisible.value = false
+    commentDraft.value = ''
+    commentReply.value = null
+    commentRequestKey.value = ''
+    uni.showToast({ title: result.status === 'published' ? '评论成功' : '评论已提交审核', icon: 'success' })
+    await Promise.all([loadComments(targetPost.id), refreshSquare()])
+  } catch (error) {
+    commentSubmitError.value = errorMessage(error)
+  } finally {
+    commentSubmitting.value = false
+  }
+}
 async function report(type: 'post' | 'comment', id: string) { if (!ensureAuth() || !auth.accessToken) return; const description = await input('请说明举报原因'); if (!description) return; try { await reportCommunityContent(auth.accessToken, type, id, 'other', description); uni.showToast({ title: '举报已提交', icon: 'success' }) } catch (error) { toast(error) } }
 async function removePost(post: CommunityPost) { if (!auth.accessToken) return; const result = await uni.showModal({ title: '删除这条发布？', content: '删除后无法恢复，已发放的帖子奖励会按规则处理。', confirmText: '删除', confirmColor: '#e93f4f' }); if (!result.confirm) return; try { await deleteCommunityPost(auth.accessToken, post.id); await Promise.all([loadMine(), refreshSquare()]); uni.showToast({ title: '已删除', icon: 'success' }) } catch (error) { toast(error) } }
 function displayStatus(post: CommunityPost) { const review = post.latest_version?.review_status; if (review === 'pending') return { label: '审核中', tone: 'pending' }; if (review === 'rejected') return { label: '未通过', tone: 'danger' }; if (post.status === 'published') return { label: '已公开', tone: 'success' }; return { label: '处理中', tone: 'pending' } }
@@ -301,4 +369,9 @@ function toast(error: unknown) { uni.showToast({ title: errorMessage(error), ico
 .page{--community-green:#08a978;--community-cyan:#20b7c8;--community-blue:#198be6;--community-ink:#102a43;--community-muted:#667c8e;--community-line:#dceaf0;--community-surface:#fff;--community-canvas:#f4fafc;min-height:100vh;padding:var(--tm-custom-header-top,calc(env(safe-area-inset-top) + 8px)) 22rpx 272rpx;background:radial-gradient(circle at 94% 3%,rgba(39,190,194,.14),transparent 260rpx),linear-gradient(180deg,#fbfefd 0,#f2f9fc 460rpx,#f7fafc 100%);color:var(--community-ink)}
 .campus-head{justify-content:space-between;gap:18rpx;padding:4rpx 2rpx 10rpx}.campus-brand{gap:12rpx;min-width:0}.brand-copy{min-width:0}.campus-logo{width:68rpx;height:68rpx;border:0;border-radius:21rpx;background:linear-gradient(145deg,#14b987,#19a6d6);box-shadow:0 10rpx 24rpx rgba(15,139,161,.2);color:#fff;font-size:17px}.campus-name{max-width:250rpx;color:var(--community-ink);font-size:17px;font-weight:850}.campus-sub{color:var(--community-muted);font-size:12px}.chevron{color:#7690a2}.head-actions{gap:10rpx}.round-action{display:flex;align-items:center;justify-content:center;width:62rpx;height:62rpx;margin:0;padding:0;border:1rpx solid var(--community-line);border-radius:20rpx;background:rgba(255,255,255,.92);box-shadow:0 8rpx 22rpx rgba(42,85,105,.08);color:#24455c;font-size:14px;font-weight:800;line-height:62rpx}.round-action::after{border:0}.round-action.has-dot{position:relative}.round-action.has-dot::before{content:'';position:absolute;right:9rpx;top:8rpx;width:10rpx;height:10rpx;border:3rpx solid #fff;border-radius:50%;background:#ff6b62}.search-panel{margin-top:12rpx;padding:8rpx 16rpx;border:1rpx solid var(--community-line);border-radius:20rpx;background:#fff;box-shadow:0 10rpx 28rpx rgba(40,82,104,.08)}.search-panel input{font-size:14px}.search-panel>text{color:var(--community-blue);font-size:13px}.community-intro{position:relative;display:flex;align-items:flex-end;justify-content:space-between;overflow:hidden;margin-top:18rpx;padding:30rpx 28rpx;border:1rpx solid rgba(28,153,178,.18);border-radius:30rpx;background:linear-gradient(135deg,#e9fff5 0,#e7f8ff 58%,#e8efff 100%);box-shadow:0 16rpx 36rpx rgba(28,111,139,.1)}.community-intro::after{content:'';position:absolute;right:-34rpx;top:-50rpx;width:180rpx;height:180rpx;border-radius:50%;background:linear-gradient(145deg,rgba(20,183,168,.16),rgba(77,135,244,.08))}.intro-copy,.intro-stats{position:relative;z-index:1}.section-kicker,.intro-title,.intro-subtitle,.intro-stats strong,.intro-stats text{display:block}.section-kicker{color:#087d9a;font-size:10px;font-weight:900;letter-spacing:2rpx}.intro-title{margin-top:8rpx;font-size:22px;font-weight:900;letter-spacing:-1rpx}.intro-subtitle{margin-top:7rpx;color:#536f81;font-size:13px}.intro-stats{padding:14rpx 18rpx;border:1rpx solid rgba(255,255,255,.78);border-radius:19rpx;background:rgba(255,255,255,.68);text-align:center}.intro-stats strong{font-size:17px}.intro-stats text{margin-top:2rpx;color:#5a7687;font-size:10px}.category-scroll{margin:20rpx -22rpx 0;padding:0 22rpx}.category-row{gap:12rpx;padding-right:28rpx}.category-tab{padding:13rpx 22rpx;border:1rpx solid var(--community-line);border-radius:999rpx;background:#fff;color:#657b8d;font-size:13px;font-weight:750;box-shadow:0 5rpx 14rpx rgba(51,90,109,.04)}.category-tab.active{border-color:transparent;background:linear-gradient(135deg,var(--community-green),var(--community-cyan));color:#fff;font-size:13px;font-weight:850;box-shadow:0 9rpx 22rpx rgba(14,170,151,.2)}.category-tab.active::after{display:none}.community-guide{display:flex;align-items:center;gap:14rpx;margin-top:18rpx;padding:20rpx;border:1rpx solid #dff0d9;border-radius:23rpx;background:linear-gradient(135deg,#f7fff0,#fffdf0);box-shadow:0 10rpx 24rpx rgba(90,124,54,.06)}.guide-icon{display:flex;align-items:center;justify-content:center;width:50rpx;height:50rpx;flex:none;border-radius:16rpx;background:#dff8c7;color:#188452;font-size:14px;font-weight:900}.community-guide>view:nth-child(2){min-width:0;flex:1}.community-guide>view:nth-child(2) text{display:block}.community-guide>view:nth-child(2) text:first-child{font-size:14px;font-weight:850}.community-guide>view:nth-child(2) text:last-child{margin-top:4rpx;color:#718272;font-size:12px}.guide-arrow{color:#759080;font-size:17px}.feature-card{position:relative;min-height:196rpx;overflow:hidden;margin-top:18rpx;border:1rpx solid rgba(15,123,145,.15);border-radius:28rpx;background:linear-gradient(135deg,#ddfff2,#dcf6ff)!important;box-shadow:0 14rpx 34rpx rgba(34,105,128,.1)}.feature-card::after{content:'';position:absolute;right:-42rpx;bottom:-64rpx;width:210rpx;height:210rpx;border-radius:50%;background:rgba(61,185,188,.14)}.feature-image{position:absolute;right:0;top:0;width:44%;height:100%;opacity:.72}.feature-copy{position:relative;z-index:2;width:64%;padding:25rpx}.feature-copy text{display:block}.feature-badge{width:max-content;padding:5rpx 11rpx;border-radius:999rpx;background:#fff7a8;color:#755f00;font-size:10px;font-weight:900}.feature-title{margin-top:10rpx;font-size:17px;font-weight:900;line-height:1.25}.feature-subtitle{display:-webkit-box!important;overflow:hidden;margin-top:7rpx;color:#496779;font-size:12px;line-height:1.45;-webkit-box-orient:vertical;-webkit-line-clamp:2}.feature-link{margin-top:13rpx;color:#087c9e;font-size:12px;font-weight:850}.quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12rpx;margin-top:18rpx;padding:0;border:0;background:transparent;box-shadow:none}.quick-entry{display:flex;align-items:center;gap:12rpx;min-width:0;padding:17rpx;border:1rpx solid var(--community-line);border-radius:22rpx;background:#fff;text-align:left;box-shadow:0 9rpx 24rpx rgba(50,94,115,.07)}.quick-entry>view:nth-child(2){min-width:0;flex:1}.quick-icon{width:52rpx;height:52rpx;margin:0;border:0;border-radius:17rpx;background:color-mix(in srgb,var(--quick-color) 18%,white);box-shadow:none;color:#124154;font-size:14px}.quick-icon image{width:34rpx;height:34rpx}.quick-icon text{font-size:14px}.quick-label{margin:0;font-size:13px;font-weight:850}.quick-sub{overflow:hidden;margin-top:2rpx;color:#7a8c99;font-size:10px;text-overflow:ellipsis;white-space:nowrap}.quick-arrow{color:#8ca0ad;font-size:15px}.hot-strip{margin-top:18rpx;padding:17rpx 19rpx;border:1rpx solid #f1e8c8;border-radius:20rpx;background:#fffaf0;box-shadow:0 8rpx 20rpx rgba(124,97,27,.05)}.hot-brand{font-size:13px}.hot-rank{background:#ff7a66}.hot-title{color:#536979}.feed-heading{margin:24rpx 2rpx 6rpx}.feed-title{font-size:17px}.feed-copy{color:#758a98}.group-link{padding:9rpx 15rpx;border:1rpx solid #bcdfe7;background:#fff;color:#147e9d;font-size:12px}.post-card,.mine-card{margin-top:15rpx;padding:23rpx;border:1rpx solid var(--community-line);border-radius:25rpx;background:#fff;box-shadow:0 12rpx 30rpx rgba(41,83,103,.08)}.author-avatar,.comment-avatar{border:0;background:linear-gradient(145deg,#ddfff0,#d9edff);color:#176a82}.campus-tag{background:#eef8f5;color:#3d7a6b}.topic-prefix{color:var(--community-green)}.post-content{color:#3c5668}.post-image{border:0;border-radius:17rpx}.post-meta{border-top:1rpx solid #e7eff3}.comments-panel{background:#f4f9fb}.comment-compose{border:1rpx solid #dbe9ef}.state-card{margin-top:18rpx;padding:48rpx 28rpx;border:1rpx solid var(--community-line);border-radius:26rpx;background:#fff;box-shadow:0 12rpx 30rpx rgba(41,83,103,.07)}.state-illustration{border:0;background:#eaf8fb;box-shadow:none;color:#1388a4}.state-card button,.load-more{border:0;background:linear-gradient(135deg,var(--community-green),var(--community-cyan));color:#fff;box-shadow:0 10rpx 22rpx rgba(10,168,147,.2)}.mine-hero{margin-top:20rpx;border:0;border-radius:26rpx;background:linear-gradient(135deg,#dffcf0,#e3f6ff);box-shadow:0 12rpx 28rpx rgba(38,101,123,.08)}.mine-hero button{border:1rpx solid #b9dfe6;background:#fff;color:#167d98}.mine-summary{border:1rpx solid var(--community-line);border-radius:21rpx}.mine-summary view+view{border-left:1rpx solid var(--community-line)}.mine-actions button{border:1rpx solid var(--community-line)}.sheet-mask{background:rgba(14,37,53,.46);backdrop-filter:blur(4px)}.publish-sheet{border:0;border-radius:34rpx 34rpx 0 0;box-shadow:0 -18rpx 50rpx rgba(20,54,72,.18)}.sheet-close{border:1rpx solid var(--community-line);color:#597080}.publish-primary{border:0;background:linear-gradient(135deg,#dffcf0,#dbf6ff);box-shadow:0 12rpx 26rpx rgba(25,113,136,.1)}.reward-chip{border:0;background:#fff3a5;color:#806000}.publish-option{border:1rpx solid var(--community-line);box-shadow:none}.publish-option.help{background:#fff9dc}.publish-option.group{background:#fff0f3}.publish-option.mall{background:#e9faff}.publish-option.task{background:#f1edff}.option-icon{border:0}.sheet-cancel{border:1rpx solid var(--community-line)}.community-action-dock{position:fixed;z-index:80;left:50%;bottom:calc(112rpx + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1.28fr;gap:12rpx;width:min(690rpx,calc(100% - 44rpx));padding:11rpx;border:1rpx solid rgba(206,226,234,.9);border-radius:26rpx;background:rgba(255,255,255,.94);box-shadow:0 16rpx 40rpx rgba(34,74,94,.16);transform:translateX(-50%);backdrop-filter:blur(12px)}.community-action-dock button{height:68rpx;margin:0;border-radius:20rpx;font-size:13px;font-weight:850;line-height:68rpx}.community-action-dock button::after{border:0}.secondary-action{border:1rpx solid #cce2e9;background:#fff;color:#266077}.primary-action{border:0;background:linear-gradient(135deg,var(--community-green),var(--community-cyan));color:#fff;box-shadow:0 8rpx 18rpx rgba(12,169,151,.2)}
 @media screen and (min-width:768px){.page{width:750rpx;margin:0 auto}.publish-sheet{border:0}.community-action-dock{width:690rpx}}
+</style>
+<style scoped>
+.community-action-dock{z-index:var(--tm-z-bottom-action);bottom:calc(84px + env(safe-area-inset-bottom))}
+.comment-row.reply-row{margin-left:34rpx;padding-left:12rpx;border-left:3rpx solid #d8ecef}
+.comment-reply-target{margin-left:6rpx;color:#1686a2;font-size:12px;font-weight:700}
 </style>

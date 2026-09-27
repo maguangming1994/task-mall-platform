@@ -20,18 +20,18 @@ class AdminAuthService
     ) {}
 
     /** @return array<string, mixed> */
-    public function login(string $account, string $password, ?string $ip, ?string $userAgent): array
+    public function login(string $account, string $password, ?string $ip, ?string $userAgent, bool $remember = false): array
     {
         $account = mb_strtolower(trim($account));
         $this->loginGuard->ensureAllowed($account, $ip);
 
         $admin = AdminUser::query()->where('account', $account)->first();
-        if ($admin === null || ! Hash::check($password, $admin->password)) {
+        if ($admin === null || $admin->is_service_account || ! Hash::check($password, $admin->password)) {
             $this->loginGuard->recordFailure($account, $ip);
             throw new AdminAuthException('ADMIN_AUTH_INVALID_CREDENTIALS', '账号或密码错误。', 401);
         }
 
-        if ($admin->status !== 'active') {
+        if ($admin->status !== 'active' || $admin->is_service_account) {
             throw new AdminAuthException('ADMIN_ACCOUNT_DISABLED', '后台账号当前不可登录。', 403);
         }
 
@@ -41,9 +41,9 @@ class AdminAuthService
             return $this->mfa->startChallenge($admin);
         }
 
-        $result = DB::transaction(function () use ($admin, $ip, $userAgent): array {
+        $result = DB::transaction(function () use ($admin, $ip, $userAgent, $remember): array {
             $this->enforceSessionLimit($admin);
-            $result = $this->createSession($admin, $ip, $userAgent);
+            $result = $this->createSession($admin, $ip, $userAgent, $remember);
             $admin->update(['last_login_at' => now(), 'last_verified_at' => now()]);
 
             return $result;
@@ -55,14 +55,14 @@ class AdminAuthService
     }
 
     /** @return array<string,mixed> */
-    public function completeMfaLogin(AdminUser $admin, ?string $ip, ?string $userAgent): array
+    public function completeMfaLogin(AdminUser $admin, ?string $ip, ?string $userAgent, bool $remember = false): array
     {
-        if ($admin->status !== 'active') {
+        if ($admin->status !== 'active' || $admin->is_service_account) {
             throw new AdminAuthException('ADMIN_ACCOUNT_DISABLED', '后台账号当前不可登录。', 403);
         }
-        $result = DB::transaction(function () use ($admin, $ip, $userAgent): array {
+        $result = DB::transaction(function () use ($admin, $ip, $userAgent, $remember): array {
             $this->enforceSessionLimit($admin);
-            $result = $this->createSession($admin, $ip, $userAgent);
+            $result = $this->createSession($admin, $ip, $userAgent, $remember);
             $admin->update(['last_login_at' => now(), 'last_verified_at' => now()]);
 
             return $result;
@@ -86,6 +86,17 @@ class AdminAuthService
                 throw new AdminAuthException('ADMIN_AUTH_SESSION_REVOKED', '后台登录状态无效或已过期。', 401);
             }
 
+            if ($session->remembered) {
+                $session->update([
+                    'last_active_at' => now(),
+                    'idle_expires_at' => $this->idleExpiry($session->expires_at, true),
+                    'ip_hash' => $this->fingerprint($ip),
+                    'user_agent_hash' => $this->fingerprint($userAgent),
+                ]);
+
+                return $this->tokenPayload($session->adminUser, $session, $refreshToken);
+            }
+
             $session->update([
                 'revoked_at' => now(),
                 'revoke_reason' => 'rotated',
@@ -98,7 +109,8 @@ class AdminAuthService
                 'issued_at' => $session->issued_at,
                 'last_active_at' => now(),
                 'verified_at' => $session->verified_at,
-                'idle_expires_at' => $this->idleExpiry($session->expires_at),
+                'remembered' => $session->remembered,
+                'idle_expires_at' => $this->idleExpiry($session->expires_at, $session->remembered),
                 'expires_at' => $session->expires_at,
                 'ip_hash' => $this->fingerprint($ip),
                 'user_agent_hash' => $this->fingerprint($userAgent),
@@ -218,17 +230,21 @@ class AdminAuthService
     }
 
     /** @return array<string, mixed> */
-    private function createSession(AdminUser $admin, ?string $ip, ?string $userAgent): array
+    private function createSession(AdminUser $admin, ?string $ip, ?string $userAgent, bool $remember = false): array
     {
         $refreshToken = $this->randomToken();
-        $expiresAt = now()->addDays(max(1, (int) config('admin_auth.refresh_ttl_days')));
+        $ttlDays = $remember
+            ? max(1, (int) config('admin_auth.remember_refresh_ttl_days'))
+            : max(1, (int) config('admin_auth.refresh_ttl_days'));
+        $expiresAt = now()->addDays($ttlDays);
         $session = AdminSession::query()->create([
             'admin_user_id' => $admin->id,
             'refresh_token_hash' => hash('sha256', $refreshToken),
             'issued_at' => now(),
             'last_active_at' => now(),
             'verified_at' => now(),
-            'idle_expires_at' => $this->idleExpiry($expiresAt),
+            'remembered' => $remember,
+            'idle_expires_at' => $this->idleExpiry($expiresAt, $remember),
             'expires_at' => $expiresAt,
             'ip_hash' => $this->fingerprint($ip),
             'user_agent_hash' => $this->fingerprint($userAgent),
@@ -247,6 +263,8 @@ class AdminAuthService
             'refresh_token' => $refreshToken,
             'token_type' => 'Bearer',
             'expires_in' => $access['expires_in'],
+            'remembered' => $session->remembered,
+            'refresh_expires_at' => $session->expires_at->toIso8601String(),
             'admin' => $this->present($admin),
             'navigation' => $this->navigation($admin),
         ];
@@ -258,12 +276,14 @@ class AdminAuthService
             && $session->revoked_at === null
             && ! $session->expires_at->isPast()
             && ! $session->idle_expires_at->isPast()
-            && $session->adminUser->status === 'active';
+            && $session->adminUser->status === 'active'
+            && ! $session->adminUser->is_service_account;
     }
 
-    private function idleExpiry(\DateTimeInterface $maxExpiry): \DateTimeInterface
+    private function idleExpiry(\DateTimeInterface $maxExpiry, bool $remembered = false): \DateTimeInterface
     {
-        $expiry = now()->addSeconds(max(60, (int) config('admin_auth.idle_ttl_seconds')));
+        $configKey = $remembered ? 'admin_auth.remember_idle_ttl_seconds' : 'admin_auth.idle_ttl_seconds';
+        $expiry = now()->addSeconds(max(60, (int) config($configKey)));
 
         return $expiry->greaterThan($maxExpiry) ? $maxExpiry : $expiry;
     }

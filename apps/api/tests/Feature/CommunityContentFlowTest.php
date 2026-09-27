@@ -50,6 +50,38 @@ class CommunityContentFlowTest extends TestCase
         $this->assertDatabaseCount('community_post_versions', 2);
     }
 
+    public function test_post_and_comment_emoji_are_preserved_through_storage_and_public_api(): void
+    {
+        $user = User::factory()->create(['status' => 'active']);
+        $admin = AdminUser::query()->create(['account' => 'community-emoji-reviewer', 'display_name' => '表情内容审核员', 'password' => 'AdminPassword12345!']);
+        $service = app(CommunityContentService::class);
+        $emojiSamples = '😀 ❤️ 👍🏽 👨‍👩‍👧‍👦 🇨🇳';
+        $title = '校园表情分享 😀';
+        $content = "今天的校园活动很开心 {$emojiSamples}，把这份快乐分享给大家。";
+
+        $post = $service->createPost($user, [
+            'title' => $title,
+            'content' => $content,
+            'category_code' => 'experience',
+        ], 'community-emoji-post');
+
+        $this->assertSame($content, $post->content);
+        $this->assertSame($content, $post->versions()->sole()->content);
+        $post = $service->reviewPost($admin, $post, ['decision' => 'approve', 'note' => '表情内容审核通过。']);
+
+        $commentContent = "收到啦 {$emojiSamples}";
+        $comment = $service->createComment($user, $post, ['content' => $commentContent], 'community-emoji-comment');
+        $this->assertSame($commentContent, $comment->content);
+
+        $this->getJson("/api/v1/community/posts/{$post->public_id}")
+            ->assertOk()
+            ->assertJsonPath('data.title', $title)
+            ->assertJsonPath('data.content', $content);
+        $this->getJson("/api/v1/community/posts/{$post->public_id}/comments")
+            ->assertOk()
+            ->assertJsonPath('data.items.0.content', $commentContent);
+    }
+
     public function test_comment_sensitive_filter_two_level_limit_and_daily_reward_cap_are_enforced(): void
     {
         $author = User::factory()->create(['status' => 'active']);

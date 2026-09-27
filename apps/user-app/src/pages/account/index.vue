@@ -26,13 +26,28 @@
     <view class="account-hero">
       <image class="account-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
       <view class="hero-profile">
-        <view class="profile-mark"><image v-if="accountAppearance.profile_icon_url && !avatarFileId" :src="accountAppearance.profile_icon_url" mode="aspectFill" /><text v-else>{{ (auth.user?.nickname || '我').slice(0, 1) }}</text></view>
+        <!-- #ifdef MP-WEIXIN -->
+        <button class="profile-mark profile-avatar-control" open-type="chooseAvatar" :disabled="uploading" aria-label="更新头像" @click="chooseLegacyAvatar" @chooseavatar="onChooseWechatAvatar">
+          <image v-if="displayAvatarUrl" :src="displayAvatarUrl" mode="aspectFill" @error="clearBrokenAvatar" />
+          <text v-else>{{ uploading ? '···' : (auth.user?.nickname || '我').slice(0, 1) }}</text>
+        </button>
+        <!-- #endif -->
+        <!-- #ifndef MP-WEIXIN -->
+        <button class="profile-mark profile-avatar-control" :disabled="uploading" aria-label="更新头像" @click="chooseFallbackAvatar">
+          <image v-if="displayAvatarUrl" :src="displayAvatarUrl" mode="aspectFill" @error="clearBrokenAvatar" />
+          <text v-else>{{ uploading ? '···' : (auth.user?.nickname || '我').slice(0, 1) }}</text>
+        </button>
+        <!-- #endif -->
         <view class="profile-copy">
           <text class="profile-badge">CAMPUS · {{ memberLevel }}</text>
-          <text class="title">{{ auth.user?.nickname || '我的账户' }}</text>
+          <!-- #ifdef MP-WEIXIN -->
+          <input v-model="nickname" class="profile-nickname" type="nickname" maxlength="80" confirm-type="done" :disabled="savingNickname" placeholder="设置昵称" @change="onNicknameChange" @nicknamereview="onNicknameReview" />
+          <!-- #endif -->
+          <!-- #ifndef MP-WEIXIN -->
+          <input v-model="nickname" class="profile-nickname" type="text" maxlength="80" confirm-type="done" :disabled="savingNickname" placeholder="设置昵称" @change="onNicknameChange" />
+          <!-- #endif -->
           <text class="subtitle">管理校园身份与个人权益</text>
         </view>
-        <button class="profile-edit" @click="showProfileEditor = !showProfileEditor">{{ showProfileEditor ? '收起' : '编辑资料' }}</button>
       </view>
       <view class="hero-meta">
         <view class="completion-block">
@@ -42,19 +57,6 @@
         <view class="identity-block"><view class="identity-symbol">★</view><view><strong>{{ memberLevel }}</strong><text>当前身份</text></view></view>
         <view class="identity-block"><view class="identity-symbol status">✓</view><view><strong>正常</strong><text>账户状态</text></view></view>
       </view>
-    </view>
-
-    <view v-if="showProfileEditor" class="profile-editor">
-      <view class="section-row"><view><text class="section-kicker">PROFILE</text><text class="section-title">完善个人资料</text></view><text class="section-note">完善后可领取对应奖励</text></view>
-      <view class="profile-field">
-        <text>昵称</text>
-        <input v-model="nickname" class="input" maxlength="80" placeholder="请输入昵称" />
-      </view>
-      <view class="button-row">
-        <button class="secondary" :loading="uploading" @click="uploadAvatar">{{ avatarFileId ? '更换头像' : '上传头像' }}</button>
-        <button class="primary" :loading="saving" @click="saveProfile">保存资料</button>
-      </view>
-      <text class="hint">昵称、头像和手机号完成验证后，即可计入资料完善进度。</text>
     </view>
 
     <view class="wallet-layout">
@@ -129,26 +131,41 @@ import { computed, ref } from 'vue'
 import AppTabBar from '@/components/AppTabBar.vue'
 import { loadAssetOverview, updateProfile, type AssetOverview } from '@/api/account'
 import { loadAppearanceContent, type AccountAppearance } from '@/api/appearance'
-import { chooseAndUploadAvatar } from '@/api/upload'
+import { resolveApiAssetUrl } from '@/api/http'
+import { chooseAndUploadAvatar, uploadAvatarFromPath } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+
+declare const wx: { canIUse(schema: string): boolean }
 
 const auth = useAuthStore()
 const nickname = ref(auth.user?.nickname ?? '')
 const avatarFileId = ref(auth.user?.avatar_file_id ?? '')
+const avatarPreviewUrl = ref('')
+const avatarLoadFailed = ref(false)
 const assets = ref<AssetOverview | null>(null)
-const saving = ref(false)
+const savingNickname = ref(false)
 const uploading = ref(false)
-const showProfileEditor = ref(false)
 const accountAppearance = ref<AccountAppearance>({ profile_icon_url: '', service_icons: [] })
 const resolvingAccount = ref(Boolean(auth.accessToken))
+let pendingReviewedNickname: string | null = null
+let supportsNicknameReview = false
+let supportsChooseAvatar = false
+// #ifdef MP-WEIXIN
+supportsNicknameReview = wx.canIUse('input.bindnicknamereview')
+supportsChooseAvatar = wx.canIUse('button.open-type.chooseAvatar')
+// #endif
 const hasCompletedLogin = computed(() => Boolean(auth.isAuthenticated && auth.user?.phone_bound))
 const guestActionText = computed(() => auth.accessToken && auth.user && !auth.user.phone_bound ? '继续完成登录' : '登录 / 注册')
-const profileCompletion = computed(() => Math.min(100, (nickname.value.trim() ? 35 : 0) + (avatarFileId.value ? 35 : 0) + (auth.user ? 30 : 0)))
+const displayAvatarUrl = computed(() => resolveApiAssetUrl(avatarPreviewUrl.value || (avatarLoadFailed.value
+  ? ''
+  : auth.user?.avatar_url || (!avatarFileId.value ? accountAppearance.value.profile_icon_url : ''))))
+const profileCompletion = computed(() => Math.min(100, (auth.user?.nickname.trim() ? 35 : 0) + (avatarFileId.value ? 35 : 0) + (auth.user ? 30 : 0)))
 const memberLevel = computed(() => (profileCompletion.value >= 100 ? '认证成员' : profileCompletion.value >= 65 ? '成长成员' : '新同学'))
 const completedGoal = computed(() => `${Math.min(5, Math.floor((assets.value?.points.available ?? 0) / 500))}/5`)
 const baseServices = [
   { id: 'tasks', mark: '任', label: '我的任务', note: '提交与进度', tone: 'blue', action: openTasks },
+  { id: 'publisher', mark: '发', label: '发布任务', note: '创建与管理', tone: 'violet', action: openPublisher },
   { id: 'orders', mark: '单', label: '我的订单', note: '支付与履约', tone: 'orange', action: () => openOrders() },
   { id: 'after_sales', mark: '售', label: '售后服务', note: '退款与换货', tone: 'red', action: openAfterSales },
   { id: 'referrals', mark: '邀', label: '邀请好友', note: '奖励与记录', tone: 'green', action: openReferrals },
@@ -160,7 +177,7 @@ const baseServices = [
   { id: 'identity', mark: '证', label: '实名认证', note: '身份二要素核验', tone: 'green', action: openIdentityVerification },
   { id: 'support', mark: '服', label: '联系客服', note: '扫码进入小程序', tone: 'green', action: openSupport },
 ]
-const services = computed(() => baseServices.map((item) => {
+const services = computed(() => baseServices.filter((item) => item.id !== 'publisher' || auth.user?.can_publish_tasks === true).map((item) => {
   const configured = accountAppearance.value.service_icons.find((icon) => icon.id === item.id)
   return { ...item, mark: configured?.mark || item.mark, icon_url: configured?.icon_url || '' }
 }))
@@ -183,7 +200,6 @@ onShow(load)
 
 async function load() {
   resolvingAccount.value = Boolean(auth.accessToken)
-  showProfileEditor.value = false
   assets.value = null
   if (!auth.accessToken) return
 
@@ -194,32 +210,131 @@ async function load() {
     accountAppearance.value = appearanceResult.account
     nickname.value = auth.user?.nickname ?? ''
     avatarFileId.value = auth.user?.avatar_file_id ?? ''
+    avatarPreviewUrl.value = ''
+    avatarLoadFailed.value = false
     assets.value = await loadAssetOverview(auth.accessToken)
   } finally {
     resolvingAccount.value = false
   }
 }
 
-async function uploadAvatar() {
+async function onChooseWechatAvatar(event: { detail?: { avatarUrl?: string } }) {
+  const path = event.detail?.avatarUrl
+  if (path) await uploadAndSaveAvatar(path)
+}
+
+async function chooseLegacyAvatar() {
+  if (supportsChooseAvatar || uploading.value) return
+  await chooseFallbackAvatar()
+}
+
+async function chooseFallbackAvatar() {
   uploading.value = true
   try {
-    avatarFileId.value = await chooseAndUploadAvatar(auth.accessToken)
-    uni.showToast({ title: '头像检查通过', icon: 'success' })
+    const fileId = await chooseAndUploadAvatar(auth.accessToken)
+    await saveAvatarFile(fileId)
   } catch (error) {
-    uni.showToast({ title: error instanceof Error ? error.message : '上传失败', icon: 'none' })
+    if (!isSelectionCancelled(error)) showError(error, '头像更新失败')
   } finally { uploading.value = false }
 }
 
-async function saveProfile() {
-  saving.value = true
+async function uploadAndSaveAvatar(path: string) {
+  const previousPreview = avatarPreviewUrl.value
+  const previousLoadFailed = avatarLoadFailed.value
+  avatarPreviewUrl.value = path
+  avatarLoadFailed.value = false
+  uploading.value = true
   try {
-    auth.user = await updateProfile(auth.accessToken, { nickname: nickname.value, avatar_file_id: avatarFileId.value || null })
-    auth.persist()
-    assets.value = await loadAssetOverview(auth.accessToken)
-    showProfileEditor.value = false
-    uni.showToast({ title: '资料已保存', icon: 'success' })
-  } catch (error) { uni.showToast({ title: error instanceof Error ? error.message : '保存失败', icon: 'none' }) }
-  finally { saving.value = false }
+    await saveAvatarFile(await uploadAvatarFromPath(auth.accessToken, path))
+  } catch (error) {
+    avatarPreviewUrl.value = previousPreview
+    avatarLoadFailed.value = previousLoadFailed
+    showError(error, '头像更新失败')
+  } finally { uploading.value = false }
+}
+
+async function saveAvatarFile(fileId: string) {
+  applyUpdatedUser(await updateProfile(auth.accessToken, { avatar_file_id: fileId }))
+  avatarFileId.value = auth.user?.avatar_file_id ?? ''
+  avatarPreviewUrl.value = ''
+  avatarLoadFailed.value = false
+  await refreshAssets()
+  uni.showToast({ title: '头像已更新', icon: 'success' })
+}
+
+async function onNicknameChange(event: unknown) {
+  const inputEvent = event as { detail?: { value?: string }; target?: { value?: string } } | undefined
+  const nextNickname = (inputEvent?.detail?.value ?? inputEvent?.target?.value ?? nickname.value).trim()
+  nickname.value = nextNickname
+  if (supportsNicknameReview) {
+    pendingReviewedNickname = nextNickname
+    return
+  }
+
+  await saveNickname(nextNickname)
+}
+
+async function onNicknameReview(event: unknown) {
+  if (!supportsNicknameReview) return
+  const detail = (event as { detail?: { pass?: boolean; timeout?: boolean } })?.detail
+  const nextNickname = pendingReviewedNickname ?? nickname.value.trim()
+  pendingReviewedNickname = null
+  if (detail?.pass && !detail.timeout) {
+    await saveNickname(nextNickname)
+    return
+  }
+
+  nickname.value = auth.user?.nickname ?? ''
+  uni.showToast({ title: detail?.timeout ? '昵称审核超时，请重试' : '昵称未通过安全审核', icon: 'none' })
+}
+
+async function saveNickname(nextNickname: string) {
+  if (savingNickname.value) return
+  const previousNickname = auth.user?.nickname ?? ''
+  if (!nextNickname) {
+    nickname.value = previousNickname
+    uni.showToast({ title: '昵称不能为空', icon: 'none' })
+    return
+  }
+  nickname.value = nextNickname
+  if (nextNickname === previousNickname) return
+
+  savingNickname.value = true
+  try {
+    applyUpdatedUser(await updateProfile(auth.accessToken, { nickname: nextNickname }))
+    nickname.value = auth.user?.nickname ?? nextNickname
+    await refreshAssets()
+    uni.showToast({ title: '昵称已更新', icon: 'success' })
+  } catch (error) {
+    nickname.value = previousNickname
+    showError(error, '昵称更新失败')
+  } finally { savingNickname.value = false }
+}
+
+function applyUpdatedUser(user: NonNullable<typeof auth.user>) {
+  auth.user = user
+  auth.persist()
+}
+
+async function refreshAssets() {
+  try { assets.value = await loadAssetOverview(auth.accessToken) }
+  catch { /* 资料已保存，资产摘要可在下次进入页面时刷新。 */ }
+}
+function clearBrokenAvatar() {
+  if (avatarPreviewUrl.value) {
+    avatarPreviewUrl.value = ''
+    return
+  }
+  avatarLoadFailed.value = true
+}
+function isSelectionCancelled(error: unknown) {
+  return typeof error === 'object' && error !== null && 'errMsg' in error && String(error.errMsg).includes('cancel')
+}
+function showError(error: unknown, fallback: string) {
+  const message = error instanceof Error
+    ? error.message
+    : typeof error === 'object' && error !== null && 'errMsg' in error ? String(error.errMsg) : fallback
+  uni.showToast({ title: message || fallback, icon: 'none' })
 }
 
 function money(cents: number) { return (cents / 100).toFixed(2) }
@@ -227,6 +342,7 @@ function goLogin() { navigateToLogin('/pages/account/index') }
 function openAssets() { uni.navigateTo({ url: '/pages/assets/index' }) }
 function openRecharge() { uni.navigateTo({ url: '/pages/wallet-recharge/index' }) }
 function openTasks() { uni.setStorageSync('task_mall_open_my_tasks', true); uni.reLaunch({ url: '/pages/tasks/index' }) }
+function openPublisher() { uni.navigateTo({ url: '/pages/publisher/index' }) }
 function openOrders(status?: string) { uni.navigateTo({ url: `/pages/orders/index${status ? `?status=${status}` : ''}` }) }
 function openAfterSales() { uni.navigateTo({ url: '/pages/after-sales/index' }) }
 function openReferrals() { uni.navigateTo({ url: '/pages/referrals/index' }) }
@@ -275,6 +391,8 @@ async function logout() {
 .hero-meta strong,.hero-meta text{display:block}.hero-meta strong{font-size:14px;font-weight:900}.hero-meta text{margin-top:3rpx;color:rgba(255,255,255,.68);font-size:10px}
 .profile-editor{margin-top:18rpx;padding:24rpx;border:1rpx solid #dce8ec;border-radius:26rpx;background:#fff;box-shadow:0 12rpx 28rpx rgba(26,71,91,.08)}
 .profile-editor .input{border:1rpx solid #d9e5e8;background:#f8fbfc}.profile-editor .primary{border:0;background:#147f96;box-shadow:none}.profile-editor .secondary{border:1rpx solid #cbdadd;background:#fff;box-shadow:none}
+.profile-avatar-control{position:relative;margin:0;padding:0;line-height:1}.profile-avatar-control::after{border:0}.profile-avatar-control::before{content:'+';position:absolute;z-index:2;right:-3rpx;bottom:-3rpx;display:flex;width:30rpx;height:30rpx;align-items:center;justify-content:center;border:2rpx solid #fff;border-radius:50%;background:#147f96;color:#fff;font-size:13px;font-weight:900;line-height:1}.profile-avatar-control[disabled]{opacity:.72}.profile-avatar-control:active{transform:scale(.96)}
+.profile-nickname{display:block;width:100%;height:54rpx;min-width:0;padding:0 34rpx 2rpx 0;border:0;border-bottom:2rpx solid rgba(21,129,92,.22);box-sizing:border-box;background:transparent;color:#15354a;font-size:21px;font-weight:900;line-height:52rpx;text-overflow:ellipsis}.profile-nickname:focus{border-bottom-color:#15815c}.profile-nickname::placeholder{color:#64808b;font-weight:750}
 .section-kicker{display:block;color:#16839b;font-size:10px;font-weight:900;letter-spacing:.14em}
 .wallet-layout{display:grid;grid-template-columns:1.22fr .78fr;gap:14rpx;margin-top:20rpx}
 .wallet-main{position:relative;min-height:240rpx;padding:24rpx;overflow:hidden;border-radius:28rpx;background:linear-gradient(145deg,#182c46,#234c67);box-shadow:0 16rpx 34rpx rgba(20,47,70,.18);box-sizing:border-box;color:#fff}

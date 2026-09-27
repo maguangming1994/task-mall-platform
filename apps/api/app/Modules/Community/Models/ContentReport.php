@@ -2,11 +2,14 @@
 
 namespace App\Modules\Community\Models;
 
+use App\Modules\Campus\Models\Concerns\ScopesAdminCampusCommunityContent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class ContentReport extends Model
 {
+    use ScopesAdminCampusCommunityContent;
+
     protected $fillable = ['public_id', 'reporter_user_id', 'content_type', 'content_id', 'reason_code', 'description', 'evidence_file_ids', 'status', 'idempotency_key_hash', 'resolved_at'];
 
     protected static function booted(): void

@@ -2,12 +2,15 @@
 
 namespace App\Modules\Task\Models;
 
+use App\Modules\Campus\Models\Concerns\ScopesAdminCampusThroughRelation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class TaskRewardDelivery extends Model
 {
+    use ScopesAdminCampusThroughRelation;
+
     protected $fillable = ['public_id', 'task_claim_id', 'task_reward_reservation_id', 'asset_type', 'amount', 'reward_snapshot', 'status', 'attempt_count', 'last_error_code', 'last_error_message', 'last_attempted_at', 'next_retry_at', 'delivered_at'];
 
     protected static function booted(): void
@@ -28,5 +31,10 @@ class TaskRewardDelivery extends Model
     public function claim(): BelongsTo
     {
         return $this->belongsTo(TaskClaim::class, 'task_claim_id');
+    }
+
+    protected static function adminCampusRelation(): string
+    {
+        return 'claim.task';
     }
 }

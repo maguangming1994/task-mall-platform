@@ -36,6 +36,17 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl
 export function apiUrl(path: string) {
   return `${apiBaseUrl}${path}`
 }
+
+export function resolveApiAssetUrl(value?: string | null) {
+  const url = String(value ?? '').trim()
+  if (!url || /^(?:https?:|data:|blob:|wxfile:)/i.test(url) || !url.startsWith('/')) {
+    return url
+  }
+
+  const origin = apiBaseUrl.match(/^(https?:\/\/[^/]+)/i)?.[1]
+  return origin ? `${origin}${url}` : url
+}
+
 const deviceStorageKey = 'task_mall_device_id'
 const campusStorageKey = 'task_mall_selected_campus'
 

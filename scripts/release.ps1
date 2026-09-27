@@ -128,8 +128,16 @@ function Test-StagedContent {
     )
 
     foreach ($path in $Paths) {
-        & git cat-file -e ":$path" 2>$null
-        if ($LASTEXITCODE -ne 0) { continue }
+        $previousErrorAction = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            & git cat-file -e ":$path" 2>$null
+            $existsInIndex = $LASTEXITCODE -eq 0
+        }
+        finally {
+            $ErrorActionPreference = $previousErrorAction
+        }
+        if (-not $existsInIndex) { continue }
 
         $size = [int64](Get-GitScalar cat-file -s ":$path")
         if ($size -gt 1048576) { continue }

@@ -8,11 +8,16 @@ use App\Modules\Account\Services\UserProfileService;
 use App\Modules\Auth\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class UserProfileController extends Controller
 {
     public function update(Request $request, UserProfileService $profiles, AuthService $auth): JsonResponse
     {
+        if (is_string($request->input('nickname'))) {
+            $request->merge(['nickname' => Str::trim($request->input('nickname'))]);
+        }
+
         $data = $request->validate([
             'nickname' => ['sometimes', 'string', 'min:1', 'max:80'],
             'avatar_file_id' => ['sometimes', 'nullable', 'string', 'size:26'],

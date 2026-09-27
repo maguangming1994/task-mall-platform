@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Account\Models\UserMilestone;
 use App\Modules\Upload\Models\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class UserProfileService
@@ -18,7 +19,7 @@ class UserProfileService
                 $locked->avatar_file_id = $this->resolveAvatarId($locked, $data['avatar_file_id']);
             }
             if (array_key_exists('nickname', $data)) {
-                $locked->nickname = trim($data['nickname']);
+                $locked->nickname = $this->resolveNickname($data['nickname']);
             }
             if ($locked->profile_completed_at === null && $locked->nickname !== '' && $locked->avatar_file_id !== null && $locked->phone_verified_at !== null) {
                 $locked->profile_completed_at = now();
@@ -31,6 +32,16 @@ class UserProfileService
 
             return $locked->fresh();
         });
+    }
+
+    private function resolveNickname(mixed $value): string
+    {
+        $nickname = is_string($value) ? Str::trim($value) : '';
+        if ($nickname === '' || Str::length($nickname) > 80) {
+            throw ValidationException::withMessages(['nickname' => ['昵称必须为 1 至 80 个字符。']]);
+        }
+
+        return $nickname;
     }
 
     private function resolveAvatarId(User $user, ?string $publicId): ?int

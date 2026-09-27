@@ -15,11 +15,24 @@
         <view class="field-head"><text>内容分类</text><text>帮助大家快速找到内容</text></view>
         <view class="category-grid"><view v-for="item in categories" :key="item.code" :class="['category-option', { active: categoryCode === item.code }]" @click="categoryCode = item.code"><text>{{ item.label }}</text><small>{{ categoryTip(item.code) }}</small></view></view>
         <view class="divider" />
-        <view class="field-head"><text>帖子标题</text><text>{{ title.length }}/60</text></view>
-        <input v-model="title" class="title-input" maxlength="60" placeholder="用一句话说明你想分享的内容" />
+        <view class="field-head"><text>帖子标题</text><text>{{ unicodeLength(title) }}/{{ publishingRules.post.title.max_length }}</text></view>
+        <input v-model="title" class="title-input" :maxlength="publishingRules.post.title.max_length" placeholder="用一句话说明你想分享的内容" />
         <view class="divider" />
-        <view class="field-head"><text>正文内容</text><text>{{ content.length }}/5000</text></view>
-        <textarea v-model="content" class="content-input" maxlength="5000" placeholder="建议包含：发生了什么、你如何处理、结果怎样，以及给其他人的建议……" />
+        <view class="field-head"><text>正文内容</text><text>{{ unicodeLength(content) }}/{{ publishingRules.post.content.max_length }}</text></view>
+        <textarea
+          v-model="content"
+          class="content-input"
+          :maxlength="publishingRules.post.content.max_length"
+          :cursor="contentCursor"
+          placeholder="建议包含：发生了什么、你如何处理、结果怎样，以及给其他人的建议……"
+          @input="trackContentCursor"
+          @blur="trackContentCursor"
+        />
+        <view class="editor-tools">
+          <button :class="['emoji-toggle', { active: emojiVisible }]" aria-label="选择表情" @click="toggleEmojiPicker">☺</button>
+          <text>在正文中加入表情，让表达更自然</text>
+        </view>
+        <EmojiPicker v-if="emojiVisible" @select="insertContentEmoji" />
       </view>
 
       <view class="card media-card">
@@ -64,20 +77,26 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import EmojiPicker from '@/components/EmojiPicker.vue'
 import {
   communityAttachmentUrl,
+  createCommunityRequestKey,
   createCommunityPost,
+  DEFAULT_COMMUNITY_PUBLISHING_RULES,
   listCommunityCategories,
   listMyCommunityPosts,
   updateCommunityPost,
   type CommunityCategory,
+  type CommunityPublishingRules,
 } from '@/api/community'
 import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
 import { redirectToLogin } from '@/utils/authRedirect'
+import { insertTextAtCursor, unicodeLength } from '@/utils/textInput'
 
 interface EditableImage { fileId: string; previewUrl: string }
-interface SavedDraft { title?: string; content?: string; categoryCode?: CommunityCategory['code']; images?: EditableImage[] }
+interface SavedDraft { title?: string; content?: string; categoryCode?: CommunityCategory['code']; images?: EditableImage[]; requestKey?: string }
+interface TextareaEvent { detail?: { cursor?: number } }
 
 const fallbackCategories: CommunityCategory[] = [
   { code: 'experience', label: '经验分享' }, { code: 'guide', label: '实用攻略' },
@@ -87,8 +106,11 @@ const auth = useAuthStore()
 const editingId = ref('')
 const title = ref('')
 const content = ref('')
+const contentCursor = ref(0)
+const emojiVisible = ref(false)
 const categoryCode = ref<CommunityCategory['code']>('experience')
 const categories = ref<CommunityCategory[]>(fallbackCategories)
+const publishingRules = ref<CommunityPublishingRules>(DEFAULT_COMMUNITY_PUBLISHING_RULES)
 const images = ref<EditableImage[]>([])
 const reviewNote = ref('')
 const previewing = ref(false)
@@ -98,6 +120,7 @@ const loading = ref(false)
 const loadError = ref('')
 const uploadError = ref('')
 const submitError = ref('')
+const submitRequestKey = ref(createCommunityRequestKey('post'))
 const selectedCategoryLabel = computed(() => categories.value.find(item => item.code === categoryCode.value)?.label || '经验分享')
 const submitLabel = computed(() => editingId.value ? (reviewNote.value ? '修改并重新提交' : '提交新版本') : '发布')
 
@@ -105,7 +128,14 @@ onLoad(async (options?: Record<string, string | undefined>) => {
   if (!auth.isAuthenticated) { redirectToLogin(); return }
   editingId.value = options?.postId || ''
   const requestedCategory = options?.category
-  try { categories.value = (await listCommunityCategories()).items } catch { categories.value = fallbackCategories }
+  try {
+    const result = await listCommunityCategories()
+    categories.value = result.items
+    publishingRules.value = result.publishing_rules || DEFAULT_COMMUNITY_PUBLISHING_RULES
+  } catch {
+    categories.value = fallbackCategories
+    publishingRules.value = DEFAULT_COMMUNITY_PUBLISHING_RULES
+  }
   if (editingId.value) await loadEditing()
   else restoreDraft()
   if (requestedCategory && categories.value.some(item => item.code === requestedCategory)) categoryCode.value = requestedCategory as CommunityCategory['code']
@@ -122,6 +152,7 @@ async function loadEditing() {
     const version = post.latest_version
     title.value = version?.title || post.title
     content.value = version?.content || post.content
+    contentCursor.value = content.value.length
     categoryCode.value = version?.category_code || post.category_code
     images.value = (version?.attachments || post.attachments).filter(item => item.type === 'image').map(item => ({ fileId: item.file_id, previewUrl: communityAttachmentUrl(item) }))
     reviewNote.value = version?.review_status === 'rejected' ? version.review_note || '内容暂未通过审核，请修改后重新提交。' : ''
@@ -136,11 +167,23 @@ function restoreDraft() {
   if (!draft || typeof draft !== 'object') return
   title.value = draft.title ?? title.value
   content.value = draft.content ?? content.value
+  contentCursor.value = content.value.length
   categoryCode.value = draft.categoryCode ?? categoryCode.value
   images.value = Array.isArray(draft.images) ? draft.images : images.value
+  submitRequestKey.value = draft.requestKey || submitRequestKey.value
 }
-function validate() { if (title.value.trim().length < 5) return '标题至少需要 5 个字'; if (content.value.trim().length < 20) return '正文至少需要 20 个字'; return '' }
-function persistDraft() { uni.setStorageSync(draftKey(), { title: title.value, content: content.value, categoryCode: categoryCode.value, images: images.value, savedAt: Date.now() }) }
+function validate() {
+  const titleLength = unicodeLength(title.value.trim())
+  const contentLength = unicodeLength(content.value.trim())
+  const titleRule = publishingRules.value.post.title
+  const contentRule = publishingRules.value.post.content
+  if (titleLength < titleRule.min_length) return `标题至少需要 ${titleRule.min_length} 个字符`
+  if (titleLength > titleRule.max_length) return `标题最多输入 ${titleRule.max_length} 个字符`
+  if (contentLength < contentRule.min_length) return `正文至少需要 ${contentRule.min_length} 个字符`
+  if (contentLength > contentRule.max_length) return `正文最多输入 ${contentRule.max_length} 个字符`
+  return ''
+}
+function persistDraft() { uni.setStorageSync(draftKey(), { title: title.value, content: content.value, categoryCode: categoryCode.value, images: images.value, requestKey: submitRequestKey.value, savedAt: Date.now() }) }
 function saveDraft() { persistDraft(); uni.showToast({ title: '草稿已保存在本机', icon: 'success' }) }
 function preview() { const message = validate(); if (message) return uni.showToast({ title: message, icon: 'none' }); previewing.value = true }
 async function addImage() {
@@ -151,14 +194,30 @@ async function addImage() {
   finally { uploading.value = false }
 }
 function removeImage(fileId: string) { images.value = images.value.filter(item => item.fileId !== fileId) }
+function trackContentCursor(event: Event) {
+  const nextCursor = Number((event as unknown as TextareaEvent).detail?.cursor)
+  if (Number.isFinite(nextCursor) && nextCursor >= 0) contentCursor.value = nextCursor
+}
+function toggleEmojiPicker() {
+  emojiVisible.value = !emojiVisible.value
+  if (emojiVisible.value) uni.hideKeyboard()
+}
+function insertContentEmoji(emoji: string) {
+  const maxLength = publishingRules.value.post.content.max_length
+  const result = insertTextAtCursor(content.value, emoji, contentCursor.value, maxLength)
+  if (!result.changed) return uni.showToast({ title: `正文最多输入 ${maxLength} 个字符`, icon: 'none' })
+  content.value = result.value
+  contentCursor.value = result.cursor
+}
 async function submit() {
+  if (submitting.value) return
   const message = validate()
   if (message) return uni.showToast({ title: message, icon: 'none' })
   if (!auth.isAuthenticated) return redirectToLogin()
   submitting.value = true; submitError.value = ''
   const payload = { title: title.value.trim(), content: content.value.trim(), category_code: categoryCode.value, image_file_ids: images.value.map(item => item.fileId) }
   try {
-    const post = editingId.value ? await updateCommunityPost(auth.accessToken, editingId.value, payload) : await createCommunityPost(auth.accessToken, payload)
+    const post = editingId.value ? await updateCommunityPost(auth.accessToken, editingId.value, payload) : await createCommunityPost(auth.accessToken, payload, submitRequestKey.value)
     uni.removeStorageSync(draftKey())
     uni.showToast({ title: post.status === 'published' ? '发布成功' : '内容已提交审核', icon: 'success' })
     setTimeout(() => uni.navigateBack(), 600)
@@ -181,6 +240,9 @@ function errorMessage(error: unknown) { return error instanceof Error ? error.me
 .guidance{background:var(--tm-campus-yellow-soft)}.preview-card{background:var(--tm-campus-purple-soft)}
 .footer-actions{border-top:2rpx solid var(--tm-ink-900);background:#fffdf5}.footer-actions button{border:2rpx solid var(--tm-ink-900);box-shadow:0 5rpx 0 var(--tm-ink-900)}.primary{background:var(--tm-campus-coral);color:var(--tm-ink-900)}
 .page{background:radial-gradient(circle at 92% 0,rgba(55,205,212,.18),transparent 28%),linear-gradient(180deg,#eefaff 0,#f7fbfd 44%,#f4f8fa 100%)!important}.intro{border:1rpx solid #d7e8ef!important;border-radius:28rpx;background:linear-gradient(135deg,#1268c9,#19abc4)!important;box-shadow:0 16rpx 34rpx rgba(29,104,145,.16)!important}.intro .eyebrow,.intro .title{color:#fff!important}.intro .subtitle{color:rgba(255,255,255,.82)!important}.card,.state-card,.guidance{border:1rpx solid #dce9ef!important;box-shadow:0 12rpx 30rpx rgba(34,78,103,.075)!important;background:rgba(255,255,255,.97)!important}.category-option{border:1rpx solid #d7e6ed!important;background:#f7fbfc!important;box-shadow:none!important}.category-option.active{border-color:#36b4c2!important;background:#e7f8fb!important;color:#146f88!important;box-shadow:none!important}.title-input,.content-input{border:1rpx solid #cfe1e9!important;background:#fbfdfe!important}.image-item,.image-add{border:1rpx solid #cfe1e9!important}.image-add{border-style:dashed!important;background:#eefafd!important;color:#1475c5!important;box-shadow:none!important}.guidance{background:linear-gradient(145deg,#effaf7,#f3fbfd)!important}.review-alert,.submit-error{border:1rpx solid #f0c8c1!important;background:#fff4f1!important;color:#b9382d!important}.footer-actions{border-top:1rpx solid #dce9ef!important;background:rgba(255,255,255,.95)!important;box-shadow:0 -10rpx 28rpx rgba(31,76,101,.08)}.footer-actions button{border:1rpx solid #d1e2e9!important;box-shadow:none!important}.footer-actions .primary{border:0!important;background:linear-gradient(135deg,#1268c9,#19a7c8)!important;box-shadow:0 8rpx 18rpx rgba(18,104,201,.16)!important}.footer-actions button[disabled]{opacity:.48;box-shadow:none!important}.retry{border:1rpx solid #b9dbe5!important;background:#fff!important;color:#1475c5!important}.state-spinner{width:42rpx;height:42rpx;margin:0 auto;border:6rpx solid #d3e8ee;border-top-color:#167bca;border-radius:50%;animation:community-compose-spin .8s linear infinite}.state-spinner+text{display:block;margin-top:16rpx}@keyframes community-compose-spin{to{transform:rotate(360deg)}}
+</style>
+<style scoped>
+.editor-tools{display:flex;align-items:center;gap:14rpx;margin-top:13rpx}.editor-tools>text{color:#748a98;font-size:12px}.emoji-toggle{display:flex;align-items:center;justify-content:center;width:64rpx;height:58rpx;flex:none;margin:0;padding:0;border:1rpx solid #c9dfe7!important;border-radius:16rpx;background:#fff!important;color:#147c9b;font-size:23px;line-height:56rpx;box-shadow:none!important}.emoji-toggle.active{border-color:#5bc6c7!important;background:#e8f8f6!important}.emoji-toggle::after{border:0}.editor-card :deep(.emoji-picker){margin:14rpx -26rpx -26rpx}
 </style>
 
 <style scoped>

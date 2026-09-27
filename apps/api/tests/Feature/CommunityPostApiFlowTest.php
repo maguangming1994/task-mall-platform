@@ -4,10 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Community\Services\CommunityContentService;
+use App\Modules\Settings\Models\SystemSettingDefinition;
+use App\Modules\Settings\Models\SystemSettingVersion;
 use App\Modules\Upload\Models\UploadedFile;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -44,7 +48,13 @@ class CommunityPostApiFlowTest extends TestCase
 
         $this->getJson('/api/v1/community/categories')
             ->assertOk()
-            ->assertJsonFragment(['code' => 'guide', 'label' => '实用攻略']);
+            ->assertJsonFragment(['code' => 'guide', 'label' => '实用攻略'])
+            ->assertJsonPath('data.publishing_rules.post.title.min_length', 5)
+            ->assertJsonPath('data.publishing_rules.post.title.max_length', 60)
+            ->assertJsonPath('data.publishing_rules.post.content.min_length', 20)
+            ->assertJsonPath('data.publishing_rules.post.content.max_length', 5000)
+            ->assertJsonPath('data.publishing_rules.comment.min_length', 2)
+            ->assertJsonPath('data.publishing_rules.comment.max_length', 500);
         $this->getJson('/api/v1/community/posts?category=guide&page=1&page_size=1')
             ->assertOk()
             ->assertJsonPath('data.pagination.total', 1)
@@ -59,6 +69,67 @@ class CommunityPostApiFlowTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'image/png')
             ->assertHeader('X-Content-Type-Options', 'nosniff');
+    }
+
+    public function test_categories_publishing_rules_follow_the_latest_published_settings(): void
+    {
+        $this->publishSetting('community.post_title_min_length', 3);
+        $this->publishSetting('community.post_title_max_length', 80);
+        $this->publishSetting('community.post_content_min_length', 10);
+        $this->publishSetting('community.post_content_max_length', 6000);
+        $this->publishSetting('community.comment_min_length', 1);
+        $this->publishSetting('community.comment_max_length', 800);
+
+        $this->getJson('/api/v1/community/categories')
+            ->assertOk()
+            ->assertJsonPath('data.publishing_rules.post.title.min_length', 3)
+            ->assertJsonPath('data.publishing_rules.post.title.max_length', 80)
+            ->assertJsonPath('data.publishing_rules.post.content.min_length', 10)
+            ->assertJsonPath('data.publishing_rules.post.content.max_length', 6000)
+            ->assertJsonPath('data.publishing_rules.comment.min_length', 1)
+            ->assertJsonPath('data.publishing_rules.comment.max_length', 800);
+    }
+
+    public function test_emoji_post_and_comment_complete_the_authenticated_http_flow(): void
+    {
+        [$token] = $this->phoneLoginWithCommunityConsent('13800138120');
+        $admin = AdminUser::query()->create(['account' => 'community-http-emoji-reviewer', 'display_name' => '表情接口审核员', 'password' => 'AdminPassword12345!']);
+        $title = '校园表情发布 😀';
+        $content = '今天完成了校园任务 😀 ❤️ 👍🏽 👨‍👩‍👧‍👦 🇨🇳，来和大家分享这份快乐。';
+
+        $created = $this->withToken($token)->withHeaders(['Idempotency-Key' => 'community-http-emoji-post'])
+            ->postJson('/api/v1/community/posts', [
+                'title' => $title,
+                'content' => $content,
+                'category_code' => 'experience',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.title', $title)
+            ->assertJsonPath('data.content', $content);
+
+        $postId = $created->json('data.id');
+        $post = CommunityPost::query()->where('public_id', $postId)->firstOrFail();
+        app(CommunityContentService::class)->reviewPost($admin, $post, ['decision' => 'approve', 'note' => '表情接口内容审核通过。']);
+
+        $commentContent = '收到啦 😀 👍🏽';
+        $comment = $this->withToken($token)->withHeaders(['Idempotency-Key' => 'community-http-emoji-comment'])
+            ->postJson("/api/v1/community/posts/{$postId}/comments", ['content' => $commentContent])
+            ->assertCreated()
+            ->assertJsonPath('data.content', $commentContent);
+
+        $this->withToken($token)->withHeaders(['Idempotency-Key' => 'community-http-emoji-comment'])
+            ->postJson("/api/v1/community/posts/{$postId}/comments", ['content' => $commentContent])
+            ->assertCreated()
+            ->assertJsonPath('data.id', $comment->json('data.id'));
+
+        $this->getJson("/api/v1/community/posts/{$postId}")
+            ->assertOk()
+            ->assertJsonPath('data.title', $title)
+            ->assertJsonPath('data.content', $content);
+        $this->getJson("/api/v1/community/posts/{$postId}/comments")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.items')
+            ->assertJsonPath('data.items.0.content', $commentContent);
     }
 
     public function test_owner_projection_edit_retry_delete_and_pending_version_guard_are_enforced(): void
@@ -134,6 +205,21 @@ class CommunityPostApiFlowTest extends TestCase
             'uploaded_at' => now(),
             'scanned_at' => now(),
         ]);
+    }
+
+    private function publishSetting(string $key, int $value): void
+    {
+        $definition = SystemSettingDefinition::query()->where('setting_key', $key)->firstOrFail();
+        SystemSettingVersion::query()->create([
+            'setting_definition_id' => $definition->id,
+            'version' => 1,
+            'value' => $value,
+            'source' => 'publish',
+            'reason' => '验证社区发布规则公开接口。',
+            'published_at' => now(),
+        ]);
+        Cache::forget('system-setting:active:'.$key);
+        Cache::forget('system-setting:last-good:'.$key);
     }
 
     /** @return array{0:string,1:User} */

@@ -3,6 +3,7 @@
 namespace App\Modules\Task\Models;
 
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Campus\Models\Concerns\ScopesAdminCampusThroughRelation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,8 @@ use Illuminate\Support\Str;
 
 class TaskSubmission extends Model
 {
+    use ScopesAdminCampusThroughRelation;
+
     protected $fillable = ['public_id', 'task_claim_id', 'user_id', 'submission_no', 'status', 'reviewer_admin_id', 'review_assigned_at', 'review_lock_expires_at', 'content_snapshot', 'file_public_ids', 'revision_step_ids', 'supersedes_submission_id', 'idempotency_key_hash', 'submitted_at', 'review_started_at', 'review_due_at', 'review_reminded_at', 'withdrawn_at'];
 
     protected $hidden = ['idempotency_key_hash'];
@@ -47,5 +50,10 @@ class TaskSubmission extends Model
     public function supersededSubmission(): BelongsTo
     {
         return $this->belongsTo(self::class, 'supersedes_submission_id');
+    }
+
+    protected static function adminCampusRelation(): string
+    {
+        return 'claim.task';
     }
 }
