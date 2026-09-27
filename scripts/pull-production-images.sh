@@ -12,6 +12,16 @@ if [ ! -r "$DOCKER_CONFIG/config.json" ]; then
 fi
 command -v timeout >/dev/null || { echo 'GNU timeout is required' >&2; exit 1; }
 
+pull_timeout=${DEPLOY_PULL_TIMEOUT_SECONDS:-600}
+pull_budget=${DEPLOY_PULL_BUDGET_SECONDS:-1200}
+for value in "$pull_timeout" "$pull_budget"; do
+  if [[ ! "$value" =~ ^[1-9][0-9]{0,3}$ ]] || (( value > 1200 )); then
+    echo 'Pull timeout and total budget must be integers between 1 and 1200 seconds.' >&2
+    exit 1
+  fi
+done
+pull_deadline=$((SECONDS + pull_budget))
+
 pull_log=$(mktemp)
 trap 'rm -f "$pull_log"' EXIT
 declare -A image_ids
@@ -20,10 +30,22 @@ for kind in api web; do
   image="$IMAGE_PREFIX-$kind:$RELEASE_VERSION"
   pulled=false
   for attempt in 1 2; do
-    echo "Pulling $image (attempt $attempt/2, limit 240s)"
-    if timeout --kill-after=10s 240s docker pull "$image" 2>&1 | tee "$pull_log"; then
+    remaining=$((pull_deadline - SECONDS))
+    if (( remaining <= 0 )); then
+      echo "Total image download budget exhausted (${pull_budget}s). Check server connectivity to GHCR before retrying." >&2
+      exit 1
+    fi
+    attempt_timeout=$pull_timeout
+    if (( remaining < attempt_timeout )); then attempt_timeout=$remaining; fi
+    echo "Pulling $image (attempt $attempt/2, limit ${attempt_timeout}s, total remaining ${remaining}s)"
+    pull_status=0
+    timeout --kill-after=10s "${attempt_timeout}s" docker pull "$image" 2>&1 | tee "$pull_log" || pull_status=$?
+    if [ "$pull_status" -eq 0 ]; then
       pulled=true
       break
+    fi
+    if [ "$pull_status" -eq 124 ] || [ "$pull_status" -eq 137 ]; then
+      echo "Image download timed out after ${attempt_timeout}s; server-to-GHCR transfer did not finish." >&2
     fi
     if grep -Eiq 'unauthorized|denied|forbidden|manifest unknown' "$pull_log"; then
       echo 'GHCR rejected the image request. Check read:packages access and the image build job.' >&2

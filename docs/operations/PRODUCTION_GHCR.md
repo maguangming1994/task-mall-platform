@@ -89,8 +89,18 @@ in any `VITE_*` variable.
   failed deployment job after the image job has succeeded.
 - `denied`/`unauthorized`: check token scope, expiry, account/package access.
 - `manifest unknown`: check the image job and exact commit tag.
-- Network failures: two attempts per image, each bounded to 240 seconds.
-  Logs show the image and pull progress; no local build fallback is allowed.
+- Network failures: at most two attempts per image, each bounded to 600 seconds,
+  with a shared 1200-second budget across both images. Each attempt is capped to
+  the remaining budget, leaving time in the 30-minute deployment job for checks
+  and rollback. `DEPLOY_PULL_TIMEOUT_SECONDS` and `DEPLOY_PULL_BUDGET_SECONDS`
+  allow smaller or larger limits up to 1200 seconds for manual diagnostics.
+  Timeout failures are explicitly reported. No local build fallback is allowed.
+  In run `36310480332`, the 11,477-byte incremental bundle was accepted and the
+  database backup succeeded; API image pulls hit the old 240-second limit twice.
+  Several layers completed, but others did not. This demonstrates a layer-transfer
+  bottleneck, not an SSH upload or authentication failure. Longer limits do not
+  guarantee network recovery: if the shared budget is exhausted, investigate the
+  server's GHCR layer connectivity or arrange a private domestic registry.
 - Mismatched image revision/platform or an existing commit tag with different
   contents: stop before migrations. Investigate the package rather than
   overwriting a rollback image.
