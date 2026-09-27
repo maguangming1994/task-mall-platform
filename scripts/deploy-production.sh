@@ -71,30 +71,27 @@ verify_service() {
 echo "[1/9] 校验生产 Compose 配置"
 compose config --quiet
 
-echo "[2/9] 构建版本镜像：$RELEASE_VERSION"
-# Routine releases should reuse the server's verified base-image cache.  Forcing
-# a base-image pull invalidates every downstream layer and can exceed the CI SSH
-# time limit even when only application code changed.
-compose build api nginx
+echo "[2/9] 拉取 GitHub 已构建的版本镜像：$RELEASE_VERSION"
+bash "$ROOT_DIR/scripts/pull-production-images.sh"
 
 echo "[3/9] 等待 PostgreSQL 与 Redis"
-compose up -d --wait --wait-timeout 180 postgres redis
+compose up -d --no-build --pull never --wait --wait-timeout 180 postgres redis
 
 echo "[4/9] 执行前向数据库迁移"
-compose run --rm --no-deps api php artisan migrate --force
+compose run --rm --no-deps --pull never api php artisan migrate --force
 
 if [ "${SYNC_CAMPUS_DATA_ON_DEPLOY:-false}" = "true" ]; then
   echo "[5/9] 同步全国高校公开名录"
-  compose run --rm --no-deps api php artisan campuses:sync-directory
+  compose run --rm --no-deps --pull never api php artisan campuses:sync-directory
 
   echo "[6/9] 转存已核验的学校校徽"
-  compose run --rm --no-deps api php artisan campuses:sync-branding
+  compose run --rm --no-deps --pull never api php artisan campuses:sync-branding
 else
   echo "[5-6/9] 跳过高校目录和校徽全量同步（常规发布）"
 fi
 
 echo "[7/9] 启动 API、队列、调度器和 Web"
-compose up -d --remove-orphans --wait --wait-timeout 240
+compose up -d --no-build --pull never --remove-orphans --wait --wait-timeout 240
 
 echo "[8/9] 生成 Laravel 生产缓存"
 compose exec -T api php artisan optimize
@@ -111,6 +108,15 @@ wait_for_url "http://127.0.0.1:8080/admin/" "管理后台"
 wait_for_url "$PUBLIC_BASE_URL/api/v1/health/ready" "公网 API readiness"
 wait_for_url "$PUBLIC_BASE_URL/" "公网移动端"
 wait_for_url "$PUBLIC_BASE_URL/admin/" "公网管理后台"
+
+for base_url in http://127.0.0.1:8080 "$PUBLIC_BASE_URL"; do
+  release_marker=$(curl --fail --silent --show-error --max-time 15 \
+    "$base_url/release.json?commit=$RELEASE_VERSION")
+  if [ "$release_marker" != "{\"release\":\"$RELEASE_VERSION\"}" ]; then
+    echo "线上版本标记未匹配本次提交：$base_url (expected=$RELEASE_VERSION)" >&2
+    exit 1
+  fi
+done
 
 campus_smoke=$(curl --fail --silent --show-error --max-time 10 --get \
   --data-urlencode "keyword=北京大学" \

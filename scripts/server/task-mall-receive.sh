@@ -257,7 +257,7 @@ rollback_application() {
     "$PUBLIC_BASE_URL/api/v1/health/ready" >/dev/null || return 1
 }
 
-echo "[server 4/5] 构建、迁移并更新服务"
+echo "[server 4/5] 拉取已构建镜像、迁移并更新服务"
 if ! RELEASE_VERSION="$RELEASE_SHA" PRODUCTION_ENV_FILE="$ENV_FILE" \
   bash "$release_dir/scripts/deploy-production.sh"; then
   if rollback_application; then

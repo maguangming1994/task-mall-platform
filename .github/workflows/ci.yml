@@ -50,7 +50,10 @@ jobs:
       - name: Validate Bash syntax
         run: |
           bash -n scripts/deploy-production.sh
+          bash -n scripts/pull-production-images.sh
           bash -n scripts/server/task-mall-receive.sh
+          bash -n scripts/server/configure-ghcr.sh
+          bash tests/deployment/pull-production-images.test.sh
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -98,8 +101,8 @@ jobs:
             --tag task-mall-api:ci \
             .
 
-  deploy-production:
-    name: Deploy production
+  production-images:
+    name: Build and publish production images
     needs: [frontend, api, deployment-config]
     if: >-
       github.event_name == 'push' &&
@@ -107,13 +110,72 @@ jobs:
       vars.PRODUCTION_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
+      packages: write
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Log in to private GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Set up cached image builder
+        run: docker buildx create --driver docker-container --use --name task-mall-ci
+      - name: Build and push API image
+        env:
+          IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+        run: |
+          image="${IMAGE_PREFIX,,}-api"
+          if docker manifest inspect "$image:$GITHUB_SHA" >/dev/null 2>&1; then
+            echo "Reusing published commit image: $image:$GITHUB_SHA"
+            exit 0
+          fi
+          docker buildx build --progress plain --platform linux/amd64 \
+            --build-arg ALPINE_MIRROR=https://dl-cdn.alpinelinux.org/alpine \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --cache-from "type=registry,ref=$image:buildcache" \
+            --cache-to "type=registry,ref=$image:buildcache,mode=max" \
+            --file infra/docker/api.Dockerfile \
+            --tag "$image:$GITHUB_SHA" --push .
+      - name: Build and push Web image
+        env:
+          IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+          VITE_H5_PUBLIC_URL: ${{ vars.VITE_H5_PUBLIC_URL || 'https://rwsc.jxgxnxs.cn' }}
+          VITE_WECHAT_OA_APP_ID: ${{ vars.VITE_WECHAT_OA_APP_ID }}
+        run: |
+          image="${IMAGE_PREFIX,,}-web"
+          if docker manifest inspect "$image:$GITHUB_SHA" >/dev/null 2>&1; then
+            echo "Reusing published commit image: $image:$GITHUB_SHA"
+            exit 0
+          fi
+          docker buildx build --progress plain --platform linux/amd64 \
+            --build-arg VITE_API_BASE_URL=/api/v1 \
+            --build-arg "VITE_H5_PUBLIC_URL=$VITE_H5_PUBLIC_URL" \
+            --build-arg "VITE_WECHAT_OA_APP_ID=$VITE_WECHAT_OA_APP_ID" \
+            --build-arg "RELEASE_VERSION=$GITHUB_SHA" \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --cache-from "type=registry,ref=$image:buildcache" \
+            --cache-to "type=registry,ref=$image:buildcache,mode=max" \
+            --file infra/docker/web.Dockerfile \
+            --tag "$image:$GITHUB_SHA" --push .
+      - name: Log out of GHCR
+        if: always()
+        run: docker logout ghcr.io
+
+  deploy-production:
+    name: Deploy production
+    needs: [production-images]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
     concurrency:
       group: task-mall-production
       cancel-in-progress: false
-    # The production host builds release images locally.  Keep a bounded but
-    # realistic allowance so a slow package mirror cannot cancel a healthy
-    # deployment midway through its rollback-protected sequence.
-    timeout-minutes: 90
+    # Images are already built; only transfer, backup, migrate and switch here.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -161,6 +223,9 @@ jobs:
             -o BatchMode=yes \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=20 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=4 \
             "$DEPLOY_USER@$DEPLOY_HOST" "deploy $RELEASE_SHA" \
             < "$RUNNER_TEMP/task-mall.bundle"
 
@@ -172,3 +237,10 @@ jobs:
             https://rwsc.jxgxnxs.cn/ >/dev/null
           curl --fail --silent --show-error --retry 3 --retry-delay 3 --retry-all-errors \
             https://rwsc.jxgxnxs.cn/admin/ >/dev/null
+      - name: Verify deployed commit
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          curl --fail --silent --show-error --max-time 30 \
+            "https://rwsc.jxgxnxs.cn/release.json?commit=$RELEASE_SHA" \
+            | jq -e --arg sha "$RELEASE_SHA" '.release == $sha'

@@ -30,6 +30,8 @@
 
 ## 目录约定
 
+生产发布使用 GitHub Actions 构建私有 GHCR 镜像，服务器只拉取和切换。首次私有仓库登录、失败处理和验收步骤见 [GHCR 发布说明](docs/operations/PRODUCTION_GHCR.md)。
+
 - 用户端的平台差异统一放在 `apps/user-app/src/platform`。
 - 服务端业务按领域放在 `apps/api/app/Modules`。
 - 积分、库存、订单和支付的状态变更必须保留流水，并通过事务及幂等机制处理。
