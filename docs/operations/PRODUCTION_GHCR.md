@@ -12,6 +12,9 @@
    an already-published commit tag rather than replacing it.
 4. The existing restricted SSH receiver accepts `deploy <sha>` and the Git
    bundle. It retains the release lock, checks, database backup and rollback.
+   The bundle contains only commits after the public production release marker.
+   An invalid, missing or divergent base stops publication rather than silently
+   uploading the entire Git history. Transfer byte counts are shown by `dd`.
 5. The release script pulls both images, verifies the commit labels/platform,
    and tags the verified image IDs with the existing local rollback names.
    Production Compose has no build definitions. Application dependencies are
@@ -74,6 +77,13 @@ in any `VITE_*` variable.
 
 ## Failures and recovery
 
+- SSH without server output can mean the receiver is still reading the Git
+  bundle. The original full-history bundle measured 60,074,114 bytes; the
+  `eb8330a` to `5355918` delta measured 8,609 bytes. That full upload was observed
+  progressing from 15 MB to 16 MB over roughly two minutes, before image pulls.
+  New runs use incremental bundles. Editing the workflow does not change an
+  already-running job; avoid re-running an old full-bundle workflow.
+
 - Build failure: inspect the separate image build job; production is untouched.
 - `GHCR login missing`: finish the one-time server login, then rerun only the
   failed deployment job after the image job has succeeded.
@@ -107,9 +117,11 @@ An old preview QR or a healthy previous release is not a new-release acceptance.
 
 ```bash
 bash -n scripts/deploy-production.sh
+bash -n scripts/create-release-bundle.sh
 bash -n scripts/pull-production-images.sh
 bash -n scripts/server/configure-ghcr.sh
 bash tests/deployment/pull-production-images.test.sh
+bash tests/deployment/create-release-bundle.test.sh
 ```
 
 The pull tests simulate success, temporary network failure/recovery, exhausted

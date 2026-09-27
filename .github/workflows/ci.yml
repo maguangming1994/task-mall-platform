@@ -50,10 +50,12 @@ jobs:
       - name: Validate Bash syntax
         run: |
           bash -n scripts/deploy-production.sh
+          bash -n scripts/create-release-bundle.sh
           bash -n scripts/pull-production-images.sh
           bash -n scripts/server/task-mall-receive.sh
           bash -n scripts/server/configure-ghcr.sh
           bash tests/deployment/pull-production-images.test.sh
+          bash tests/deployment/create-release-bundle.test.sh
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -182,13 +184,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Create release bundle
+      - name: Create incremental release bundle
         env:
           RELEASE_SHA: ${{ github.sha }}
         run: |
-          git branch --force task-mall-release "$RELEASE_SHA"
-          git bundle create "$RUNNER_TEMP/task-mall.bundle" refs/heads/task-mall-release
-          git bundle verify "$RUNNER_TEMP/task-mall.bundle"
+          set -euo pipefail
+          BASE_SHA=$(curl --fail --silent --show-error --connect-timeout 10 --max-time 30 \
+            "https://rwsc.jxgxnxs.cn/release.json?bundle=$RELEASE_SHA-$GITHUB_RUN_ATTEMPT" \
+            | jq -er '.release')
+          export BASE_SHA
+          bash scripts/create-release-bundle.sh "$RUNNER_TEMP/task-mall.bundle"
 
       - name: Configure deployment SSH
         env:
@@ -216,7 +221,9 @@ jobs:
           DEPLOY_USER: ${{ secrets.PRODUCTION_SSH_USER }}
           RELEASE_SHA: ${{ github.sha }}
         run: |
-          ssh \
+          set -euo pipefail
+          echo "Transferring $(wc -c < "$RUNNER_TEMP/task-mall.bundle") bytes to deployment SSH"
+          dd if="$RUNNER_TEMP/task-mall.bundle" bs=64K status=progress | ssh \
             -T \
             -i "$HOME/.ssh/task-mall-deploy" \
             -p "$DEPLOY_PORT" \
@@ -226,8 +233,7 @@ jobs:
             -o ConnectTimeout=20 \
             -o ServerAliveInterval=15 \
             -o ServerAliveCountMax=4 \
-            "$DEPLOY_USER@$DEPLOY_HOST" "deploy $RELEASE_SHA" \
-            < "$RUNNER_TEMP/task-mall.bundle"
+            "$DEPLOY_USER@$DEPLOY_HOST" "deploy $RELEASE_SHA"
 
       - name: Verify public endpoints
         run: |
