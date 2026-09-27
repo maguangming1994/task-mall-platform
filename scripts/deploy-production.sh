@@ -80,11 +80,15 @@ compose up -d --wait --wait-timeout 180 postgres redis
 echo "[4/9] 执行前向数据库迁移"
 compose run --rm --no-deps api php artisan migrate --force
 
-echo "[5/9] 同步全国高校公开名录"
-compose run --rm --no-deps api php artisan campuses:sync-directory
+if [ "${SYNC_CAMPUS_DATA_ON_DEPLOY:-false}" = "true" ]; then
+  echo "[5/9] 同步全国高校公开名录"
+  compose run --rm --no-deps api php artisan campuses:sync-directory
 
-echo "[6/9] 转存已核验的学校校徽"
-compose run --rm --no-deps api php artisan campuses:sync-branding
+  echo "[6/9] 转存已核验的学校校徽"
+  compose run --rm --no-deps api php artisan campuses:sync-branding
+else
+  echo "[5-6/9] 跳过高校目录和校徽全量同步（常规发布）"
+fi
 
 echo "[7/9] 启动 API、队列、调度器和 Web"
 compose up -d --remove-orphans --wait --wait-timeout 240
