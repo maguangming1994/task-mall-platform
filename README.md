@@ -30,7 +30,7 @@
 
 ## 目录约定
 
-生产发布使用 GitHub Actions 构建私有 GHCR 镜像，服务器只拉取和切换。首次私有仓库登录、失败处理和验收步骤见 [GHCR 发布说明](docs/operations/PRODUCTION_GHCR.md)。
+生产发布使用 GitHub Actions 构建腾讯云 TCR 个人版私有镜像，服务器只拉取和切换。首次仓库登录、凭据配置、失败处理和验收步骤见 [TCR 发布说明](docs/operations/PRODUCTION_TCR.md)。
 
 - 用户端的平台差异统一放在 `apps/user-app/src/platform`。
 - 服务端业务按领域放在 `apps/api/app/Modules`。

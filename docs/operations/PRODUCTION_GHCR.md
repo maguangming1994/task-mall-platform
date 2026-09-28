@@ -1,5 +1,9 @@
 # Production releases using private GHCR images
 
+Historical runbook: the current publication target is Tencent TCR personal
+registry. Follow [PRODUCTION_TCR.md](PRODUCTION_TCR.md) for new releases.
+Keep existing GHCR credentials and rollback images until migration is accepted.
+
 ## Release path
 
 1. Push reviewed changes to `main`. Frontend, API and deployment checks run first.

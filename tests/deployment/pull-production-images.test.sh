@@ -24,8 +24,13 @@ cat >> "$tmp/bin/docker" <<'SH'
 set -eu
 printf '%s\n' "$*" >> "$MOCK_LOG"
 if [ "$1" = pull ]; then
+  case "$2" in
+    "ccr.ccs.tencentyun.com/task-mall-platform/task-mall-api:$RELEASE_VERSION"|"ccr.ccs.tencentyun.com/task-mall-platform/task-mall-web:$RELEASE_VERSION") ;;
+    *) echo 'Unexpected registry or release tag'; exit 99 ;;
+  esac
   case "$MOCK_MODE" in
     denied) echo 'denied: requested access'; exit 1 ;;
+    missing-image) echo 'manifest unknown'; exit 1 ;;
     network) echo 'network timeout'; exit 124 ;;
     budget) sleep 2; echo 'network timeout'; exit 124 ;;
     budget-success) sleep 2; exit 0 ;;
@@ -63,7 +68,7 @@ exit 99
 SH
 chmod +x "$tmp/bin/timeout" "$tmp/bin/docker"
 
-for mode in success retry existing denied network mismatch platform existing-mismatch; do
+for mode in success retry existing denied missing-image network mismatch platform existing-mismatch; do
   export MOCK_MODE=$mode
   : > "$MOCK_LOG"
   result=0
@@ -76,7 +81,7 @@ for mode in success retry existing denied network mismatch platform existing-mis
     *)
       [ "$result" -ne 0 ]
       ! grep -q '^tag ' "$MOCK_LOG"
-      if [ "$mode" = denied ]; then [ "$(grep -c '^pull ' "$MOCK_LOG")" -eq 1 ]; fi
+      if [ "$mode" = denied ] || [ "$mode" = missing-image ]; then [ "$(grep -c '^pull ' "$MOCK_LOG")" -eq 1 ]; fi
       if [ "$mode" = network ]; then [ "$(grep -c '^pull ' "$MOCK_LOG")" -eq 2 ]; fi ;;
   esac
   echo "PASS: $mode"

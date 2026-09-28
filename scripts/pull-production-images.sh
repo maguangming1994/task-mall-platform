@@ -4,10 +4,10 @@ set -Eeuo pipefail
 : "${RELEASE_VERSION:?Set RELEASE_VERSION to the tested commit}"
 [[ "$RELEASE_VERSION" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid release commit' >&2; exit 1; }
 
-readonly IMAGE_PREFIX=ghcr.io/maguangming1994/task-mall-platform
-export DOCKER_CONFIG="${DEPLOY_DOCKER_CONFIG:-/var/lib/task-mall/ghcr}"
+readonly IMAGE_PREFIX=ccr.ccs.tencentyun.com/task-mall-platform/task-mall
+export DOCKER_CONFIG="${DEPLOY_DOCKER_CONFIG:-/var/lib/task-mall/tcr}"
 if [ ! -r "$DOCKER_CONFIG/config.json" ]; then
-  echo 'GHCR login missing. Run scripts/server/configure-ghcr.sh as the deployment user first.' >&2
+  echo 'TCR login missing. Run scripts/server/configure-tcr.sh as the deployment user first.' >&2
   exit 1
 fi
 command -v timeout >/dev/null || { echo 'GNU timeout is required' >&2; exit 1; }
@@ -32,7 +32,7 @@ for kind in api web; do
   for attempt in 1 2; do
     remaining=$((pull_deadline - SECONDS))
     if (( remaining <= 0 )); then
-      echo "Total image download budget exhausted (${pull_budget}s). Check server connectivity to GHCR before retrying." >&2
+      echo "Total image download budget exhausted (${pull_budget}s). Check server connectivity to TCR before retrying." >&2
       exit 1
     fi
     attempt_timeout=$pull_timeout
@@ -45,10 +45,10 @@ for kind in api web; do
       break
     fi
     if [ "$pull_status" -eq 124 ] || [ "$pull_status" -eq 137 ]; then
-      echo "Image download timed out after ${attempt_timeout}s; server-to-GHCR transfer did not finish." >&2
+      echo "Image download timed out after ${attempt_timeout}s; server-to-TCR transfer did not finish." >&2
     fi
     if grep -Eiq 'unauthorized|denied|forbidden|manifest unknown' "$pull_log"; then
-      echo 'GHCR rejected the image request. Check read:packages access and the image build job.' >&2
+      echo 'TCR rejected the image request. Check registry credentials, private repository access and the image build job.' >&2
       exit 1
     fi
   done

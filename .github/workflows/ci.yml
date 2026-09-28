@@ -54,6 +54,7 @@ jobs:
           bash -n scripts/pull-production-images.sh
           bash -n scripts/server/task-mall-receive.sh
           bash -n scripts/server/configure-ghcr.sh
+          bash -n scripts/server/configure-tcr.sh
           bash tests/deployment/pull-production-images.test.sh
           bash tests/deployment/create-release-bundle.test.sh
       - name: Validate PowerShell syntax
@@ -114,19 +115,25 @@ jobs:
     environment: production
     permissions:
       contents: read
-      packages: write
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - name: Log in to private GHCR
+      - name: Log in to private Tencent registry
         env:
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          TCR_USERNAME: ${{ secrets.TCR_USERNAME }}
+          TCR_PASSWORD: ${{ secrets.TCR_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$TCR_USERNAME" ] || [ -z "$TCR_PASSWORD" ]; then
+            echo 'Set TCR_USERNAME and TCR_PASSWORD in production environment secrets before publishing.' >&2
+            exit 1
+          fi
+          printf '%s' "$TCR_PASSWORD" | docker login ccr.ccs.tencentyun.com --username "$TCR_USERNAME" --password-stdin
       - name: Set up cached image builder
         run: docker buildx create --driver docker-container --use --name task-mall-ci
       - name: Build and push API image
         env:
-          IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+          IMAGE_PREFIX: ccr.ccs.tencentyun.com/task-mall-platform/task-mall
         run: |
           image="${IMAGE_PREFIX,,}-api"
           if docker manifest inspect "$image:$GITHUB_SHA" >/dev/null 2>&1; then
@@ -134,16 +141,17 @@ jobs:
             exit 0
           fi
           docker buildx build --progress plain --platform linux/amd64 \
+            --provenance=false --sbom=false \
             --build-arg ALPINE_MIRROR=https://dl-cdn.alpinelinux.org/alpine \
             --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
             --cache-from "type=registry,ref=$image:buildcache" \
-            --cache-to "type=registry,ref=$image:buildcache,mode=max" \
+            --cache-to type=inline \
             --file infra/docker/api.Dockerfile \
-            --tag "$image:$GITHUB_SHA" --push .
+            --tag "$image:$GITHUB_SHA" --tag "$image:buildcache" --push .
       - name: Build and push Web image
         env:
-          IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+          IMAGE_PREFIX: ccr.ccs.tencentyun.com/task-mall-platform/task-mall
           VITE_H5_PUBLIC_URL: ${{ vars.VITE_H5_PUBLIC_URL || 'https://rwsc.jxgxnxs.cn' }}
           VITE_WECHAT_OA_APP_ID: ${{ vars.VITE_WECHAT_OA_APP_ID }}
         run: |
@@ -153,6 +161,7 @@ jobs:
             exit 0
           fi
           docker buildx build --progress plain --platform linux/amd64 \
+            --provenance=false --sbom=false \
             --build-arg VITE_API_BASE_URL=/api/v1 \
             --build-arg "VITE_H5_PUBLIC_URL=$VITE_H5_PUBLIC_URL" \
             --build-arg "VITE_WECHAT_OA_APP_ID=$VITE_WECHAT_OA_APP_ID" \
@@ -160,12 +169,12 @@ jobs:
             --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
             --cache-from "type=registry,ref=$image:buildcache" \
-            --cache-to "type=registry,ref=$image:buildcache,mode=max" \
+            --cache-to type=inline \
             --file infra/docker/web.Dockerfile \
-            --tag "$image:$GITHUB_SHA" --push .
-      - name: Log out of GHCR
+            --tag "$image:$GITHUB_SHA" --tag "$image:buildcache" --push .
+      - name: Log out of Tencent registry
         if: always()
-        run: docker logout ghcr.io
+        run: docker logout ccr.ccs.tencentyun.com
 
   deploy-production:
     name: Deploy production
