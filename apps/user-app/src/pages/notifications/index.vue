@@ -94,6 +94,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatTime } from '@/utils/dateTime'
 import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import {
@@ -453,7 +454,6 @@ async function persistPreference(rollback: () => void) {
 function unreadFor(category: CategoryFilter) { return category ? Number(categoryUnreadCounts.value[category] || 0) : unreadTotal.value }
 function categoryText(value: string) { return ({ task: '任务', asset: '资产', order: '订单', after_sale: '售后', community: '社区', system: '系统' } as Record<string, string>)[value] || '系统' }
 function categoryMark(value: string) { return ({ task: '任', asset: '资', order: '单', after_sale: '售', community: '聊', system: '系' } as Record<string, string>)[value] || '信' }
-function formatTime(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleString() }
 function uniqueNotifications(values: AppNotification[]) { return Array.from(new Map(values.map((item) => [item.id, item])).values()) }
 
 function communitySceneGroup(sceneCode: string): Exclude<CommunityFilter, 'all'> {

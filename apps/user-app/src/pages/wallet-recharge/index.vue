@@ -57,6 +57,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatTime } from '@/utils/dateTime'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { createRechargePayment, createWalletRecharge, getWalletAccount, getWalletRecharge, listWalletRecharges, type RechargeMethod, type WalletAccount, type WalletRecharge } from '@/api/assets'
@@ -222,7 +223,6 @@ function removeProof(id: string) { proofs.value = proofs.value.filter((item) => 
 async function submitOffline() { if (!payerName.value.trim()) return uni.showToast({ title: '请填写付款人姓名', icon: 'none' }); if (!proofs.value.length) return uni.showToast({ title: '请上传付款凭证', icon: 'none' }); await submit(async () => { await createWalletRecharge(auth.accessToken, { method: 'offline', amount_cents: cents(), payer_name: payerName.value.trim(), offline_reference: offlineReference.value.trim() || undefined, note: note.value.trim() || undefined, offline_proof_file_ids: proofs.value.map((item) => item.fileId) }); payerName.value = ''; offlineReference.value = ''; note.value = ''; proofs.value = []; uni.showToast({ title: '已提交财务审核', icon: 'success' }) }) }
 async function submit(action: () => Promise<void>) { if (submitting.value) return; submitting.value = true; actionError.value = ''; try { await action(); await load() } catch (error) { actionError.value = error instanceof Error ? error.message : '充值操作失败，请稍后重试'; toast(error, '充值操作失败') } finally { submitting.value = false } }
 function money(value: number) { return (value / 100).toFixed(2) }
-function formatTime(value: string) { return new Date(value).toLocaleString() }
 function methodText(value: string) { return ({ card_code: '卡密兑换', online: '线上支付', offline: '线下支付' } as Record<string,string>)[value] || '余额充值' }
 function statusText(value: string) { return ({ pending_payment: '待支付', pending_review: '待审核', succeeded: '已到账', rejected: '已拒绝', expired: '已过期', cancelled: '已取消' } as Record<string,string>)[value] || '处理中' }
 function toast(error: unknown, fallback: string) { uni.showToast({ title: error instanceof Error ? error.message : fallback, icon: 'none' }) }

@@ -123,6 +123,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatTime } from '@/utils/dateTime'
 import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import qrcode from 'qrcode-generator'
 import { computed, nextTick, ref } from 'vue'
@@ -239,7 +240,6 @@ function categoryLabel(value: string) { return ({ onboarding: '新手', daily: '
 function taskTypeLabel(value: string) { return ({ one_time: '单次任务', daily: '每日任务', weekly: '每周任务', repeatable: '可重复任务' } as Record<string, string>)[value] || '常规任务' }
 function durationText(value: number | null) { if (value === null) return '暂无'; if (value < 60) return `${value} 分钟`; return `${(value / 60).toFixed(value % 60 === 0 ? 0 : 1)} 小时` }
 function passRateText(value: number | null) { return value === null ? '暂无' : `${value}%` }
-function formatTime(value: string) { return new Date(value).toLocaleString() }
 function reasonText(reason: string | null) { return ({ not_started: '尚未开始', ended: '已结束', quota_exhausted: '名额已满', ineligible: '系统自动加入' } as Record<string, string>)[reason || ''] || '暂不可领取' }
 function ruleText(rule: string | Record<string, unknown>, index: number) { if (typeof rule === 'string') return `${index + 1}. ${rule}`; return `${index + 1}. ${String(rule.title || rule.description || JSON.stringify(rule))}` }
 function stepInputText(value: string) { return ({ none: '按说明完成，无需单独填写', text: '需要填写文字结果', image: '需要上传截图凭证', text_image: '需要填写文字并上传截图', link: '需要访问或复制指定链接' } as Record<string, string>)[value] || '' }

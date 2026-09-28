@@ -31,6 +31,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatDate } from '@/utils/dateTime'
 import { onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { createWithdrawal, getPointAccount, getWalletAccount, getWithdrawalQuote, listWithdrawals, type PointAccount, type WalletAccount, type Withdrawal, type WithdrawalQuote } from '@/api/assets'
@@ -79,7 +80,6 @@ async function load() {
 
 function goBack() { const pages = getCurrentPages(); if (pages.length > 1) uni.navigateBack({ delta: 1 }); else uni.redirectTo({ url: '/pages/assets/index' }) }
 function money(cents: number) { return (cents / 100).toFixed(2) }
-function formatDate(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleString() }
 function statusText(value: string) { return ({ reviewing: '审核中', submitted: '待审核', approved: '待打款', processing: '处理中', succeeded: '已到账', completed: '已完成', rejected: '已拒绝', failed: '打款失败', cancelled: '已取消' } as Record<string, string>)[value] || '状态同步中' }
 function errorMessage(error: unknown, fallback: string) { return error instanceof Error ? error.message : fallback }
 function onAmountInput() { quote.value = null; actionError.value = '' }

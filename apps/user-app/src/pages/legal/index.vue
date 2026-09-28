@@ -31,6 +31,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate as dateText } from '@/utils/dateTime'
 import { onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { acceptLegalDocument, loadCurrentLegalDocuments, loadPendingLegalDocuments, type LegalDocument } from '@/api/legal'
@@ -60,7 +61,6 @@ async function load() {
 }
 function toggle(id: string) { expandedId.value = expandedId.value === id ? '' : id }
 function isPending(id: string) { return pending.value.some((item) => item.id === id) }
-function dateText(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()}` }
 async function confirmPending() {
   if (!pending.value.length) return uni.showToast({ title: '当前已是最新版本', icon: 'none' })
   if (!auth.isAuthenticated) return navigateToLogin()

@@ -29,6 +29,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatStart } from '@/utils/dateTime'
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { communityActivityImageUrl, getCommunityActivity, joinCommunityActivity, leaveCommunityActivity, type CommunityActivity } from '@/api/community'
@@ -55,7 +56,6 @@ function preview(current:number){if(!activity.value)return;const urls=activity.v
 function share(){uni.showModal({title:'分享组团',content:'微信小程序发布后可直接分享卡片；当前预览可复制页面链接邀请同学。',showCancel:false})}
 function goBack(){const pages=getCurrentPages();pages.length>1?uni.navigateBack():uni.redirectTo({url:'/pages/community-activities/index'})}
 function avatarText(value:string){return(value||'同').slice(0,1)}
-function formatStart(value:string){const date=new Date(value);if(Number.isNaN(date.getTime()))return value;return`${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日 ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`}
 function message(value:unknown){return value instanceof Error?value.message:'操作失败，请稍后重试'}
 function toast(value:unknown){uni.showToast({title:message(value),icon:'none'})}
 </script>

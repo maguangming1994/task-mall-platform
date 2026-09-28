@@ -33,6 +33,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime } from '@/utils/dateTime'
 import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { changePublisherTaskStatus, createMyPublisherSession, getPublisherTask, listPublisherTaskAudit, listPublisherTaskVersions, type PublisherAuditEvent, type PublisherTask, type PublisherTaskVersion } from '@/api/publisher'
@@ -72,7 +73,7 @@ async function change(action:'publish'|'pause'|'resume'|'close'){const labels={p
 function editTask(){uni.navigateTo({url:`/pages/publisher/index?edit=${encodeURIComponent(taskId)}`})}
 async function loadVersions(){historyError.value='';try{versions.value=await listPublisherTaskVersions(token,taskId);historyMode.value='versions'}catch(error){if(handlePublisherAccessError(error))return;historyError.value=error instanceof Error?error.message:'版本读取失败';uni.showToast({title:historyError.value,icon:'none'})}}
 async function loadAudit(){historyError.value='';try{auditRows.value=(await listPublisherTaskAudit(token,taskId)).items;historyMode.value='audit'}catch(error){if(handlePublisherAccessError(error))return;historyError.value=error instanceof Error?error.message:'审核轨迹读取失败';uni.showToast({title:historyError.value,icon:'none'})}}
-function formatTime(value?:string|null){return value?new Date(value).toLocaleString():'未设置'}
+function formatTime(value?: string | null) { return formatDateTime(value, '未设置') }
 function statusText(value:string){return({draft:'草稿',pending_approval:'待财务复核',published:'已发布',scheduled:'已排期',paused:'已暂停',closed:'已结束',archived:'已归档'} as Record<string,string>)[value]||'状态待同步'}
 function approvalText(value:string){return({pending:'待审核',approved:'已通过',rejected:'已驳回'} as Record<string,string>)[value]||'待平台确认'}
 function assetText(value:string){return value==='points'?'积分奖励':value==='wallet_cash'?'余额奖励':'优惠券奖励'}

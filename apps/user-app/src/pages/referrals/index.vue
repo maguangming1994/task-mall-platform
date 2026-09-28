@@ -24,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate } from '@/utils/dateTime'
 import { onLoad, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { bindReferral, getReferrals, type ReferralDashboard } from '@/api/referrals'
@@ -85,7 +86,6 @@ function showInviteHelp() { uni.showModal({ title: '邀请码在哪里？', cont
 function showInviteHistory() { if (!items.value.length) uni.showToast({ title: '暂时还没有邀请记录', icon: 'none' }); else uni.showToast({ title: `共 ${items.value.length} 条邀请记录`, icon: 'none' }) }
 function shareTitle() { return `邀请你加入任务商城，完成条件可得 ${rewardPoints.value} 积分奖励` }
 function statusText(value: string) { return ({ tracking: '进行中', rewarded: '奖励已到账', qualified_cap_reached: '已达标·本月名额已满', revoked: '已失效' } as Record<string, string>)[value] || '进度跟踪中' }
-function formatDate(value: string | null) { if (!value) return '—'; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
 function errorMessage(error: unknown, fallback: string) { return error instanceof Error ? error.message : fallback }
 </script>
 

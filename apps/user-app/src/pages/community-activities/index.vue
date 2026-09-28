@@ -32,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatStart } from '@/utils/dateTime'
 import { computed, ref } from 'vue'
 import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { communityActivityImageUrl, listCommunityActivities, listCommunityActivityCategories, listMyCommunityActivities, type CommunityActivity, type CommunityActivityCategory } from '@/api/community'
@@ -71,7 +72,6 @@ function firstImage(activity:CommunityActivity){ const image=activity.images?.[0
 function avatarText(value:string){ return (value||'同').slice(0,1) }
 function statusText(value:string){ return ({pending_review:'审核中',approved:'报名中',closed:'已关闭',rejected:'未通过'} as Record<string,string>)[value]||'处理中' }
 function statusTone(value:string){ return ({approved:'open',pending_review:'pending',rejected:'danger',closed:'muted'} as Record<string,string>)[value]||'pending' }
-function formatStart(value:string){ const date=new Date(value); if(Number.isNaN(date.getTime()))return value; return `${date.getMonth()+1}月${date.getDate()}日 ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}` }
 function message(value:unknown){ return value instanceof Error?value.message:'请检查网络后重试' }
 </script>
 

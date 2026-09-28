@@ -39,6 +39,7 @@
     "build:quickapp-webview-huawei": "uni build -p quickapp-webview-huawei",
     "build:quickapp-webview-union": "uni build -p quickapp-webview-union",
     "type-check": "vue-tsc --noEmit",
+    "test:unit": "node --test tests/*.test.cjs",
     "test:e2e:wechat": "uni build -p mp-weixin --auto-port 9520 --auto-host 127.0.0.1 && jest --config e2e/jest.config.cjs --runInBand"
   },
   "dependencies": {

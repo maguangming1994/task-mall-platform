@@ -127,6 +127,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate, formatDateTime as formatTime } from '@/utils/dateTime'
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { appealTaskClaim, cancelTaskClaim, getTaskClaim, getTaskClaimRewards, listTaskSubmissions, submitTaskClaim, withdrawTaskSubmission, type TaskClaim, type TaskClaimRewardSummary, type TaskReward, type TaskStep, type TaskSubmission } from '@/api/tasks'
@@ -172,7 +173,7 @@ const completionHours = computed(() => claim.value ? Math.max(1, Math.ceil((new 
 const reviewHours = computed(() => claim.value?.current_submission?.review_due_at && claim.value.current_submission.submitted_at ? Math.max(1, Math.ceil((new Date(claim.value.current_submission.review_due_at).getTime() - new Date(claim.value.current_submission.submitted_at).getTime()) / 3600000)) : 48)
 const cycleWindowText = computed(() => {
   if (!claim.value?.cycle_starts_at || !claim.value?.cycle_ends_at) return claim.value?.cycle_key === 'milestone' ? '长期里程碑，不自动重置' : '当前周期'
-  return `${new Date(claim.value.cycle_starts_at).toLocaleDateString()} 至 ${new Date(claim.value.cycle_ends_at).toLocaleDateString()}`
+  return `${formatDate(claim.value.cycle_starts_at)} 至 ${formatDate(claim.value.cycle_ends_at)}`
 })
 const displayedRewardComponents = computed(() => {
   if (claimRewards.value?.items.length) return claimRewards.value.items.map((item) => ({ key: item.id, assetType: item.asset_type, amount: item.amount, status: item.status }))
@@ -286,7 +287,6 @@ function categoryLabel(value: string) { return ({ onboarding: '新手', daily: '
 function categoryMark(value: string) { return ({ onboarding: '新', daily: '学', community: '享', commerce: '购', research: '研', campaign: '活' } as Record<string, string>)[value] || '任' }
 function taskTypeLabel(value: string) { return ({ one_time: '单次任务', daily: '每日任务', weekly: '每周任务', repeatable: '可重复任务' } as Record<string, string>)[value] || '常规任务' }
 function statusText(value: string) { return ({ claimed: '待提交', withdrawn: '待重新提交', submitted: '已提交', reviewing: '审核中', rejected: '未通过', approved: '已完成', cancelled: '已放弃', expired: '已过期', appealed: '申诉中', appeal_reviewing: '申诉审核中', appeal_rejected: '申诉未通过' } as Record<string, string>)[value] || '状态待同步' }
-function formatTime(value: string) { return new Date(value).toLocaleString() }
 </script>
 
 <style scoped>

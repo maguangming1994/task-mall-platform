@@ -112,6 +112,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatTime } from '@/utils/dateTime'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AppTabBar from '@/components/AppTabBar.vue'
@@ -213,10 +214,9 @@ function categoryLabel(value: string) { return ({ onboarding: '线下', daily: '
 function taskTypeLabel(value: string) { return ({ one_time: '单次任务', daily: '每日任务', weekly: '每周任务', monthly: '每月任务', milestone: '里程碑任务', repeatable: '可重复任务' } as Record<string, string>)[value] || '常规任务' }
 function displayTags(task: HallTask) { const category = categoryLabel(task.category); return [...new Set(task.tags.filter((tag) => tag !== category))].slice(0, 2) }
 function durationText(value: number | null) { if (value === null) return '暂无'; if (value < 60) return `${value} 分钟`; return `${(value / 60).toFixed(value % 60 === 0 ? 0 : 1)} 小时` }
-function reviewDurationText(task: HallTask) { return task.average_review_minutes === null ? `限时 ${task.review_deadline_hours}h` : durationText(task.average_review_minutes) }
-function completionDurationText(task: HallTask) { return task.average_completion_minutes === null ? `领取后 ${task.completion_window_hours}h` : `约 ${durationText(task.average_completion_minutes)}` }
+function reviewDurationText(task: HallTask) { return task.average_review_minutes === null ? `限时 ${task.review_deadline_hours} 小时` : durationText(task.average_review_minutes) }
+function completionDurationText(task: HallTask) { return task.average_completion_minutes === null ? `领取后 ${task.completion_window_hours} 小时` : `约 ${durationText(task.average_completion_minutes)}` }
 function formatMoney(value: number) { return (value / 100).toFixed(2) }
-function formatTime(value: string) { return new Date(value).toLocaleString() }
 function reasonText(reason: string | null) { return ({ not_started: '尚未开始', ended: '已结束', quota_exhausted: '名额已满', ineligible: '系统自动加入' } as Record<string, string>)[reason || ''] || '暂不可领取' }
 function categoryMark(value: string) { return ({ onboarding: '新', daily: '学', community: '享', commerce: '购', research: '研', campaign: '活' } as Record<string, string>)[value] || '任' }
 function visibleClaimTags(item: TaskClaim) { const category = categoryLabel(item.category); return [...new Set(item.tags.filter(tag => tag !== category))].slice(0, 1) }

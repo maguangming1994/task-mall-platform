@@ -55,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate, formatDateTime as formatTime } from '@/utils/dateTime'
 import { onShow } from '@dcloudio/uni-app'
 import { ref } from 'vue'
 import { getPointAccount, getWalletAccount, listCoupons, listPointBatches, listPointTransactions, listWalletTransactions, listWithdrawals, type PointAccount, type PointBatch, type PointTransaction, type UserCoupon, type WalletAccount, type WalletTransaction, type Withdrawal } from '@/api/assets'
@@ -112,8 +113,6 @@ function errorMessage(error: unknown, fallback: string) { return error instanceo
 function money(cents: number) { return (cents / 100).toFixed(2) }
 function signed(value: number) { return `${value >= 0 ? '+' : ''}${value}` }
 function signedMoney(value: number) { return `${value >= 0 ? '+' : '-'}¥${money(Math.abs(value))}` }
-function formatTime(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleString() }
-function formatDate(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString() }
 function pointTypeText(value: string) { return ({ grant: '获得积分', consume: '使用积分', expire: '积分到期', refund: '退款返还', adjust: '后台调整', reverse: '业务冲正' } as Record<string, string>)[value] || '积分变动' }
 function walletTypeText(value: string) { return ({ grant: '余额奖励', consume: '余额支付', refund: '退款返还', withdrawal: '余额提现', adjust: '后台调整', reverse: '业务冲正', recharge_card: '卡密充值', recharge_online: '线上充值', recharge_offline: '线下充值' } as Record<string, string>)[value] || '余额变动' }
 function sourceText(value?: string | null) { return ({ signin: '签到', daily_check_in: '每日签到', post: '发布帖子', comment: '发表评论', profile: '完善资料', referral: '推荐新人', referral_new_user: '推荐新人', task: '完成任务', manual: '平台发放' } as Record<string, string>)[value || ''] || '其他来源' }

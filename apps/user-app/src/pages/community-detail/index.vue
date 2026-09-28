@@ -90,6 +90,7 @@
   </view>
 </template>
 <script setup lang="ts">
+import { formatDateTime as formatTime } from '@/utils/dateTime'
 import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import qrcode from 'qrcode-generator'
 import { computed, nextTick, ref } from 'vue'
@@ -314,7 +315,6 @@ function savePoster() {
   }, fail: () => uni.showToast({ title: '海报生成失败，请重试', icon: 'none' }) })
 }
 function avatarText(value: string) { return (value || '同').trim().slice(0, 1) }
-function formatTime(value: string | null) { if (!value) return ''; const date = new Date(value); return Number.isNaN(date.getTime()) ? '' : `${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}` }
 function toast(error: unknown) { uni.showToast({ title: error instanceof Error ? error.message : '操作失败', icon: 'none' }) }
 function goCommunity() { uni.reLaunch({ url: '/pages/community/index' }) }
 </script>

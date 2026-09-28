@@ -37,6 +37,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatDate } from '@/utils/dateTime'
 import { onShow } from '@dcloudio/uni-app'
 import { ref } from 'vue'
 import { createPrivacyCopy, createPrivacyIdempotencyKey, downloadPrivacyExport, listPrivacyRequests, loadCancellation, loadCancellationEligibility, requestCancellation, withdrawCancellation, type CancellationEligibility, type CancellationRequest, type PrivacyRequestItem } from '@/api/privacy'
@@ -112,7 +113,6 @@ async function withdraw() {
   finally { withdrawing.value = false }
 }
 function handleError(error: unknown) { uni.showToast({ title: error instanceof ApiError ? error.message : '请求失败', icon: 'none' }) }
-function formatDate(value: string) { return new Date(value).toLocaleString() }
 function requestName(value: string) { return requestNames[value] || '隐私请求' }
 function statusName(value: string) { return statusNames[value] || '状态处理中' }
 function blockerName(value: string) { return blockerNames[value] || '存在待处理事项' }

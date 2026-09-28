@@ -158,6 +158,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatTime } from '@/utils/dateTime'
 import { computed, ref } from 'vue'
 import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import AppTabBar from '@/components/AppTabBar.vue'
@@ -355,7 +356,6 @@ async function report(type: 'post' | 'comment', id: string) { if (!ensureAuth() 
 async function removePost(post: CommunityPost) { if (!auth.accessToken) return; const result = await uni.showModal({ title: '删除这条发布？', content: '删除后无法恢复，已发放的帖子奖励会按规则处理。', confirmText: '删除', confirmColor: '#e93f4f' }); if (!result.confirm) return; try { await deleteCommunityPost(auth.accessToken, post.id); await Promise.all([loadMine(), refreshSquare()]); uni.showToast({ title: '已删除', icon: 'success' }) } catch (error) { toast(error) } }
 function displayStatus(post: CommunityPost) { const review = post.latest_version?.review_status; if (review === 'pending') return { label: '审核中', tone: 'pending' }; if (review === 'rejected') return { label: '未通过', tone: 'danger' }; if (post.status === 'published') return { label: '已公开', tone: 'success' }; return { label: '处理中', tone: 'pending' } }
 function input(title: string): Promise<string | null> { return new Promise(resolve => uni.showModal({ title, editable: true, success: result => resolve(result.confirm ? result.content?.trim() || null : null) })) }
-function formatTime(value: string | null) { if (!value) return ''; const date = new Date(value); return Number.isNaN(date.getTime()) ? '' : `${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}` }
 function errorMessage(error: unknown) { return error instanceof Error ? error.message : '操作失败，请稍后重试。' }
 function toast(error: unknown) { uni.showToast({ title: errorMessage(error), icon: 'none' }) }
 </script>

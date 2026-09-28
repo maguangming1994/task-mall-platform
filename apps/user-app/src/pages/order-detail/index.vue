@@ -62,6 +62,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatTime } from '@/utils/dateTime'
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { completeOrder, createPayment, getOrder, getPayment, type Order, type OrderItem, type Payment } from '@/api/orders'
@@ -179,7 +180,6 @@ async function pollPayment(paymentId: string, targetOrderId: string) {
 
 function money(value: number) { return (value / 100).toFixed(2) }
 function amountText(cash: number, points: number) { return [cash ? `¥${money(cash)}` : '', points ? `${points} 积分` : ''].filter(Boolean).join(' + ') || '无需支付' }
-function formatTime(value: string | null) { return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '—' }
 function statusText(value: string) { return ({ pending_payment:'等待支付',pending_fulfillment:'商家准备中',fulfilled:'等待确认完成',completed:'订单已完成',partially_refunded:'部分退款完成',refunded:'退款完成',cancelled:'订单已取消',closed:'订单已关闭' } as Record<string,string>)[value] || '订单处理中' }
 function statusIcon(value: string) { return ({ pending_payment:'付',pending_fulfillment:'备',fulfilled:'收',completed:'✓',partially_refunded:'退',refunded:'退',cancelled:'停',closed:'关' } as Record<string,string>)[value] || '单' }
 function statusDescription(value: Order) { if (value.status === 'pending_payment') return `请在有效期内完成${paymentText(value.cash_payment_method)}`; if (value.status === 'pending_fulfillment') return value.fulfillment_type === 'virtual_delivery' ? '虚拟内容正在准备交付' : '订单已支付，正在准备履约'; if (value.status === 'fulfilled') return '履约已完成，请核对后确认'; if (value.status === 'completed') return '交易流程已完成，感谢你的支持'; return '订单状态和资产变化均可追踪' }

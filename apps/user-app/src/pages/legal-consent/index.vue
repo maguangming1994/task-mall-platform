@@ -39,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate as formatBusinessDate } from '@/utils/dateTime'
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { ApiError } from '@/api/http'
@@ -131,7 +132,7 @@ function goBack() {
 }
 
 function formatDate(value: string) {
-  return value ? value.slice(0, 10) : '待生效'
+  return formatBusinessDate(value, '待生效')
 }
 
 function showError(error: unknown) {
