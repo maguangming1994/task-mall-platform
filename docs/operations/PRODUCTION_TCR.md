@@ -92,6 +92,13 @@ Until all checks pass, report the actual old version as still live.
 
 ## Failure evidence
 
+Run `36364635765` (`7efbaf2`) successfully published both private TCR images
+and downloaded/verified both on the server. Deployment then stopped before
+migrations with `unknown flag: --pull` from the server's older Compose `run`.
+Keep `pull_policy: never` on application services and omit the unsupported
+`run --pull` flag. The application rolled back to healthy `eb8330a`.
+Do not diagnose this run as another registry network failure.
+
 GHCR run `36326033619` for `5ae0534` exhausted image download attempts even
 after longer timeouts. Some layers completed but `92dc55c1de6a` retried and the
 API image never completed. The receiver restored healthy `eb8330a` services.

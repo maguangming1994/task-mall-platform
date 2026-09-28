@@ -78,14 +78,14 @@ echo "[3/9] 等待 PostgreSQL 与 Redis"
 compose up -d --no-build --pull never --wait --wait-timeout 180 postgres redis
 
 echo "[4/9] 执行前向数据库迁移"
-compose run --rm --no-deps --pull never api php artisan migrate --force
+compose run --rm --no-deps api php artisan migrate --force
 
 if [ "${SYNC_CAMPUS_DATA_ON_DEPLOY:-false}" = "true" ]; then
   echo "[5/9] 同步全国高校公开名录"
-  compose run --rm --no-deps --pull never api php artisan campuses:sync-directory
+  compose run --rm --no-deps api php artisan campuses:sync-directory
 
   echo "[6/9] 转存已核验的学校校徽"
-  compose run --rm --no-deps --pull never api php artisan campuses:sync-branding
+  compose run --rm --no-deps api php artisan campuses:sync-branding
 else
   echo "[5-6/9] 跳过高校目录和校徽全量同步（常规发布）"
 fi

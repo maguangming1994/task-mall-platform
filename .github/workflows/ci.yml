@@ -56,6 +56,7 @@ jobs:
           bash -n scripts/server/configure-ghcr.sh
           bash -n scripts/server/configure-tcr.sh
           bash tests/deployment/pull-production-images.test.sh
+          bash tests/deployment/deploy-production.test.sh
           bash tests/deployment/create-release-bundle.test.sh
       - name: Validate PowerShell syntax
         shell: pwsh

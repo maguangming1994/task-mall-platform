@@ -2,6 +2,8 @@ name: task-mall-production
 
 x-api: &api
   image: task-mall-api:${RELEASE_VERSION:-local}
+  # Image pulls and revision checks are performed before Compose starts services.
+  pull_policy: never
   env_file: ${PRODUCTION_ENV_FILE:-.env.production}
   restart: unless-stopped
   depends_on:
@@ -36,6 +38,7 @@ services:
 
   nginx:
     image: task-mall-web:${RELEASE_VERSION:-local}
+    pull_policy: never
     ports:
       - "${HTTP_BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:8080"
     restart: unless-stopped
