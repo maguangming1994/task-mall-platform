@@ -1,6 +1,6 @@
 import { apiRequest } from '@/api/http'
 
-export type CampusLocationAccuracy = 'campus' | 'city' | 'unavailable'
+export type CampusLocationAccuracy = 'campus' | 'reference' | 'city' | 'unavailable'
 
 export interface Campus {
   id: string
@@ -16,6 +16,8 @@ export interface Campus {
   longitude: number | null
   distance_km: number | null
   location_accuracy?: CampusLocationAccuracy
+  location_name?: string
+  coordinate_system?: 'WGS84'
 }
 
 export interface CampusListParams {

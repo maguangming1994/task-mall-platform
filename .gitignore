@@ -18,6 +18,10 @@ public/build/
 artifacts/
 .runtime-logs/
 
+# Versioned separately; restored and verified before API tests/image builds.
+apps/api/database/data/campus-emblems-supplement/*.png
+apps/api/database/data/campus-emblems-supplement/*.jpg
+
 # This monorepo is managed with pnpm only
 apps/user-app/package-lock.json
 

@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Campus\Models\Campus;
+use App\Modules\Campus\Services\CampusBrandingUrl;
 use App\Modules\Campus\Services\CampusDirectorySyncService;
+use App\Modules\Campus\Services\CampusReferenceLocations;
 use App\Modules\Media\Models\MediaAsset;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +20,8 @@ use Illuminate\Validation\ValidationException;
 
 class AdminCampusController extends Controller
 {
+    public function __construct(private readonly CampusBrandingUrl $branding, private readonly CampusReferenceLocations $references) {}
+
     public function index(Request $request, CampusDirectorySyncService $directory): JsonResponse
     {
         $filters = $request->validate([
@@ -382,6 +386,8 @@ class AdminCampusController extends Controller
             'address' => $campus->address,
             'latitude' => $campus->latitude,
             'longitude' => $campus->longitude,
+            'reference_locations' => $this->references->forCampus($campus),
+            'coordinate_system' => 'WGS84',
             'emblem_asset_id' => $campus->emblem_asset_id,
             'emblem_url' => $this->brandUrl($campus->emblem_asset_id, $campus->emblemAsset, $campus->emblem_url),
             'logo_asset_id' => $campus->logo_asset_id,
@@ -402,12 +408,6 @@ class AdminCampusController extends Controller
 
     private function brandUrl(?string $assetId, ?MediaAsset $asset, ?string $fallback): ?string
     {
-        if (filled($assetId)) {
-            return $asset?->status === 'active' && filled($asset->public_url)
-                ? $asset->public_url
-                : null;
-        }
-
-        return $fallback;
+        return $this->branding->resolve($assetId, $asset, $fallback);
     }
 }

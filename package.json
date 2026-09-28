@@ -17,5 +17,8 @@
     "build": "pnpm run build:user:h5 && pnpm run build:user:wechat && pnpm run build:admin",
     "typecheck": "pnpm --dir apps/user-app type-check && pnpm --dir apps/admin-web typecheck",
     "lint": "pnpm --dir apps/admin-web lint"
+  },
+  "devDependencies": {
+    "gcoord": "1.0.7"
   }
 }

@@ -90,6 +90,12 @@ else
   echo "[5-6/9] 跳过高校目录和校徽全量同步（常规发布）"
 fi
 
+if [ "${SYNC_CAMPUS_BRANDING_SUPPLEMENT_ON_DEPLOY:-true}" = "true" ] \
+  && [ -f "$ROOT_DIR/apps/api/database/data/campus-emblems-supplement/manifest.json" ]; then
+  echo "[6/9] 导入新增校徽包（同一清单只处理一次，限时 600 秒）"
+  compose run --rm --no-deps api timeout 600 php artisan campuses:sync-branding --supplement --once
+fi
+
 echo "[7/9] 启动 API、队列、调度器和 Web"
 compose up -d --no-build --pull never --remove-orphans --wait --wait-timeout 240
 

@@ -6,11 +6,13 @@ use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Campus\Models\Campus;
 use App\Modules\Campus\Services\CampusBrandingSyncService;
+use App\Modules\Campus\Services\CampusDirectorySyncService;
 use App\Modules\Media\Models\MediaAsset;
 use App\Modules\Media\Models\MediaStorageProvider;
 use App\Modules\Media\Services\MediaStorageService;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Mockery;
@@ -65,6 +67,51 @@ class CampusBrandingSyncTest extends TestCase
         $this->assertDatabaseCount('media_assets', 0);
         $this->assertNull($campus->fresh()->emblem_asset_id);
         $this->assertNull($campus->fresh()->emblem_url);
+    }
+
+    public function test_once_skips_only_a_previously_successful_manifest(): void
+    {
+        Cache::flush();
+        $branding = Mockery::mock(CampusBrandingSyncService::class);
+        $branding->shouldReceive('sync')->once()->with(false)->andReturn([
+            'total' => 1, 'imported' => 1, 'reused' => 0, 'previously_imported' => 0,
+            'skipped' => 0, 'pending' => 0, 'failed' => 0, 'dry_run' => false, 'errors' => [],
+        ]);
+        $this->app->instance(CampusBrandingSyncService::class, $branding);
+        $this->artisan('campuses:sync-branding', ['--once' => true])->assertSuccessful();
+        $this->artisan('campuses:sync-branding', ['--once' => true])->assertSuccessful();
+    }
+
+    public function test_entire_supplement_matches_the_official_catalog_and_contains_real_unique_images(): void
+    {
+        app(CampusDirectorySyncService::class)->sync();
+        $path = database_path('data/campus-emblems-supplement/manifest.json');
+        $manifest = json_decode(File::get($path), true, flags: JSON_THROW_ON_ERROR);
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{40}$/', $manifest['asset_commit']);
+        $this->assertCount(2103, $manifest['items']);
+        $this->assertCount(2103, array_unique(array_column($manifest['items'], 'sha256')));
+        foreach ($manifest['items'] as $item) {
+            $size = getimagesize(dirname($path).'/'.$item['file']);
+            $this->assertNotFalse($size, $item['file']);
+            $this->assertGreaterThanOrEqual(32, min($size[0], $size[1]), $item['file']);
+        }
+        $result = app(CampusBrandingSyncService::class)->sync(true, $path);
+        $this->assertSame(0, $result['failed'], json_encode($result['errors']));
+        $this->assertSame(2103, $result['pending']);
+        $this->assertDatabaseCount('media_assets', 0);
+    }
+
+    public function test_jpeg_manifest_files_are_accepted_and_imported_with_actual_mime(): void
+    {
+        $this->seed(RbacSeeder::class);
+        $this->admin('jpeg-branding-super', 'super_admin');
+        $campus = $this->campus('4111000099', 'JPEG University');
+        File::copy(database_path('data/campus-emblems-supplement/3622000335.jpg'), $this->manifestDirectory.'/emblem.jpg');
+        $item = $this->item($campus, 'emblem.jpg');
+        $result = app(CampusBrandingSyncService::class)->sync(false, $this->manifest([$item]));
+        $this->assertSame(1, $result['imported']);
+        $this->assertSame(0, $result['failed']);
+        $this->assertSame('image/jpeg', MediaAsset::query()->sole()->mime_type);
     }
 
     public function test_sync_imports_reuses_skips_and_is_a_no_op_when_repeated(): void

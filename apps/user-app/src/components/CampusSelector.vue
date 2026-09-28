@@ -107,24 +107,25 @@ const searchFocused = ref(false)
 const keyword = ref('')
 const locating = ref(false)
 const selectingId = ref('')
-const failedEmblems = ref<Record<string, string>>({})
+const failedEmblems = ref<Record<string, boolean>>({})
 const loadMode = ref<'all' | 'search' | 'location'>('all')
 
 const fallbackSeparators = /[\s\-_.·/]+/
 
 function campusEmblemSource(item: Campus) {
-  return item.emblem_url?.trim() || ''
+  return [item.emblem_url?.trim(), item.logo_url?.trim()]
+    .find(source => source && !failedEmblems.value[`${item.id}:${source}`]) || ''
 }
 
 function showCampusEmblem(item: Campus) {
   const source = campusEmblemSource(item)
-  return Boolean(source && failedEmblems.value[item.id] !== source)
+  return Boolean(source)
 }
 
 function handleCampusEmblemError(item: Campus) {
   const source = campusEmblemSource(item)
   if (!source) return
-  failedEmblems.value = { ...failedEmblems.value, [item.id]: source }
+  failedEmblems.value = { ...failedEmblems.value, [`${item.id}:${source}`]: true }
 }
 
 function campusInitials(name: string) {
@@ -278,11 +279,12 @@ function showLocationResult(items: Campus[]) {
 }
 
 function hasComparableDistance(item: Campus) {
-  return item.distance_km !== null && normalizedAccuracy(item) !== 'unavailable'
+  return typeof item.distance_km === 'number' && Number.isFinite(item.distance_km)
+    && ['campus', 'reference'].includes(normalizedAccuracy(item))
 }
 
 function normalizedAccuracy(item: Campus) {
-  if (item.location_accuracy === 'campus' || item.location_accuracy === 'city' || item.location_accuracy === 'unavailable') {
+  if (item.location_accuracy === 'campus' || item.location_accuracy === 'reference' || item.location_accuracy === 'city' || item.location_accuracy === 'unavailable') {
     return item.location_accuracy
   }
   return item.distance_km === null ? 'unavailable' : 'campus'
@@ -291,7 +293,7 @@ function normalizedAccuracy(item: Campus) {
 function distanceText(item: Campus) {
   if (normalizedAccuracy(item) === 'city') return '\u540c\u57ce\u5019\u9009'
   if (!hasComparableDistance(item)) return ''
-  const prefix = normalizedAccuracy(item) === 'city' ? '约 ' : ''
+  const prefix = normalizedAccuracy(item) === 'reference' ? '约 ' : ''
   return `${prefix}${item.distance_km} km`
 }
 
@@ -331,6 +333,10 @@ function promptLocationPermission() {
 }
 
 function locationText(item: Campus) {
+  if (item.location_accuracy === 'reference') {
+    return [item.location_name !== item.name ? item.location_name : '', item.address].filter(Boolean).join(' · ')
+      || '公开校址参考位置'
+  }
   return [item.province, item.city, item.district].filter(Boolean).join(' · ') || item.address || '学校地址待完善'
 }
 </script>

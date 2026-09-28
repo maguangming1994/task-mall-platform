@@ -393,7 +393,7 @@ export function CampusManagementPage() {
         rowKey="id"
         loading={campusLoading}
         dataSource={campusData?.items ?? []}
-        scroll={{ x: 1560 }}
+        scroll={{ x: 1740 }}
         pagination={{
           current: campusData?.pagination.page ?? campusFilters.page,
           pageSize: campusData?.pagination.page_size ?? campusFilters.page_size,
@@ -407,6 +407,7 @@ export function CampusManagementPage() {
         columns={[
           { title: '学校', width: 255, render: (_, row) => <Space orientation="vertical" size={3}><Space wrap><Typography.Text strong>{row.name}</Typography.Text>{row.official_note && <Tag color="gold">{row.official_note}</Tag>}</Space><Typography.Text type="secondary" className="table-subline">{row.official_school_code ? `教育部标识码 ${row.official_school_code}` : `平台编码 ${row.code}`}</Typography.Text></Space> },
           { title: '校徽 / Logo', width: 230, render: (_, row) => <CampusBrandPreview campus={row} /> },
+          { title: '学校坐标', width: 170, render: (_, row) => row.latitude !== null && row.longitude !== null ? <Tag color="green">人工维护 · WGS84</Tag> : row.reference_locations?.length ? <Tag color="blue">{row.reference_locations.length} 个参考校址</Tag> : <Tag color="gold">待补全</Tag> },
           { title: '目录属性', width: 150, render: (_, row) => <Space orientation="vertical" size={3}><Tag color={row.catalog_type === 'ordinary' ? 'blue' : row.catalog_type === 'adult' ? 'purple' : 'default'}>{catalogTypeLabel(row.catalog_type)}</Tag><Typography.Text type="secondary">{row.education_level ?? '未设置层次'}</Typography.Text></Space> },
           { title: '地区 / 主管部门', width: 230, render: (_, row) => <><span>{[row.province, row.city].filter(Boolean).join(' · ') || '地区待完善'}</span><span className="table-subline">{row.supervising_authority ?? row.address ?? '主管部门待完善'}</span></> },
           { title: '运营状态', width: 125, render: (_, row) => <Space orientation="vertical" size={4}><Tag color={row.status === 'active' ? 'success' : 'default'}>{row.status === 'active' ? '已开通' : '待开通 / 暂停'}</Tag>{row.catalog_status === 'unlisted' && <Tag color="error">已退出名录</Tag>}</Space> },
@@ -524,7 +525,14 @@ export function CampusManagementPage() {
         </div>
         <div className="campus-form-grid campus-form-grid-three"><Form.Item name="province" label="省"><Input disabled={Boolean(editing?.official_school_code)} /></Form.Item><Form.Item name="city" label="市"><Input disabled={Boolean(editing?.official_school_code)} /></Form.Item><Form.Item name="district" label="区 / 县"><Input /></Form.Item></div>
         <Form.Item name="address" label="详细地址"><Input /></Form.Item>
-        <div className="campus-form-grid"><Form.Item name="latitude" label="纬度"><InputNumber style={{ width: '100%' }} min={-90} max={90} precision={7} /></Form.Item><Form.Item name="longitude" label="经度"><InputNumber style={{ width: '100%' }} min={-180} max={180} precision={7} /></Form.Item></div>
+        <div className="campus-form-grid"><Form.Item name="latitude" label="纬度（WGS84）"><InputNumber style={{ width: '100%' }} min={-90} max={90} precision={7} /></Form.Item><Form.Item name="longitude" label="经度（WGS84）"><InputNumber style={{ width: '100%' }} min={-180} max={180} precision={7} /></Form.Item></div>
+        {!!editing?.reference_locations?.length && <Form.Item label="公开 POI 参考校址（尚未人工核验）">
+          <Table size="small" pagination={false} rowKey={(point) => `${point.latitude}:${point.longitude}`} dataSource={editing.reference_locations} columns={[
+            { title: '校区 / 地址', render: (_, point) => <><Typography.Text>{point.name}</Typography.Text><span className="table-subline">{point.address}</span></> },
+            { title: '纬度 / 经度', render: (_, point) => `${point.latitude}, ${point.longitude}` },
+            { title: '操作', width: 106, render: (_, point) => <Button size="small" onClick={() => campusForm.setFieldsValue({ latitude: point.latitude, longitude: point.longitude, address: point.address, district: point.district })}>采用此校址</Button> },
+          ]} />
+        </Form.Item>}
         <div className="campus-form-grid"><Form.Item name="status" label="运营状态"><Select options={[{ value: 'active', label: '已开通运营' }, { value: 'disabled', label: '待开通 / 暂停' }]} /></Form.Item><Form.Item name="sort_order" label="前台排序"><InputNumber style={{ width: '100%' }} min={0} max={9999} /></Form.Item></div>
       </Form>
     </Modal>

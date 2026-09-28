@@ -46,6 +46,8 @@ export interface ManagedCampus {
   address: string | null
   latitude: number | null
   longitude: number | null
+  reference_locations?: Array<{ name: string; address: string; district: string; latitude: number; longitude: number }>
+  coordinate_system?: 'WGS84'
   status: 'active' | 'disabled'
   sort_order: number
   users_count: number

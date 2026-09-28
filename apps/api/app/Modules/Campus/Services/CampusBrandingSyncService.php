@@ -178,9 +178,9 @@ class CampusBrandingSyncService
             || str_contains($file, '/')
             || str_contains($file, '\\')
             || str_contains($file, ':')
-            || strtolower(pathinfo($file, PATHINFO_EXTENSION)) !== 'png'
+            || ! in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['png', 'jpg'], true)
         ) {
-            throw new RuntimeException('清单 file 必须是不含目录穿越的纯 PNG 文件名。');
+            throw new RuntimeException('清单 file 必须是不含目录穿越的纯 PNG 或 JPG 文件名。');
         }
         if (preg_match('/^[a-f0-9]{64}$/', $sha256) !== 1) {
             throw new RuntimeException('sha256 必须是 64 位十六进制摘要。');
@@ -298,7 +298,7 @@ class CampusBrandingSyncService
                 ->where('storage_provider', $lockedProvider->provider)
                 ->where('sha256', $item['sha256'])
                 ->where('status', 'active')
-                ->where('mime_type', 'image/png')
+                ->whereIn('mime_type', ['image/png', 'image/jpeg'])
                 ->where('source_type', 'bundled_import')
                 ->oldest('id')
                 ->lockForUpdate()

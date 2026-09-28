@@ -38,7 +38,7 @@ docker() {
         echo 'unknown flag: --pull' >&2
         return 16
       fi
-      [[ "$*" == 'run --rm --no-deps api php artisan '* ]] || return 99
+      [[ "$*" == 'run --rm --no-deps api php artisan '* || "$*" == 'run --rm --no-deps api timeout 600 php artisan '* ]] || return 99
       if [ "$MOCK_MODE" = migration-failure ]; then return 42; fi ;;
     up|exec) return 0 ;;
     ps) if [ "${2:-}" = -q ]; then echo container; fi ;;
@@ -54,9 +54,13 @@ curl() {
 }
 export -f docker curl
 
-for mode in routine sync migration-failure; do
+for mode in routine sync supplement migration-failure; do
   export MOCK_MODE=$mode SYNC_CAMPUS_DATA_ON_DEPLOY=false
   if [ "$mode" = sync ]; then export SYNC_CAMPUS_DATA_ON_DEPLOY=true; fi
+  if [ "$mode" = supplement ]; then
+    mkdir -p "$tmp/apps/api/database/data/campus-emblems-supplement"
+    printf '{}\n' > "$tmp/apps/api/database/data/campus-emblems-supplement/manifest.json"
+  fi
   : > "$MOCK_LOG"
   result=0
   "$BASH" "$tmp/scripts/deploy-production.sh" > "$tmp/output" 2>&1 || result=$?
@@ -69,6 +73,9 @@ for mode in routine sync migration-failure; do
     expected=1
     if [ "$mode" = sync ]; then expected=3; fi
     [ "$(grep -c 'run --rm --no-deps api php artisan' "$MOCK_LOG")" -eq "$expected" ]
+    if [ "$mode" = supplement ]; then
+      grep -q 'timeout 600 php artisan campuses:sync-branding --supplement --once' "$MOCK_LOG"
+    fi
   fi
   echo "PASS: legacy Compose run compatibility ($mode)"
 done

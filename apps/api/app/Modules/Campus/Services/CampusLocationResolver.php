@@ -8,13 +8,15 @@ use RuntimeException;
 
 class CampusLocationResolver
 {
+    public function __construct(private readonly CampusReferenceLocations $references) {}
+
     private const CENTROIDS_FILE = 'china_city_centroids.json';
 
     /** @var array<string, array{latitude:float,longitude:float}>|null */
     private ?array $cities = null;
 
-    /** @return array{latitude:?float,longitude:?float,accuracy:'campus'|'city'|'unavailable'} */
-    public function resolve(Campus $campus): array
+    /** @return array<string,mixed> */
+    public function resolve(Campus $campus, ?float $latitude = null, ?float $longitude = null): array
     {
         if ($campus->latitude !== null && $campus->longitude !== null) {
             return [
@@ -22,6 +24,16 @@ class CampusLocationResolver
                 'longitude' => (float) $campus->longitude,
                 'accuracy' => 'campus',
             ];
+        }
+
+        $points = $this->references->forCampus($campus);
+        if ($points !== []) {
+            if ($latitude !== null && $longitude !== null) {
+                usort($points, fn (array $a, array $b): int => self::distance($latitude, $longitude, $a['latitude'], $a['longitude'])
+                    <=> self::distance($latitude, $longitude, $b['latitude'], $b['longitude']));
+            }
+
+            return [...$points[0], 'accuracy' => 'reference', 'source' => 'public_poi_snapshot'];
         }
 
         $city = is_string($campus->city) ? $campus->city : '';
@@ -39,6 +51,15 @@ class CampusLocationResolver
             'longitude' => null,
             'accuracy' => 'unavailable',
         ];
+    }
+
+    public static function distance(float $latitude, float $longitude, float $targetLatitude, float $targetLongitude): float
+    {
+        $a = sin(deg2rad($targetLatitude - $latitude) / 2) ** 2
+            + cos(deg2rad($latitude)) * cos(deg2rad($targetLatitude))
+            * sin(deg2rad($targetLongitude - $longitude) / 2) ** 2;
+
+        return 6371 * 2 * asin(sqrt(min(1, max(0, $a))));
     }
 
     /** @return array<string, array{latitude:float,longitude:float}> */

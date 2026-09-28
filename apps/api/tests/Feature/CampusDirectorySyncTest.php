@@ -41,7 +41,7 @@ class CampusDirectorySyncTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data.items')
             ->assertJsonPath('data.items.0.code', 'moe-4111010001')
-            ->assertJsonPath('data.items.0.location_accuracy', 'city');
+            ->assertJsonPath('data.items.0.location_accuracy', 'reference');
     }
 
     public function test_nearby_directory_endpoint_returns_a_public_school_with_distance(): void
@@ -57,9 +57,10 @@ class CampusDirectorySyncTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data.items')
             ->assertJsonPath('data.items.0.code', 'moe-4111010001')
-            ->assertJsonPath('data.items.0.location_accuracy', 'city');
+            ->assertJsonPath('data.items.0.location_accuracy', 'reference');
 
-        $this->assertNull($response->json('data.items.0.distance_km'));
+        $this->assertGreaterThan(5, $response->json('data.items.0.distance_km'));
+        $this->assertLessThan(30, $response->json('data.items.0.distance_km'));
     }
 
     public function test_directory_sync_is_idempotent_and_preserves_operational_fields(): void

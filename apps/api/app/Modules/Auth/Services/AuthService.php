@@ -7,6 +7,7 @@ use App\Modules\Auth\Exceptions\AuthException;
 use App\Modules\Auth\Models\UserDevice;
 use App\Modules\Auth\Models\UserIdentity;
 use App\Modules\Auth\Models\UserSession;
+use App\Modules\Campus\Services\CampusBrandingUrl;
 use App\Modules\Privacy\Services\AccountCancellationService;
 use App\Modules\Settings\Services\SystemSettingService;
 use App\Modules\Upload\Models\UploadedFile;
@@ -23,6 +24,7 @@ class AuthService
         private readonly IdentityConflictService $identityConflicts,
         private readonly AccountCancellationService $cancellations,
         private readonly SystemSettingService $settings,
+        private readonly CampusBrandingUrl $campusBranding,
     ) {}
 
     /**
@@ -340,7 +342,7 @@ class AuthService
      */
     public function presentUser(User $user): array
     {
-        $user->loadMissing('campus');
+        $user->loadMissing(['campus.emblemAsset', 'campus.logoAsset']);
         $phone = $user->phone;
         $avatar = $user->avatar_file_id === null ? null : UploadedFile::query()->find($user->avatar_file_id);
         $identityVerification = $user->identityVerification()->first();
@@ -360,6 +362,8 @@ class AuthService
                 'id' => $user->campus->public_id,
                 'code' => $user->campus->code,
                 'name' => $user->campus->name,
+                'emblem_url' => $this->campusBranding->resolve($user->campus->emblem_asset_id, $user->campus->emblemAsset, $user->campus->emblem_url),
+                'logo_url' => $this->campusBranding->resolve($user->campus->logo_asset_id, $user->campus->logoAsset, $user->campus->logo_url),
                 'province' => $user->campus->province,
                 'city' => $user->campus->city,
                 'district' => $user->campus->district,

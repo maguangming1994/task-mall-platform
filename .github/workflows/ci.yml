@@ -47,6 +47,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Restore checksum-pinned school emblems
+        working-directory: .
+        run: node scripts/restore-campus-emblems.mjs
       - name: Validate Bash syntax
         run: |
           bash -n scripts/deploy-production.sh
@@ -119,6 +122,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Restore checksum-pinned school emblems
+        run: node scripts/restore-campus-emblems.mjs
       - name: Log in to private Tencent registry
         env:
           TCR_USERNAME: ${{ secrets.TCR_USERNAME }}
