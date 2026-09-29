@@ -1,0 +1,61 @@
+name: Production maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      seeder:
+        description: 'Seeder class to run with --force on the production api container'
+        required: true
+        default: 'ReleaseControlSeeder'
+
+jobs:
+  production-seed:
+    name: Run seeder on production
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - name: Configure deployment SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          DEPLOY_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+          DEPLOY_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_KEY"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+          test -n "$DEPLOY_PORT"
+          test -n "$DEPLOY_USER"
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/task-mall-deploy"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/task-mall-deploy" "$HOME/.ssh/known_hosts"
+          ssh-keygen -y -f "$HOME/.ssh/task-mall-deploy" >/dev/null
+
+      - name: Run seeder inside running api container
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          DEPLOY_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          SEEDER: ${{ inputs.seeder }}
+        run: |
+          set -euo pipefail
+          case "$SEEDER" in
+            ''|*[!A-Za-z0-9_]*) echo "Invalid seeder class: $SEEDER" >&2; exit 1 ;;
+          esac
+          ssh -T \
+            -i "$HOME/.ssh/task-mall-deploy" \
+            -p "$DEPLOY_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=20 \
+            "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -euo pipefail
+            cid=\$(docker ps --filter 'name=task-mall-production-api' --filter 'status=running' --format '{{.ID}}' | head -n 1)
+            test -n \"\$cid\"
+            docker exec \"\$cid\" php artisan db:seed --class='$SEEDER' --force
+          "
