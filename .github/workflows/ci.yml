@@ -146,6 +146,7 @@ jobs:
           IMAGE_PREFIX: ccr.ccs.tencentyun.com/task-mall-platform/task-mall
         run: |
           image="${IMAGE_PREFIX,,}-api"
+          export image
           if docker manifest inspect "$image:$GITHUB_SHA" >/dev/null 2>&1; then
             echo "Reusing published commit image: $image:$GITHUB_SHA"
             exit 0
@@ -180,6 +181,7 @@ jobs:
           VITE_WECHAT_OA_APP_ID: ${{ vars.VITE_WECHAT_OA_APP_ID }}
         run: |
           image="${IMAGE_PREFIX,,}-web"
+          export image
           if docker manifest inspect "$image:$GITHUB_SHA" >/dev/null 2>&1; then
             echo "Reusing published commit image: $image:$GITHUB_SHA"
             exit 0
