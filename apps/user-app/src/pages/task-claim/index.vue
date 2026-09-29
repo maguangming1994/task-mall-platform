@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_tasks" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view v-if="loading" class="claim-loading"><view class="claim-skeleton claim-skeleton-summary" /><view class="claim-skeleton claim-skeleton-card" /><view class="claim-skeleton claim-skeleton-card short" /></view>
     <view v-else-if="loadError" class="state-error"><text class="state-error-icon">!</text><text class="state-error-title">任务状态加载失败</text><text class="state-error-copy">{{ loadError }}</text><button class="state-error-action" @click="load">重试</button></view>
     <view v-else-if="!auth.accessToken" class="state-error login-required"><text class="state-error-icon">登</text><text class="state-error-title">登录后查看任务</text><text class="state-error-copy">登录后才能查看执行进度、提交材料和审核结果。</text><button class="state-error-action" @click="goLogin">去登录</button></view>
@@ -123,6 +129,7 @@
 
       <view v-if="editable" class="fixed-submit"><view><text class="submit-caption">剩余时间</text><text class="submit-countdown">{{ countdownText }}</text></view><button class="submit-button" :loading="submitting" @click="submitCurrent">{{ primaryActionLabel }}</button></view>
     </template>
+    </template>
   </view>
 </template>
 
@@ -135,6 +142,11 @@ import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { richTextContent } from '@/utils/richText'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_tasks'))
 
 const auth = useAuthStore()
 const claim = ref<TaskClaim | null>(null)
@@ -186,7 +198,11 @@ const rewardOverviewText = computed(() => {
   return displayedRewardComponents.value.length ? `${delivered}/${displayedRewardComponents.value.length} 项已到账` : '暂无奖励组件'
 })
 
-onLoad(async (options) => { claimId = typeof options?.id === 'string' ? options.id : ''; restoreDraft(); await load() })
+onLoad(async (options) => {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
+  claimId = typeof options?.id === 'string' ? options.id : ''; restoreDraft(); await load()
+})
 onMounted(() => { clock = setInterval(() => { nowEpoch.value = Date.now() }, 1000) })
 onUnmounted(() => { if (clock) clearInterval(clock) })
 watch([stepFields, stepFiles, stepChecks], persistDraft, { deep: true })

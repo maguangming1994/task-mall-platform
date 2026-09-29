@@ -1,5 +1,11 @@
 <template>
   <view class="page" :style="topSafeAreaStyle">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_community" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="campus-head">
       <view class="campus-brand" @click="showCampusTip">
         <view class="campus-logo"><image v-if="home.brand.logo_url" :src="communityHomeAssetUrl(home.brand.logo_url)" mode="aspectFit" /><text v-else>{{ home.brand.logo_text || '校' }}</text></view>
@@ -101,7 +107,7 @@
         </view>
 
         <view v-if="!visiblePosts.length" class="state-card">
-          <view class="state-illustration">✦</view><text class="state-title">还没有同学发过这类内容</text><text class="state-copy">分享校园新鲜事、学习经验或互助问题，成为第一个发帖的人。</text><button @click="openCompose(activeCategory || undefined)">发布第一条动态</button>
+          <view class="state-illustration">✦</view><text class="state-title">还没有同学发过这类内容</text><text class="state-copy">分享校园新鲜事、学习经验或互助问题，成为第一个发帖的人。</text><button v-if="modules.isEnabled('module_community_post')" @click="openCompose(activeCategory || undefined)">发布第一条动态</button>
         </view>
         <button v-else-if="hasMore && !keyword" class="load-more" :loading="loadingMore" @click="loadMore">{{ loadingMore ? '加载中…' : '加载更多校园动态' }}</button>
         <text v-else-if="visiblePosts.length" class="list-end">到底啦 · 先去校园里逛逛吧</text>
@@ -109,26 +115,26 @@
     </template>
 
     <template v-else>
-      <view class="mine-hero"><view><text>我的校园发布</text><text>审核、修改与处置记录都在这里</text></view><button @click="showPublishSheet = true">＋ 新发布</button></view>
+      <view class="mine-hero"><view><text>我的校园发布</text><text>审核、修改与处置记录都在这里</text></view><button v-if="modules.isEnabled('module_community_post')" @click="showPublishSheet = true">＋ 新发布</button></view>
       <view class="mine-summary"><view><strong>{{ myPosts.length }}</strong><text>全部</text></view><view><strong>{{ pendingCount }}</strong><text>审核中</text></view><view><strong>{{ publishedCount }}</strong><text>已公开</text></view></view>
       <view v-if="mineError" class="state-card error-card"><text class="state-title">我的发布加载失败</text><text class="state-copy">{{ mineError }}</text><button @click="loadMine">重试</button></view>
       <view v-for="post in myPosts" v-else :key="post.id" class="mine-card">
         <view class="mine-head"><text :class="['status-pill', `status-${displayStatus(post).tone}`]">{{ displayStatus(post).label }}</text><text>{{ formatTime(post.created_at) }}</text></view>
         <text class="mine-title">{{ post.latest_version?.title || post.title }}</text><text class="mine-content">{{ post.latest_version?.content || post.content }}</text>
         <view v-if="post.latest_version?.review_status === 'rejected'" class="review-note">{{ post.latest_version.review_note || '内容暂未通过审核，请修改后重新提交。' }}</view>
-        <view class="mine-actions"><button v-if="post.can_edit" @click="openCompose(undefined, post.id)">编辑</button><button v-if="post.can_delete" class="danger" @click="removePost(post)">删除</button></view>
+        <view class="mine-actions"><button v-if="post.can_edit && modules.isEnabled('module_community_post')" @click="openCompose(undefined, post.id)">编辑</button><button v-if="post.can_delete" class="danger" @click="removePost(post)">删除</button></view>
       </view>
-      <view v-if="!loadingMine && !myPosts.length" class="state-card"><view class="state-illustration">写</view><text class="state-title">还没有发布记录</text><text class="state-copy">你发布的帖子会在这里显示审核状态。</text><button @click="showPublishSheet = true">开始发布</button></view>
+      <view v-if="!loadingMine && !myPosts.length" class="state-card"><view class="state-illustration">写</view><text class="state-title">还没有发布记录</text><text class="state-copy">你发布的帖子会在这里显示审核状态。</text><button v-if="modules.isEnabled('module_community_post')" @click="showPublishSheet = true">开始发布</button></view>
     </template>
 
     <view v-if="showPublishSheet" class="sheet-mask" @click="showPublishSheet = false">
       <view class="publish-sheet" @click.stop>
         <view class="sheet-handle" />
         <view class="sheet-head"><view><text>在校园里发布</text><text>选择最符合内容的入口</text></view><text class="sheet-close" @click="showPublishSheet = false">×</text></view>
-        <view class="publish-primary" @click="openCompose()"><view><text>发布校园动态</text><text>分享见闻、求助、经验和作品</text></view><text class="reward-chip">首发可获积分</text></view>
+        <view v-if="modules.isEnabled('module_community_post')" class="publish-primary" @click="openCompose()"><view><text>发布校园动态</text><text>分享见闻、求助、经验和作品</text></view><text class="reward-chip">首发可获积分</text></view>
         <view class="publish-grid">
-          <view class="publish-option help" @click="openCompose('question')"><text class="option-icon">?</text><text>校园求助</text><small>找同学帮忙</small></view>
-          <view class="publish-option group" @click="openTarget('activity-compose')"><text class="option-icon">团</text><text>发起组团</text><small>自习·运动·拼车</small></view>
+          <view v-if="modules.isEnabled('module_community_post')" class="publish-option help" @click="openCompose('question')"><text class="option-icon">?</text><text>校园求助</text><small>找同学帮忙</small></view>
+          <view v-if="modules.isEnabled('module_community_post')" class="publish-option group" @click="openTarget('activity-compose')"><text class="option-icon">团</text><text>发起组团</text><small>自习·运动·拼车</small></view>
           <view class="publish-option mall" @click="openTarget('products')"><text class="option-icon">物</text><text>校园好物</text><small>去商城逛逛</small></view>
           <view class="publish-option task" @click="openTarget('publisher')"><text class="option-icon">任</text><text>发布任务</text><small>平台发布入口</small></view>
         </view>
@@ -150,8 +156,9 @@
 
     <view class="community-action-dock">
       <button class="secondary-action" @click="switchView(activeView === 'mine' ? 'square' : 'mine')">{{ activeView === 'mine' ? '逛校园广场' : '我的发布' }}</button>
-      <button class="primary-action" @click="showPublishSheet = true">＋ 发布动态</button>
+      <button v-if="modules.isEnabled('module_community_post')" class="primary-action" @click="showPublishSheet = true">＋ 发布动态</button>
     </view>
+    </template>
 
     <AppTabBar current-target="community" @compose="showPublishSheet = true" />
   </view>
@@ -176,8 +183,13 @@ import { navigateToLogin } from '@/utils/authRedirect'
 import { buildQueryString } from '@/utils/query'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
 import { unicodeLength } from '@/utils/textInput'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
 
 const topSafeAreaStyle = createTopSafeAreaStyle()
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_community'))
 
 const fallbackCategories: CommunityCategory[] = [
   { code: 'experience', label: '校园动态' }, { code: 'guide', label: '学习攻略' },
@@ -255,13 +267,15 @@ onLoad((options) => {
 })
 
 onShow(async () => {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (activeView.value === 'mine' && auth.isAuthenticated) await loadMine()
   else await refreshSquare()
   await Promise.all([loadHomeConfig(), loadCategories()])
   if (hotTimer) clearInterval(hotTimer)
   hotTimer = setInterval(() => { if (hotTopics.value.length) hotTopicIndex.value = (hotTopicIndex.value + 1) % hotTopics.value.length }, 3600)
 })
-onPullDownRefresh(async () => { try { await Promise.all([activeView.value === 'mine' ? loadMine() : refreshSquare(), loadHomeConfig(), loadCategories()]) } finally { uni.stopPullDownRefresh() } })
+onPullDownRefresh(async () => { try { await modules.ensureReady(); if (!moduleEnabled.value) return; await Promise.all([activeView.value === 'mine' ? loadMine() : refreshSquare(), loadHomeConfig(), loadCategories()]) } finally { uni.stopPullDownRefresh() } })
 
 async function loadHomeConfig() { try { const value = await loadCommunityHome(); home.value = { ...fallbackHome, ...value, brand: { ...fallbackHome.brand, ...(value.brand || {}) }, banner: value.banner?.title ? value.banner : fallbackHome.banner, quick_entries: value.quick_entries?.length ? value.quick_entries : fallbackHome.quick_entries, hot_topics: value.hot_topics?.length ? value.hot_topics : fallbackHome.hot_topics } } catch { home.value = fallbackHome } }
 async function loadCategories() {

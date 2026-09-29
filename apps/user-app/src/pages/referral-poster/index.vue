@@ -1,5 +1,11 @@
 <template>
   <view class="page poster-page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_referrals" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="page-header"><button class="back-button" aria-label="返回" @click="goBack">‹</button><text class="page-title">我的推荐</text><button class="rules-button" @click="showRules">规则说明　?</button></view>
 
     <view v-if="loading && !dashboard" class="state-card" role="status" aria-live="polite"><text>正在加载邀请信息…</text></view>
@@ -14,6 +20,7 @@
     <view class="section-card quick-share"><view class="section-heading"><text class="section-icon">↗</text><view><text class="section-title">快速分享</text><text class="section-subtitle">选择以下方式，快速分享给好友</text></view></view><view class="share-grid"><button v-for="item in shareOptions" :key="item.key" :class="['share-option', item.tone]" :disabled="!referralCode" @click="item.action"><text class="share-option-icon">{{ item.icon }}</text><text>{{ item.label }}</text></button></view></view>
 
     <view v-if="posterVisible" class="poster-mask" @click.self="closePoster"><view class="poster-sheet"><view class="sheet-head"><text>邀请海报</text><button @click="closePoster">×</button></view><view class="poster-preview" :style="posterPreviewStyle"><canvas id="referralPosterCanvas" canvas-id="referralPosterCanvas" class="poster-canvas" :style="posterCanvasStyle" :width="posterWidth" :height="posterHeight" /><view v-if="!posterReady" class="poster-loading">正在生成专属海报…</view></view><text class="poster-tip">海报已带上你的邀请码，好友扫码后即可进入邀请页面。</text><view class="sheet-actions"><button @click="copyLink">复制邀请链接</button><button class="save-button" :disabled="!posterReady" @click="savePoster">保存海报</button></view></view></view>
+    </template>
   </view>
 </template>
 
@@ -24,6 +31,11 @@ import { computed, nextTick, ref } from 'vue'
 import { getReferrals, type ReferralDashboard } from '@/api/referrals'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_referrals'))
 
 const auth = useAuthStore()
 const dashboard = ref<ReferralDashboard | null>(null)
@@ -51,7 +63,7 @@ const shareOptions = [
   { key: 'copy', label: '复制链接', icon: '↗', tone: 'copy', action: () => copyLink() },
 ]
 
-onShow(() => { if (!auth.isAuthenticated) { navigateToLogin(); return }; void load() })
+onShow(async () => { await modules.ensureReady(); if (!moduleEnabled.value) return; if (!auth.isAuthenticated) { navigateToLogin(); return }; void load() })
 onShareAppMessage(() => ({ title: shareTitle(), path: sharePath.value }))
 
 async function load() {

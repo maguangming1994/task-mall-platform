@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_community" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="topbar"><view class="back" @click="goBack">‹</view><text>组团详情</text><view class="share" @click="share">↗</view></view>
     <view v-if="loading" class="detail-card tm-skeleton loading" />
     <view v-else-if="error" class="state-card"><view>!</view><text>详情加载失败</text><text>{{ error }}</text><button @click="load">重新加载</button></view>
@@ -25,6 +31,7 @@
       <view class="footer"><button class="secondary" :disabled="submitting" @click="share">分享给同学</button><button v-if="activity.is_creator" class="primary" disabled>我发起的</button><button v-else-if="activity.joined_by_me" class="danger" :disabled="submitting" :loading="submitting" @click="leave">退出组团</button><button v-else class="primary" :disabled="submitting || !activity.can_join" :loading="submitting" @click="join">{{ joinLabel }}</button></view>
     </template>
     <view v-else class="state-card empty-state"><view>团</view><text>没有找到这个组团</text><text>活动可能已结束或被下线，请返回组团大厅查看其他活动。</text><button @click="goBack">返回组团大厅</button></view>
+    </template>
   </view>
 </template>
 
@@ -35,6 +42,11 @@ import { onLoad } from '@dcloudio/uni-app'
 import { communityActivityImageUrl, getCommunityActivity, joinCommunityActivity, leaveCommunityActivity, type CommunityActivity } from '@/api/community'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules=useModulesStore()
+const moduleEnabled=computed(()=>modules.isEnabled('module_community'))
 
 const auth=useAuthStore()
 const id=ref('')
@@ -47,7 +59,7 @@ const statusLabel=computed(()=>activity.value?.status==='approved'&&activity.val
 const statusTone=computed(()=>({approved:'open',pending_review:'pending',rejected:'danger',closed:'muted'} as Record<string,string>)[activity.value?.status||'']||'pending')
 const joinLabel=computed(()=>activity.value?.remaining_slots===0?'已经满员':activity.value?.status!=='approved'?'暂不可报名':'立即报名')
 
-onLoad((options?:Record<string,string|undefined>)=>{id.value=options?.id||'';void load()})
+onLoad(async (options?:Record<string,string|undefined>)=>{await modules.ensureReady();if(!moduleEnabled.value){loading.value=false;return}id.value=options?.id||'';void load()})
 async function load(){if(!id.value){error.value='缺少组团编号';loading.value=false;return}loading.value=true;error.value='';try{activity.value=await getCommunityActivity(id.value,auth.accessToken||undefined)}catch(cause){error.value=message(cause)}finally{loading.value=false}}
 function ensureAuth(){if(auth.isAuthenticated)return true;uni.showModal({title:'登录后报名',content:'登录后即可参加校园组团并接收活动消息。',confirmText:'去登录',success:result=>{if(result.confirm)navigateToLogin()}});return false}
 async function join(){if(!ensureAuth()||!auth.accessToken||!activity.value?.can_join)return;submitting.value=true;try{activity.value=await joinCommunityActivity(auth.accessToken,id.value);uni.showToast({title:'报名成功',icon:'success'})}catch(cause){toast(cause)}finally{submitting.value=false}}

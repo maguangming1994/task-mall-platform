@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_community_post" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="topbar"><view class="back" @click="goBack">‹</view><view><text class="title">发起校园组团</text><text class="subtitle">把计划说清楚，更容易找到合适的搭子</text></view><view class="help" @click="showRules">?</view></view>
 
     <view class="step-card"><view class="step-number">1</view><view><text>选择组团主题</text><text>同学可按主题快速筛选</text></view></view>
@@ -30,16 +36,22 @@
     <view v-if="submitError" class="error-box"><text>提交未成功</text><text>{{ submitError }}</text><text>已填写内容会保留，请检查后重试。</text></view>
     <view class="bottom-space" />
     <view class="footer"><button :loading="submitting" :disabled="submitting || uploading || !agreed" @click="submit">{{ submitting ? '提交中…' : agreed ? '提交审核' : '同意规范后提交' }}</button></view>
+    </template>
   </view>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { createCommunityActivity, listCommunityActivityCategories, type CommunityActivityCategory } from '@/api/community'
 import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
 import { redirectToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules=useModulesStore()
+const moduleEnabled=computed(()=>modules.isEnabled('module_community_post'))
 
 const fallbackCategories:CommunityActivityCategory[]=[{code:'study',label:'自习'},{code:'movie',label:'电影'},{code:'dining',label:'聚餐'},{code:'carpool',label:'拼车'},{code:'group_buy',label:'拼单'},{code:'gaming',label:'游戏'},{code:'sports',label:'运动'},{code:'travel',label:'旅行'},{code:'other',label:'其他'}]
 const tomorrow=new Date(Date.now()+86400000)
@@ -55,7 +67,7 @@ const submitting=ref(false)
 const agreed=ref(false)
 const submitError=ref('')
 
-onLoad(async()=>{ if(!auth.isAuthenticated){redirectToLogin();return} restoreDraft(); try{const result=await listCommunityActivityCategories();if(result.items.length)categories.value=result.items}catch{} })
+onLoad(async()=>{ await modules.ensureReady(); if(!moduleEnabled.value)return; if(!auth.isAuthenticated){redirectToLogin();return} restoreDraft(); try{const result=await listCommunityActivityCategories();if(result.items.length)categories.value=result.items}catch{} })
 function categoryStyle(item:CommunityActivityCategory,index:number){return{'--color':item.color||['#39c8ff','#ff6f9b','#ff9847','#ba8355','#ff5e71','#a35cff','#62d84d','#16cca2','#717985'][index%9]}}
 function formatDate(value:Date){return`${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`}
 function changeLimit(delta:number){form.participant_limit=Math.min(100,Math.max(2,Number(form.participant_limit||2)+delta))}

@@ -1,5 +1,11 @@
 <template>
   <view class="page tm-campus-page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_checkin" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="hero tm-card-strong tm-campus-grid">
       <view class="hero-copy">
         <text class="tm-section-kicker">CAMPUS CHECK-IN</text>
@@ -45,6 +51,7 @@
       <view class="links"><button @click="openAssets">查看积分记录</button><button @click="openTasks">去任务大厅</button></view>
     </view>
     </template>
+    </template>
   </view>
 </template>
 
@@ -54,6 +61,11 @@ import { computed, ref } from 'vue'
 import { getDailyCheckIn, submitDailyCheckIn, type CheckInDay, type DailyCheckInStatus } from '@/api/growth'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_checkin'))
 
 const auth = useAuthStore()
 const status = ref<DailyCheckInStatus | null>(null)
@@ -74,6 +86,8 @@ const milestoneNote = computed(() => status.value?.workflow.next_action || '同�
 onShow(load)
 
 async function load() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   loadError.value = ''

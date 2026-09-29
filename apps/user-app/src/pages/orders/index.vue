@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_mall_trade" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="commerce-hero" aria-label="订单旅程">
       <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
       <view class="commerce-hero-copy">
@@ -30,6 +36,7 @@
       <button v-if="order.status === 'fulfilled'" class="pay" :loading="payingOrderId === order.id" @click.stop="confirmComplete(order)">确认完成</button>
     </view>
     <view v-if="!loading && !loadError && !filteredOrders.length" class="empty-card"><view class="empty-icon">单</view><text class="empty-title">{{ activeStatus === 'all' ? '还没有订单' : '当前状态暂无订单' }}</text><text class="empty-copy">商城支持现金、积分和现金＋积分三种购买方式</text><button class="empty-action" @click="openProducts">去逛商城</button></view>
+    </template>
     <AppTabBar current-target="account" />
   </view>
 </template>
@@ -41,6 +48,11 @@ import { completeOrder, createPayment, getPayment, listOrders, type Order, type 
 import AppTabBar from '@/components/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_mall_trade'))
 
 const auth = useAuthStore()
 const orders = ref<Order[]>([])
@@ -78,6 +90,8 @@ onLoad((options?: Record<string, string | undefined>) => {
 })
 
 onShow(async () => {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   loadError.value = ''

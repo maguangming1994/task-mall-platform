@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_mall_trade" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="commerce-hero" aria-label="购物车结算引导">
       <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
       <view class="commerce-hero-copy">
@@ -50,6 +56,7 @@
       <text class="empty-total-amount">¥0.00</text>
       <button class="empty-total-button" disabled>去结算</button>
     </view>
+    </template>
   </view>
 </template>
 
@@ -63,6 +70,11 @@ import { loadClientCapabilities, type ClientCapabilities } from '@/platform/capa
 import { useAuthStore } from '@/stores/auth'
 import { saveCheckoutDraft } from '@/utils/checkoutDraft'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_mall_trade'))
 
 const auth = useAuthStore(); const cart = ref<Cart>({ items: [], summary: { item_count: 0, selected_quantity: 0, all_valid: true } }); const addresses = ref<UserAddress[]>([]); const selectedAddress = ref<UserAddress | null>(null); const quote = ref<ShippingQuote | null>(null)
 const preview = ref<CheckoutPreview | null>(null); const previewInput = ref<CheckoutInput | null>(null); const submitting = ref(false); const paymentIndex = ref(0); const loading = ref(false); const loadError = ref(''); const quoteError = ref(''); const createOrderKey = ref('')
@@ -75,7 +87,7 @@ const selectedItems = computed(() => cart.value.items.filter((item) => item.sele
 const requiresCashPayment = computed(() => selectedItems.value.some((item) => (item.unit_cash_amount || 0) > 0 || item.fulfillment_type === 'logistics'))
 const paymentUnavailableText = computed(() => capabilities.value?.payment_unavailable_message || '支付能力正在加载，请稍后重试。')
 const canCheckout = computed(() => { const selected = cart.value.items.filter((item) => item.selected); const hasLogistics = selected.some((item) => item.fulfillment_type === 'logistics'); return selected.length > 0 && selected.every((item) => item.valid) && (!hasLogistics || !!selectedAddress.value) && (!hasLogistics || !!quote.value) && !quoteError.value && (!requiresCashPayment.value || paymentOptions.value.length > 0) })
-onShow(async () => { if (!auth.isAuthenticated) return navigateToLogin(); await load() })
+onShow(async () => { await modules.ensureReady(); if (!moduleEnabled.value) return; if (!auth.isAuthenticated) return navigateToLogin(); await load() })
 async function load() {
   if (!auth.accessToken) return
   loading.value = true

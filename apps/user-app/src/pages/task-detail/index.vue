@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_tasks" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view v-if="loading" class="detail-loading"><view class="detail-skeleton detail-skeleton-hero" /><view class="detail-skeleton detail-skeleton-card" /><view class="detail-skeleton detail-skeleton-card short" /></view>
     <view v-else-if="loadError" class="state-error"><text class="state-error-icon">!</text><text class="state-error-title">任务详情加载失败</text><text class="state-error-copy">{{ loadError }}</text><button class="state-error-action" @click="loadTask">重试</button></view>
     <view v-else-if="!task" class="state-text">任务不存在或已经下线</view>
@@ -119,6 +125,7 @@
         </view>
       </view>
     </template>
+    </template>
   </view>
 </template>
 
@@ -131,6 +138,11 @@ import { claimTask, getHallTask, reportTask, type HallTask, type TaskReward } fr
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { richTextContent } from '@/utils/richText'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_tasks'))
 
 const auth = useAuthStore()
 const task = ref<HallTask | null>(null)
@@ -162,6 +174,8 @@ const evidenceSummary = computed(() => {
 let taskId = ''
 
 onLoad(async (options) => {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   taskId = typeof options?.id === 'string' ? options.id : ''
   if (!taskId) { loading.value = false; return }
   await loadTask()

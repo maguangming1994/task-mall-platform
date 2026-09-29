@@ -1,5 +1,11 @@
 <template>
   <view class="page tm-page-shell">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_after_sale" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="commerce-hero" aria-label="售后申请">
       <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
       <view class="commerce-hero-copy">
@@ -37,6 +43,7 @@
 
     <view v-if="!loading && !loadError" class="notice">原运费不退；退货运费承担将按所选原因和审核结果确定。多次部分退款累计不会超过实际支付金额和积分。</view>
     <button v-if="!loading && !loadError" class="tm-primary-button" :loading="submitting" :disabled="submitting || !canSubmit" @click="submit">提交售后申请</button>
+    </template>
   </view>
 </template>
 
@@ -49,8 +56,12 @@ import { getOrder, type Order, type OrderItem } from '@/api/orders'
 import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
 
 type ServiceType = 'refund_only' | 'return_and_refund' | 'exchange'
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_after_sale'))
 const auth = useAuthStore()
 const order = ref<Order | null>(null)
 const item = ref<OrderItem | null>(null)
@@ -89,6 +100,8 @@ const refundPreview = computed(() => {
 
 onLoad(async (query) => {
   if (!auth.isAuthenticated) return navigateToLogin()
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   requestOrderId.value = typeof query?.orderId === 'string' ? query.orderId : ''
   requestItemId.value = typeof query?.itemId === 'string' ? query.itemId : ''
   requestType.value = typeof query?.type === 'string' && ['refund_only', 'return_and_refund', 'exchange'].includes(query.type) ? query.type as ServiceType : 'refund_only'

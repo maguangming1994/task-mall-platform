@@ -1,5 +1,11 @@
 <template>
   <view class="page withdraw-page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_withdraw" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="page-header"><button class="back-button" aria-label="返回" @click="goBack">‹</button><text class="page-title">提现与手续费</text><view class="header-space" /></view>
 
     <view v-if="loading && !wallet" class="state-card" role="status" aria-live="polite"><text>正在加载可提现余额…</text></view>
@@ -27,6 +33,7 @@
 
     <view v-if="actionError" class="action-error" role="alert"><text>{{ actionError }}</text><button @click="actionError = ''">知道了</button></view>
     <view v-if="withdrawals.length" class="history-card section-card"><view class="section-head"><text class="section-title">提现记录</text><text class="rule-link">最近记录</text></view><view v-for="item in withdrawals" :key="item.id" class="history-row"><view><text>{{ item.withdrawal_no }}</text><small>{{ formatDate(item.created_at) }} · {{ item.workflow?.next_action || '请稍后刷新处理状态' }}</small></view><view><text>¥{{ money(item.requested_amount) }}</text><small>{{ item.workflow?.status_label || statusText(item.status) }}</small></view></view></view>
+    </template>
   </view>
 </template>
 
@@ -37,6 +44,11 @@ import { computed, ref } from 'vue'
 import { createWithdrawal, getPointAccount, getWalletAccount, getWithdrawalQuote, listWithdrawals, type PointAccount, type WalletAccount, type Withdrawal, type WithdrawalQuote } from '@/api/assets'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_withdraw'))
 
 const auth = useAuthStore()
 const wallet = ref<WalletAccount | null>(null)
@@ -62,6 +74,8 @@ const feeRateText = computed(() => quote.value ? `${(quote.value.fee_rate / 1000
 onShow(load)
 
 async function load() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   loadError.value = ''

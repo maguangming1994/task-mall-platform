@@ -59,13 +59,13 @@
       </view>
     </view>
 
-    <view class="wallet-layout">
+    <view v-if="modules.isEnabled('module_wallet')" class="wallet-layout">
       <view class="wallet-main" @click="openAssets">
         <view class="wallet-head"><text>校园钱包</text><text>资产明细 ›</text></view>
         <strong>¥{{ money(assets?.wallet.available_amount ?? 0) }}</strong>
         <text class="wallet-caption">可用余额 · 永久有效</text>
         <view class="wallet-action-row">
-          <button @click.stop="openRecharge">余额充值</button>
+          <button v-if="modules.isEnabled('module_wallet_recharge')" @click.stop="openRecharge">余额充值</button>
           <text>支持卡密、线上与线下充值</text>
         </view>
       </view>
@@ -81,7 +81,7 @@
       <view class="growth-pulse"><view :style="{ width: `${Math.max(12, profileCompletion)}%` }" /></view>
     </view>
 
-    <view class="order-card">
+    <view v-if="modules.isEnabled('module_mall_trade')" class="order-card">
       <view class="section-row">
         <view><text class="section-kicker">CAMPUS ORDERS</text><text class="section-title">我的订单</text></view>
         <text class="section-note" @click="openOrders()">全部订单 ›</text>
@@ -95,7 +95,7 @@
       </view>
     </view>
 
-    <view class="community-services">
+    <view v-if="modules.isEnabled('module_community')" class="community-services">
       <view class="section-row">
         <view><text class="section-kicker">CAMPUS COMMUNITY</text><text class="section-title">校园社区</text></view>
         <text class="section-note" @click="openCommunity()">进入社区 ›</text>
@@ -134,11 +134,14 @@ import { loadAppearanceContent, type AccountAppearance } from '@/api/appearance'
 import { resolveApiAssetUrl } from '@/api/http'
 import { chooseAndUploadAvatar, uploadAvatarFromPath } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
+import { useModulesStore } from '@/stores/modules'
+import type { ModuleCode } from '@/platform/modules'
 import { navigateToLogin } from '@/utils/authRedirect'
 
 declare const wx: { canIUse(schema: string): boolean }
 
 const auth = useAuthStore()
+const modules = useModulesStore()
 const nickname = ref(auth.user?.nickname ?? '')
 const avatarFileId = ref(auth.user?.avatar_file_id ?? '')
 const avatarPreviewUrl = ref('')
@@ -177,28 +180,43 @@ const baseServices = [
   { id: 'identity', mark: '证', label: '实名认证', note: '身份二要素核验', tone: 'green', action: openIdentityVerification },
   { id: 'support', mark: '服', label: '联系客服', note: '扫码进入小程序', tone: 'green', action: openSupport },
 ]
-const services = computed(() => baseServices.filter((item) => item.id !== 'publisher' || auth.user?.can_publish_tasks === true).map((item) => {
-  const configured = accountAppearance.value.service_icons.find((icon) => icon.id === item.id)
-  return { ...item, mark: configured?.mark || item.mark, icon_url: configured?.icon_url || '' }
-}))
+const serviceModuleMap: Record<string, ModuleCode> = {
+  tasks: 'module_tasks',
+  publisher: 'module_task_publish',
+  orders: 'module_mall_trade',
+  after_sales: 'module_after_sale',
+  referrals: 'module_referrals',
+  check_in: 'module_checkin',
+}
+const services = computed(() => baseServices
+  .filter((item) => item.id !== 'publisher' || auth.user?.can_publish_tasks === true)
+  .filter((item) => {
+    const code = serviceModuleMap[item.id]
+    return !code || modules.isEnabled(code)
+  })
+  .map((item) => {
+    const configured = accountAppearance.value.service_icons.find((icon) => icon.id === item.id)
+    return { ...item, mark: configured?.mark || item.mark, icon_url: configured?.icon_url || '' }
+  }))
 const orderStatuses = computed(() => [
   { mark: '待', label: '待完成', count: 0, tone: 'blue', action: () => openOrders('pending') },
   { mark: '审', label: '待审核', count: 0, tone: 'orange', action: () => openOrders('reviewing') },
   { mark: '成', label: '已完成', count: 0, tone: 'green', action: () => openOrders('completed') },
   { mark: '售', label: '售后退款', count: 0, tone: 'red', action: openAfterSales },
 ])
-const communityServices = [
-  { mark: '发', label: '发布帖子', note: '分享校园生活', tone: 'green', action: () => openCommunityCompose('experience') },
-  { mark: '团', label: '校园组团', note: '自习运动拼车', tone: 'orange', action: openActivities },
-  { mark: '助', label: '有偿求助', note: '发布校园需求', tone: 'red', action: () => openCommunityCompose('question') },
-  { mark: '学', label: '学习交流', note: '经验与攻略', tone: 'blue', action: () => openCommunity('guide') },
-  { mark: '展', label: '成果展示', note: '作品与成长', tone: 'violet', action: () => openCommunity('showcase') },
-  { mark: '问', label: '互助问答', note: '同学来解答', tone: 'slate', action: () => openCommunity('question') },
-]
+const communityServices = computed(() => [
+  { mark: '发', label: '发布帖子', note: '分享校园生活', tone: 'green', action: () => openCommunityCompose('experience'), needPost: true },
+  { mark: '团', label: '校园组团', note: '自习运动拼车', tone: 'orange', action: openActivities, needPost: false },
+  { mark: '助', label: '有偿求助', note: '发布校园需求', tone: 'red', action: () => openCommunityCompose('question'), needPost: true },
+  { mark: '学', label: '学习交流', note: '经验与攻略', tone: 'blue', action: () => openCommunity('guide'), needPost: false },
+  { mark: '展', label: '成果展示', note: '作品与成长', tone: 'violet', action: () => openCommunity('showcase'), needPost: false },
+  { mark: '问', label: '互助问答', note: '同学来解答', tone: 'slate', action: () => openCommunity('question'), needPost: false },
+].filter((item) => !item.needPost || modules.isEnabled('module_community_post')))
 
 onShow(load)
 
 async function load() {
+  void modules.ensureReady()
   resolvingAccount.value = Boolean(auth.accessToken)
   assets.value = null
   if (!auth.accessToken) return

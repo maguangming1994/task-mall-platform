@@ -1,5 +1,11 @@
 <template>
   <view class="page tm-page-shell">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_community" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="community-topbar">
       <button class="community-back" aria-label="返回社区" @click="goCommunity">‹</button>
       <view class="community-topbar-title"><text>动态详情</text><small>CAMPUS COMMUNITY</small></view>
@@ -87,6 +93,7 @@
         <view class="poster-actions"><button class="poster-copy" @click="copyCommunityLink">复制链接</button><button class="poster-save" :disabled="!posterReady" @click="savePoster">保存海报</button></view>
       </view>
     </view>
+    </template>
   </view>
 </template>
 <script setup lang="ts">
@@ -99,6 +106,11 @@ import { communityAttachmentUrl, createCommunityComment, createCommunityRequestK
 import { ApiError } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_community'))
 
 const auth = useAuthStore()
 const post = ref<CommunityPost | null>(null)
@@ -127,7 +139,9 @@ const posterCanvasStyle = computed(() => `width:${posterWidth.value}px;height:${
 const posterPreviewStyle = computed(() => `width:${posterWidth.value}px;height:${posterHeight.value}px`)
 const sharePath = computed(() => `/pages/community-detail/index?id=${encodeURIComponent(post.value?.id || postId.value)}`)
 
-onLoad((query) => {
+onLoad(async (query) => {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) { loading.value = false; return }
   void loadPublishingRules()
   postId.value = typeof query?.id === 'string' ? query.id.trim() : ''
   invalidId.value = !postId.value

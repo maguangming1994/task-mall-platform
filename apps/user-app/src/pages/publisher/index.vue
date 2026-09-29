@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_task_publish" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view v-if="accessChecking" class="publisher-gate list-state">
       <view class="loading-line" /><view class="loading-line short" /><view class="loading-line" />
       <text class="state-copy">正在确认任务发布权限</text>
@@ -90,6 +96,7 @@
       <view v-else class="published-card"><view class="published-head"><text class="section-title">我的发布</text><text class="section-copy">{{ tasks.length }} 个任务</text></view><view v-for="task in tasks" :key="task.id" class="published-row" @click="openTask(task.id)"><view><text class="published-title">{{ task.title }}</text><text class="published-status">{{ statusText(task.status) }} · 查看进度与管理</text></view><button v-if="task.status==='draft'" class="mini-publish" :disabled="working" @click.stop="publishExisting(task.id)">申请发布</button><text v-else class="row-arrow">›</text></view></view>
     </template>
     </template>
+    </template>
   </view>
 </template>
 
@@ -100,6 +107,11 @@ import { chooseAndUploadPublisherMedia, createMyPublisherSession, createPublishe
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { clearPublisherSession, isPublisherAccessError, persistPublisherSession, readPublisherSession } from '@/utils/publisherSession'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_task_publish'))
 
 const stages=['基础信息','时限频率','奖励预算','任务步骤','发布确认']
 const scenarioOptions=[{value:'user_bounty',label:'发布悬赏',tip:'按步骤提交材料并人工审核'},{value:'platform_task',label:'平台任务',tip:'平台运营发布的常规任务'},{value:'growth_challenge',label:'成长挑战',tip:'签到或阶段目标类活动'}]
@@ -127,7 +139,7 @@ let enteringPublisher=false
 let leavingPublisher=false
 
 onLoad((options)=>{pendingEditId.value=String(options?.edit||'')})
-onShow(()=>{void enterPublisher()})
+onShow(async()=>{await modules.ensureReady();if(!moduleEnabled.value)return;void enterPublisher()})
 
 async function enterPublisher(){
   if(enteringPublisher||leavingPublisher)return

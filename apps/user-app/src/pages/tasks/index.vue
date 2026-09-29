@@ -1,5 +1,11 @@
 <template>
   <view class="page" :style="topSafeAreaStyle">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_tasks" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="task-topbar">
       <view class="task-topbar-title"><text class="task-topbar-kicker">CAMPUS TASKS</text><text class="task-topbar-name">任务大厅</text></view>
       <view v-if="tab === 'hall'" class="task-topbar-actions"><view class="task-topbar-action" @click="openMine"><text class="task-topbar-action-icon">▣</text><text>任务记录</text></view><view class="task-topbar-action" @click="showFilterHint"><text class="task-topbar-action-icon">⌕</text><text>筛选</text></view></view>
@@ -32,7 +38,7 @@
     <view v-if="filterVisible" class="filter-mask" @click.self="filterVisible = false">
       <view class="filter-sheet"><view class="filter-sheet-head"><text class="filter-sheet-title">任务排序与筛选</text><text class="filter-sheet-close" @click="filterVisible = false">×</text></view><view class="filter-options"><view v-for="item in sortOptions" :key="item.value" :class="['filter-option', { active: sortMode === item.value }]" @click="selectSort(item.value)"><text>{{ item.label }}</text><text v-if="sortMode === item.value">✓</text></view></view></view>
     </view>
-    <view v-if="tab === 'hall' && withdrawalNotices.length" class="withdrawal-ticker">
+    <view v-if="tab === 'hall' && withdrawalNotices.length && modules.isEnabled('module_withdraw')" class="withdrawal-ticker">
       <view class="ticker-speaker"><text>⌁</text></view>
       <swiper class="ticker-swiper" vertical autoplay circular :interval="3500" :duration="450">
         <swiper-item v-for="notice in withdrawalNotices" :key="notice.id">
@@ -107,6 +113,7 @@
         <button class="task-empty-action" @click="claimGroup = ''; loadMine()">查看全部状态</button>
       </view>
     </view>
+    </template>
     <AppTabBar current-target="tasks" />
   </view>
 </template>
@@ -121,8 +128,13 @@ import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { plainTextFromRich } from '@/utils/richText'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
 
 const topSafeAreaStyle = createTopSafeAreaStyle()
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_tasks'))
 
 const auth = useAuthStore()
 const tab = ref<'hall' | 'mine'>('hall')
@@ -164,7 +176,9 @@ const claimGroups = [{ value: '', label: '全部' }, { value: 'to_submit', label
 onMounted(() => { clock = setInterval(() => { nowEpoch.value = Date.now() }, 1000) })
 onUnmounted(() => { if (clock) clearInterval(clock) })
 
-onShow(() => {
+onShow(async () => {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (uni.getStorageSync('task_mall_open_my_tasks') && auth.accessToken) {
     uni.removeStorageSync('task_mall_open_my_tasks')
     tab.value = 'mine'
@@ -173,7 +187,7 @@ onShow(() => {
   }
   if (tab.value === 'hall') void loadHall(); else void loadMine()
 })
-onPullDownRefresh(async () => { try { if (tab.value === 'hall') await loadHall(); else await loadMine() } finally { uni.stopPullDownRefresh() } })
+onPullDownRefresh(async () => { try { await modules.ensureReady(); if (!moduleEnabled.value) return; if (tab.value === 'hall') await loadHall(); else await loadMine() } finally { uni.stopPullDownRefresh() } })
 async function loadHall() {
   loading.value = true
   loadError.value = ''

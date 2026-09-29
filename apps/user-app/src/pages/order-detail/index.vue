@@ -1,5 +1,11 @@
 <template>
   <view class="page tm-page-shell">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_mall_trade" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="commerce-hero" aria-label="订单详情">
       <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
       <view class="commerce-hero-copy">
@@ -58,6 +64,7 @@
     </template>
     <view v-else-if="loadError" class="empty-card error-card tm-panel"><text>订单详情加载失败</text><small>{{ loadError }}</small><button class="primary" :loading="loading" :disabled="loading" @click="load">重新加载</button><button class="secondary" @click="goOrders">返回订单列表</button></view>
     <view v-else class="empty-card tm-panel"><text>没有找到该订单</text><button class="primary" @click="goOrders">返回订单列表</button></view>
+    </template>
   </view>
 </template>
 
@@ -68,6 +75,11 @@ import { computed, ref } from 'vue'
 import { completeOrder, createPayment, getOrder, getPayment, type Order, type OrderItem, type Payment } from '@/api/orders'
 import { useAuthStore } from '@/stores/auth'
 import { redirectToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_mall_trade'))
 
 const auth = useAuthStore()
 const order = ref<Order | null>(null)
@@ -84,16 +96,16 @@ const addressText = computed(() => {
   return [value.recipient_name, value.phone, value.province, value.city, value.district, value.detail].filter(Boolean).map(String).join(' ')
 })
 
-onLoad((query) => {
+onLoad(async (query) => {
   if (!auth.isAuthenticated) return redirectToLogin()
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   orderId.value = typeof query?.id === 'string' ? query.id : ''
   resumePaymentId.value = typeof query?.resumePayment === 'string' ? query.resumePayment : typeof query?.paymentId === 'string' ? query.paymentId : ''
   resumeOrderId.value = typeof query?.resumeOrder === 'string' ? query.resumeOrder : resumePaymentId.value ? orderId.value : ''
   if (resumePaymentId.value && resumeOrderId.value) uni.setStorageSync(pendingPaymentStorageKey, { paymentId: resumePaymentId.value, orderId: resumeOrderId.value })
-  void (async () => {
-    await load()
-    if (resumePaymentId.value && resumeOrderId.value) await pollPayment(resumePaymentId.value, resumeOrderId.value)
-  })()
+  await load()
+  if (resumePaymentId.value && resumeOrderId.value) await pollPayment(resumePaymentId.value, resumeOrderId.value)
 })
 
 async function load() {

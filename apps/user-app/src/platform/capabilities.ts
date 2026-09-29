@@ -11,6 +11,8 @@ export interface PaymentMethodCapability {
   reason: string | null
 }
 
+import type { ModuleCode } from './modules'
+
 export interface ClientCapabilities {
   version: number
   platform: ClientPlatform
@@ -25,7 +27,7 @@ export interface ClientCapabilities {
   payment_unavailable_message: string | null
   wechat_payment_unavailable_message: string | null
   wallet_payment_unavailable_message: string | null
-  feature_flags: Record<'checkout_v2' | 'community_video' | 'external_notifications', boolean>
+  feature_flags: Partial<Record<'checkout_v2' | 'community_video' | 'external_notifications' | ModuleCode, boolean>>
 }
 
 export function loadClientCapabilities() {

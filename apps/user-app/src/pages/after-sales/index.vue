@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_after_sale" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="commerce-hero" aria-label="售后服务">
       <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
       <view class="commerce-hero-copy">
@@ -45,6 +51,7 @@
       <button class="primary" @click.stop="openDetail(item.id, 'exchange')">{{ item.status === 'waiting_return' ? '填写寄回物流' : item.status === 'replacement_shipped' ? '跟踪并确认收货' : '查看换货进度' }}</button>
     </view>
     <view v-if="!loading && !loadError && !refunds.length && !exchanges.length" class="empty-inline"><text>暂无售后记录</text><text>提交后可在这里查看审核、寄回、补发、退款及补偿进度</text></view>
+    </template>
   </view>
 </template>
 
@@ -55,6 +62,11 @@ import { listExchanges, listRefunds, type Exchange, type Refund } from '@/api/af
 import { listOrders, type Order, type OrderItem } from '@/api/orders'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_after_sale'))
 
 const auth = useAuthStore()
 const orders = ref<Order[]>([])
@@ -63,7 +75,11 @@ const exchanges = ref<Exchange[]>([])
 const loading = ref(false)
 const loadError = ref('')
 const eligibleOrders = computed(() => orders.value.filter(order => ['pending_fulfillment', 'fulfilled', 'completed'].includes(order.status) && eligibleItems(order).length > 0))
-onShow(load)
+onShow(async () => {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
+  await load()
+})
 async function load() {
   if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true; loadError.value = ''

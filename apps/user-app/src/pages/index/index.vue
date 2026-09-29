@@ -513,7 +513,7 @@
         </view>
 
         <view class="home-v4-priority-grid">
-          <view class="home-v4-priority-card asset" role="button" aria-label="打开资产中心" @click="openAssets">
+          <view v-if="modules.isEnabled('module_wallet')" class="home-v4-priority-card asset" role="button" aria-label="打开资产中心" @click="openAssets">
             <view class="home-v4-priority-icon">
               <image v-if="priorityIcon('assets')" :src="priorityIcon('assets')" mode="aspectFit" />
               <view v-else class="home-v4-wallet-art"><view class="home-v4-wallet-clasp" /></view>
@@ -524,7 +524,7 @@
             </view>
             <text class="home-v4-card-arrow">›</text>
           </view>
-          <view class="home-v4-priority-card referral" role="button" aria-label="打开邀请成长" @click="openReferrals">
+          <view v-if="modules.isEnabled('module_referrals')" class="home-v4-priority-card referral" role="button" aria-label="打开邀请成长" @click="openReferrals">
             <view class="home-v4-priority-icon">
               <image v-if="priorityIcon('referrals')" :src="priorityIcon('referrals')" mode="aspectFit" />
               <view v-else class="home-v4-people-art"><view class="home-v4-people-art-small" /></view>
@@ -538,7 +538,7 @@
         </view>
       </view>
 
-      <view class="home-v4-section-head">
+      <view v-if="modules.isEnabled('module_tasks')" class="home-v4-section-head">
         <view>
           <text class="home-v4-section-title">{{ home.modules.recommendation.section_title }}</text>
           <text class="home-v4-section-subtitle">{{ home.modules.recommendation.section_subtitle }}</text>
@@ -547,6 +547,7 @@
       </view>
 
       <view
+        v-if="modules.isEnabled('module_tasks')"
         class="home-v4-recommend"
         :style="backgroundStyle(home.modules.recommendation.background_url)"
         @click="navigateHomeLink(home.modules.recommendation.link_type)"
@@ -577,7 +578,7 @@
         <view class="home-v4-recommend-arrow">›</view>
       </view>
 
-      <view class="home-v4-section-head home-v4-mall-head">
+      <view v-if="modules.isEnabled('module_mall')" class="home-v4-section-head home-v4-mall-head">
         <view>
           <text class="home-v4-section-title">{{ home.modules.product_section.section_title }}</text>
           <text class="home-v4-section-subtitle">{{ home.modules.product_section.section_subtitle }}</text>
@@ -585,7 +586,7 @@
         <text class="home-v4-section-link" role="button" aria-label="打开精选商城" @click="openProducts">逛商城 ›</text>
       </view>
 
-      <view class="home-v4-products">
+      <view v-if="modules.isEnabled('module_mall')" class="home-v4-products">
         <view
           v-for="card in home.modules.product_section.cards"
           :key="card.id"
@@ -655,6 +656,8 @@ import CampusSelector from '@/components/CampusSelector.vue'
 import type { Campus } from '@/api/campuses'
 import { useAuthStore } from '@/stores/auth'
 import { useCampusStore } from '@/stores/campus'
+import { useModulesStore } from '@/stores/modules'
+import { HOME_LINK_MODULE } from '@/platform/modules'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { compactRichTextContent } from '@/utils/richText'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
@@ -665,6 +668,7 @@ type RegisteredProductCard = { id: string; name: string; image_url: string; pric
 const fallbackHeroImage = '/static/home/hero-campus-reward.png'
 const auth = useAuthStore()
 const campus = useCampusStore()
+const modules = useModulesStore()
 let promotionCampusReady: Promise<unknown> | null = null
 const popupVisible = ref(false)
 const homeLoading = ref(false)
@@ -780,10 +784,16 @@ function createDefaultHome(): HomeContent {
 const home = ref<HomeContent>(createDefaultHome())
 const topSafeAreaStyle = createTopSafeAreaStyle()
 const activeHeroSlide = computed(() => home.value.carousel.items[activeHeroIndex.value] || home.value.carousel.items[0])
-const quickEntries = computed(() => home.value.modules.quick_entries.slice(0, 4).map((item) => ({
-  ...item,
-  action: () => navigateHomeLink(item.link_type),
-})))
+const quickEntries = computed(() => home.value.modules.quick_entries
+  .filter((item) => {
+    const code = HOME_LINK_MODULE[item.link_type]
+    return !code || modules.isEnabled(code)
+  })
+  .slice(0, 4)
+  .map((item) => ({
+    ...item,
+    action: () => navigateHomeLink(item.link_type),
+  })))
 const pageStyle = computed(() => ({
   ...backgroundStyle(home.value.modules.page_background_url),
   ...topSafeAreaStyle,
@@ -859,6 +869,7 @@ onLoad((options?: Record<string, string | undefined>) => {
 })
 
 onShow(async () => {
+  void modules.ensureReady()
   if (promotionCampusReady) await promotionCampusReady
   await loadHome()
   if (auth.accessToken) await auth.fetchCurrentUser()
@@ -873,10 +884,12 @@ onShow(async () => {
 })
 
 async function loadRegisteredHomeData() {
+  const tasksEnabled = modules.isEnabled('module_tasks')
+  const mallEnabled = modules.isEnabled('module_mall')
   const [tasksResult, claimsResult, productsResult] = await Promise.allSettled([
-    listHallTasks({ claimable_only: false }),
-    auth.isAuthenticated ? listMyTaskClaims(auth.accessToken) : Promise.resolve({ items: [] as TaskClaim[] }),
-    listProducts(),
+    tasksEnabled ? listHallTasks({ claimable_only: false }) : Promise.resolve({ items: [] as HallTask[] }),
+    auth.isAuthenticated && tasksEnabled ? listMyTaskClaims(auth.accessToken) : Promise.resolve({ items: [] as TaskClaim[] }),
+    mallEnabled ? listProducts() : Promise.resolve({ items: [] as MallProduct[] }),
   ])
   if (tasksResult.status === 'fulfilled') hallTasks.value = tasksResult.value.items
   if (claimsResult.status === 'fulfilled') myClaims.value = claimsResult.value.items
@@ -1059,6 +1072,11 @@ function openReferrals() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/
 function openFloatingSupport() { uni.navigateTo({ url: '/pages/support/index' }) }
 
 function navigateHomeLink(link: HomeLinkType) {
+  const moduleCode = HOME_LINK_MODULE[link]
+  if (moduleCode && !modules.isEnabled(moduleCode)) {
+    uni.showToast({ title: '功能升级中，敬请期待', icon: 'none' })
+    return
+  }
   if (link === 'tasks') return openTasks()
   if (link === 'products') return openProducts()
   if (link === 'community') return openCommunity()

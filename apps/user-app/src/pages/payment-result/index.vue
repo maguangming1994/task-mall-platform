@@ -1,5 +1,11 @@
 <template>
   <view class="page tm-page-shell">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_mall_trade" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="commerce-hero" aria-label="支付结果">
       <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
       <view class="commerce-hero-copy">
@@ -27,6 +33,7 @@
     </view>
     <view v-if="!loading && !loadError && hasPoints" class="asset-note tm-panel"><view class="note-icon">积</view><view><text>积分变动已记入资产流水</text><text>退款时会根据实际退回时间重新计算积分有效期。</text></view></view>
     <view v-if="!loading && !loadError" class="actions"><button class="secondary" @click="goHome">返回首页</button><button class="primary" :disabled="!orderIds.length" @click="goOrderEntry">{{ isSuccess ? '查看订单' : resultStatus === 'pending' ? '返回订单继续确认' : '返回订单重试支付' }}</button></view>
+    </template>
   </view>
 </template>
 
@@ -35,6 +42,11 @@ import { onLoad } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { getOrder, getPayment, type Order, type Payment } from '@/api/orders'
 import { useAuthStore } from '@/stores/auth'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_mall_trade'))
 
 const auth = useAuthStore()
 const orders = ref<Order[]>([])
@@ -54,7 +66,7 @@ const totalAmountText = computed(() => amountText(
 const title = computed(() => !isSuccess.value ? (resultStatus.value === 'cancelled' ? '支付已取消' : '支付未完成') : (noCashPayment.value ? '兑换成功' : '支付成功'))
 const copy = computed(() => !isSuccess.value ? (resultStatus.value === 'pending' ? '支付结果仍在确认，订单已保留，可返回订单继续查询。' : '订单仍保留在待支付列表，可返回订单页重新发起支付。') : orders.value.some((item) => item.fulfillment_type === 'virtual_delivery') ? '虚拟商品正在准备交付' : orders.value.every((item) => item.fulfillment_type === 'no_logistics') ? '订单已创建，无需等待物流' : '订单已支付，商家正在准备发货')
 
-onLoad((query) => {
+onLoad(async (query) => {
   const rawOrderIds = typeof query?.orderIds === 'string' ? query.orderIds : typeof query?.orderId === 'string' ? query.orderId : ''
   orderIds.value = decodeURIComponent(rawOrderIds).split(',').filter(Boolean)
   orderId.value = orderIds.value[0] || ''
@@ -62,6 +74,8 @@ onLoad((query) => {
   noCashPayment.value = query?.payment === 'none'
   const status = typeof query?.status === 'string' ? query.status : ''
   resultStatus.value = status === 'failed' || status === 'cancelled' || status === 'pending' ? status : 'success'
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   void loadOrder()
 })
 

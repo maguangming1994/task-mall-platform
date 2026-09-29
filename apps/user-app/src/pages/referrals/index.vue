@@ -1,5 +1,11 @@
 <template>
   <view class="page referrals-page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_referrals" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
 
     <view class="recommend-hero"><image class="recommend-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFit" /><view class="hero-copy"><text class="hero-kicker">INVITE &amp; REWARD</text><text class="hero-title">邀请好友，一起成长</text><text class="hero-subtitle">合规邀请条件完成后，奖励自动进入积分账户。</text></view></view>
 
@@ -19,6 +25,7 @@
     <!-- #ifdef MP-WEIXIN -->
     <button class="wechat-share" :disabled="!referralCode" open-type="share">微信分享</button>
     <!-- #endif -->
+    </template>
     <AppTabBar current-target="account" />
   </view>
 </template>
@@ -31,6 +38,11 @@ import { bindReferral, getReferrals, type ReferralDashboard } from '@/api/referr
 import AppTabBar from '@/components/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_referrals'))
 
 const pendingStorageKey = 'task_mall_pending_referral_code'
 const auth = useAuthStore()
@@ -51,7 +63,9 @@ onLoad((options) => {
   if (code) { pendingCode.value = code; bindCode.value = code; uni.setStorageSync(pendingStorageKey, code) }
 })
 
-onShow(() => {
+onShow(async () => {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   const stored = String(uni.getStorageSync(pendingStorageKey) || '').trim().toUpperCase()
   if (stored && !bindCode.value) { pendingCode.value = stored; bindCode.value = stored }
   if (!auth.isAuthenticated) { navigateToLogin(); return }

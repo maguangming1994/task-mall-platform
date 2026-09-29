@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_mall" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view v-if="loading" class="loading-shell tm-page-shell"><view class="detail-cover tm-skeleton" /><view class="loading-line tm-skeleton" /><view class="loading-line short tm-skeleton" /></view>
     <view v-else-if="loadError" class="missing tm-page-shell"><text>商品详情加载失败</text><small>{{ loadError }}</small><button class="tm-primary-button" @click="load">重新加载</button><button class="tm-secondary-button" @click="backToMall">返回商城</button></view>
     <view v-else-if="product">
@@ -47,6 +53,7 @@
       </view>
     </view>
     <view v-else class="missing tm-page-shell"><text>商品暂不可用</text><button class="tm-primary-button" @click="backToMall">返回商城</button></view>
+    </template>
   </view>
 </template>
 
@@ -57,6 +64,11 @@ import { addCartItem } from '@/api/cart'
 import { getProduct, type MallProduct, type PurchaseMode, type PurchaseOption } from '@/api/products'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_mall'))
 
 const auth = useAuthStore()
 const product = ref<MallProduct | null>(null)
@@ -71,8 +83,10 @@ const selectedSku = computed(() => product.value?.skus.find((sku) => sku.id === 
 const selectedOption = computed(() => selectedSku.value?.purchase_options.find((option) => option.id === selectedOptionId.value && option.enabled) || selectedSku.value?.purchase_options.find((option) => option.enabled) || null)
 const canBuy = computed(() => !!selectedSku.value && selectedSku.value.stock > 0 && !!selectedOption.value && !submitting.value)
 
-onLoad((query) => {
+onLoad(async (query) => {
   productId.value = typeof query?.id === 'string' ? query.id : ''
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   void load()
 })
 

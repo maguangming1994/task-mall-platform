@@ -1,5 +1,11 @@
 <template>
   <view class="page asset-page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_wallet" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="asset-hero">
       <image class="asset-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFit" />
       <view class="hero-copy">
@@ -16,7 +22,7 @@
         <view class="wallet-top"><view class="asset-icon wallet-icon">¥</view><text class="wallet-label">校园钱包</text></view>
         <text class="wallet-value">{{ wallet ? `¥${money(wallet.available_amount)}` : '—' }}</text>
         <text class="wallet-note">{{ wallet ? '可用余额 · 充值后可用' : '余额信息暂不可用' }}</text>
-        <view class="wallet-actions"><button class="recharge-button" aria-label="余额充值" @click="openRecharge">余额充值</button><button class="ledger-button" aria-label="查看余额明细" @click="scrollToWallet">查看明细</button></view>
+        <view class="wallet-actions"><button v-if="modules.isEnabled('module_wallet_recharge')" class="recharge-button" aria-label="余额充值" @click="openRecharge">余额充值</button><button class="ledger-button" aria-label="查看余额明细" @click="scrollToWallet">查看明细</button></view>
       </view>
       <view class="mini-assets">
         <view class="mini-asset points-card"><view class="asset-icon points-icon">★</view><view><text class="mini-label">积分</text><text class="mini-value">{{ points ? points.available_points : '—' }}</text><text class="mini-note">可用积分</text></view></view>
@@ -46,10 +52,11 @@
 
     <view id="wallet-ledger" class="section-card ledger-card"><view class="section-head"><text class="section-title">余额明细</text><text class="section-action">余额无有效期</text></view><view v-for="item in walletTransactions" :key="item.id" class="ledger-row"><view><text class="row-title">{{ walletTypeText(item.type) }}</text><text class="row-note">{{ formatTime(item.created_at) }} · {{ item.remark }}</text></view><text :class="item.change_amount >= 0 ? 'plus' : 'minus'">{{ signedMoney(item.change_amount) }}</text></view><text v-if="!walletError && walletTransactions.length === 0" class="empty">暂无余额流水或尚未同意钱包规则</text></view>
 
-    <view class="section-card withdrawal-card"><view class="section-head"><text class="section-title">余额提现</text><text class="section-action">手续费以实时试算为准</text></view><text class="withdraw-tip">提现金额提交后将冻结，审核通过后按后台当前费率扣除手续费并打款。</text><input class="input" type="digit" placeholder="输入提现金额（元）" disabled @click="openWithdraw" /><button class="primary" aria-label="打开提现页面" @click="openWithdraw">计算手续费</button><view v-for="item in withdrawals" :key="item.id" class="withdrawal-row"><view><text class="row-title">{{ item.withdrawal_no }}</text><text class="row-note">{{ formatTime(item.created_at) }} · {{ item.workflow?.next_action || '请稍后刷新提现处理状态。' }}</text></view><view class="withdrawal-amount"><text>¥{{ money(item.requested_amount) }}</text><text>{{ item.workflow?.status_label || withdrawalStatusText(item.status) }}</text></view></view><text v-if="!walletError && !loading && withdrawals.length === 0" class="empty withdrawal-empty">暂无提现记录</text></view>
+    <view class="section-card withdrawal-card"><view class="section-head"><text class="section-title">余额提现</text><text class="section-action">手续费以实时试算为准</text></view><text class="withdraw-tip">提现金额提交后将冻结，审核通过后按后台当前费率扣除手续费并打款。</text><input v-if="modules.isEnabled('module_withdraw')" class="input" type="digit" placeholder="输入提现金额（元）" disabled @click="openWithdraw" /><button v-if="modules.isEnabled('module_withdraw')" class="primary" aria-label="打开提现页面" @click="openWithdraw">计算手续费</button><view v-for="item in withdrawals" :key="item.id" class="withdrawal-row"><view><text class="row-title">{{ item.withdrawal_no }}</text><text class="row-note">{{ formatTime(item.created_at) }} · {{ item.workflow?.next_action || '请稍后刷新提现处理状态。' }}</text></view><view class="withdrawal-amount"><text>¥{{ money(item.requested_amount) }}</text><text>{{ item.workflow?.status_label || withdrawalStatusText(item.status) }}</text></view></view><text v-if="!walletError && !loading && withdrawals.length === 0" class="empty withdrawal-empty">暂无提现记录</text></view>
 
     <view class="section-card coupon-section"><view class="section-head"><text class="section-title">优惠券</text><text class="section-action">可用优惠券</text></view><view v-for="item in coupons" :key="item.id" class="coupon-row"><view><text class="row-title">{{ item.name }}</text><text class="row-note">有效至 {{ formatTime(item.valid_to) }}</text></view><view class="discount"><text v-if="item.cash_discount_amount">减 ¥{{ money(item.cash_discount_amount) }}</text><text v-if="item.points_discount">减 {{ item.points_discount }} 积分</text></view></view><text v-if="!couponsError && coupons.length === 0" class="empty">暂无可用优惠券</text></view>
 
+    </template>
     <AppTabBar current-target="account" />
   </view>
 </template>
@@ -57,11 +64,16 @@
 <script setup lang="ts">
 import { formatDate, formatDateTime as formatTime } from '@/utils/dateTime'
 import { onShow } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { getPointAccount, getWalletAccount, listCoupons, listPointBatches, listPointTransactions, listWalletTransactions, listWithdrawals, type PointAccount, type PointBatch, type PointTransaction, type UserCoupon, type WalletAccount, type WalletTransaction, type Withdrawal } from '@/api/assets'
 import AppTabBar from '@/components/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_wallet'))
 
 const auth = useAuthStore()
 const points = ref<PointAccount | null>(null)
@@ -79,6 +91,8 @@ const couponsError = ref('')
 onShow(load)
 
 async function load() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   pointsError.value = ''

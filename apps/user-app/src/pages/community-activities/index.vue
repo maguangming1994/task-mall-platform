@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_community" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="topbar"><view class="back" @click="goBack">‹</view><view><text class="title">校园组团</text><text class="subtitle">找搭子，一起做有趣的事</text></view><view class="my-link" @click="selectMode('joined')">我的参与</view></view>
 
     <view class="hero">
@@ -11,7 +17,7 @@
 
     <view class="mode-grid"><view :class="{ active: mode === 'all' }" @click="selectMode('all')">发现组团</view><view :class="{ active: mode === 'created' }" @click="selectMode('created')">我发起的</view><view :class="{ active: mode === 'joined' }" @click="selectMode('joined')">我的参与</view></view>
 
-    <view class="list-head"><view><text>{{ modeTitle }}</text><text>{{ mode === 'all' ? '看看同学们最近在计划什么' : '管理你的校园组团' }}</text></view><button :disabled="loading" @click="createActivity">＋ 发起组团</button></view>
+    <view class="list-head"><view><text>{{ modeTitle }}</text><text>{{ mode === 'all' ? '看看同学们最近在计划什么' : '管理你的校园组团' }}</text></view><button v-if="modules.isEnabled('module_community_post')" :disabled="loading" @click="createActivity">＋ 发起组团</button></view>
 
     <view v-if="loading" class="loading-list"><view v-for="index in 3" :key="index" class="activity-card tm-skeleton" /></view>
     <view v-else-if="error" class="state-card error"><view class="state-icon">!</view><text class="state-title">组团加载失败</text><text class="state-copy">{{ error }}</text><button @click="load">重新加载</button></view>
@@ -22,11 +28,12 @@
         <view v-else class="activity-image fallback" :style="{ background: accentColor(activity.category_code,index) }"><text>{{ activity.category_label.slice(0,1) }}</text></view>
         <view class="activity-main"><view class="activity-head"><text class="category-tag">{{ activity.category_label }}</text><text :class="['status', `status-${statusTone(activity.status)}`]">{{ statusText(activity.status) }}</text></view><text class="activity-title">{{ activity.title }}</text><text class="activity-details">{{ activity.details }}</text><view class="meta"><text>◷ {{ formatStart(activity.starts_at) }}</text><text>⌖ {{ activity.location || '校内地点待定' }}</text></view><view class="activity-foot"><view class="creator"><view>{{ avatarText(activity.creator.nickname) }}</view><text>{{ activity.creator.nickname }}</text></view><view class="capacity"><strong>{{ activity.participant_count }}</strong>/{{ activity.participant_limit }} 人 <text>›</text></view></view></view>
       </view>
-      <view v-if="!activities.length" class="state-card"><view class="state-icon">团</view><text class="state-title">暂时还没有这样的组团</text><text class="state-copy">发起第一个活动，邀请同学一起自习、运动或探索校园。</text><button @click="createActivity">发起组团</button></view>
+      <view v-if="!activities.length" class="state-card"><view class="state-icon">团</view><text class="state-title">暂时还没有这样的组团</text><text class="state-copy">发起第一个活动，邀请同学一起自习、运动或探索校园。</text><button v-if="modules.isEnabled('module_community_post')" @click="createActivity">发起组团</button></view>
     </template>
 
     <view class="safe-space" />
-    <button class="floating-create" :disabled="loading" @click="createActivity"><text>＋</text> 发起组团</button>
+    <button v-if="modules.isEnabled('module_community_post')" class="floating-create" :disabled="loading" @click="createActivity"><text>＋</text> 发起组团</button>
+    </template>
     <AppTabBar current-target="community" @compose="createActivity" />
   </view>
 </template>
@@ -39,6 +46,11 @@ import { communityActivityImageUrl, listCommunityActivities, listCommunityActivi
 import AppTabBar from '@/components/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_community'))
 
 type Mode = 'all' | 'created' | 'joined'
 const fallbackCategories: CommunityActivityCategory[] = [
@@ -55,8 +67,8 @@ const error = ref('')
 const modeTitle = computed(() => ({ all:'最新组团',created:'我发起的组团',joined:'我参与的组团' })[mode.value])
 
 onLoad((options?:Record<string,string|undefined>) => { activeCategory.value = options?.category || '' })
-onShow(async () => { await Promise.all([loadCategories(),load()]) })
-onPullDownRefresh(async () => { try { await load() } finally { uni.stopPullDownRefresh() } })
+onShow(async () => { await modules.ensureReady(); if (!moduleEnabled.value) return; await Promise.all([loadCategories(),load()]) })
+onPullDownRefresh(async () => { try { await modules.ensureReady(); if (!moduleEnabled.value) return; await load() } finally { uni.stopPullDownRefresh() } })
 
 async function loadCategories(){ try { const result=await listCommunityActivityCategories(); categories.value=result.items.length?result.items:fallbackCategories } catch { categories.value=fallbackCategories } }
 async function load(){ loading.value=true; error.value=''; try { if(mode.value==='all'){ const result=await listCommunityActivities({category:activeCategory.value||undefined,page_size:30},auth.accessToken||undefined); activities.value=result.items } else { if(!ensureAuth()) return; const result=await listMyCommunityActivities(auth.accessToken,mode.value); activities.value=activeCategory.value?result.items.filter(item=>item.category_code===activeCategory.value):result.items } } catch(cause){ error.value=message(cause) } finally { loading.value=false } }

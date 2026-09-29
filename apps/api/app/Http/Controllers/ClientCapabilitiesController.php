@@ -13,6 +13,14 @@ use Illuminate\Http\Request;
 
 class ClientCapabilitiesController extends Controller
 {
+    private const MODULE_FLAG_CODES = [
+        'module_tasks', 'module_task_publish',
+        'module_mall', 'module_mall_trade', 'module_after_sale',
+        'module_community', 'module_community_post',
+        'module_wallet', 'module_wallet_recharge', 'module_withdraw',
+        'module_referrals', 'module_checkin',
+    ];
+
     public function show(
         Request $request,
         WechatIdentityProvider $wechat,
@@ -45,7 +53,7 @@ class ClientCapabilitiesController extends Controller
         }
 
         return ApiResponse::success([
-            'version' => 3,
+            'version' => 4,
             'platform' => $platform,
             'visitor_browsing' => true,
             'login_methods' => $loginMethods,
@@ -72,7 +80,7 @@ class ClientCapabilitiesController extends Controller
             'wallet_payment_unavailable_message' => $paymentCapabilities['wallet']['reason'],
             'open_in_wechat_url' => null,
             'notification_channels' => $notificationChannels,
-            'feature_flags' => collect(['checkout_v2', 'community_video', 'external_notifications'])->mapWithKeys(fn (string $code) => [$code => $releases->enabled($code, (string) ($request->header('X-Device-Id') ?: 'anonymous'), $platform)]),
+            'feature_flags' => collect([...self::MODULE_FLAG_CODES, 'checkout_v2', 'community_video', 'external_notifications'])->mapWithKeys(fn (string $code) => [$code => $releases->enabled($code, (string) ($request->header('X-Device-Id') ?: 'anonymous'), $platform)]),
         ]);
     }
 }

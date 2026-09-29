@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_task_publish" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view v-if="loading" class="detail-loading"><view class="detail-skeleton hero-skeleton" /><view class="detail-skeleton card-skeleton" /><view class="detail-skeleton card-skeleton short" /></view>
     <view v-else-if="loadError" class="state-card error-state"><text class="state-icon">!</text><text class="state-title">发布任务加载失败</text><text class="state-copy">{{ loadError }}</text><view class="state-actions"><button class="retry-button" @click="initialize">重试</button><button class="back-button" @click="backToPublisher">返回发布中心</button></view></view>
     <template v-else-if="task">
@@ -29,6 +35,7 @@
       <view class="panel action-panel"><text class="panel-title">任务管理</text><text class="muted">状态操作需要说明原因，结束任务时会按规则处理已领取记录并释放未占用预算。</text><view class="actions"><button v-if="task.status==='draft'" class="primary" :disabled="actionWorking" @click="change('publish')">申请发布</button><button v-if="['published','scheduled','paused','pending_approval'].includes(task.status)" class="secondary" :disabled="actionWorking" @click="editTask">编辑</button><button v-if="['published','scheduled'].includes(task.status)" class="secondary" :disabled="actionWorking" @click="change('pause')">暂停发布</button><button v-if="task.status==='paused'" class="primary" :disabled="actionWorking" @click="change('resume')">恢复发布</button><button v-if="!['closed','archived'].includes(task.status)" class="danger" :disabled="actionWorking" @click="change('close')">结束任务</button></view></view>
     </template>
     <view v-else class="state-card empty-state"><text class="state-icon">档</text><text class="state-title">任务不存在或已下线</text><text class="state-copy">请返回发布中心重新选择任务，发布身份过期时需要重新验证。</text><button class="back-button" @click="backToPublisher">返回发布中心</button></view>
+    </template>
   </view>
 </template>
 
@@ -40,6 +47,11 @@ import { changePublisherTaskStatus, createMyPublisherSession, getPublisherTask, 
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { clearPublisherSession, isPublisherAccessError, persistPublisherSession, readPublisherSession } from '@/utils/publisherSession'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_task_publish'))
 
 const auth=useAuthStore()
 const task=ref<PublisherTask|null>(null);const loading=ref(true);const loadError=ref('');const actionWorking=ref(false);const historyError=ref('');const historyMode=ref<'versions'|'audit'|''>('');const versions=ref<PublisherTaskVersion[]>([]);const auditRows=ref<PublisherAuditEvent[]>([]);let taskId='';let token=''
@@ -48,7 +60,7 @@ const workflowStages=['草稿','审核','发布','领取','验收']
 const workflowIndex=computed(()=>{if(!task.value)return 0;if((task.value.successful_reward_count||0)>0)return 4;if((task.value.active_reservation_count||0)>0)return 3;if(['published','scheduled','paused','closed','archived'].includes(task.value.status))return 2;if(task.value.status==='pending_approval')return 1;return 0})
 const currentFlowLabel=computed(()=>workflowStages[workflowIndex.value])
 onLoad((options)=>{taskId=String(options?.id||'')})
-onShow(()=>{void initialize()})
+onShow(async()=>{await modules.ensureReady();if(!moduleEnabled.value)return;void initialize()})
 async function initialize(){
   if(initializing||leavingForAccess)return
   initializing=true;loading.value=true;loadError.value=''

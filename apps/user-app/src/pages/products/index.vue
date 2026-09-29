@@ -1,5 +1,11 @@
 <template>
   <view class="page tm-page-shell" :style="topSafeAreaStyle">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_mall" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="page-nav">
       <view class="nav-back" aria-label="返回" @click="goBack">‹</view>
       <text>精选商城</text>
@@ -64,7 +70,7 @@
       </view>
     </view>
     <view v-else class="empty tm-panel"><text class="empty-title">没有找到匹配商品</text><text>换个关键词或分类试试</text></view>
-
+    </template>
     <AppTabBar current-target="products" />
   </view>
 </template>
@@ -79,6 +85,11 @@ import { listProductCategories, listProducts, type MallProduct, type ProductCate
 import { plainTextFromRich } from '@/utils/richText'
 import { useAuthStore } from '@/stores/auth'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_mall'))
 
 const topSafeAreaStyle = createTopSafeAreaStyle()
 const products = ref<MallProduct[]>([])
@@ -106,8 +117,12 @@ const filteredProducts = computed(() => {
   })
 })
 
-onShow(load)
-onPullDownRefresh(async () => { try { await load() } finally { uni.stopPullDownRefresh() } })
+onShow(async () => {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
+  await load()
+})
+onPullDownRefresh(async () => { try { await modules.ensureReady(); if (!moduleEnabled.value) return; await load() } finally { uni.stopPullDownRefresh() } })
 
 async function load() {
   loading.value = true

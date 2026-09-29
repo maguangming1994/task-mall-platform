@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_community_post" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="intro">
       <text class="eyebrow">CAMPUS STORY</text>
       <text class="title">{{ editingId ? '编辑校园动态' : '写下校园新鲜事' }}</text>
@@ -71,6 +77,7 @@
         <button class="primary" :disabled="submitting || uploading" :loading="submitting" @click="submit">{{ submitLabel }}</button>
       </view>
     </template>
+    </template>
   </view>
 </template>
 
@@ -93,6 +100,11 @@ import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
 import { redirectToLogin } from '@/utils/authRedirect'
 import { insertTextAtCursor, unicodeLength } from '@/utils/textInput'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_community_post'))
 
 interface EditableImage { fileId: string; previewUrl: string }
 interface SavedDraft { title?: string; content?: string; categoryCode?: CommunityCategory['code']; images?: EditableImage[]; requestKey?: string }
@@ -125,6 +137,8 @@ const selectedCategoryLabel = computed(() => categories.value.find(item => item.
 const submitLabel = computed(() => editingId.value ? (reviewNote.value ? '修改并重新提交' : '提交新版本') : '发布')
 
 onLoad(async (options?: Record<string, string | undefined>) => {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.isAuthenticated) { redirectToLogin(); return }
   editingId.value = options?.postId || ''
   const requestedCategory = options?.category

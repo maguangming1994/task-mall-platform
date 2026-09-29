@@ -1,5 +1,11 @@
 <template>
   <view class="page tm-page-shell">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_mall_trade" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="commerce-hero" aria-label="结算预览">
       <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
       <view class="commerce-hero-copy">
@@ -61,6 +67,7 @@
     <view v-if="quoteError" class="quote-error"><text>运费试算失败，暂不可提交订单</text><button @click="loadQuote">重新试算</button></view>
     <button class="tm-primary-button submit" :loading="submitting" :disabled="submitting || !canCheckout" @click="submit">{{ submitText }}</button>
     <button class="cancel-checkout" :disabled="submitting" @click="openCart">取消结算并返回购物车</button>
+    </template>
   </view>
 </template>
 
@@ -76,6 +83,11 @@ import { getWalletAccount, type WalletAccount } from '@/api/assets'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { clearCheckoutDraft, readCheckoutDraft, saveCheckoutDraft, type CheckoutDraft, type CheckoutDraftSource } from '@/utils/checkoutDraft'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_mall_trade'))
 
 const auth = useAuthStore()
 const cart = ref<Cart>({ items: [], summary: { item_count: 0, selected_quantity: 0, all_valid: true } })
@@ -121,6 +133,8 @@ onLoad((query) => {
   if (query?.directBuy === '1' && productId && skuId && (purchaseMode === 'cash' || purchaseMode === 'points' || purchaseMode === 'cash_points')) directBuy.value = { productId, skuId, purchaseMode }
 })
 onShow(async () => {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.isAuthenticated) return navigateToLogin()
   if (!initialized.value) return load()
   if (refreshAfterRecharge.value) await refreshCheckoutAfterRecharge()

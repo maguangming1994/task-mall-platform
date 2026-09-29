@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { onLaunch, onShow, onHide } from "@dcloudio/uni-app";
+import { useModulesStore } from '@/stores/modules'
+
 onLaunch(() => {
   console.info("Task Mall launched");
+  const modules = useModulesStore()
+  modules.hydrate()
+  void modules.load(true)
 });
 onShow(() => {
   // App lifecycle hook reserved for channel-specific refresh work.

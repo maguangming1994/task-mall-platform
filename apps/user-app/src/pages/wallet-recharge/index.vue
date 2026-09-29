@@ -1,5 +1,11 @@
 <template>
   <view class="page tm-page-shell">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_wallet_recharge" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="balance-card">
       <text class="eyebrow">CAMPUS WALLET</text><text class="balance-label">当前可用余额</text>
       <text class="balance">{{ wallet ? `¥${money(wallet.available_amount)}` : '—' }}</text>
@@ -53,6 +59,7 @@
       <view v-for="item in recharges" :key="item.id" class="record-row"><view><text class="record-title">{{ methodText(item.method) }} · ¥{{ money(item.amount_cents) }}</text><text class="record-time">{{ formatTime(item.created_at) }} · {{ item.recharge_no }}</text><text v-if="item.review_note" class="review-result">审核说明：{{ item.review_note }}</text></view><text class="status" :class="item.status">{{ statusText(item.status) }}</text></view>
       <text v-if="!loading && !loadError && !recharges.length" class="empty">暂无充值记录</text>
     </view>
+    </template>
   </view>
 </template>
 
@@ -65,6 +72,11 @@ import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { clientPlatform } from '@/platform/runtime'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_wallet_recharge'))
 
 const auth = useAuthStore()
 const methods = [{ code: 'card_code' as const, label: '卡密兑换', icon: '卡' }, { code: 'online' as const, label: '线上支付', icon: '微' }, { code: 'offline' as const, label: '线下支付', icon: '凭' }]
@@ -99,7 +111,7 @@ const onlineResultText = computed(() => {
 })
 
 onLoad((query) => { returnToCheckout.value = query?.returnTo === 'checkout' })
-onShow(async () => { await load(); await resumeOnlineIntent() })
+onShow(async () => { await modules.ensureReady(); if (!moduleEnabled.value) return; await load(); await resumeOnlineIntent() })
 async function load() {
   if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true

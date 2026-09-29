@@ -1,5 +1,11 @@
 <template>
   <view class="page tm-page-shell">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_after_sale" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="commerce-hero" aria-label="售后进度">
       <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
       <view class="commerce-hero-copy">
@@ -63,6 +69,7 @@
     </view>
 
     <view v-if="record" class="service-note">责任方、寄回方式和运费承担均按本次售后个案裁决，所有操作会保留审计记录。</view>
+    </template>
   </view>
 </template>
 
@@ -74,6 +81,11 @@ import { ApiError } from '@/api/http'
 import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_after_sale'))
 
 const auth = useAuthStore()
 const kind = ref<'refund' | 'exchange'>('refund')
@@ -108,6 +120,8 @@ const deadlineText = computed(() => {
 
 onLoad(async query => {
   if (!auth.isAuthenticated) return navigateToLogin()
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   recordId.value = typeof query?.id === 'string' ? query.id : ''
   kind.value = query?.type === 'exchange' ? 'exchange' : 'refund'
   await load()
