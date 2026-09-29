@@ -123,7 +123,7 @@ jobs:
     environment: production
     permissions:
       contents: read
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Restore checksum-pinned school emblems
@@ -150,15 +150,29 @@ jobs:
             echo "Reusing published commit image: $image:$GITHUB_SHA"
             exit 0
           fi
-          docker buildx build --progress plain --platform linux/amd64 \
-            --provenance=false --sbom=false \
-            --build-arg ALPINE_MIRROR=https://dl-cdn.alpinelinux.org/alpine \
-            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
-            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
-            --cache-from "type=registry,ref=$image:buildcache" \
-            --cache-to type=inline \
-            --file infra/docker/api.Dockerfile \
-            --tag "$image:$GITHUB_SHA" --tag "$image:buildcache" --push .
+          push_image() {
+            docker buildx build --progress plain --platform linux/amd64 \
+              --provenance=false --sbom=false \
+              --build-arg ALPINE_MIRROR=https://dl-cdn.alpinelinux.org/alpine \
+              --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+              --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+              --cache-from "type=registry,ref=$image:buildcache" \
+              --cache-to type=inline \
+              --file infra/docker/api.Dockerfile \
+              --tag "$image:$GITHUB_SHA" --tag "$image:buildcache" --push .
+          }
+          export -f push_image
+          for attempt in 1 2; do
+            if timeout 1200 bash -c push_image; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 2 ]; then
+              echo "API image publish failed after 2 attempts." >&2
+              exit 1
+            fi
+            echo "API image publish stalled or failed (attempt $attempt); retrying after 20s." >&2
+            sleep 20
+          done
       - name: Build and push Web image
         env:
           IMAGE_PREFIX: ccr.ccs.tencentyun.com/task-mall-platform/task-mall
@@ -170,18 +184,32 @@ jobs:
             echo "Reusing published commit image: $image:$GITHUB_SHA"
             exit 0
           fi
-          docker buildx build --progress plain --platform linux/amd64 \
-            --provenance=false --sbom=false \
-            --build-arg VITE_API_BASE_URL=/api/v1 \
-            --build-arg "VITE_H5_PUBLIC_URL=$VITE_H5_PUBLIC_URL" \
-            --build-arg "VITE_WECHAT_OA_APP_ID=$VITE_WECHAT_OA_APP_ID" \
-            --build-arg "RELEASE_VERSION=$GITHUB_SHA" \
-            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
-            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
-            --cache-from "type=registry,ref=$image:buildcache" \
-            --cache-to type=inline \
-            --file infra/docker/web.Dockerfile \
-            --tag "$image:$GITHUB_SHA" --tag "$image:buildcache" --push .
+          push_image() {
+            docker buildx build --progress plain --platform linux/amd64 \
+              --provenance=false --sbom=false \
+              --build-arg VITE_API_BASE_URL=/api/v1 \
+              --build-arg "VITE_H5_PUBLIC_URL=$VITE_H5_PUBLIC_URL" \
+              --build-arg "VITE_WECHAT_OA_APP_ID=$VITE_WECHAT_OA_APP_ID" \
+              --build-arg "RELEASE_VERSION=$GITHUB_SHA" \
+              --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+              --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+              --cache-from "type=registry,ref=$image:buildcache" \
+              --cache-to type=inline \
+              --file infra/docker/web.Dockerfile \
+              --tag "$image:$GITHUB_SHA" --tag "$image:buildcache" --push .
+          }
+          export -f push_image
+          for attempt in 1 2; do
+            if timeout 1200 bash -c push_image; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 2 ]; then
+              echo "Web image publish failed after 2 attempts." >&2
+              exit 1
+            fi
+            echo "Web image publish stalled or failed (attempt $attempt); retrying after 20s." >&2
+            sleep 20
+          done
       - name: Log out of Tencent registry
         if: always()
         run: docker logout ccr.ccs.tencentyun.com
