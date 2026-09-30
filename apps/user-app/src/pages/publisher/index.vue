@@ -191,7 +191,7 @@ function validateStage(index:number){if(index===0&&(!title.value.trim()||!descri
 function validCoverUrl(value:string){
   if(!value||value.length>2048||value!==value.trim()||/\s/.test(value))return false
   const match=/^(https?):\/\/([^/?#]+)(?:[/?#]|$)/i.exec(value)
-  if(!match||(!import.meta.env.DEV&&match[1].toLowerCase()!=='https'))return false
+  if(!match||(import.meta.env.MODE === 'production' && match[1].toLowerCase()!=='https'))return false
   const authority=match[2]
   if(authority.includes('@')||authority.startsWith('['))return false
   const portIndex=authority.lastIndexOf(':')

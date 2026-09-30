@@ -147,7 +147,7 @@ const capabilities = ref<ClientCapabilities | null>(null)
 const brand = ref<HomeBrand>({ logo_url: '', logo_text: 'TM', name: '任务商城', caption: 'TASK · REWARD · LIFE' })
 const needsPhoneBinding = ref(Boolean(auth.user && !auth.user.phone_bound))
 const returnUrl = ref<string | null>(null)
-const isDevelopment = import.meta.env.DEV
+const isDevelopment = import.meta.env.MODE === 'development'
 const wechatMethod = computed(() => capabilities.value?.login_methods.find(method => method !== 'phone'))
 const wechatPhoneAvailable = computed(() => capabilities.value?.login_methods.includes('wechat_mini') === true)
 let timer: ReturnType<typeof setInterval> | undefined
@@ -186,10 +186,22 @@ async function wechatLogin() {
   formError.value = ''
   wechatSubmitting.value = true
   try {
-    const credential = await requestWechatLoginCode(capabilities.value?.wechat_official_account_app_id)
+    let credential = await requestWechatLoginCode(capabilities.value?.wechat_official_account_app_id)
     if (!credential) return
-    const user = await auth.loginWithWechat(credential.channel, credential.code)
-    await routeAfterAuthentication(!user.phone_bound)
+    try {
+      const user = await auth.loginWithWechat(credential.channel, credential.code)
+      await routeAfterAuthentication(!user.phone_bound)
+    } catch (firstError) {
+      // code 过期时自动重试一次
+      if (firstError instanceof ApiError && firstError.code === 'WECHAT_AUTH_FAILED') {
+        credential = await requestWechatLoginCode(capabilities.value?.wechat_official_account_app_id)
+        if (!credential) return
+        const user = await auth.loginWithWechat(credential.channel, credential.code)
+        await routeAfterAuthentication(!user.phone_bound)
+        return
+      }
+      throw firstError
+    }
   } catch (error) {
     showError(error)
   } finally {

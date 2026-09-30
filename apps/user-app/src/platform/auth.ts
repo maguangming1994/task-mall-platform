@@ -20,7 +20,7 @@ function localCode(channel: 'mini' | 'h5'): string {
 }
 
 function miniLoginCode(): Promise<string> {
-  if (import.meta.env.DEV && import.meta.env.VITE_WECHAT_MINI_REAL_LOGIN !== 'true') {
+  if (import.meta.env.MODE === 'development' && import.meta.env.VITE_WECHAT_MINI_REAL_LOGIN !== 'true') {
     return Promise.resolve(localCode('mini'))
   }
 
@@ -39,12 +39,12 @@ function h5LoginCode(configuredAppId?: string | null): string | null {
     const expectedState = uni.getStorageSync(oauthStateKey)
     const returnedState = readQueryString(window.location.search, 'state')
     uni.removeStorageSync(oauthStateKey)
-    if (!import.meta.env.DEV && (!expectedState || expectedState !== returnedState)) {
+    if (import.meta.env.MODE === 'production' && (!expectedState || expectedState !== returnedState)) {
       throw new Error('微信授权状态校验失败，请重新发起登录。')
     }
     return code
   }
-  if (import.meta.env.DEV) return localCode('h5')
+  if (import.meta.env.MODE === 'development') return localCode('h5')
 
   const appId = configuredAppId || import.meta.env.VITE_WECHAT_OA_APP_ID
   if (!appId) throw new Error('公众号网页授权尚未配置。')
