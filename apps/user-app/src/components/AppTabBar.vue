@@ -29,11 +29,11 @@ const emit = defineEmits<{ compose: [] }>()
 const navigation = useNavigationStore()
 const failedIcons = ref(new Set<string>())
 const fallbackIcons: Record<NavigationTarget, { normal: string; active: string }> = {
-  home: { normal: '/static/tabbar/home.png', active: '/static/tabbar/home-active.png' },
-  tasks: { normal: '/static/tabbar/tasks.png', active: '/static/tabbar/tasks-active.png' },
-  products: { normal: '/static/tabbar/mall.png', active: '/static/tabbar/mall-active.png' },
-  community: { normal: '/static/tabbar/community.png', active: '/static/tabbar/community-active.png' },
-  account: { normal: '/static/tabbar/account.png', active: '/static/tabbar/account-active.png' },
+  home: { normal: '/static/icons/tabbar-home.svg', active: '/static/icons/tabbar-home-active.svg' },
+  tasks: { normal: '/static/icons/tabbar-tasks.svg', active: '/static/icons/tabbar-tasks-active.svg' },
+  products: { normal: '/static/icons/tabbar-mall.svg', active: '/static/icons/tabbar-mall-active.svg' },
+  community: { normal: '/static/icons/tabbar-community.svg', active: '/static/icons/tabbar-community-active.svg' },
+  account: { normal: '/static/icons/tabbar-account.svg', active: '/static/icons/tabbar-account-active.svg' },
 }
 
 const barStyle = computed(() => ({

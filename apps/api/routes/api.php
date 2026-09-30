@@ -52,6 +52,7 @@ use App\Modules\Notification\Http\Controllers\NotificationController;
 use App\Modules\Operations\Http\Controllers\AdminOperationsController;
 use App\Modules\Operations\Http\Controllers\AdminProductionReadinessController;
 use App\Modules\Operations\Http\Controllers\HealthController;
+use App\Modules\Operations\Http\Controllers\IconConfigController;
 use App\Modules\Operations\Http\Controllers\MonitoringController;
 use App\Modules\Order\Http\Controllers\AdminOrderController;
 use App\Modules\Order\Http\Controllers\CheckoutController;
@@ -104,6 +105,7 @@ Route::post('/campuses/nearby', [CampusController::class, 'nearby'])->middleware
 Route::get('/home-content', [HomeContentController::class, 'show']);
 Route::get('/appearance-content', [AppearanceContentController::class, 'show']);
 Route::get('/app-navigation', [AppNavigationController::class, 'show']);
+Route::get('/icon-configs', [IconConfigController::class, 'index']);
 Route::get('/legal-documents', [LegalDocumentController::class, 'index']);
 Route::get('/tasks', [TaskHallController::class, 'index']);
 Route::get('/tasks/{task}', [TaskHallController::class, 'show']);
@@ -373,6 +375,11 @@ Route::prefix('admin')->group(function () {
         Route::get('/operations/release-control', [AdminOperationsController::class, 'releaseControl'])->middleware('admin.permission:deployment.manage');
         Route::put('/operations/feature-flags/{flag:code}', [AdminOperationsController::class, 'updateFeatureFlag'])->middleware(['admin.permission:deployment.manage', 'admin.recent_verification']);
         Route::post('/operations/releases/{release}/transition', [AdminOperationsController::class, 'transitionRelease'])->middleware(['admin.permission:deployment.manage', 'admin.recent_verification']);
+        Route::get('/icon-configs', [IconConfigController::class, 'index'])->middleware('admin.permission:settings.manage');
+        Route::post('/icon-configs', [IconConfigController::class, 'store'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::get('/icon-configs/{iconConfig}', [IconConfigController::class, 'show'])->middleware('admin.permission:settings.manage');
+        Route::put('/icon-configs/{iconConfig}', [IconConfigController::class, 'update'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::delete('/icon-configs/{iconConfig}', [IconConfigController::class, 'destroy'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
         Route::get('/notification-rules', [AdminOperationsController::class, 'notificationRules'])->middleware('admin.permission:operations.manage');
         Route::put('/notification-rules/{sceneCode}', [AdminOperationsController::class, 'updateNotificationRule'])->middleware(['admin.permission:operations.manage', 'admin.recent_verification']);
         Route::get('/notification-templates', [AdminOperationsController::class, 'templates'])->middleware('admin.permission:operations.manage');

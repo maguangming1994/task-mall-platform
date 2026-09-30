@@ -88,7 +88,7 @@
       </view>
       <view class="order-status-grid">
         <view v-for="item in orderStatuses" :key="item.label" class="order-status-item" @click="item.action">
-          <view :class="['order-mark', `tone-${item.tone}`]">{{ item.mark }}</view>
+          <view :class="['order-mark', `tone-${item.tone}`]"><image class="mark-icon" :src="item.icon" mode="aspectFit" /></view>
           <strong>{{ item.count }}</strong>
           <text>{{ item.label }}</text>
         </view>
@@ -102,7 +102,7 @@
       </view>
       <view class="community-grid">
         <view v-for="item in communityServices" :key="item.label" class="community-item" @click="item.action">
-          <view :class="['service-icon', `tone-${item.tone}`]">{{ item.mark }}</view>
+          <view :class="['service-icon', `tone-${item.tone}`]"><image class="mark-icon" :src="item.icon" mode="aspectFit" /></view>
           <text class="service-label">{{ item.label }}</text>
           <text class="service-note">{{ item.note }}</text>
         </view>
@@ -113,7 +113,7 @@
       <view class="section-row"><view><text class="section-kicker">QUICK ACCESS</text><text class="section-title">常用服务</text></view><text class="section-note">账户与校园服务</text></view>
       <view class="quick-grid">
         <view v-for="item in services" :key="item.label" class="quick-card" @click="item.action">
-          <view :class="['service-icon', `tone-${item.tone}`]"><image v-if="item.icon_url" :src="item.icon_url" mode="aspectFit" /><text v-else>{{ item.mark }}</text></view>
+          <view :class="['service-icon', `tone-${item.tone}`]"><image class="mark-icon" :src="item.icon_url || item.icon" mode="aspectFit" /></view>
           <view><text class="service-label">{{ item.label }}</text><text class="service-note">{{ item.note }}</text></view>
         </view>
       </view>
@@ -167,18 +167,18 @@ const profileCompletion = computed(() => Math.min(100, (auth.user?.nickname.trim
 const memberLevel = computed(() => (profileCompletion.value >= 100 ? '认证成员' : profileCompletion.value >= 65 ? '成长成员' : '新同学'))
 const completedGoal = computed(() => `${Math.min(5, Math.floor((assets.value?.points.available ?? 0) / 500))}/5`)
 const baseServices = [
-  { id: 'tasks', mark: '任', label: '我的任务', note: '提交与进度', tone: 'blue', action: openTasks },
-  { id: 'publisher', mark: '发', label: '发布任务', note: '创建与管理', tone: 'violet', action: openPublisher },
-  { id: 'orders', mark: '单', label: '我的订单', note: '支付与履约', tone: 'orange', action: () => openOrders() },
-  { id: 'after_sales', mark: '售', label: '售后服务', note: '退款与换货', tone: 'red', action: openAfterSales },
-  { id: 'referrals', mark: '邀', label: '邀请好友', note: '奖励与记录', tone: 'green', action: openReferrals },
-  { id: 'check_in', mark: '签', label: '每日签到', note: '连续签到领积分', tone: 'orange', action: openCheckIn },
-  { id: 'notifications', mark: '信', label: '消息中心', note: '通知与提醒', tone: 'violet', action: openNotifications },
-  { id: 'addresses', mark: '址', label: '收货地址', note: '管理配送信息', tone: 'green', action: openAddresses },
-  { id: 'legal', mark: '约', label: '协议隐私', note: '授权与版本', tone: 'slate', action: openLegal },
-  { id: 'security', mark: '安', label: '账号安全', note: '换绑与注销', tone: 'blue', action: openPrivacy },
-  { id: 'identity', mark: '证', label: '实名认证', note: '身份二要素核验', tone: 'green', action: openIdentityVerification },
-  { id: 'support', mark: '服', label: '联系客服', note: '扫码进入小程序', tone: 'green', action: openSupport },
+  { id: 'tasks', mark: '任', label: '我的任务', note: '提交与进度', tone: 'blue', action: openTasks, icon: '/static/icons/service-tasks.svg' },
+  { id: 'publisher', mark: '发', label: '发布任务', note: '创建与管理', tone: 'violet', action: openPublisher, icon: '/static/icons/module-task-publish.svg' },
+  { id: 'orders', mark: '单', label: '我的订单', note: '支付与履约', tone: 'orange', action: () => openOrders(), icon: '/static/icons/service-orders.svg' },
+  { id: 'after_sales', mark: '售', label: '售后服务', note: '退款与换货', tone: 'red', action: openAfterSales, icon: '/static/icons/service-aftersale.svg' },
+  { id: 'referrals', mark: '邀', label: '邀请好友', note: '奖励与记录', tone: 'green', action: openReferrals, icon: '/static/icons/service-invite.svg' },
+  { id: 'check_in', mark: '签', label: '每日签到', note: '连续签到领积分', tone: 'orange', action: openCheckIn, icon: '/static/icons/service-checkin.svg' },
+  { id: 'notifications', mark: '信', label: '消息中心', note: '通知与提醒', tone: 'violet', action: openNotifications, icon: '/static/icons/service-messages.svg' },
+  { id: 'addresses', mark: '址', label: '收货地址', note: '管理配送信息', tone: 'green', action: openAddresses, icon: '/static/icons/service-address.svg' },
+  { id: 'legal', mark: '约', label: '协议隐私', note: '授权与版本', tone: 'slate', action: openLegal, icon: '/static/icons/service-privacy.svg' },
+  { id: 'security', mark: '安', label: '账号安全', note: '换绑与注销', tone: 'blue', action: openPrivacy, icon: '/static/icons/service-security.svg' },
+  { id: 'identity', mark: '证', label: '实名认证', note: '身份二要素核验', tone: 'green', action: openIdentityVerification, icon: '/static/icons/service-verify.svg' },
+  { id: 'support', mark: '服', label: '联系客服', note: '扫码进入小程序', tone: 'green', action: openSupport, icon: '/static/icons/service-support.svg' },
 ]
 const serviceModuleMap: Record<string, ModuleCode> = {
   tasks: 'module_tasks',
@@ -199,18 +199,18 @@ const services = computed(() => baseServices
     return { ...item, mark: configured?.mark || item.mark, icon_url: configured?.icon_url || '' }
   }))
 const orderStatuses = computed(() => [
-  { mark: '待', label: '待完成', count: 0, tone: 'blue', action: () => openOrders('pending') },
-  { mark: '审', label: '待审核', count: 0, tone: 'orange', action: () => openOrders('reviewing') },
-  { mark: '成', label: '已完成', count: 0, tone: 'green', action: () => openOrders('completed') },
-  { mark: '售', label: '售后退款', count: 0, tone: 'red', action: openAfterSales },
+  { mark: '待', label: '待完成', count: 0, tone: 'blue', action: () => openOrders('pending'), icon: '/static/icons/order-pending.svg' },
+  { mark: '审', label: '待审核', count: 0, tone: 'orange', action: () => openOrders('reviewing'), icon: '/static/icons/order-review.svg' },
+  { mark: '成', label: '已完成', count: 0, tone: 'green', action: () => openOrders('completed'), icon: '/static/icons/order-completed.svg' },
+  { mark: '售', label: '售后退款', count: 0, tone: 'red', action: openAfterSales, icon: '/static/icons/order-refund.svg' },
 ])
 const communityServices = computed(() => [
-  { mark: '发', label: '发布帖子', note: '分享校园生活', tone: 'green', action: () => openCommunityCompose('experience'), needPost: true },
-  { mark: '团', label: '校园组团', note: '自习运动拼车', tone: 'orange', action: openActivities, needPost: false },
-  { mark: '助', label: '有偿求助', note: '发布校园需求', tone: 'red', action: () => openCommunityCompose('question'), needPost: true },
-  { mark: '学', label: '学习交流', note: '经验与攻略', tone: 'blue', action: () => openCommunity('guide'), needPost: false },
-  { mark: '展', label: '成果展示', note: '作品与成长', tone: 'violet', action: () => openCommunity('showcase'), needPost: false },
-  { mark: '问', label: '互助问答', note: '同学来解答', tone: 'slate', action: () => openCommunity('question'), needPost: false },
+  { mark: '发', label: '发布帖子', note: '分享校园生活', tone: 'green', action: () => openCommunityCompose('experience'), needPost: true, icon: '/static/icons/community-post.svg' },
+  { mark: '团', label: '校园组团', note: '自习运动拼车', tone: 'orange', action: openActivities, needPost: false, icon: '/static/icons/community-group.svg' },
+  { mark: '助', label: '有偿求助', note: '发布校园需求', tone: 'red', action: () => openCommunityCompose('question'), needPost: true, icon: '/static/icons/community-help.svg' },
+  { mark: '学', label: '学习交流', note: '经验与攻略', tone: 'blue', action: () => openCommunity('guide'), needPost: false, icon: '/static/icons/community-study.svg' },
+  { mark: '展', label: '成果展示', note: '作品与成长', tone: 'violet', action: () => openCommunity('showcase'), needPost: false, icon: '/static/icons/community-showcase.svg' },
+  { mark: '问', label: '互助问答', note: '同学来解答', tone: 'slate', action: () => openCommunity('question'), needPost: false, icon: '/static/icons/community-qa.svg' },
 ].filter((item) => !item.needPost || modules.isEnabled('module_community_post')))
 
 onShow(load)
@@ -499,4 +499,5 @@ async function logout() {
 .account-state,.guest-account{min-height:420px;border-radius:22px}.state-mark{width:58px;height:58px;border-radius:18px;font-size:20px}.state-title{font-size:19px}.state-copy{font-size:13px}
 .guest-account{min-height:440px}.guest-account-content{padding:50px 28px 34px}.guest-kicker{font-size:11px;letter-spacing:0}.guest-title{font-size:25px}.guest-copy{font-size:14px}.guest-login-button{min-height:44px;height:44px;margin-top:24px;border-radius:14px;font-size:15px;line-height:44px}
 @media screen and (max-width:360px){.page{padding-right:16px;padding-left:16px}.page .account-hero{min-height:300px}.hero-profile{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:center;gap:8px 12px}.page .account-hero .profile-mark{grid-row:1}.profile-copy{grid-column:2;grid-row:1}.page .account-hero .profile-badge{white-space:nowrap}.page .profile-edit{grid-column:2;grid-row:2;width:96px;margin:0}.wallet-layout{grid-template-columns:1fr}.asset-side{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto}.wallet-action-row>text{display:none}.quick-services .quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.mark-icon{display:block;width:60%;height:60%}
 </style>

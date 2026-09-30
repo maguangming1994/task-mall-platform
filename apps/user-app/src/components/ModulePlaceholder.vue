@@ -17,7 +17,7 @@ function goHome() {
 <template>
   <view class="module-placeholder">
     <view class="mp-icon-wrap">
-      <text class="mp-icon">{{ def.icon }}</text>
+      <image class="mp-icon" :src="def.icon" mode="aspectFit" />
     </view>
     <text class="mp-title">{{ copy.title }}</text>
     <text class="mp-desc">{{ copy.desc }}</text>
@@ -50,8 +50,9 @@ function goHome() {
 }
 
 .mp-icon {
-  font-size: 36px;
-  color: var(--tm-brand-700);
+  width: 72rpx;
+  height: 72rpx;
+  display: block;
 }
 
 .mp-title {

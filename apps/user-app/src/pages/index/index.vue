@@ -83,7 +83,7 @@
           >
             <view :class="['home-v10-quick-icon', `tone-${item.tone}`]">
               <image v-if="item.icon_url" :src="item.icon_url" mode="aspectFit" />
-              <text v-else>{{ quickArtSymbol(item.id, item.link_type) }}</text>
+              <image v-else :src="quickArtIcon(item.id, item.link_type)" mode="aspectFit" />
             </view>
             <text class="home-v10-quick-label">{{ item.label }}</text>
           </view>
@@ -329,7 +329,7 @@
             <image v-if="item.icon_url" class="home-v4-quick-image" :src="item.icon_url" mode="aspectFit" />
             <view v-else :class="['home-v4-quick-art', `art-${quickArtType(item.id, item.link_type)}`]">
               <view class="home-v4-quick-art-body">
-                <text class="home-v4-quick-art-symbol">{{ quickArtSymbol(item.id, item.link_type) }}</text>
+                <image class="home-v4-quick-art-symbol" :src="quickArtIcon(item.id, item.link_type)" mode="aspectFit" />
               </view>
             </view>
           </view>
@@ -516,7 +516,7 @@
           <view v-if="modules.isEnabled('module_wallet')" class="home-v4-priority-card asset" role="button" aria-label="打开资产中心" @click="openAssets">
             <view class="home-v4-priority-icon">
               <image v-if="priorityIcon('assets')" :src="priorityIcon('assets')" mode="aspectFit" />
-              <view v-else class="home-v4-wallet-art"><view class="home-v4-wallet-clasp" /></view>
+              <image v-else src="/static/icons/module-wallet.svg" mode="aspectFit" />
             </view>
             <view class="home-v4-priority-copy">
               <text class="home-v4-priority-title">资产中心</text>
@@ -527,7 +527,7 @@
           <view v-if="modules.isEnabled('module_referrals')" class="home-v4-priority-card referral" role="button" aria-label="打开邀请成长" @click="openReferrals">
             <view class="home-v4-priority-icon">
               <image v-if="priorityIcon('referrals')" :src="priorityIcon('referrals')" mode="aspectFit" />
-              <view v-else class="home-v4-people-art"><view class="home-v4-people-art-small" /></view>
+              <image v-else src="/static/icons/module-referrals.svg" mode="aspectFit" />
             </view>
             <view class="home-v4-priority-copy">
               <text class="home-v4-priority-title">邀请成长</text>
@@ -739,14 +739,14 @@ function createDefaultHome(): HomeContent {
       notification_icon_url: '',
       quick_grid_background_url: '',
       quick_entries: [
-        { id: 'tasks', label: '任务大厅', note: '领取奖励', mark: '任', tone: 'green', icon_url: '', link_type: 'tasks' },
-        { id: 'products', label: '积分商城', note: '兑换好物', mark: '兑', tone: 'blue', icon_url: '', link_type: 'products' },
-        { id: 'community', label: '社区成长', note: '分享交流', mark: '聊', tone: 'orange', icon_url: '', link_type: 'community' },
-        { id: 'orders', label: '我的订单', note: '查看进度', mark: '单', tone: 'violet', icon_url: '', link_type: 'orders' },
+        { id: 'tasks', label: '任务大厅', note: '领取奖励', mark: '任', tone: 'green', icon_url: '/static/icons/module-tasks.svg', link_type: 'tasks' },
+        { id: 'products', label: '积分商城', note: '兑换好物', mark: '兑', tone: 'blue', icon_url: '/static/icons/module-mall.svg', link_type: 'products' },
+        { id: 'community', label: '社区成长', note: '分享交流', mark: '聊', tone: 'orange', icon_url: '/static/icons/module-community.svg', link_type: 'community' },
+        { id: 'orders', label: '我的订单', note: '查看进度', mark: '单', tone: 'violet', icon_url: '/static/icons/service-orders.svg', link_type: 'orders' },
       ],
       priority_entries: [
-        { id: 'assets', mark: '资', icon_url: '' },
-        { id: 'referrals', mark: '邀', icon_url: '' },
+        { id: 'assets', mark: '资', icon_url: '/static/icons/module-wallet.svg' },
+        { id: 'referrals', mark: '邀', icon_url: '/static/icons/module-referrals.svg' },
       ],
       recommendation: {
         section_title: '今日推荐',
@@ -1002,6 +1002,14 @@ function quickArtSymbol(id: string, linkType: HomeLinkType) {
   if (type === 'community') return '•••'
   if (type === 'orders') return '≡'
   return '✓'
+}
+
+function quickArtIcon(id: string, linkType: HomeLinkType) {
+  const type = quickArtType(id, linkType)
+  if (type === 'products') return '/static/icons/module-mall.svg'
+  if (type === 'community') return '/static/icons/module-community.svg'
+  if (type === 'orders') return '/static/icons/service-orders.svg'
+  return '/static/icons/module-tasks.svg'
 }
 
 function heroImageSource(slide: HomeCarouselItem) {
