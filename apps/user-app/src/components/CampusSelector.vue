@@ -24,8 +24,8 @@
       </view>
     </view>
 
-    <view v-if="visible" class="campus-mask" @click.self="closeSelector">
-      <view class="campus-sheet" :style="sheetStyle">
+    <view v-if="visible" class="campus-mask" @click.self="closeSelector" @touchmove.stop.prevent>
+      <view class="campus-sheet" :style="sheetStyle" @touchmove.stop.prevent>
         <view class="campus-sheet-handle" />
         <view class="campus-sheet-head">
           <view>
@@ -56,7 +56,7 @@
           <text>›</text>
         </button>
 
-        <scroll-view class="campus-list" scroll-y>
+        <scroll-view class="campus-list" scroll-y @touchmove.stop>
           <view v-if="campus.loading" class="campus-state">
             <text class="campus-state-title">正在加载学校…</text>
           </view>
@@ -112,6 +112,13 @@ const selectingId = ref('')
 const failedEmblems = ref<Record<string, boolean>>({})
 const loadMode = ref<'all' | 'search' | 'location'>('all')
 const keyboardHeight = ref(0)
+
+watch(visible, (v) => {
+  if (v) {
+    // 阻止底层页面滚动
+    uni.pageScrollTo({ scrollTop: 0, duration: 0 })
+  }
+})
 
 const sheetStyle = computed(() => {
   if (!keyboardHeight.value) return {}
