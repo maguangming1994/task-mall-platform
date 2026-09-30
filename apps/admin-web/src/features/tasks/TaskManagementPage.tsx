@@ -45,7 +45,6 @@ import { useAdminAuth } from '../auth/AdminAuthContext'
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { MediaGalleryInput, type GalleryImageValue } from '../../components/MediaGalleryInput'
 import { TaskStepBuilder } from './TaskStepBuilder'
-import { TaskTemplatePanel } from './TaskTemplatePanel'
 import { TaskDataBatchPanel } from './TaskDataBatchPanel'
 import { businessLabel, riskLevelLabels, taskRiskSourceLabels } from '../../constants/businessLabels'
 
@@ -465,7 +464,6 @@ export function TaskManagementPage() {
     {contextHolder}
     <div className="page-heading"><div><Typography.Text className="eyebrow">校园任务管理</Typography.Text><Typography.Title level={2}>任务与奖励预算</Typography.Title><Typography.Paragraph type="secondary">草稿版本不可覆盖；发布时由服务端重新计算并全量锁定积分、优惠券和余额预算。</Typography.Paragraph></div><Space>{canFinance && <Button icon={<PlusOutlined />} onClick={() => setPoolOpen(true)}>新建预算池</Button>}{canManage && <Button type="primary" icon={<PlusOutlined />} onClick={openCreateTask}>新建任务</Button>}</Space></div>
     <Alert showIcon type="info" message="单次余额奖励超过 200 元或任务余额总预算超过 5000 元时，先由另一位财务管理员复核；批准后再次发布才会原子锁定全部预算。" />
-    <TaskTemplatePanel tasks={tasks} pools={pools} canManage={canManage} onTaskCreated={load} />
     <TaskDataBatchPanel canManage={canManage} onChanged={load} />
     <Card bordered={false} style={{ marginTop: 16 }} title="平台预算池">
       <Table rowKey="id" loading={loading} dataSource={pools} pagination={false} columns={[

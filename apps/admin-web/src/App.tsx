@@ -59,6 +59,7 @@ const SecurityPage = lazy(() => import('./features/security/SecurityPage').then(
 const PrivacyPage = lazy(() => import('./features/privacy/PrivacyPage').then((module) => ({ default: module.PrivacyPage })))
 const ReadinessPage = lazy(() => import('./features/readiness/ReadinessPage').then((module) => ({ default: module.ReadinessPage })))
 const TaskManagementPage = lazy(() => import('./features/tasks/TaskManagementPage').then((module) => ({ default: module.TaskManagementPage })))
+const TaskTemplateCenterPage = lazy(() => import('./features/tasks/TaskTemplateCenterPage').then((module) => ({ default: module.TaskTemplateCenterPage })))
 const AssetManagementPage = lazy(() => import('./features/assets/AssetManagementPage').then((module) => ({ default: module.AssetManagementPage })))
 const ProductManagementPage = lazy(() => import('./features/products/ProductManagementPage').then((module) => ({ default: module.ProductManagementPage })))
 const AfterSaleManagementPage = lazy(() => import('./features/after-sales/AfterSaleManagementPage').then((module) => ({ default: module.AfterSaleManagementPage })))
@@ -250,6 +251,7 @@ function Workspace({ item }: { item: NavigationItem }) {
   if (item.code === 'privacy') return <PrivacyPage />
   if (item.code === 'readiness') return <ReadinessPage />
   if (item.code === 'tasks') return <TaskManagementPage />
+  if (item.code === 'task_templates') return <TaskTemplateCenterPage />
   if (item.code === 'finance') return <AssetManagementPage />
   if (item.code === 'mall') return <ProductManagementPage />
   if (item.code === 'orders') return <AfterSaleManagementPage />

@@ -18,6 +18,7 @@ class AdminNavigationService
             ['code' => 'campuses', 'label' => '学校与代理', 'icon' => 'EnvironmentOutlined', 'path' => '/campuses', 'permissions' => ['campus.manage']],
             ['code' => 'privacy', 'label' => '协议与隐私', 'icon' => 'SafetyCertificateOutlined', 'path' => '/privacy', 'permissions' => ['legal.manage', 'privacy.manage']],
             ['code' => 'tasks', 'label' => '任务中心', 'icon' => 'ProfileOutlined', 'path' => '/tasks', 'permissions' => ['task.view', 'task.manage', 'task.review']],
+            ['code' => 'task_templates', 'label' => '任务模板中心', 'icon' => 'ProfileOutlined', 'path' => '/task-templates', 'permissions' => ['task.view', 'task.manage']],
             ['code' => 'mall', 'label' => '商城中心', 'icon' => 'ShopOutlined', 'path' => '/mall', 'permissions' => ['product.manage']],
             ['code' => 'orders', 'label' => '订单与售后', 'icon' => 'FileDoneOutlined', 'path' => '/orders', 'permissions' => ['fulfillment.manage', 'after_sale.review']],
             ['code' => 'finance', 'label' => '资产与财务', 'icon' => 'WalletOutlined', 'path' => '/finance', 'permissions' => ['finance.manage']],

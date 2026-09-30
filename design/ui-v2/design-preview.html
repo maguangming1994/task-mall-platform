@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campus Zine UI Kit — 校园贴纸志设计稿 v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Noto Sans SC",-apple-system,BlinkMacSystemFont,sans-serif;background:#0a0e1a;color:#fff;min-height:100vh;padding:40px 20px;}
+  .header{text-align:center;margin-bottom:48px}
+  .header h1{font-size:42px;font-weight:900;letter-spacing:-1px;background:linear-gradient(135deg,#ffd600,#ff6b4a);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .header p{color:#8a94b0;margin-top:8px;font-size:15px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:32px;max-width:1400px;margin:0 auto}
+  .phone-frame{background:#1a1f36;border-radius:32px;padding:12px 12px 16px;box-shadow:0 24px 64px rgba(0,0,0,.5);position:relative}
+  .phone-notch{width:80px;height:22px;background:#1a1f36;border-radius:0 0 14px 14px;margin:0 auto;position:relative;z-index:2}
+  .screen{width:100%;height:680px;background:#fff8f0;border-radius:24px;overflow:hidden;position:relative;}
+  .label{position:absolute;top:-10px;right:16px;background:#ffd600;color:#1a1f36;font-weight:900;font-size:12px;padding:4px 12px;border-radius:8px;z-index:3;transform:rotate(3deg)}
+
+  /* === 品牌变量 === */
+  .screen{--z-yellow:#ffd600;--z-coral:#ff6b4a;--z-cyan:#00d4e0;--z-ink:#1a1f36;--z-paper:#fff8f0;--z-line:#e8e0d4;--z-soft:#fff0e0;}
+
+  /* === 通用组件 === */
+  .stick-card{background:#fff;border:3px solid var(--z-ink);border-radius:18px;padding:16px;box-shadow:6px 6px 0 var(--z-ink);position:relative;}
+  .stick-badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:900;border:2px solid var(--z-ink);}
+  .stick-btn{background:var(--z-yellow);color:var(--z-ink);border:3px solid var(--z-ink);border-radius:14px;padding:12px 20px;font-weight:900;font-size:14px;box-shadow:4px 4px 0 var(--z-ink);display:inline-flex;align-items:center;gap:6px;}
+  .stick-btn.coral{background:var(--z-coral);color:#fff;}
+  .stick-btn.cyan{background:var(--z-cyan);color:var(--z-ink);}
+  .price-tag{background:var(--z-coral);color:#fff;border:2px solid var(--z-ink);border-radius:8px;padding:2px 8px;font-weight:900;font-size:13px;display:inline-block;transform:rotate(-2deg)}
+  .tabbar{position:absolute;bottom:0;left:0;right:0;height:56px;background:#fff;border-top:3px solid var(--z-ink);display:flex;justify-content:space-around;align-items:center;padding-bottom:6px}
+  .tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:900;color:#8a8a8a}
+  .tab-item.active{color:var(--z-ink)}
+  .tab-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .tab-item.active .tab-icon{background:var(--z-yellow);border:2px solid var(--z-ink);}
+
+  /* === 首页 === */
+  .home{padding:16px 16px 72px;background:linear-gradient(180deg,#fff8f0 0%,#fff0e0 100%);height:100%;overflow-y:auto}
+  .home-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .home-avatar{width:40px;height:40px;border:3px solid var(--z-ink);border-radius:50%;background:var(--z-yellow);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .home-notif{width:36px;height:36px;border:3px solid var(--z-ink);border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;position:relative}
+  .home-notif::after{content:'';position:absolute;top:6px;right:6px;width:8px;height:8px;background:var(--z-coral);border-radius:50%;border:1.5px solid var(--z-ink)}
+  .home-greet{font-size:13px;color:#6a5a48;margin-bottom:4px}
+  .home-name{font-size:22px;font-weight:900;color:var(--z-ink);line-height:1.2}
+  .quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+  .quick-item{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .quick-icon{width:52px;height:52px;border:3px solid var(--z-ink);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;background:#fff}
+  .quick-icon.yellow{background:var(--z-yellow)}
+  .quick-icon.coral{background:var(--z-coral)}
+  .quick-icon.cyan{background:var(--z-cyan)}
+  .quick-label{font-size:11px;font-weight:900;color:var(--z-ink)}
+  .section-title{display:flex;align-items:center;gap:8px;margin:18px 0 12px}
+  .section-title h3{font-size:16px;font-weight:900;color:var(--z-ink);letter-spacing:.5px}
+  .section-line{flex:1;height:3px;background:var(--z-ink);border-radius:2px;opacity:.1}
+  .task-row{display:flex;gap:10px;margin-bottom:10px}
+  .task-mini{flex:1;background:#fff;border:2.5px solid var(--z-ink);border-radius:14px;padding:12px;position:relative}
+  .task-mini .reward{position:absolute;top:-8px;right:8px;background:var(--z-yellow);border:2px solid var(--z-ink);border-radius:8px;padding:2px 8px;font-size:11px;font-weight:900}
+  .task-mini h4{font-size:13px;font-weight:900;color:var(--z-ink);margin:4px 0 2px}
+  .task-mini p{font-size:11px;color:#8a7a68}
+  .task-mini .pts{font-size:12px;font-weight:900;color:var(--z-coral);margin-top:6px}
+  .banner{background:var(--z-ink);border-radius:18px;padding:16px 20px;color:#fff;position:relative;overflow:hidden;margin-bottom:14px}
+  .banner::after{content:'⛺';position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:48px;opacity:.15}
+  .banner h4{font-size:15px;font-weight:900;margin-bottom:4px}
+  .banner p{font-size:12px;opacity:.8}
+
+  /* === 任务大厅 === */
+  .tasks{padding:16px 16px 72px;background:#fffef5;height:100%;overflow-y:auto}
+  .tasks-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .tasks-header h2{font-size:20px;font-weight:900;color:var(--z-ink);flex:1}
+  .filter-pill{background:#fff;border:2.5px solid var(--z-ink);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:900}
+  .task-card{background:#fff;border:3px solid var(--z-ink);border-radius:18px;padding:14px;margin-bottom:12px;position:relative}
+  .task-card .tag{position:absolute;top:-10px;left:14px;background:var(--z-yellow);border:2px solid var(--z-ink);border-radius:8px;padding:2px 10px;font-size:11px;font-weight:900}
+  .task-card .tag.hot{background:var(--z-coral);color:#fff}
+  .task-card h4{font-size:15px;font-weight:900;color:var(--z-ink);margin:8px 0 4px}
+  .task-card .meta{display:flex;gap:12px;font-size:11px;color:#7a6a58;margin-bottom:8px}
+  .task-card .bottom{display:flex;justify-content:space-between;align-items:center}
+  .task-card .pts{font-size:18px;font-weight:900;color:var(--z-coral)}
+  .task-card .pts span{font-size:12px;color:var(--z-ink);font-weight:700}
+
+  /* === 任务详情 === */
+  .detail{padding:0 0 72px;background:#fff;height:100%;overflow-y:auto}
+  .detail-hero{background:var(--z-yellow);border-bottom:3px solid var(--z-ink);padding:24px 20px 20px;position:relative}
+  .detail-hero::after{content:'';position:absolute;bottom:-12px;left:20px;width:40px;height:12px;background:var(--z-yellow);border:3px solid var(--z-ink);border-top:0;border-radius:0 0 8px 8px}
+  .detail-hero h2{font-size:22px;font-weight:900;color:var(--z-ink);margin-bottom:8px}
+  .detail-hero .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .detail-body{padding:20px}
+  .detail-body h4{font-size:14px;font-weight:900;color:var(--z-ink);margin:16px 0 8px}
+  .detail-body p{font-size:13px;color:#5a4a38;line-height:1.7}
+  .detail-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+  .detail-step .num{width:26px;height:26px;background:var(--z-ink);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex-shrink:0}
+  .detail-step p{font-size:12px;color:#5a4a38;margin-top:3px}
+  .detail-bottom{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:3px solid var(--z-ink);padding:10px 16px 16px;display:flex;gap:10px}
+  .detail-bottom .pts{font-size:20px;font-weight:900;color:var(--z-coral);display:flex;align-items:center}
+  .detail-bottom .pts span{font-size:12px;color:var(--z-ink);font-weight:700;margin-left:4px}
+  .detail-bottom .btn{flex:1}
+
+  /* === 商城 === */
+  .mall{padding:16px 16px 72px;background:linear-gradient(180deg,#fff5f2 0%,#fff 60%);height:100%;overflow-y:auto}
+  .mall-header h2{font-size:20px;font-weight:900;color:var(--z-ink);margin-bottom:12px}
+  .cat-row{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto}
+  .cat-pill{white-space:nowrap;padding:8px 18px;border:2.5px solid var(--z-ink);border-radius:20px;font-size:12px;font-weight:900;background:#fff}
+  .cat-pill.active{background:var(--z-coral);color:#fff}
+  .prod-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .prod-card{background:#fff;border:3px solid var(--z-ink);border-radius:16px;overflow:hidden;position:relative}
+  .prod-img{height:120px;background:linear-gradient(135deg,#ffe0d4,#ffd4e0);display:flex;align-items:center;justify-content:center;font-size:40px}
+  .prod-info{padding:12px}
+  .prod-info h4{font-size:13px;font-weight:900;color:var(--z-ink);margin-bottom:4px}
+  .prod-info .pts{font-size:15px;font-weight:900;color:var(--z-coral)}
+  .prod-tag{position:absolute;top:8px;left:8px;background:var(--z-coral);color:#fff;border:2px solid var(--z-ink);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900}
+
+  /* === 社区 === */
+  .community{padding:16px 16px 72px;background:#f0fafc;height:100%;overflow-y:auto}
+  .community h2{font-size:20px;font-weight:900;color:var(--z-ink);margin-bottom:14px}
+  .post-card{background:#fff;border:3px solid var(--z-ink);border-radius:16px;padding:14px;margin-bottom:12px}
+  .post-header{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+  .post-avatar{width:36px;height:36px;border:2.5px solid var(--z-ink);border-radius:50%;background:var(--z-cyan);display:flex;align-items:center;justify-content:center;font-size:16px}
+  .post-meta{flex:1}
+  .post-meta .name{font-size:13px;font-weight:900;color:var(--z-ink)}
+  .post-meta .time{font-size:11px;color:#8a9a9e}
+  .post-card p{font-size:13px;color:#3a4a4e;line-height:1.6;margin-bottom:10px}
+  .post-img{height:140px;background:linear-gradient(135deg,#d4f0f5,#e0f0ff);border:2.5px solid var(--z-ink);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:10px}
+  .post-actions{display:flex;gap:16px;font-size:12px;font-weight:900;color:#6a7a7e}
+  .post-actions span{display:flex;align-items:center;gap:4px}
+
+  /* === 签到 === */
+  .checkin{padding:20px 16px 72px;background:linear-gradient(180deg,#fffbe6 0%,#fff5d6 100%);height:100%;overflow-y:auto}
+  .checkin-header{text-align:center;margin-bottom:20px}
+  .checkin-header h2{font-size:26px;font-weight:900;color:var(--z-ink)}
+  .checkin-header p{font-size:13px;color:#7a6a48;margin-top:4px}
+  .streak-box{background:var(--z-yellow);border:3px solid var(--z-ink);border-radius:20px;padding:20px;text-align:center;margin-bottom:20px;position:relative}
+  .streak-box::after{content:'🔥';position:absolute;right:14px;top:14px;font-size:28px}
+  .streak-num{font-size:48px;font-weight:900;color:var(--z-ink);line-height:1}
+  .streak-label{font-size:13px;color:var(--z-ink);margin-top:4px;font-weight:700}
+  .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:20px}
+  .cal-day{aspect-ratio:1;background:#fff;border:2px solid var(--z-ink);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:var(--z-ink)}
+  .cal-day.done{background:var(--z-yellow)}
+  .cal-day.today{background:var(--z-coral);color:#fff}
+  .reward-card{background:#fff;border:3px solid var(--z-ink);border-radius:16px;padding:14px;display:flex;gap:12px;align-items:center;margin-bottom:10px}
+  .reward-icon{width:44px;height:44px;border:2.5px solid var(--z-ink);border-radius:12px;background:var(--z-coral);display:flex;align-items:center;justify-content:center;font-size:20px}
+  .reward-text{flex:1}
+  .reward-text h4{font-size:14px;font-weight:900;color:var(--z-ink)}
+  .reward-text p{font-size:11px;color:#7a6a48}
+
+  /* === 邀请 === */
+  .refer{padding:20px 16px 72px;background:linear-gradient(135deg,#fff0ef 0%,#fff5f0 100%);height:100%;overflow-y:auto;text-align:center}
+  .refer-hero{margin-bottom:20px}
+  .refer-hero h2{font-size:24px;font-weight:900;color:var(--z-ink);margin-bottom:6px}
+  .refer-hero p{font-size:13px;color:#7a5a58}
+  .refer-card{background:#fff;border:3px solid var(--z-ink);border-radius:20px;padding:24px 20px;margin-bottom:16px;text-align:center;position:relative}
+  .refer-card .crown{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--z-coral);color:#fff;border:2px solid var(--z-ink);border-radius:10px;padding:4px 14px;font-size:12px;font-weight:900}
+  .refer-code{font-size:36px;font-weight:900;color:var(--z-ink);letter-spacing:4px;margin:8px 0}
+  .refer-stats{display:flex;justify-content:space-around;margin:20px 0}
+  .refer-stat{text-align:center}
+  .refer-stat .num{font-size:28px;font-weight:900;color:var(--z-coral)}
+  .refer-stat .lab{font-size:11px;color:#8a6a68}
+  .rule-card{background:#fff;border:2.5px solid var(--z-ink);border-radius:14px;padding:14px;text-align:left}
+  .rule-card h4{font-size:13px;font-weight:900;color:var(--z-ink);margin-bottom:6px}
+  .rule-card li{font-size:12px;color:#5a3a38;line-height:1.8;list-style:none;position:relative;padding-left:14px}
+  .rule-card li::before{content:'➜';position:absolute;left:0;color:var(--z-coral);font-weight:900}
+
+  /* === 钱包 === */
+  .wallet{padding:20px 16px 72px;background:#fff;height:100%;overflow-y:auto}
+  .wallet h2{font-size:20px;font-weight:900;color:var(--z-ink);margin-bottom:16px}
+  .balance-card{background:var(--z-ink);border:3px solid var(--z-ink);border-radius:20px;padding:24px 20px;color:#fff;position:relative;overflow:hidden;margin-bottom:20px}
+  .balance-card::after{content:'💎';position:absolute;right:16px;top:16px;font-size:40px;opacity:.15}
+  .balance-card .label{font-size:13px;opacity:.7;margin-bottom:4px}
+  .balance-card .amount{font-size:36px;font-weight:900}
+  .balance-card .sub{font-size:12px;opacity:.6;margin-top:2px}
+  .wallet-actions{display:flex;gap:10px;margin-bottom:20px}
+  .wallet-actions .btn{flex:1;justify-content:center;font-size:13px;padding:14px}
+  .tx-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:2px dashed var(--z-line)}
+  .tx-row:last-child{border-bottom:0}
+  .tx-info h4{font-size:13px;font-weight:900;color:var(--z-ink)}
+  .tx-info p{font-size:11px;color:#8a8a8a;margin-top:2px}
+  .tx-pts{font-size:15px;font-weight:900;color:var(--z-coral)}
+  .tx-pts.out{color:var(--z-ink)}
+
+  /* === 我的 === */
+  .account{padding:16px 16px 72px;background:linear-gradient(180deg,#fff8f0 0%,#fff 40%);height:100%;overflow-y:auto}
+  .profile{display:flex;gap:14px;align-items:center;margin-bottom:20px}
+  .profile-avatar{width:56px;height:56px;border:3px solid var(--z-ink);border-radius:50%;background:var(--z-yellow);display:flex;align-items:center;justify-content:center;font-size:24px}
+  .profile-info h3{font-size:18px;font-weight:900;color:var(--z-ink)}
+  .profile-info p{font-size:12px;color:#7a6a58;margin-top:2px}
+  .stats-row{display:flex;gap:10px;margin-bottom:20px}
+  .stat-card{flex:1;background:#fff;border:3px solid var(--z-ink);border-radius:14px;padding:14px;text-align:center}
+  .stat-card .num{font-size:22px;font-weight:900;color:var(--z-ink)}
+  .stat-card .lab{font-size:11px;color:#8a7a68;margin-top:2px}
+  .menu-group{background:#fff;border:3px solid var(--z-ink);border-radius:16px;overflow:hidden;margin-bottom:12px}
+  .menu-item{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:2px solid var(--z-line)}
+  .menu-item:last-child{border-bottom:0}
+  .menu-icon{width:32px;height:32px;border:2px solid var(--z-ink);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .menu-icon.yellow{background:var(--z-yellow)}
+  .menu-icon.coral{background:var(--z-coral)}
+  .menu-icon.cyan{background:var(--z-cyan)}
+  .menu-text{flex:1;font-size:13px;font-weight:900;color:var(--z-ink)}
+  .menu-arrow{font-size:16px;color:#aaa}
+  .version{text-align:center;font-size:11px;color:#aaa;margin-top:16px}
+
+  .note{color:#5a6a80;font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Campus Zine UI Kit v2</h1>
+  <p>校园贴纸志 · 高保真移动端设计稿 · 9 个核心页面 · 2026-09-30</p>
+</div>
+
+<div class="grid">
+
+  <!-- 1. 首页 -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="label">01 首页</div>
+    <div class="screen">
+      <div class="home">
+        <div class="home-top">
+          <div>
+            <div class="home-greet">下午好 👋</div>
+            <div class="home-name">小明同学</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="stick-badge" style="background:var(--z-yellow)">LV.5</div>
+            <div class="home-notif">🔔</div>
+          </div>
+        </div>
+        <div class="banner">
+          <h4>🏕 新学期任务季开启</h4>
+          <p>完成校园任务，赢取积分兑换好物</p>
+        </div>
+        <div class="quick-grid">
+          <div class="quick-item"><div class="quick-icon yellow">📋</div><div class="quick-label">任务大厅</div></div>
+          <div class="quick-item"><div class="quick-icon coral">🛒</div><div class="quick-label">积分商城</div></div>
+          <div class="quick-item"><div class="quick-icon cyan">💬</div><div class="quick-label">校园社区</div></div>
+          <div class="quick-item"><div class="quick-icon" style="background:var(--z-soft)">💰</div><div class="quick-label">我的钱包</div></div>
+        </div>
+        <div class="section-title"><h3>🔥 热门任务</h3><div class="section-line"></div></div>
+        <div class="task-row">
+          <div class="task-mini">
+            <div class="reward">急</div>
+            <h4>校园跑腿</h4>
+            <p>代取快递至宿舍</p>
+            <div class="pts">+120 积分</div>
+          </div>
+          <div class="task-mini">
+            <h4>问卷调研</h4>
+            <p>心理健康问卷调查</p>
+            <div class="pts">+50 积分</div>
+          </div>
+        </div>
+        <div class="section-title"><h3>🛍 积分好物</h3><div class="section-line"></div></div>
+        <div class="task-row">
+          <div class="task-mini" style="border-color:var(--z-coral)">
+            <h4>无线鼠标</h4>
+            <p>罗技静音办公款</p>
+            <div class="pts" style="color:var(--z-coral)">¥ 3,200</div>
+          </div>
+          <div class="task-mini" style="border-color:var(--z-coral)">
+            <h4>奶茶券</h4>
+            <p>校内奶茶店通用</p>
+            <div class="pts" style="color:var(--z-coral)">¥ 800</div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-item active"><div class="tab-icon">🏠</div>首页</div>
+        <div class="tab-item"><div class="tab-icon">📋</div>任务</div>
+        <div class="tab-item"><div class="tab-icon">🛒</div>商城</div>
+        <div class="tab-item"><div class="tab-icon">💬</div>社区</div>
+        <div class="tab-item"><div class="tab-icon">👤</div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 任务大厅 -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="label">02 任务大厅</div>
+    <div class="screen">
+      <div class="tasks">
+        <div class="tasks-header">
+          <h2>📋 任务大厅</h2>
+          <div class="filter-pill">筛选 ▾</div>
+          <div class="filter-pill" style="background:var(--z-ink);color:#fff">发布 ✎</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto">
+          <div class="filter-pill active" style="background:var(--z-yellow)">全部</div>
+          <div class="filter-pill">跑腿代办</div>
+          <div class="filter-pill">问卷调查</div>
+          <div class="filter-pill">技能服务</div>
+          <div class="filter-pill">兼职实习</div>
+        </div>
+        <div class="task-card">
+          <div class="tag hot">🔥 热门</div>
+          <h4>代取快递（3号楼 → 男生宿舍）</h4>
+          <div class="meta"><span>⏱ 30分钟内</span><span>📍 3号楼快递点</span></div>
+          <div class="bottom"><div class="pts">+120 <span>积分</span></div><div class="stick-btn">立即接单</div></div>
+        </div>
+        <div class="task-card">
+          <div class="tag">📊 调研</div>
+          <h4>大学生消费行为问卷调查</h4>
+          <div class="meta"><span>⏱ 48小时截止</span><span>📍 线上完成</span></div>
+          <div class="bottom"><div class="pts">+80 <span>积分</span></div><div class="stick-btn">立即接单</div></div>
+        </div>
+        <div class="task-card">
+          <div class="tag" style="background:var(--z-cyan)">💻 技能</div>
+          <h4>帮做 PPT 美化（10页以内）</h4>
+          <div class="meta"><span>⏱ 3天内交付</span><span>📍 线上交付</span></div>
+          <div class="bottom"><div class="pts">+200 <span>积分</span></div><div class="stick-btn">立即接单</div></div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-item"><div class="tab-icon">🏠</div>首页</div>
+        <div class="tab-item active"><div class="tab-icon">📋</div>任务</div>
+        <div class="tab-item"><div class="tab-icon">🛒</div>商城</div>
+        <div class="tab-item"><div class="tab-icon">💬</div>社区</div>
+        <div class="tab-item"><div class="tab-icon">👤</div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 任务详情 -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="label">03 任务详情</div>
+    <div class="screen">
+      <div class="detail">
+        <div class="detail-hero">
+          <div class="row">
+            <div class="stick-badge" style="background:var(--z-coral);color:#fff">🔥 热门</div>
+            <div class="stick-badge" style="background:#fff">跑腿代办</div>
+          </div>
+          <h2>代取快递<br>（3号楼 → 男生宿舍）</h2>
+          <div class="row" style="margin-top:8px">
+            <div class="stick-badge" style="background:#fff">⏱ 30分钟内</div>
+            <div class="stick-badge" style="background:#fff">📍 3号楼快递点</div>
+          </div>
+        </div>
+        <div class="detail-body">
+          <h4>📄 任务描述</h4>
+          <p>需到3号楼快递点取一个中等大小的包裹（约2kg），送至男生宿舍7栋302。取件码已附在任务中，请确认包裹完好无损后交付。</p>
+          <h4>🎯 完成步骤</h4>
+          <div class="detail-step"><div class="num">1</div><p>前往3号楼快递点，凭取件码领取包裹</p></div>
+          <div class="detail-step"><div class="num">2</div><p>拍照确认包裹外观完好</p></div>
+          <div class="detail-step"><div class="num">3</div><p>送至男生宿舍7栋302，收货人确认签收</p></div>
+          <div class="detail-step"><div class="num">4</div><p>上传签收凭证，等待发布者确认</p></div>
+          <h4>⚠️ 注意事项</h4>
+          <p>易碎物品请轻拿轻放；若包裹损坏请勿签收，及时联系发布者。</p>
+        </div>
+        <div class="detail-bottom">
+          <div class="pts">+120<span>积分</span></div>
+          <div class="stick-btn btn">立即接单</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 积分商城 -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="label">04 积分商城</div>
+    <div class="screen">
+      <div class="mall">
+        <div class="mall-header">
+          <h2>🛒 积分商城</h2>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="stick-badge" style="background:var(--z-yellow)">💎 3,450 积分</div>
+            <div class="home-notif" style="width:32px;height:32px">🛒</div>
+          </div>
+        </div>
+        <div class="cat-row">
+          <div class="cat-pill active">全部</div>
+          <div class="cat-pill">数码电子</div>
+          <div class="cat-pill">生活日用</div>
+          <div class="cat-pill">零食饮料</div>
+          <div class="cat-pill">校园周边</div>
+          <div class="cat-pill">优惠券</div>
+        </div>
+        <div class="prod-grid">
+          <div class="prod-card">
+            <div class="prod-tag">🔥 热销</div>
+            <div class="prod-img">🖱️</div>
+            <div class="prod-info"><h4>罗技静音无线鼠标</h4><div class="pts">¥ 3,200 积分</div></div>
+          </div>
+          <div class="prod-card">
+            <div class="prod-img">🧋</div>
+            <div class="prod-info"><h4>校内奶茶店通用券</h4><div class="pts">¥ 800 积分</div></div>
+          </div>
+          <div class="prod-card">
+            <div class="prod-img">🎧</div>
+            <div class="prod-info"><h4>头戴式降噪耳机</h4><div class="pts">¥ 8,500 积分</div></div>
+          </div>
+          <div class="prod-card">
+            <div class="prod-img">📒</div>
+            <div class="prod-info"><h4>定制笔记本套装</h4><div class="pts">¥ 1,200 积分</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-item"><div class="tab-icon">🏠</div>首页</div>
+        <div class="tab-item"><div class="tab-icon">📋</div>任务</div>
+        <div class="tab-item active"><div class="tab-icon">🛒</div>商城</div>
+        <div class="tab-item"><div class="tab-icon">💬</div>社区</div>
+        <div class="tab-item"><div class="tab-icon">👤</div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 社区 -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="label">05 校园社区</div>
+    <div class="screen">
+      <div class="community">
+        <h2>💬 校园社区</h2>
+        <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto">
+          <div class="filter-pill active" style="background:var(--z-cyan)">最新</div>
+          <div class="filter-pill">🔥 热门</div>
+          <div class="filter-pill">📢 校园公告</div>
+          <div class="filter-pill">🎉 活动</div>
+          <div class="filter-pill">❓ 求助</div>
+        </div>
+        <div class="post-card">
+          <div class="post-header">
+            <div class="post-avatar">🧑‍🎓</div>
+            <div class="post-meta"><div class="name">张伟 · 计算机学院</div><div class="time">15分钟前</div></div>
+          </div>
+          <p>求助：下周一有高数期中考试，想找一位数学系的同学帮忙辅导一下微积分，可以用积分支付！🙏</p>
+          <div class="post-actions"><span>❤️ 24</span><span>💬 8</span><span>↗️ 分享</span></div>
+        </div>
+        <div class="post-card">
+          <div class="post-header">
+            <div class="post-avatar" style="background:var(--z-yellow)">👩‍🎓</div>
+            <div class="post-meta"><div class="name">李娜 · 外语学院</div><div class="time">1小时前</div></div>
+          </div>
+          <p>分享一个好消息！上周在任务大厅帮同学翻译了一篇论文，赚了200积分，换了奶茶券！🧋✨</p>
+          <div class="post-img">🎉🧋✨</div>
+          <div class="post-actions"><span>❤️ 56</span><span>💬 12</span><span>↗️ 分享</span></div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-item"><div class="tab-icon">🏠</div>首页</div>
+        <div class="tab-item"><div class="tab-icon">📋</div>任务</div>
+        <div class="tab-item"><div class="tab-icon">🛒</div>商城</div>
+        <div class="tab-item active"><div class="tab-icon">💬</div>社区</div>
+        <div class="tab-item"><div class="tab-icon">👤</div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 签到 -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="label">06 每日签到</div>
+    <div class="screen">
+      <div class="checkin">
+        <div class="checkin-header">
+          <h2>✅ 每日签到</h2>
+          <p>连续签到奖励翻倍，坚持就是胜利！</p>
+        </div>
+        <div class="streak-box">
+          <div class="streak-num">12</div>
+          <div class="streak-label">连续签到天数</div>
+        </div>
+        <div class="calendar-grid">
+          <div class="cal-day">一</div><div class="cal-day">二</div><div class="cal-day">三</div><div class="cal-day">四</div><div class="cal-day">五</div><div class="cal-day">六</div><div class="cal-day">日</div>
+          <div class="cal-day">23</div><div class="cal-day">24</div><div class="cal-day">25</div><div class="cal-day">26</div><div class="cal-day">27</div><div class="cal-day">28</div><div class="cal-day">29</div>
+          <div class="cal-day done">30</div><div class="cal-day today">1</div><div class="cal-day">2</div><div class="cal-day">3</div><div class="cal-day">4</div><div class="cal-day">5</div><div class="cal-day">6</div>
+        </div>
+        <div style="text-align:center;margin-bottom:16px">
+          <div class="stick-btn" style="font-size:16px;padding:14px 36px">今日已签到 ✓</div>
+        </div>
+        <div class="reward-card">
+          <div class="reward-icon">🎁</div>
+          <div class="reward-text"><h4>连续7天奖励</h4><p>额外 +50 积分 + 抽奖机会</p></div>
+          <div class="stick-badge" style="background:var(--z-coral);color:#fff">已完成</div>
+        </div>
+        <div class="reward-card">
+          <div class="reward-icon" style="background:var(--z-cyan)">🏆</div>
+          <div class="reward-text"><h4>连续30天大奖</h4><p>神秘礼包 + 专属徽章</p></div>
+          <div class="stick-badge">18/30</div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-item"><div class="tab-icon">🏠</div>首页</div>
+        <div class="tab-item"><div class="tab-icon">📋</div>任务</div>
+        <div class="tab-item"><div class="tab-icon">🛒</div>商城</div>
+        <div class="tab-item"><div class="tab-icon">💬</div>社区</div>
+        <div class="tab-item"><div class="tab-icon">👤</div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. 邀请 -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="label">07 邀请推荐</div>
+    <div class="screen">
+      <div class="refer">
+        <div class="refer-hero">
+          <h2>❥ 邀请好友</h2>
+          <p>邀请同学加入，双方各得 100 积分！</p>
+        </div>
+        <div class="refer-card">
+          <div class="crown">👑 我的邀请码</div>
+          <div class="refer-code">A8X9K2</div>
+          <div class="stick-btn" style="margin:0 auto;display:inline-flex">复制邀请码</div>
+        </div>
+        <div class="refer-stats">
+          <div class="refer-stat"><div class="num">8</div><div class="lab">已邀请</div></div>
+          <div class="refer-stat"><div class="num">6</div><div class="lab">已注册</div></div>
+          <div class="refer-stat"><div class="num">800</div><div class="lab">累计奖励</div></div>
+        </div>
+        <div class="rule-card">
+          <h4>📋 邀请规则</h4>
+          <ul style="margin-top:6px">
+            <li>每成功邀请1位好友注册，双方各得100积分</li>
+            <li>好友首次完成任务，额外奖励50积分</li>
+            <li>邀请人数无上限，多邀多得</li>
+          </ul>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-item"><div class="tab-icon">🏠</div>首页</div>
+        <div class="tab-item"><div class="tab-icon">📋</div>任务</div>
+        <div class="tab-item"><div class="tab-icon">🛒</div>商城</div>
+        <div class="tab-item"><div class="tab-icon">💬</div>社区</div>
+        <div class="tab-item"><div class="tab-icon">👤</div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. 钱包 -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="label">08 钱包资产</div>
+    <div class="screen">
+      <div class="wallet">
+        <h2>💰 钱包资产</h2>
+        <div class="balance-card">
+          <div class="label">当前余额</div>
+          <div class="amount">3,450 积分</div>
+          <div class="sub">≈ ¥ 345.00（100积分 = ¥1）</div>
+        </div>
+        <div class="wallet-actions">
+          <div class="stick-btn btn">充值</div>
+          <div class="stick-btn btn coral">提现</div>
+        </div>
+        <h4 style="font-size:14px;font-weight:900;color:var(--z-ink);margin-bottom:10px">📋 最近交易</h4>
+        <div class="stick-card" style="padding:0 16px">
+          <div class="tx-row"><div class="tx-info"><h4>完成任务「代取快递」</h4><p>2026-09-29 14:32</p></div><div class="tx-pts">+120</div></div>
+          <div class="tx-row"><div class="tx-info"><h4>兑换「奶茶券」</h4><p>2026-09-28 18:15</p></div><div class="tx-pts out">-800</div></div>
+          <div class="tx-row"><div class="tx-info"><h4>每日签到奖励</h4><p>2026-09-28 09:00</p></div><div class="tx-pts">+15</div></div>
+          <div class="tx-row"><div class="tx-info"><h4>邀请好友「张伟」注册</h4><p>2026-09-27 20:10</p></div><div class="tx-pts">+100</div></div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-item"><div class="tab-icon">🏠</div>首页</div>
+        <div class="tab-item"><div class="tab-icon">📋</div>任务</div>
+        <div class="tab-item"><div class="tab-icon">🛒</div>商城</div>
+        <div class="tab-item"><div class="tab-icon">💬</div>社区</div>
+        <div class="tab-item"><div class="tab-icon">👤</div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. 我的 -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="label">09 我的</div>
+    <div class="screen">
+      <div class="account">
+        <div class="profile">
+          <div class="profile-avatar">🧑‍🎓</div>
+          <div class="profile-info">
+            <h3>小明同学</h3>
+            <p>计算机学院 · LV.5 积分达人</p>
+          </div>
+          <div class="home-notif" style="width:36px;height:36px">⚙️</div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="num">3,450</div><div class="lab">积分余额</div></div>
+          <div class="stat-card"><div class="num">28</div><div class="lab">已完成任务</div></div>
+          <div class="stat-card"><div class="num">12</div><div class="lab">连续签到</div></div>
+        </div>
+        <div class="menu-group">
+          <div class="menu-item"><div class="menu-icon yellow">📋</div><div class="menu-text">我的任务</div><div class="menu-arrow">›</div></div>
+          <div class="menu-item"><div class="menu-icon coral">🛒</div><div class="menu-text">我的订单</div><div class="menu-arrow">›</div></div>
+          <div class="menu-item"><div class="menu-icon cyan">💰</div><div class="menu-text">钱包资产</div><div class="menu-arrow">›</div></div>
+        </div>
+        <div class="menu-group">
+          <div class="menu-item"><div class="menu-icon yellow">❥</div><div class="menu-text">邀请好友</div><div class="menu-arrow">›</div></div>
+          <div class="menu-item"><div class="menu-icon" style="background:var(--z-soft)">✅</div><div class="menu-text">每日签到</div><div class="menu-arrow">›</div></div>
+          <div class="menu-item"><div class="menu-icon" style="background:var(--z-cyan-soft)">🔔</div><div class="menu-text">消息通知</div><div class="menu-arrow">›</div></div>
+        </div>
+        <div class="menu-group">
+          <div class="menu-item"><div class="menu-icon" style="background:#f0f0f0">📄</div><div class="menu-text">用户协议</div><div class="menu-arrow">›</div></div>
+          <div class="menu-item"><div class="menu-icon" style="background:#f0f0f0">🛡️</div><div class="menu-text">隐私政策</div><div class="menu-arrow">›</div></div>
+          <div class="menu-item"><div class="menu-icon" style="background:#f0f0f0">❓</div><div class="menu-text">帮助与反馈</div><div class="menu-arrow">›</div></div>
+        </div>
+        <div class="version">v2.0.0 · Campus Zine</div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-item"><div class="tab-icon">🏠</div>首页</div>
+        <div class="tab-item"><div class="tab-icon">📋</div>任务</div>
+        <div class="tab-item"><div class="tab-icon">🛒</div>商城</div>
+        <div class="tab-item"><div class="tab-icon">💬</div>社区</div>
+        <div class="tab-item active"><div class="tab-icon">👤</div>我的</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p style="text-align:center;margin-top:48px;color:#5a6a80;font-size:13px">
+  设计方向：Campus Zine 校园贴纸志 · 粗描边 + 高饱和撞色 + 大字重排版 · 任务=黄 · 商城=珊瑚 · 社区=青<br>
+  设计系统：CSS Variables + 3px 粗边 + 4px 硬阴影 + 18rpx 大圆角 · 适配 uni-app 变量体系
+</p>
+
+</body>
+</html>

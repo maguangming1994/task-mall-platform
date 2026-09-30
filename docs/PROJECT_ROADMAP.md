@@ -271,5 +271,5 @@
 - [x] 任务模板中心后端：新增、编辑、复制、启停、不可变版本记录。
 - [x] 从模板生成独立任务草稿，运行时重新绑定预算与时间，保留模板来源版本。
 - [x] 模板流程接口测试及任务主链路回归。
-- [ ] 管理端任务模板中心可视化页面与“一键套用模板”交互。
+- [x] 管理端任务模板中心可视化页面与“一键套用模板”交互（已抽出为侧栏独立菜单页“任务模板中心”，组件位于 apps/admin-web/src/features/tasks/TaskTemplateCenterPage.tsx，复用既有 TaskTemplatePanel；后端在 AdminNavigationService 增设 task_templates 菜单项，复用 task.view/task.manage 权限）。
 - [ ] 批量任务数据导入、周期任务规则与校园线下履约扩展。
