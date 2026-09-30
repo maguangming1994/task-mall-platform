@@ -41,7 +41,7 @@ class ReleaseControlSeeder extends Seeder
         ];
 
         foreach ($moduleDefaults as $flag) {
-            FeatureFlag::query()->firstOrCreate(
+            $record = FeatureFlag::query()->firstOrCreate(
                 ['code' => $flag['code']],
                 [
                     'name' => $flag['name'],
@@ -54,6 +54,26 @@ class ReleaseControlSeeder extends Seeder
                     'placeholder_desc_reviewed' => $flag['reviewed'][1],
                 ],
             );
+            // 对已存在的记录，仅补全未设置的占位文案，不覆盖管理员已配置的开关状态或文案。
+            if ($record->wasRecentlyCreated) {
+                continue;
+            }
+            $fill = [];
+            if (! $record->placeholder_title_reviewing) {
+                $fill['placeholder_title_reviewing'] = $flag['reviewing'][0];
+            }
+            if (! $record->placeholder_desc_reviewing) {
+                $fill['placeholder_desc_reviewing'] = $flag['reviewing'][1];
+            }
+            if (! $record->placeholder_title_reviewed) {
+                $fill['placeholder_title_reviewed'] = $flag['reviewed'][0];
+            }
+            if (! $record->placeholder_desc_reviewed) {
+                $fill['placeholder_desc_reviewed'] = $flag['reviewed'][1];
+            }
+            if ($fill !== []) {
+                $record->update($fill);
+            }
         }
     }
 }
