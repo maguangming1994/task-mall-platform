@@ -13,7 +13,7 @@ class ReleaseControlService
 {
     public function __construct(private readonly AuditLogger $audit, private readonly ProductionReadinessService $productionReadiness) {}
 
-    public function updateFlag(AdminUser $admin, FeatureFlag $flag, string $mode, int $percentage, array $audience, int $expectedVersion, string $reason): FeatureFlag
+    public function updateFlag(AdminUser $admin, FeatureFlag $flag, string $mode, int $percentage, array $audience, int $expectedVersion, string $reason, ?array $placeholder = null): FeatureFlag
     {
         if (! in_array($mode, ['disabled', 'percentage', 'enabled'], true) || $percentage < 0 || $percentage > 100) {
             throw ValidationException::withMessages(['mode' => '灰度模式或比例无效。']);
@@ -22,19 +22,48 @@ class ReleaseControlService
             throw ValidationException::withMessages(['rollout_percentage' => '模式与灰度比例不匹配。']);
         }
 
-        return DB::transaction(function () use ($admin, $flag, $mode, $percentage, $audience, $expectedVersion, $reason): FeatureFlag {
+        return DB::transaction(function () use ($admin, $flag, $mode, $percentage, $audience, $expectedVersion, $reason, $placeholder): FeatureFlag {
             $locked = FeatureFlag::query()->lockForUpdate()->findOrFail($flag->id);
             if ($locked->version !== $expectedVersion) {
                 throw ValidationException::withMessages(['expected_version' => '功能开关已被其他管理员更新，请刷新后重试。']);
             }
-            $before = $locked->only(['mode', 'rollout_percentage', 'audience', 'version']);
+            $before = $locked->only(['mode', 'rollout_percentage', 'audience', 'version', 'placeholder_title_reviewing', 'placeholder_desc_reviewing', 'placeholder_title_reviewed', 'placeholder_desc_reviewed']);
             $version = $locked->version + 1;
             $locked->versions()->create(['version' => $version, 'mode' => $mode, 'rollout_percentage' => $percentage, 'audience' => $audience, 'reason' => $reason, 'created_by_admin_id' => $admin->id]);
-            $locked->update(['mode' => $mode, 'rollout_percentage' => $percentage, 'audience' => $audience, 'version' => $version, 'updated_by_admin_id' => $admin->id]);
-            $this->audit->record($admin, 'feature_flag.updated', 'feature_flag', $locked->code, $before, $locked->only(['mode', 'rollout_percentage', 'audience', 'version']), $reason);
+            $attributes = ['mode' => $mode, 'rollout_percentage' => $percentage, 'audience' => $audience, 'version' => $version, 'updated_by_admin_id' => $admin->id];
+            if ($placeholder !== null) {
+                $attributes['placeholder_title_reviewing'] = $placeholder['title_reviewing'] ?? null;
+                $attributes['placeholder_desc_reviewing'] = $placeholder['desc_reviewing'] ?? null;
+                $attributes['placeholder_title_reviewed'] = $placeholder['title_reviewed'] ?? null;
+                $attributes['placeholder_desc_reviewed'] = $placeholder['desc_reviewed'] ?? null;
+            }
+            $locked->update($attributes);
+            $this->audit->record($admin, 'feature_flag.updated', 'feature_flag', $locked->code, $before, $locked->only(['mode', 'rollout_percentage', 'audience', 'version', 'placeholder_title_reviewing', 'placeholder_desc_reviewing', 'placeholder_title_reviewed', 'placeholder_desc_reviewed']), $reason);
 
             return $locked->fresh();
         });
+    }
+
+    /**
+     * 返回各模块当前审核状态下的占位文案。
+     *
+     * @return array<string, array{title: string, desc: string}>
+     */
+    public function modulePlaceholders(string $reviewStatus): array
+    {
+        $titleField = $reviewStatus === 'reviewing' ? 'placeholder_title_reviewing' : 'placeholder_title_reviewed';
+        $descField = $reviewStatus === 'reviewing' ? 'placeholder_desc_reviewing' : 'placeholder_desc_reviewed';
+
+        return FeatureFlag::query()
+            ->where('code', 'like', 'module_%')
+            ->get(['code', $titleField, $descField])
+            ->mapWithKeys(function (FeatureFlag $flag) use ($titleField, $descField): array {
+                $title = $flag->getAttribute($titleField) ?: '功能升级中';
+                $desc = $flag->getAttribute($descField) ?: '该功能正在升级优化，稍作等待，精彩马上回来。';
+
+                return [$flag->code => ['title' => $title, 'desc' => $desc]];
+            })
+            ->all();
     }
 
     public function enabled(string $code, string $subject, ?string $platform = null): bool

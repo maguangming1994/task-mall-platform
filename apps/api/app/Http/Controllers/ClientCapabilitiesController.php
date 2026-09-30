@@ -52,6 +52,9 @@ class ClientCapabilitiesController extends Controller
             $notificationChannels[] = 'wechat_mini';
         }
 
+        $reviewing = $releases->enabled('review_in_progress', (string) ($request->header('X-Device-Id') ?: 'anonymous'), $platform);
+        $reviewStatus = $reviewing ? 'reviewing' : 'reviewed';
+
         return ApiResponse::success([
             'version' => 4,
             'platform' => $platform,
@@ -80,7 +83,9 @@ class ClientCapabilitiesController extends Controller
             'wallet_payment_unavailable_message' => $paymentCapabilities['wallet']['reason'],
             'open_in_wechat_url' => null,
             'notification_channels' => $notificationChannels,
+            'review_status' => $reviewStatus,
             'feature_flags' => collect([...self::MODULE_FLAG_CODES, 'checkout_v2', 'community_video', 'external_notifications'])->mapWithKeys(fn (string $code) => [$code => $releases->enabled($code, (string) ($request->header('X-Device-Id') ?: 'anonymous'), $platform)]),
+            'module_placeholders' => $releases->modulePlaceholders($reviewStatus),
         ]);
     }
 }

@@ -33,6 +33,7 @@ interface TemplateFormValue { scene_code: string; channel: string; subject: stri
 interface RuleFormValue { enabled: boolean; channels: string[]; reason: string }
 interface CampaignFormValue { name: string; title: string; body: string; channels: string[]; scheduled_at?: string }
 interface CancelFormValue { reason: string }
+interface PlaceholderFormValue { title_reviewing: string; desc_reviewing: string; title_reviewed: string; desc_reviewed: string }
 
 const environmentNames: Record<string, string> = { local: '本地开发环境', testing: '自动测试环境', staging: '预发布环境', production: '生产环境' }
 const uatStatusNames: Record<string, string> = { passed: '全部验收通过', passed_local: '本地自动验收通过', failed: '验收未通过' }
@@ -105,6 +106,8 @@ export function OperationsPage() {
   const [ruleForm] = Form.useForm<RuleFormValue>()
   const [campaignForm] = Form.useForm<CampaignFormValue>()
   const [cancelForm] = Form.useForm<CancelFormValue>()
+  const [placeholderForm] = Form.useForm<PlaceholderFormValue>()
+  const [editingPlaceholder, setEditingPlaceholder] = useState<ManagedFeatureFlag | null>(null)
   const [messageApi, contextHolder] = message.useMessage()
   const templateChannel = Form.useWatch('channel', templateForm)
   const managedSceneName = (value: string) => rules.find((rule) => rule.scene_code === value)?.name ?? sceneName(value)
@@ -235,6 +238,53 @@ export function OperationsPage() {
     } catch (error) { messageApi.error(error instanceof Error ? error.message : '开关更新失败') }
   }
 
+  const openPlaceholderEditor = (flag: ManagedFeatureFlag) => {
+    if (!canDeploy) return
+    placeholderForm.setFieldsValue({
+      title_reviewing: flag.placeholder_title_reviewing ?? '',
+      desc_reviewing: flag.placeholder_desc_reviewing ?? '',
+      title_reviewed: flag.placeholder_title_reviewed ?? '',
+      desc_reviewed: flag.placeholder_desc_reviewed ?? '',
+    })
+    setEditingPlaceholder(flag)
+  }
+
+  const savePlaceholder = async (values: PlaceholderFormValue) => {
+    if (!canDeploy || !editingPlaceholder) return
+    setSubmitting(true)
+    try {
+      const flag = editingPlaceholder
+      const payload: Record<string, unknown> = {
+        mode: flag.mode,
+        rollout_percentage: flag.rollout_percentage,
+        audience: flag.audience ?? {},
+        expected_version: flag.version,
+        reason: '后台编辑模块占位页文案。',
+        placeholder: {
+          title_reviewing: values.title_reviewing,
+          desc_reviewing: values.desc_reviewing,
+          title_reviewed: values.title_reviewed,
+          desc_reviewed: values.desc_reviewed,
+        },
+      }
+      await updateFeatureFlag(flag.code, payload)
+      setEditingPlaceholder(null)
+      await load()
+      messageApi.success('占位文案已更新')
+    } catch (error) { messageApi.error(error instanceof Error ? error.message : '占位文案更新失败') }
+    finally { setSubmitting(false) }
+  }
+
+  const reviewFlag = featureFlags.find((f) => f.code === 'review_in_progress')
+  const setReviewStatus = async (reviewing: boolean) => {
+    if (!canDeploy || !reviewFlag) return
+    try {
+      await updateFeatureFlag(reviewFlag.code, { mode: reviewing ? 'enabled' : 'disabled', rollout_percentage: reviewing ? 100 : 0, audience: reviewFlag.audience ?? {}, expected_version: reviewFlag.version, reason: reviewing ? '切换为审核中占位文案。' : '切换为审核过占位文案。' })
+      await load()
+      messageApi.success(reviewing ? '已切换为审核中文案' : '已切换为审核过文案')
+    } catch (error) { messageApi.error(error instanceof Error ? error.message : '切换失败') }
+  }
+
   return <>
     {contextHolder}
     <div className="page-heading"><div><Typography.Text className="eyebrow">校园运营与消息</Typography.Text><Typography.Title level={2}>运营与消息</Typography.Title><Typography.Paragraph type="secondary">核心业务指标、运行韧性、通知模板、营销订阅触达与失败投递统一管理。</Typography.Paragraph></div><Tag color="cyan">运营工作台</Tag></div>
@@ -289,8 +339,28 @@ export function OperationsPage() {
       ]} />
     </Card>
     <Card bordered={false} title="用户验收测试（UAT）记录" style={{ marginTop: 16 }}><Table rowKey="id" dataSource={uatRuns} pagination={false} columns={[{ title: '验收版本', dataIndex: 'release_version', render: releaseVersion }, { title: '运行环境', dataIndex: 'environment', render: (value: string) => environmentNames[value] ?? '其他环境' }, { title: '验收状态', render: (_: unknown, row: UatRun) => <Tag color={row.status === 'failed' ? 'red' : row.status === 'passed' ? 'green' : 'cyan'}>{uatStatusNames[row.status] ?? '未知状态'}</Tag> }, { title: '通过/阻塞', render: (_: unknown, row: UatRun) => `${row.summary.passed} 项通过 / ${row.summary.blocked} 项阻塞` }, { title: '报告校验码', render: (_: unknown, row: UatRun) => <Tooltip title="用于验证验收报告未被修改，点击可复制完整校验码"><Typography.Text code copyable={{ text: row.report_hash }}>报告 #{row.report_hash.slice(0, 8)}</Typography.Text></Tooltip> }, { title: '完成时间', dataIndex: 'completed_at', render: formatDate }]} /></Card>
-    {canDeploy && <Card bordered={false} title="功能灰度发布" style={{ marginTop: 16 }}><Table rowKey="code" dataSource={featureFlags} pagination={false} columns={[{ title: '功能', render: (_: unknown, row: ManagedFeatureFlag) => <>{row.name}<Typography.Text type="secondary"> · {row.code}</Typography.Text></> }, { title: '开放状态', dataIndex: 'mode', render: (value: string) => <Tag color={value === 'disabled' ? 'default' : value === 'enabled' ? 'green' : 'cyan'}>{featureModeNames[value] ?? '未知状态'}</Tag> }, { title: '开放比例', render: (_: unknown, row: ManagedFeatureFlag) => `${row.rollout_percentage}% · 配置版本 v${row.version}` }, { title: '操作', render: (_: unknown, row: ManagedFeatureFlag) => <Space><Button size="small" onClick={() => void setFlag(row, 0)}>关闭</Button><Button size="small" onClick={() => void setFlag(row, 10)}>开放 10%</Button><Button size="small" type="primary" onClick={() => void setFlag(row, 100)}>全部开放</Button></Space> }]} /></Card>}
+    {canDeploy && <Card bordered={false} title="功能灰度发布" style={{ marginTop: 16 }} extra={reviewFlag && <Space>
+      <Typography.Text type="secondary">当前占位文案：</Typography.Text>
+      <Tag color={reviewFlag.mode === 'enabled' ? 'gold' : 'green'}>{reviewFlag.mode === 'enabled' ? '审核中' : '审核过'}</Tag>
+      <Button size="small" type={reviewFlag.mode === 'enabled' ? 'default' : 'primary'} onClick={() => void setReviewStatus(true)} disabled={reviewFlag.mode === 'enabled'}>切到审核中</Button>
+      <Button size="small" type={reviewFlag.mode === 'disabled' ? 'default' : 'primary'} onClick={() => void setReviewStatus(false)} disabled={reviewFlag.mode === 'disabled'}>切到审核过</Button>
+    </Space>}>
+      <Alert showIcon type="info" message="审核中/审核过两套占位文案可按模块单独编辑；关闭模块时小程序展示当前审核状态对应的文案。" style={{ marginBottom: 16 }} />
+      <Table rowKey="code" dataSource={featureFlags.filter((f) => f.code !== 'review_in_progress')} pagination={false} columns={[{ title: '功能', render: (_: unknown, row: ManagedFeatureFlag) => <>{row.name}<Typography.Text type="secondary"> · {row.code}</Typography.Text></> }, { title: '开放状态', dataIndex: 'mode', render: (value: string) => <Tag color={value === 'disabled' ? 'default' : value === 'enabled' ? 'green' : 'cyan'}>{featureModeNames[value] ?? '未知状态'}</Tag> }, { title: '开放比例', render: (_: unknown, row: ManagedFeatureFlag) => `${row.rollout_percentage}% · 配置版本 v${row.version}` }, { title: '占位文案', render: (_: unknown, row: ManagedFeatureFlag) => row.code.startsWith('module_') ? <Space direction="vertical" size={0}><Typography.Text type="secondary">审核中：{row.placeholder_title_reviewing || '—'}</Typography.Text><Typography.Text type="secondary">审核过：{row.placeholder_title_reviewed || '—'}</Typography.Text></Space> : <Typography.Text type="secondary">—</Typography.Text> }, { title: '操作', render: (_: unknown, row: ManagedFeatureFlag) => <Space><Button size="small" onClick={() => void setFlag(row, 0)}>关闭</Button><Button size="small" onClick={() => void setFlag(row, 10)}>开放 10%</Button><Button size="small" type="primary" onClick={() => void setFlag(row, 100)}>全部开放</Button>{row.code.startsWith('module_') && <Button size="small" icon={<EditOutlined />} onClick={() => openPlaceholderEditor(row)}>文案</Button>}</Space> }]} />
+    </Card>}
     {canDeploy && <Card bordered={false} title="系统发布记录" style={{ marginTop: 16 }}><Table rowKey="id" dataSource={releases} pagination={false} columns={[{ title: '发布版本', dataIndex: 'release_version', render: releaseVersion }, { title: '运行环境', dataIndex: 'environment', render: (value: string) => environmentNames[value] ?? '其他环境' }, { title: '发布状态', render: (_: unknown, row: ManagedRelease) => <Tag color={row.status === 'rolled_back' ? 'red' : row.status === 'deployed' ? 'green' : 'cyan'}>{releaseStatusNames[row.status] ?? '未知状态'}</Tag> }, { title: '开放比例', render: (_: unknown, row: ManagedRelease) => `${row.rollout_percentage}%` }, { title: '代码版本', render: (_: unknown, row: ManagedRelease) => <Tooltip title="代码提交标识"><Typography.Text code copyable={{ text: row.commit_sha }}>{row.commit_sha.slice(0, 10)}</Typography.Text></Tooltip> }]} /></Card>}
+
+    <Modal title={editingPlaceholder ? `编辑占位文案 · ${editingPlaceholder.name}` : '编辑占位文案'} open={editingPlaceholder !== null} onCancel={() => setEditingPlaceholder(null)} onOk={() => placeholderForm.submit()} okText="保存文案" cancelText="取消" confirmLoading={submitting} destroyOnHidden width={640}>
+      <Form form={placeholderForm} layout="vertical" onFinish={savePlaceholder}>
+        <Alert showIcon type="info" message="审核中：提交微信审核期间展示的文案；审核过：审核通过后展示的文案。可按模块分别设置标题与描述。" style={{ marginBottom: 16 }} />
+        <Typography.Title level={5}>审核中文案</Typography.Title>
+        <Form.Item name="title_reviewing" label="标题" rules={[{ required: true, max: 160, message: '请输入标题（最多 160 字）' }]}><Input maxLength={160} placeholder="功能升级中" /></Form.Item>
+        <Form.Item name="desc_reviewing" label="描述" rules={[{ required: true, max: 2000, message: '请输入描述（最多 2000 字）' }]}><Input.TextArea rows={3} maxLength={2000} showCount placeholder="该功能正在升级优化，稍作等待，精彩马上回来。" /></Form.Item>
+        <Typography.Title level={5} style={{ marginTop: 16 }}>审核过文案</Typography.Title>
+        <Form.Item name="title_reviewed" label="标题" rules={[{ required: true, max: 160, message: '请输入标题（最多 160 字）' }]}><Input maxLength={160} placeholder="服务维护中" /></Form.Item>
+        <Form.Item name="desc_reviewed" label="描述" rules={[{ required: true, max: 2000, message: '请输入描述（最多 2000 字）' }]}><Input.TextArea rows={3} maxLength={2000} showCount placeholder="该功能正在进行服务升级，预计很快恢复，感谢你的耐心等待。" /></Form.Item>
+      </Form>
+    </Modal>
 
     <Modal title={editingRule ? `配置通知规则 · ${editingRule.name}` : '配置通知规则'} open={editingRule !== null} onCancel={() => setEditingRule(null)} onOk={() => ruleForm.submit()} okText="保存规则" cancelText="取消" confirmLoading={submitting} destroyOnHidden>
       {editingRule && <Form form={ruleForm} layout="vertical" onFinish={saveRule}>

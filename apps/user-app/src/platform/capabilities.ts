@@ -1,8 +1,10 @@
 import { apiRequest } from '@/api/http'
 import type { ClientPlatform } from './runtime'
+import type { ModuleCode } from './modules'
 
 export type LoginMethod = 'wechat_mini' | 'wechat_oa' | 'phone'
 export type CashPaymentMethodCode = 'wechat' | 'wallet'
+export type ReviewStatus = 'reviewing' | 'reviewed'
 
 export interface PaymentMethodCapability {
   code: CashPaymentMethodCode
@@ -11,7 +13,10 @@ export interface PaymentMethodCapability {
   reason: string | null
 }
 
-import type { ModuleCode } from './modules'
+export interface ModulePlaceholderCopy {
+  title: string
+  desc: string
+}
 
 export interface ClientCapabilities {
   version: number
@@ -27,7 +32,9 @@ export interface ClientCapabilities {
   payment_unavailable_message: string | null
   wechat_payment_unavailable_message: string | null
   wallet_payment_unavailable_message: string | null
+  review_status: ReviewStatus
   feature_flags: Partial<Record<'checkout_v2' | 'community_video' | 'external_notifications' | ModuleCode, boolean>>
+  module_placeholders: Partial<Record<ModuleCode, ModulePlaceholderCopy>>
 }
 
 export function loadClientCapabilities() {

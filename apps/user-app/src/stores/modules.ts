@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
-import { loadClientCapabilities } from '@/platform/capabilities'
+import { loadClientCapabilities, type ModulePlaceholderCopy } from '@/platform/capabilities'
 import { MODULE_CODES, type ModuleCode, MODULE_REGISTRY } from '@/platform/modules'
 
 const STORAGE_KEY = 'task_mall_module_flags'
 
 interface StoredFlags {
   flags: Partial<Record<ModuleCode, boolean>>
+  placeholders: Partial<Record<ModuleCode, ModulePlaceholderCopy>>
   savedAt: number
 }
 
@@ -17,9 +18,14 @@ function isValidStoredFlags(raw: unknown): raw is StoredFlags {
   return true
 }
 
+function defaultPlaceholder(code: ModuleCode): ModulePlaceholderCopy {
+  return { title: '功能升级中', desc: `${MODULE_REGISTRY[code].name}正在升级优化，稍作等待，精彩马上回来。` }
+}
+
 export const useModulesStore = defineStore('app-modules', {
   state: () => ({
     flags: {} as Partial<Record<ModuleCode, boolean>>,
+    placeholders: {} as Partial<Record<ModuleCode, ModulePlaceholderCopy>>,
     resolved: false,
     loadedAt: 0,
     loading: false,
@@ -31,6 +37,7 @@ export const useModulesStore = defineStore('app-modules', {
         const raw = uni.getStorageSync(STORAGE_KEY)
         if (raw && isValidStoredFlags(raw)) {
           this.flags = raw.flags
+          this.placeholders = raw.placeholders || {}
           this.resolved = true
         }
       } catch {
@@ -61,8 +68,9 @@ export const useModulesStore = defineStore('app-modules', {
           }
         }
         this.flags = next
+        this.placeholders = caps.module_placeholders || {}
         try {
-          uni.setStorageSync(STORAGE_KEY, { flags: next, savedAt: Date.now() })
+          uni.setStorageSync(STORAGE_KEY, { flags: next, placeholders: this.placeholders, savedAt: Date.now() })
         } catch {
           // ignore storage errors
         }
@@ -95,6 +103,9 @@ export const useModulesStore = defineStore('app-modules', {
         cur = MODULE_REGISTRY[key].parent
       }
       return true
+    },
+    placeholder(code: ModuleCode): ModulePlaceholderCopy {
+      return this.placeholders[code] || defaultPlaceholder(code)
     },
   },
 })

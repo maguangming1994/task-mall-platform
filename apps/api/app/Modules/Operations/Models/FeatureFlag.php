@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FeatureFlag extends Model
 {
-    protected $fillable = ['code', 'name', 'mode', 'rollout_percentage', 'audience', 'version', 'updated_by_admin_id'];
+    protected $fillable = ['code', 'name', 'mode', 'rollout_percentage', 'audience', 'placeholder_title_reviewing', 'placeholder_desc_reviewing', 'placeholder_title_reviewed', 'placeholder_desc_reviewed', 'version', 'updated_by_admin_id'];
 
     protected function casts(): array
     {

@@ -1,8 +1,13 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { MODULE_REGISTRY, type ModuleCode } from '@/platform/modules'
+import { useModulesStore } from '@/stores/modules'
 
 const props = defineProps<{ code: ModuleCode }>()
 const def = MODULE_REGISTRY[props.code]
+const modules = useModulesStore()
+
+const copy = computed(() => modules.placeholder(props.code))
 
 function goHome() {
   uni.reLaunch({ url: '/pages/index/index' })
@@ -14,8 +19,8 @@ function goHome() {
     <view class="mp-icon-wrap">
       <text class="mp-icon">{{ def.icon }}</text>
     </view>
-    <text class="mp-title">功能升级中</text>
-    <text class="mp-desc">{{ def.name }}正在升级优化，稍作等待，精彩马上回来。</text>
+    <text class="mp-title">{{ copy.title }}</text>
+    <text class="mp-desc">{{ copy.desc }}</text>
     <button class="tm-secondary-button mp-home" @click="goHome">返回首页</button>
   </view>
 </template>
