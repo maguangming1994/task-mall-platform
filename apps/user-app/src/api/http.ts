@@ -26,7 +26,7 @@ export class ApiError extends Error {
   }
 }
 
-let defaultApiBaseUrl = 'http://127.0.0.1:8000/api/v1'
+let defaultApiBaseUrl = 'https://rwsc.jxgxnxs.cn/api/v1'
 // #ifdef H5
 defaultApiBaseUrl = '/api/v1'
 // #endif
