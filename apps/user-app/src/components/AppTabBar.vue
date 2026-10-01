@@ -23,10 +23,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { navigationRoutes, type BottomNavigationItem, type NavigationTarget } from '@/api/navigation'
 import { useNavigationStore } from '@/stores/navigation'
+import { useIconConfigStore } from '@/stores/icons'
 
 const props = defineProps<{ currentTarget: NavigationTarget; variant?: 'floating' | 'flat' }>()
 const emit = defineEmits<{ compose: [] }>()
 const navigation = useNavigationStore()
+const icons = useIconConfigStore()
 const failedIcons = ref(new Set<string>())
 const fallbackIcons: Record<NavigationTarget, { normal: string; active: string }> = {
   home: { normal: '/static/icons/tabbar-home.svg', active: '/static/icons/tabbar-home-active.svg' },
@@ -48,7 +50,10 @@ const featuredIndex = computed(() => {
   return navigation.visibleItems.findIndex((item) => item.target === 'products')
 })
 
-onMounted(() => void navigation.load())
+onMounted(() => {
+  void navigation.load()
+  void icons.load()
+})
 
 function itemStyle(target: NavigationTarget) {
   return { color: target === props.currentTarget ? navigation.config.style.active_color : navigation.config.style.text_color }
@@ -61,9 +66,12 @@ function isFeatured(index: number) {
 function iconSource(item: BottomNavigationItem) {
   const active = item.target === props.currentTarget
   const key = `${item.id}:${active ? 'active' : 'normal'}`
-  if (failedIcons.value.has(key)) return active ? fallbackIcons[item.target].active : fallbackIcons[item.target].normal
-  if (active) return item.active_icon_url || fallbackIcons[item.target].active
-  return item.icon_url || fallbackIcons[item.target].normal
+  const localFallback = active ? fallbackIcons[item.target].active : fallbackIcons[item.target].normal
+  // 加载失败后直接回退包内图，不再走后台远程配置，避免失败循环。
+  if (failedIcons.value.has(key)) return localFallback
+  // 优先级：导航装修远程图 > 图标后台配置 > 包内静态图。
+  const remote = active ? item.active_icon_url : item.icon_url
+  return icons.resolve(remote || localFallback)
 }
 
 function markIconFailed(item: BottomNavigationItem) {

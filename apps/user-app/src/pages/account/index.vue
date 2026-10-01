@@ -87,10 +87,10 @@
         <text class="section-note" @click="openOrders()">全部订单 ›</text>
       </view>
       <view class="order-status-grid">
-        <view v-for="item in orderStatuses" :key="item.label" class="order-status-item" @click="item.action">
-          <view :class="['order-mark', `tone-${item.tone}`]"><image class="mark-icon" :src="item.icon" mode="aspectFit" /></view>
+        <view v-for="item in orderStatuses" :key="item.code" class="order-status-item" @click="item.action">
+          <view :class="['order-mark', `tone-${item.tone}`]"><image class="mark-icon" :src="item.iconSrc" mode="aspectFit" /></view>
           <strong>{{ item.count }}</strong>
-          <text>{{ item.label }}</text>
+          <text>{{ item.displayLabel }}</text>
         </view>
       </view>
     </view>
@@ -101,9 +101,9 @@
         <text class="section-note" @click="openCommunity()">进入社区 ›</text>
       </view>
       <view class="community-grid">
-        <view v-for="item in communityServices" :key="item.label" class="community-item" @click="item.action">
-          <view :class="['service-icon', `tone-${item.tone}`]"><image class="mark-icon" :src="item.icon" mode="aspectFit" /></view>
-          <text class="service-label">{{ item.label }}</text>
+        <view v-for="item in communityServices" :key="item.code" class="community-item" @click="item.action">
+          <view :class="['service-icon', `tone-${item.tone}`]"><image class="mark-icon" :src="item.iconSrc" mode="aspectFit" /></view>
+          <text class="service-label">{{ item.displayLabel }}</text>
           <text class="service-note">{{ item.note }}</text>
         </view>
       </view>
@@ -112,9 +112,9 @@
     <view class="quick-services">
       <view class="section-row"><view><text class="section-kicker">QUICK ACCESS</text><text class="section-title">常用服务</text></view><text class="section-note">账户与校园服务</text></view>
       <view class="quick-grid">
-        <view v-for="item in services" :key="item.label" class="quick-card" @click="item.action">
-          <view :class="['service-icon', `tone-${item.tone}`]"><image :class="['mark-icon', { 'mark-icon-fill': item.icon_url }]" :src="item.icon_url || item.icon" mode="aspectFit" /></view>
-          <view><text class="service-label">{{ item.label }}</text><text class="service-note">{{ item.note }}</text></view>
+        <view v-for="item in services" :key="item.id" class="quick-card" @click="item.action">
+          <view :class="['service-icon', `tone-${item.tone}`]"><image :class="['mark-icon', { 'mark-icon-fill': item.icon_url }]" :src="item.iconSrc" mode="aspectFit" /></view>
+          <view><text class="service-label">{{ item.displayLabel }}</text><text class="service-note">{{ item.note }}</text></view>
         </view>
       </view>
     </view>
@@ -135,6 +135,7 @@ import { resolveApiAssetUrl } from '@/api/http'
 import { chooseAndUploadAvatar, uploadAvatarFromPath } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
+import { useIconConfigStore } from '@/stores/icons'
 import type { ModuleCode } from '@/platform/modules'
 import { navigateToLogin } from '@/utils/authRedirect'
 
@@ -142,6 +143,7 @@ declare const wx: { canIUse(schema: string): boolean }
 
 const auth = useAuthStore()
 const modules = useModulesStore()
+const icons = useIconConfigStore()
 const nickname = ref(auth.user?.nickname ?? '')
 const avatarFileId = ref(auth.user?.avatar_file_id ?? '')
 const avatarPreviewUrl = ref('')
@@ -196,22 +198,30 @@ const services = computed(() => baseServices
   })
   .map((item) => {
     const configured = accountAppearance.value.service_icons.find((icon) => icon.id === item.id)
-    return { ...item, mark: configured?.mark || item.mark, icon_url: configured?.icon_url || '' }
+    return {
+      ...item,
+      mark: configured?.mark || item.mark,
+      icon_url: configured?.icon_url || '',
+      iconSrc: configured?.icon_url || icons.resolve(item.icon),
+      displayLabel: icons.label(item.label, item.icon),
+    }
   }))
 const orderStatuses = computed(() => [
-  { mark: '待', label: '待完成', count: 0, tone: 'blue', action: () => openOrders('pending'), icon: '/static/icons/order-pending.svg' },
-  { mark: '审', label: '待审核', count: 0, tone: 'orange', action: () => openOrders('reviewing'), icon: '/static/icons/order-review.svg' },
-  { mark: '成', label: '已完成', count: 0, tone: 'green', action: () => openOrders('completed'), icon: '/static/icons/order-completed.svg' },
-  { mark: '售', label: '售后退款', count: 0, tone: 'red', action: openAfterSales, icon: '/static/icons/order-refund.svg' },
-])
+  { code: 'order-pending', mark: '待', label: '待完成', count: 0, tone: 'blue', action: () => openOrders('pending'), icon: '/static/icons/order-pending.svg' },
+  { code: 'order-review', mark: '审', label: '待审核', count: 0, tone: 'orange', action: () => openOrders('reviewing'), icon: '/static/icons/order-review.svg' },
+  { code: 'order-completed', mark: '成', label: '已完成', count: 0, tone: 'green', action: () => openOrders('completed'), icon: '/static/icons/order-completed.svg' },
+  { code: 'order-refund', mark: '售', label: '售后退款', count: 0, tone: 'red', action: openAfterSales, icon: '/static/icons/order-refund.svg' },
+].map((item) => ({ ...item, iconSrc: icons.resolve(item.icon), displayLabel: icons.label(item.label, item.icon) })))
 const communityServices = computed(() => [
-  { mark: '发', label: '发布帖子', note: '分享校园生活', tone: 'green', action: () => openCommunityCompose('experience'), needPost: true, icon: '/static/icons/community-post.svg' },
-  { mark: '团', label: '校园组团', note: '自习运动拼车', tone: 'orange', action: openActivities, needPost: false, icon: '/static/icons/community-group.svg' },
-  { mark: '助', label: '有偿求助', note: '发布校园需求', tone: 'red', action: () => openCommunityCompose('question'), needPost: true, icon: '/static/icons/community-help.svg' },
-  { mark: '学', label: '学习交流', note: '经验与攻略', tone: 'blue', action: () => openCommunity('guide'), needPost: false, icon: '/static/icons/community-study.svg' },
-  { mark: '展', label: '成果展示', note: '作品与成长', tone: 'violet', action: () => openCommunity('showcase'), needPost: false, icon: '/static/icons/community-showcase.svg' },
-  { mark: '问', label: '互助问答', note: '同学来解答', tone: 'slate', action: () => openCommunity('question'), needPost: false, icon: '/static/icons/community-qa.svg' },
-].filter((item) => !item.needPost || modules.isEnabled('module_community_post')))
+  { code: 'community-post', mark: '发', label: '发布帖子', note: '分享校园生活', tone: 'green', action: () => openCommunityCompose('experience'), needPost: true, icon: '/static/icons/community-post.svg' },
+  { code: 'community-group', mark: '团', label: '校园组团', note: '自习运动拼车', tone: 'orange', action: openActivities, needPost: false, icon: '/static/icons/community-group.svg' },
+  { code: 'community-help', mark: '助', label: '有偿求助', note: '发布校园需求', tone: 'red', action: () => openCommunityCompose('question'), needPost: true, icon: '/static/icons/community-help.svg' },
+  { code: 'community-study', mark: '学', label: '学习交流', note: '经验与攻略', tone: 'blue', action: () => openCommunity('guide'), needPost: false, icon: '/static/icons/community-study.svg' },
+  { code: 'community-showcase', mark: '展', label: '成果展示', note: '作品与成长', tone: 'violet', action: () => openCommunity('showcase'), needPost: false, icon: '/static/icons/community-showcase.svg' },
+  { code: 'community-qa', mark: '问', label: '互助问答', note: '同学来解答', tone: 'slate', action: () => openCommunity('question'), needPost: false, icon: '/static/icons/community-qa.svg' },
+]
+  .filter((item) => !item.needPost || modules.isEnabled('module_community_post'))
+  .map((item) => ({ ...item, iconSrc: icons.resolve(item.icon), displayLabel: icons.label(item.label, item.icon) })))
 
 onShow(load)
 

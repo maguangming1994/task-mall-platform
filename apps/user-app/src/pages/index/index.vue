@@ -83,10 +83,10 @@
             @click="item.action"
           >
             <view :class="['home-v10-quick-icon', `tone-${item.tone}`]">
-              <image v-if="item.icon_url" :src="item.icon_url" mode="aspectFit" />
+              <image v-if="item.icon_url" :src="item.iconSrc" mode="aspectFit" />
               <image v-else :src="quickArtIcon(item.id, item.link_type)" mode="aspectFit" />
             </view>
-            <text class="home-v10-quick-label">{{ item.label }}</text>
+            <text class="home-v10-quick-label">{{ item.displayLabel }}</text>
           </view>
         </view>
 
@@ -132,7 +132,7 @@
         </view>
 
         <view v-else class="home-v10-task-empty" @click="openTasks">
-          <view class="home-v10-task-empty-icon"><image src="/static/icons/module-tasks.svg" mode="aspectFit" /></view>
+          <view class="home-v10-task-empty-icon"><image :src="icons.resolve('/static/icons/module-tasks.svg')" mode="aspectFit" /></view>
           <view class="home-v10-task-empty-copy">
             <text>新的校园任务正在准备中</text>
             <text>先去任务大厅看看其他可参与内容</text>
@@ -327,14 +327,14 @@
           @click="item.action"
         >
           <view :class="['home-v4-quick-icon', `tone-${item.tone}`]">
-            <image v-if="item.icon_url" class="home-v4-quick-image" :src="item.icon_url" mode="aspectFit" />
+            <image v-if="item.icon_url" class="home-v4-quick-image" :src="item.iconSrc" mode="aspectFit" />
             <view v-else :class="['home-v4-quick-art', `art-${quickArtType(item.id, item.link_type)}`]">
               <view class="home-v4-quick-art-body">
                 <image class="home-v4-quick-art-symbol" :src="quickArtIcon(item.id, item.link_type)" mode="aspectFit" />
               </view>
             </view>
           </view>
-          <text class="home-v4-quick-label">{{ item.label }}</text>
+          <text class="home-v4-quick-label">{{ item.displayLabel }}</text>
           <text class="home-v4-quick-note">{{ item.note }}</text>
         </view>
       </view>
@@ -517,7 +517,7 @@
           <view v-if="modules.isEnabled('module_wallet')" class="home-v4-priority-card asset" role="button" aria-label="打开资产中心" @click="openAssets">
             <view class="home-v4-priority-icon">
               <image v-if="priorityIcon('assets')" :src="priorityIcon('assets')" mode="aspectFit" />
-              <image v-else src="/static/icons/module-wallet.svg" mode="aspectFit" />
+              <image v-else :src="icons.resolve('/static/icons/module-wallet.svg')" mode="aspectFit" />
             </view>
             <view class="home-v4-priority-copy">
               <text class="home-v4-priority-title">资产中心</text>
@@ -528,7 +528,7 @@
           <view v-if="modules.isEnabled('module_referrals')" class="home-v4-priority-card referral" role="button" aria-label="打开邀请成长" @click="openReferrals">
             <view class="home-v4-priority-icon">
               <image v-if="priorityIcon('referrals')" :src="priorityIcon('referrals')" mode="aspectFit" />
-              <image v-else src="/static/icons/module-referrals.svg" mode="aspectFit" />
+              <image v-else :src="icons.resolve('/static/icons/module-referrals.svg')" mode="aspectFit" />
             </view>
             <view class="home-v4-priority-copy">
               <text class="home-v4-priority-title">邀请成长</text>
@@ -658,6 +658,7 @@ import type { Campus } from '@/api/campuses'
 import { useAuthStore } from '@/stores/auth'
 import { useCampusStore } from '@/stores/campus'
 import { useModulesStore } from '@/stores/modules'
+import { useIconConfigStore } from '@/stores/icons'
 import { HOME_LINK_MODULE } from '@/platform/modules'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { compactRichTextContent } from '@/utils/richText'
@@ -670,6 +671,7 @@ const fallbackHeroImage = '/static/home/hero-campus-reward.png'
 const auth = useAuthStore()
 const campus = useCampusStore()
 const modules = useModulesStore()
+const icons = useIconConfigStore()
 let promotionCampusReady: Promise<unknown> | null = null
 const popupVisible = ref(false)
 const homeLoading = ref(false)
@@ -794,6 +796,8 @@ const quickEntries = computed(() => home.value.modules.quick_entries
   .map((item) => ({
     ...item,
     action: () => navigateHomeLink(item.link_type),
+    iconSrc: icons.resolve(item.icon_url),
+    displayLabel: icons.label(item.label, item.icon_url),
   })))
 const pageStyle = computed(() => ({
   ...backgroundStyle(home.value.modules.page_background_url),
@@ -1007,10 +1011,10 @@ function quickArtSymbol(id: string, linkType: HomeLinkType) {
 
 function quickArtIcon(id: string, linkType: HomeLinkType) {
   const type = quickArtType(id, linkType)
-  if (type === 'products') return '/static/icons/module-mall.svg'
-  if (type === 'community') return '/static/icons/module-community.svg'
-  if (type === 'orders') return '/static/icons/service-orders.svg'
-  return '/static/icons/module-tasks.svg'
+  if (type === 'products') return icons.resolve('/static/icons/module-mall.svg')
+  if (type === 'community') return icons.resolve('/static/icons/module-community.svg')
+  if (type === 'orders') return icons.resolve('/static/icons/service-orders.svg')
+  return icons.resolve('/static/icons/module-tasks.svg')
 }
 
 function heroImageSource(slide: HomeCarouselItem) {
