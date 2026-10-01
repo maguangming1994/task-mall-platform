@@ -32,6 +32,7 @@ import {
 import { MediaGalleryInput } from '../../components/MediaGalleryInput'
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { useAdminAuth } from '../auth/AdminAuthContext'
+import { IconConfigPanel } from './IconConfigPanel'
 import { StorageManagementPanel } from './StorageManagementPanel'
 import { ThirdPartyServicesPanel } from './ThirdPartyServicesPanel'
 import navAccountActive from '../../../../user-app/src/static/tabbar/account-active.png'
@@ -553,6 +554,7 @@ export function SettingsPage() {
         <Select allowClear placeholder="全部分类" value={group} onChange={setGroup} style={{ width: 180 }} options={groups.map((value) => ({ value, label: groupNames[value] ?? value }))} />
       </div>
       <Alert showIcon type="info" message="金额编辑时使用元，服务端和数据库统一保存为分；发布只影响后续新业务，历史订单与资产事实不重算。" />
+      <IconConfigPanel />
       <StorageManagementPanel />
       {isSuperAdmin && <ThirdPartyServicesPanel />}
       <Card bordered={false} className="settings-table-card">

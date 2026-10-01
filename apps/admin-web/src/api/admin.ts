@@ -1205,6 +1205,57 @@ export async function logout(): Promise<void> {
   }
 }
 
+export type IconConfigCategory = 'tabbar' | 'module' | 'order' | 'community' | 'service' | 'common'
+export type IconConfigTone = 'default' | 'yellow' | 'cyan' | 'green' | 'blue' | 'purple' | 'red'
+
+export interface IconConfigItem {
+  id: string
+  code: string
+  name: string
+  category: IconConfigCategory
+  svg_path: string
+  fallback_char: string | null
+  label: string | null
+  description: string | null
+  tone: IconConfigTone | null
+  sort_order: number
+  is_active: boolean
+  meta: Record<string, unknown> | null
+}
+
+export interface IconConfigInput {
+  code?: string
+  name?: string
+  category?: IconConfigCategory
+  svg_path?: string
+  fallback_char?: string | null
+  label?: string | null
+  description?: string | null
+  tone?: IconConfigTone | null
+  sort_order?: number
+  is_active?: boolean
+}
+
+export async function listIconConfigs(params?: { category?: IconConfigCategory; is_active?: boolean }): Promise<{ items: IconConfigItem[] }> {
+  const search = new URLSearchParams()
+  if (params?.category) search.set('category', params.category)
+  if (typeof params?.is_active === 'boolean') search.set('is_active', String(params.is_active))
+  const query = search.toString() ? `?${search.toString()}` : ''
+  return request(`/admin/icon-configs${query}`)
+}
+
+export async function createIconConfig(input: IconConfigInput): Promise<{ item: IconConfigItem }> {
+  return request('/admin/icon-configs', { method: 'POST', body: JSON.stringify(input) })
+}
+
+export async function updateIconConfig(id: string, input: IconConfigInput): Promise<{ item: IconConfigItem }> {
+  return request(`/admin/icon-configs/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+
+export async function deleteIconConfig(id: string): Promise<void> {
+  await request(`/admin/icon-configs/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
 export async function listSettings(group?: string): Promise<{ items: SystemSetting[]; groups: string[] }> {
   const query = group ? `?group=${encodeURIComponent(group)}` : ''
   return request(`/admin/settings${query}`)
