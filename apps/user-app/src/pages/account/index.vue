@@ -113,7 +113,7 @@
       <view class="section-row"><view><text class="section-kicker">QUICK ACCESS</text><text class="section-title">常用服务</text></view><text class="section-note">账户与校园服务</text></view>
       <view class="quick-grid">
         <view v-for="item in services" :key="item.label" class="quick-card" @click="item.action">
-          <view :class="['service-icon', `tone-${item.tone}`]"><image class="mark-icon" :src="item.icon_url || item.icon" mode="aspectFit" /></view>
+          <view :class="['service-icon', `tone-${item.tone}`]"><image :class="['mark-icon', { 'mark-icon-fill': item.icon_url }]" :src="item.icon_url || item.icon" mode="aspectFit" /></view>
           <view><text class="service-label">{{ item.label }}</text><text class="service-note">{{ item.note }}</text></view>
         </view>
       </view>
@@ -499,5 +499,7 @@ async function logout() {
 .account-state,.guest-account{min-height:420px;border-radius:22px}.state-mark{width:58px;height:58px;border-radius:18px;font-size:20px}.state-title{font-size:19px}.state-copy{font-size:13px}
 .guest-account{min-height:440px}.guest-account-content{padding:50px 28px 34px}.guest-kicker{font-size:11px;letter-spacing:0}.guest-title{font-size:25px}.guest-copy{font-size:14px}.guest-login-button{min-height:44px;height:44px;margin-top:24px;border-radius:14px;font-size:15px;line-height:44px}
 @media screen and (max-width:360px){.page{padding-right:16px;padding-left:16px}.page .account-hero{min-height:300px}.hero-profile{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:center;gap:8px 12px}.page .account-hero .profile-mark{grid-row:1}.profile-copy{grid-column:2;grid-row:1}.page .account-hero .profile-badge{white-space:nowrap}.page .profile-edit{grid-column:2;grid-row:2;width:96px;margin:0}.wallet-layout{grid-template-columns:1fr}.asset-side{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto}.wallet-action-row>text{display:none}.quick-services .quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.mark-icon{display:block;width:60%;height:60%}
+.order-mark .mark-icon{display:block;width:56%;height:56%}
+.service-icon .mark-icon{display:block;width:54%;height:54%}
+.service-icon .mark-icon.mark-icon-fill{width:100%;height:100%}
 </style>
