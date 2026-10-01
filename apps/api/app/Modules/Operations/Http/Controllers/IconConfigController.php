@@ -2,6 +2,7 @@
 
 namespace App\Modules\Operations\Http\Controllers;
 
+use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Modules\Operations\Models\IconConfig;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +25,7 @@ class IconConfigController extends Controller
 
         $items = $query->get();
 
-        return response()->json(['items' => $items]);
+        return ApiResponse::success(['items' => $items]);
     }
 
     public function store(Request $request): JsonResponse
@@ -45,12 +46,12 @@ class IconConfigController extends Controller
 
         $item = IconConfig::create($validated);
 
-        return response()->json(['item' => $item], 201);
+        return ApiResponse::success(['item' => $item], 201);
     }
 
     public function show(IconConfig $iconConfig): JsonResponse
     {
-        return response()->json(['item' => $iconConfig]);
+        return ApiResponse::success(['item' => $iconConfig]);
     }
 
     public function update(Request $request, IconConfig $iconConfig): JsonResponse
@@ -70,13 +71,13 @@ class IconConfigController extends Controller
 
         $iconConfig->update($validated);
 
-        return response()->json(['item' => $iconConfig->fresh()]);
+        return ApiResponse::success(['item' => $iconConfig->fresh()]);
     }
 
     public function destroy(IconConfig $iconConfig): JsonResponse
     {
         $iconConfig->delete();
 
-        return response()->json(['message' => '已删除']);
+        return ApiResponse::success(['message' => '已删除']);
     }
 }
