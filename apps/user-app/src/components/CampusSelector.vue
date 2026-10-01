@@ -1,7 +1,7 @@
 <template>
   <view class="campus-selector">
     <view class="campus-access-bar">
-      <view class="campus-trigger" role="button" aria-label="选择当前学校" @click="openCampusList">
+      <view class="campus-trigger" role="button" aria-label="搜索并选择当前学校" @click="openCampusSelector">
         <template v-if="campus.selected">
           <view :class="['campus-brand-mark', 'campus-trigger-mark', campusFallbackTone(campus.selected)]">
             <image
@@ -17,10 +17,6 @@
         <view v-else class="campus-pin"><view /></view>
         <text class="campus-trigger-name">{{ campus.selected?.name || '选择学校' }}</text>
         <view class="campus-chevron" />
-      </view>
-      <view class="campus-search-trigger" role="button" aria-label="搜索学校" @click="openCampusSearch">
-        <view class="campus-trigger-search-icon" />
-        <text>搜索学校</text>
       </view>
     </view>
 
@@ -194,11 +190,7 @@ onMounted(async () => {
 
 watch(() => props.accountCampus, (value) => campus.syncFromAccount(value))
 
-async function openCampusList() {
-  await openSelector(false)
-}
-
-async function openCampusSearch() {
+async function openCampusSelector() {
   await openSelector(true)
 }
 
@@ -372,7 +364,7 @@ function locationText(item: Campus) {
 </script>
 
 <style scoped>
-.campus-selector{position:relative;width:100%;box-sizing:border-box}.campus-access-bar{display:grid;width:100%;min-width:0;grid-template-columns:minmax(126px,47%) minmax(0,1fr);gap:8px}.campus-trigger,.campus-search-trigger{display:flex;height:42px;min-width:0;box-sizing:border-box;align-items:center;border:1px solid #dde7e8;border-radius:9px;background:#fff}.campus-trigger{gap:7px;padding:0 10px}.campus-trigger-name{min-width:0;overflow:hidden;flex:1;color:var(--tm-ink-900);font-size:14px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}.campus-search-trigger{gap:9px;padding:0 13px;color:#6f7e8d}.campus-search-trigger>text{min-width:0;overflow:hidden;font-size:14px;text-overflow:ellipsis;white-space:nowrap}.campus-pin{position:relative;width:13px;height:16px;flex:none;box-sizing:border-box;border:2px solid var(--tm-growth-600);border-radius:50% 50% 50% 0;transform:rotate(-45deg)}.campus-pin view{position:absolute;top:3px;left:3px;width:3px;height:3px;border-radius:50%;background:var(--tm-growth-600)}.campus-brand-mark{display:flex;overflow:hidden;align-items:center;justify-content:center;flex:none;box-sizing:border-box;border:1rpx solid rgba(21,41,55,.08);background:#e8f2ff;color:#255b88;font-weight:900;letter-spacing:0}.campus-brand-mark.tone-1{background:#e8f7ee;color:#276a46}.campus-brand-mark.tone-2{background:#fff2dc;color:#8a581b}.campus-brand-mark.tone-3{background:#fdebea;color:#8a3f3a}.campus-brand-mark.tone-4{background:#e6f7f6;color:#216969}.campus-brand-mark.tone-5{background:#edf0f5;color:#4d5d70}.campus-brand-image{width:100%;height:100%;box-sizing:border-box;padding:3rpx;background:#fff}.campus-trigger-mark{width:26px;height:26px;border-radius:7px;font-size:10px}.campus-trigger-mark .campus-brand-image{padding:2px}.campus-chevron{width:7px;height:7px;flex:none;border-right:2px solid #607184;border-bottom:2px solid #607184;transform:rotate(-45deg)}.campus-trigger-search-icon{position:relative;width:14px;height:14px;flex:none;box-sizing:border-box;border:2px solid #617487;border-radius:50%}.campus-trigger-search-icon::after{content:'';position:absolute;width:6px;height:2px;right:-5px;bottom:-2px;border-radius:2px;background:#617487;transform:rotate(45deg)}
+.campus-selector{position:relative;width:100%;box-sizing:border-box}.campus-access-bar{display:flex;width:100%;min-width:0}.campus-trigger{display:inline-flex;height:42px;max-width:100%;min-width:0;box-sizing:border-box;align-items:center;gap:8px;align-self:flex-start;padding:0 13px;border:1px solid #dde7e8;border-radius:999rpx;background:#fff;box-shadow:0 4rpx 14rpx rgba(21,62,55,.06)}.campus-trigger-name{max-width:320rpx;min-width:0;overflow:hidden;color:var(--tm-ink-900);font-size:14px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}.campus-pin{position:relative;width:13px;height:16px;flex:none;box-sizing:border-box;border:2px solid var(--tm-growth-600);border-radius:50% 50% 50% 0;transform:rotate(-45deg)}.campus-pin view{position:absolute;top:3px;left:3px;width:3px;height:3px;border-radius:50%;background:var(--tm-growth-600)}.campus-brand-mark{display:flex;overflow:hidden;align-items:center;justify-content:center;flex:none;box-sizing:border-box;border:1rpx solid rgba(21,41,55,.08);background:#e8f2ff;color:#255b88;font-weight:900;letter-spacing:0}.campus-brand-mark.tone-1{background:#e8f7ee;color:#276a46}.campus-brand-mark.tone-2{background:#fff2dc;color:#8a581b}.campus-brand-mark.tone-3{background:#fdebea;color:#8a3f3a}.campus-brand-mark.tone-4{background:#e6f7f6;color:#216969}.campus-brand-mark.tone-5{background:#edf0f5;color:#4d5d70}.campus-brand-image{width:100%;height:100%;box-sizing:border-box;padding:3rpx;background:#fff}.campus-trigger-mark{width:26px;height:26px;border-radius:7px;font-size:10px}.campus-trigger-mark .campus-brand-image{padding:2px}.campus-chevron{width:7px;height:7px;flex:none;border-right:2px solid #607184;border-bottom:2px solid #607184;transform:rotate(-45deg)}.campus-trigger-search-icon{position:relative;width:14px;height:14px;flex:none;box-sizing:border-box;border:2px solid #617487;border-radius:50%}.campus-trigger-search-icon::after{content:'';position:absolute;width:6px;height:2px;right:-5px;bottom:-2px;border-radius:2px;background:#617487;transform:rotate(45deg)}
 .campus-mask{position:fixed;z-index:1300;inset:0;display:flex;align-items:flex-end;background:rgba(9,25,43,.48);backdrop-filter:blur(5px)}.campus-sheet{display:flex;flex-direction:column;width:100%;max-height:82vh;overflow:hidden;box-sizing:border-box;padding:13rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));border-radius:34rpx 34rpx 0 0;background:#f8fbfd;box-shadow:0 -20rpx 60rpx rgba(9,25,43,.18)}.campus-sheet-handle{width:72rpx;height:8rpx;margin:0 auto 20rpx;border-radius:999rpx;background:#cfd8e2}.campus-sheet-head{display:flex;align-items:center;justify-content:space-between}.campus-sheet-head>view:first-child text{display:block}.campus-sheet-title{font-size:22px;font-weight:950}.campus-sheet-note{margin-top:6rpx;color:var(--tm-ink-500);font-size:13px}.campus-close{display:flex;width:58rpx;height:58rpx;align-items:center;justify-content:center;border:1rpx solid var(--tm-line);border-radius:50%;background:#fff;color:#5f6e80;font-size:25px}
 .campus-search{display:flex;height:82rpx;align-items:center;gap:14rpx;margin-top:24rpx;padding:0 20rpx;border:1rpx solid #d9e4ec;border-radius:20rpx;background:#fff}.campus-search input{min-width:0;flex:1;font-size:15px}.campus-search>text{color:var(--tm-growth-700);font-size:13px;font-weight:800}.campus-search-icon{width:23rpx;height:23rpx;border:4rpx solid #6f8193;border-radius:50%}.campus-search-icon::after{content:'';display:block;width:12rpx;height:4rpx;margin:18rpx 0 0 17rpx;border-radius:4rpx;background:#6f8193;transform:rotate(45deg)}
 .campus-locate{display:flex;height:auto;min-height:100rpx;align-items:center;gap:18rpx;margin:18rpx 0 0;padding:17rpx 20rpx;border:1rpx solid #cde9dd;border-radius:22rpx;background:#ecfaf4;color:var(--tm-ink-900);line-height:1.2;text-align:left}.campus-locate::after{border:0}.campus-locate>view:nth-child(2){min-width:0;flex:1}.campus-locate text{display:block}.campus-locate view>text:first-child{font-size:15px;font-weight:850}.campus-locate .campus-locate-note{margin-top:7rpx;color:#5e766c;font-size:11px;font-weight:400}.campus-locate>text{color:var(--tm-growth-700);font-size:24px}.campus-locate-icon{position:relative;width:52rpx;height:52rpx;flex:none;border:4rpx solid var(--tm-growth-600);border-radius:50%}.campus-locate-icon::before,.campus-locate-icon::after{content:'';position:absolute;background:var(--tm-growth-600)}.campus-locate-icon::before{top:-10rpx;bottom:-10rpx;left:22rpx;width:4rpx}.campus-locate-icon::after{top:22rpx;right:-10rpx;left:-10rpx;height:4rpx}.campus-locate-icon view{position:absolute;z-index:2;inset:14rpx;border-radius:50%;background:var(--tm-growth-600)}
