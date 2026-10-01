@@ -6,7 +6,32 @@
   >
     <view class="home-v4-safe" />
     <view class="home-campus-context">
-      <CampusSelector :access-token="auth.accessToken" :account-campus="auth.user?.campus" @change="handleCampusChange" />
+      <view class="home-campus-selector-wrap">
+        <CampusSelector :access-token="auth.accessToken" :account-campus="auth.user?.campus" @change="handleCampusChange" />
+      </view>
+      <view v-if="auth.isAuthenticated" class="home-top-actions">
+        <view class="home-top-action" role="button" aria-label="打开消息中心" @click="openNotifications">
+          <view class="home-v10-bell"><view /></view>
+          <view class="home-top-notice-dot" />
+          <text>消息</text>
+        </view>
+        <view
+          v-if="home.floating_support.enabled"
+          class="home-top-action"
+          role="button"
+          aria-label="联系客服"
+          @click="openFloatingSupport"
+        >
+          <image
+            v-if="home.floating_support.icon_url"
+            class="home-top-action-image"
+            :src="home.floating_support.icon_url"
+            mode="aspectFit"
+          />
+          <view v-else class="home-v10-headset"><view>••</view></view>
+          <text>{{ supportShortLabel }}</text>
+        </view>
+      </view>
     </view>
 
     <view v-if="auth.isAuthenticated" class="home-v10-auth-shell">
@@ -38,30 +63,6 @@
           <button v-if="activeHeroSlide" class="home-v10-hero-cta" @click.stop="navigateHomeLink(activeHeroSlide.link_type)">
             {{ activeHeroSlide.button_text || '立即查看' }}<text>›</text>
           </button>
-        </view>
-
-        <view class="home-v10-hero-actions">
-          <view class="home-v10-hero-action" role="button" aria-label="打开消息中心" @click="openNotifications">
-            <view class="home-v10-bell"><view /></view>
-            <view class="home-v10-notice-dot" />
-            <text>消息</text>
-          </view>
-          <view
-            v-if="home.floating_support.enabled"
-            class="home-v10-hero-action"
-            role="button"
-            aria-label="联系客服"
-            @click="openFloatingSupport"
-          >
-            <image
-              v-if="home.floating_support.icon_url"
-              class="home-v10-action-image"
-              :src="home.floating_support.icon_url"
-              mode="aspectFit"
-            />
-            <view v-else class="home-v10-headset"><view>••</view></view>
-            <text>{{ supportShortLabel }}</text>
-          </view>
         </view>
 
         <view v-if="home.carousel.items.length > 1" class="home-v10-hero-dots">
@@ -1129,7 +1130,13 @@ function handlePopupAction() {
 <style scoped>
 .home-v4{min-height:100vh;background:radial-gradient(circle at 96% 3%,rgba(69,207,212,.17),transparent 240rpx),linear-gradient(180deg,#fff 0,#fbfffd 58%,#f7fbff 100%);color:#0b253d}
 .home-v4-safe{height:calc(env(safe-area-inset-top) + 14rpx)}
-.home-campus-context{display:flex;align-items:center;padding:0 14px 12px;box-sizing:border-box;background:linear-gradient(180deg,#fff 0%,#f4fbf8 100%)}
+.home-campus-context{display:flex;align-items:center;gap:14rpx;padding:0 22rpx 18rpx;box-sizing:border-box;background:linear-gradient(180deg,#fff 0%,#f4fbf8 100%)}
+.home-campus-selector-wrap{min-width:0;flex:1}.home-top-actions{display:flex;flex:none;gap:12rpx}
+.home-top-action{position:relative;display:flex;height:60rpx;align-items:center;gap:8rpx;padding:0 22rpx;border:1rpx solid #e2eee9;border-radius:999rpx;background:rgba(255,255,255,.96);box-shadow:0 6rpx 16rpx rgba(16,72,62,.12);color:#0c7a5c}
+.home-top-action:active{transform:scale(.96)}
+.home-top-action>text{color:#0c7a5c!important;font-size:23rpx;font-weight:800;line-height:1;white-space:nowrap}
+.home-top-action-image{width:30rpx;height:30rpx;flex:none}
+.home-top-notice-dot{position:absolute;top:10rpx;right:10rpx;width:14rpx;height:14rpx;border:3rpx solid #fff;border-radius:50%;background:#ff3e24;box-shadow:0 2rpx 6rpx rgba(255,62,36,.45)}
 .home-v4.is-authenticated{background:#fff;color:#122338}
 .home-v4.is-authenticated>.home-v4-header,.home-v4.is-authenticated>.home-v4-state,.home-v4.is-authenticated>.home-v4-content{display:none}
 .home-v10-auth-shell{min-height:100vh;padding-bottom:18rpx;background:linear-gradient(180deg,#f7fbff 0,#fff 31%,#fff 100%)}
@@ -1139,13 +1146,8 @@ function handlePopupAction() {
 .home-v10-hero-brand{position:absolute;z-index:2;top:31rpx;left:31rpx;display:flex;max-width:370rpx;flex-direction:column}
 .home-v10-hero-title{max-width:100%;overflow:hidden;color:#101923!important;font-size:28px;font-weight:950;letter-spacing:-1.5rpx;line-height:1.06;text-overflow:ellipsis;text-shadow:0 2rpx 7rpx rgba(255,255,255,.72);white-space:nowrap}
 .home-v10-hero-subtitle{margin-top:16rpx;color:#4d6076!important;font-size:15px;font-weight:650;letter-spacing:.02em}
-.home-v10-hero-actions{position:absolute;z-index:3;top:22rpx;right:22rpx;display:flex;flex-direction:row;gap:14rpx}
-.home-v10-hero-action{position:relative;display:flex;height:60rpx;flex-direction:row;align-items:center;gap:8rpx;padding:0 22rpx;border:1rpx solid rgba(255,255,255,.9);border-radius:999rpx;background:rgba(255,255,255,.92);box-shadow:0 8rpx 20rpx rgba(16,72,62,.16);color:#0c7a5c;backdrop-filter:blur(8rpx)}
-.home-v10-hero-action:active{transform:scale(.96)}
-.home-v10-hero-action>text{display:block;color:#0c7a5c!important;font-size:22rpx;font-weight:800;line-height:1;white-space:nowrap}
-.home-v10-action-image{width:30rpx;height:30rpx;flex:none}.home-v10-notice-dot{position:absolute;top:10rpx;right:10rpx;width:14rpx;height:14rpx;border:3rpx solid #fff;border-radius:50%;background:#ff3e24;box-shadow:0 2rpx 6rpx rgba(255,62,36,.45)}
-.home-v10-bell{position:relative;width:27rpx;height:30rpx;flex:none;border:4rpx solid #0c7a5c;border-bottom:0;border-radius:18rpx 18rpx 5rpx 5rpx}.home-v10-bell::before{content:'';position:absolute;right:-7rpx;bottom:-5rpx;left:-7rpx;height:4rpx;border-radius:4rpx;background:#0c7a5c}.home-v10-bell::after{content:'';position:absolute;bottom:-11rpx;left:7rpx;width:12rpx;height:7rpx;border-radius:0 0 8rpx 8rpx;background:#0c7a5c}
-.home-v10-headset{position:relative;width:32rpx;height:30rpx;flex:none;border:4rpx solid #0c7a5c;border-bottom-color:transparent;border-radius:50%}.home-v10-headset::before,.home-v10-headset::after{content:'';position:absolute;top:15rpx;width:7rpx;height:13rpx;border-radius:4rpx;background:#0c7a5c}.home-v10-headset::before{left:-6rpx}.home-v10-headset::after{right:-6rpx}.home-v10-headset>view{position:absolute;top:8rpx;left:6rpx;color:#0c7a5c;font-size:10px;font-weight:950;letter-spacing:2rpx}
+.home-v10-bell{position:relative;width:28rpx;height:31rpx;flex:none;border:4rpx solid #0c7a5c;border-bottom:0;border-radius:18rpx 18rpx 5rpx 5rpx}.home-v10-bell::before{content:'';position:absolute;right:-7rpx;bottom:-5rpx;left:-7rpx;height:4rpx;border-radius:4rpx;background:#0c7a5c}.home-v10-bell::after{content:'';position:absolute;bottom:-11rpx;left:7rpx;width:12rpx;height:7rpx;border-radius:0 0 8rpx 8rpx;background:#0c7a5c}
+.home-v10-headset{position:relative;width:33rpx;height:31rpx;flex:none;border:4rpx solid #0c7a5c;border-bottom-color:transparent;border-radius:50%}.home-v10-headset::before,.home-v10-headset::after{content:'';position:absolute;top:16rpx;width:7rpx;height:13rpx;border-radius:4rpx;background:#0c7a5c}.home-v10-headset::before{left:-6rpx}.home-v10-headset::after{right:-6rpx}.home-v10-headset>view{position:absolute;top:8rpx;left:6rpx;color:#0c7a5c;font-size:10px;font-weight:950;letter-spacing:2rpx}
 .home-v10-hero-dots{position:absolute;z-index:3;right:35rpx;bottom:21rpx;display:flex;gap:9rpx}.home-v10-hero-dot{width:10rpx;height:10rpx;border-radius:50%;background:rgba(255,255,255,.78);box-shadow:0 1rpx 5rpx rgba(23,58,67,.2)}.home-v10-hero-dot.active{width:28rpx;border-radius:999rpx;background:#08a96a}
 .home-v10-main{position:relative;z-index:4;margin-top:-58rpx;padding:0 27rpx 30rpx}
 .home-v10-quick-card{display:grid;gap:0;padding:29rpx 17rpx 26rpx;border:1rpx solid #e3e9ef;border-radius:31rpx;background:rgba(255,255,255,.97);box-shadow:0 16rpx 38rpx rgba(41,73,101,.1);grid-template-columns:repeat(4,1fr)}
@@ -1232,11 +1234,11 @@ function handlePopupAction() {
 .home-v10-auth-shell{padding-bottom:20px}
 .home-v10-hero{height:210px}
 .home-v10-hero-veil{background:linear-gradient(90deg,rgba(255,255,255,.99) 0%,rgba(255,255,255,.95) 42%,rgba(255,255,255,.46) 62%,rgba(255,255,255,.03) 78%)}
-.home-v10-hero-brand{top:22px;left:18px;max-width:50%}
+.home-v10-hero-brand{top:22px;left:18px;max-width:64%}
 .home-v10-hero-title{font-size:28px;letter-spacing:0;line-height:1.08}
 .home-v10-hero-subtitle{margin-top:10px;font-size:15px;letter-spacing:0;line-height:1.45}
 .home-v10-hero-cta{display:flex;min-width:112px;min-height:44px;align-items:center;justify-content:center;gap:6px;margin:22px 0 0;padding:0 18px;border:0;border-radius:22px;background:linear-gradient(110deg,#08aa67,#08c17d);box-shadow:0 8px 18px rgba(8,169,104,.2);color:#fff;font-size:15px;font-weight:900;line-height:44px}.home-v10-hero-cta::after{display:none}.home-v10-hero-cta text{font-size:20px;line-height:1}
-.home-v10-hero-actions{top:12px;right:12px;gap:8px}.home-v10-hero-action{height:30px;padding:0 12px;gap:5px}.home-v10-hero-action>text{font-size:12px}.home-v10-action-image{width:16px;height:16px}.home-v10-notice-dot{top:5px;right:5px;width:8px;height:8px}
+.home-campus-context{gap:6px;padding:0 12px 10px}.home-top-actions{gap:6px}.home-top-action{height:32px;padding:0 11px;gap:5px}.home-top-action>text{font-size:12px}.home-top-action-image{width:16px;height:16px}.home-top-notice-dot{top:5px;right:5px;width:8px;height:8px}
 .home-v10-main{margin-top:-28px;padding:0 14px 24px}
 .home-v10-quick-card{padding:18px 8px 16px;border-radius:20px}.home-v10-quick-icon{width:44px;height:44px;border-radius:14px}.home-v10-quick-icon image{width:26px;height:26px}.home-v10-quick-icon>text{font-size:19px}.home-v10-quick-label{margin-top:9px;font-size:14px}
 .home-v10-announcement{min-height:52px;gap:8px;margin-top:12px;padding:8px 12px;border-radius:14px}.home-v10-announcement-icon{width:32px;height:32px;border-radius:10px;font-size:18px}.home-v10-announcement-icon image{width:26px;height:26px}.home-v10-announcement-label{font-size:14px}.home-v10-announcement-content{font-size:13px}.home-v10-announcement-arrow{font-size:20px}
@@ -1247,5 +1249,5 @@ function handlePopupAction() {
 .home-v10-mall-section{margin-top:18px;padding:14px 12px 15px;border-radius:18px}.home-v10-mall-head{padding:0 2px 11px}.home-v10-mall-head text:first-child{font-size:18px}.home-v10-mall-head text:last-child{font-size:13px}.home-v10-products{gap:8px}.home-v10-product-image{height:72px;border-radius:12px;font-size:22px}.home-v10-product-name{margin-top:7px;font-size:13px;line-height:1.35}.home-v10-product-price{margin-top:4px;font-size:12px}
 .home-v10-trust{min-height:68px;gap:10px;margin-top:16px;padding:12px 14px;border-radius:15px}.home-v10-trust-shield{width:40px;height:44px;border-radius:12px 12px 16px 16px;font-size:17px}.home-v10-trust>view:nth-child(2)>text:first-child{font-size:14px}.home-v10-trust>view:nth-child(2)>text:last-child{margin-top:3px;font-size:12px;line-height:1.45}.home-v10-trust>text:last-child{font-size:20px}
 .home-v09-auth{padding-bottom:24px}
-@media screen and (max-width:360px){.home-v10-hero{height:200px}.home-v10-hero-brand{max-width:46%}.home-v10-hero-actions{top:10px;right:10px;gap:6px}.home-v10-hero-action{height:28px;padding:0 10px}.home-v10-task-card{flex-wrap:wrap}.home-v10-task-copy{flex-basis:calc(100% - 74px)}.home-v10-task-side{width:100%;max-width:none;align-items:center;justify-content:space-between;flex-direction:row;padding-left:74px}.home-v10-task-button{margin-top:0}.home-v10-products{grid-template-columns:repeat(2,minmax(0,1fr))}.home-v10-product-image{height:84px}}
+@media screen and (max-width:360px){.home-v10-hero{height:200px}.home-v10-hero-brand{max-width:56%}.home-campus-context{gap:5px;padding:0 10px 10px}.home-top-action{height:30px;padding:0 9px}.home-v10-task-card{flex-wrap:wrap}.home-v10-task-copy{flex-basis:calc(100% - 74px)}.home-v10-task-side{width:100%;max-width:none;align-items:center;justify-content:space-between;flex-direction:row;padding-left:74px}.home-v10-task-button{margin-top:0}.home-v10-products{grid-template-columns:repeat(2,minmax(0,1fr))}.home-v10-product-image{height:84px}}
 </style>
