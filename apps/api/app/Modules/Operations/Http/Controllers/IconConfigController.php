@@ -9,6 +9,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
+/**
+ * 小程序图标配置管理：后台维护图标图形、展示文字、配色与启停状态。
+ */
 class IconConfigController extends Controller
 {
     public function index(Request $request): JsonResponse
