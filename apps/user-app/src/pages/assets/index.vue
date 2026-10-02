@@ -6,34 +6,23 @@
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="asset-hero">
-      <image class="asset-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFit" />
-      <view class="hero-copy">
-        <text class="hero-kicker">ASSET LEDGER</text>
-        <text class="hero-title">我的资产</text>
-        <text class="hero-subtitle">积分、余额和优惠券独立记账，<br />每一笔来源、有效期与退款变动都可追溯</text>
-      </view>
-    </view>
-
     <view v-if="loading && !points && !wallet" class="module-state" role="status" aria-live="polite"><text>正在加载资产信息…</text></view>
 
-    <view class="overview-grid">
-      <view class="wallet-card">
-        <view class="wallet-top"><view class="asset-icon wallet-icon">¥</view><text class="wallet-label">校园钱包</text></view>
-        <text class="wallet-value">{{ wallet ? `¥${money(wallet.available_amount)}` : '—' }}</text>
-        <text class="wallet-note">{{ wallet ? '可用余额 · 充值后可用' : '余额信息暂不可用' }}</text>
-        <view class="wallet-actions"><button v-if="modules.isEnabled('module_wallet_recharge')" class="recharge-button" aria-label="余额充值" @click="openRecharge">余额充值</button><button class="ledger-button" aria-label="查看余额明细" @click="scrollToWallet">查看明细</button></view>
+    <!-- 钱包 · wallet 设计屏 -->
+    <view class="wallet-head">
+      <text class="wh-lab">钱包余额（元）</text>
+      <view class="wh-row">
+        <text class="wh-num">{{ wallet ? money(wallet.available_amount) : '—' }}</text>
+        <view class="wh-actions">
+          <button v-if="modules.isEnabled('module_withdraw')" class="wh-pill ghost" @click="openWithdraw">提现</button>
+          <button v-if="modules.isEnabled('module_wallet_recharge')" class="wh-pill solid" @click="openRecharge">充值</button>
+        </view>
       </view>
-      <view class="mini-assets">
-        <view class="mini-asset points-card"><view class="asset-icon points-icon">★</view><view><text class="mini-label">积分</text><text class="mini-value">{{ points ? points.available_points : '—' }}</text><text class="mini-note">可用积分</text></view></view>
-        <view class="mini-asset coupon-card"><view class="asset-icon coupon-icon">券</view><view><text class="mini-label">优惠券</text><text class="mini-value">{{ couponsError ? '—' : coupons.length }}</text><text class="mini-note">可用优惠券</text></view></view>
+      <view class="wh-foot">
+        <text>冻结余额 <text class="wh-b">¥{{ wallet ? money(wallet.frozen_amount) : '—' }}</text></text>
+        <text>可提现 <text class="wh-b">¥{{ wallet ? money(wallet.withdrawable_amount) : '—' }}</text></text>
+        <text class="wh-link" @click="scrollToWallet">余额明细 ›</text>
       </view>
-    </view>
-
-    <view class="asset-status">
-      <view><text class="status-label">即将到期积分</text><text class="status-value">{{ points ? points.expiring_points : '—' }}</text><text class="status-note">{{ points?.next_expiration_at ? `${formatDate(points.next_expiration_at)} 到期` : (pointsError ? '加载失败' : '暂无到期批次') }}</text></view>
-      <view><text class="status-label">冻结余额</text><text class="status-value">{{ wallet ? `¥${money(wallet.frozen_amount)}` : '—' }}</text><text class="status-note">{{ walletError ? '加载失败' : '处理中暂不可用' }}</text></view>
-      <view><text class="status-label">可提现余额</text><text class="status-value">{{ wallet ? `¥${money(wallet.withdrawable_amount)}` : '—' }}</text><text class="status-note">{{ walletError ? '加载失败' : '以提交时试算为准' }}</text></view>
     </view>
 
     <view v-if="pointsError" class="module-error"><text>积分资产加载失败：{{ pointsError }}</text><button @click="load">重试</button></view>
@@ -41,20 +30,79 @@
     <view v-if="couponsError" class="module-error"><text>优惠券加载失败：{{ couponsError }}</text><button @click="load">重试</button></view>
     <view v-if="points?.debt_points" class="warning">存在 {{ points.debt_points }} 积分欠额，新获得积分将优先偿还，清零前不能消费积分。</view>
 
-    <view class="section-card expiry-card">
-      <view class="section-head"><view><text class="section-title">积分到期计划</text><text class="section-subtitle">按来源与有效期跟踪使用，临近到期批次优先抵扣</text></view><view class="expiry-summary"><text class="expiry-number">{{ points ? points.expiring_7_days : '—' }}</text><text>7 天内到期</text></view></view>
-      <view class="expiry-window"><view><text>30 天内到期</text><text class="window-value">{{ points ? points.expiring_30_days : '—' }}<text v-if="points"> 积分</text></text></view><view><text>最近到期日</text><text class="window-value">{{ points?.next_expiration_at ? formatDate(points.next_expiration_at) : (pointsError ? '加载失败' : '暂无') }}</text></view></view>
-      <view v-for="batch in pointBatches" :key="batch.id" class="expiry-row"><view class="expiry-source"><text class="source-icon">{{ sourceText(batch.source_code).slice(0, 1) }}</text><view><text class="row-title">{{ sourceText(batch.source_code) }}</text><text class="row-note">获得 {{ batch.issued_points }} · 剩余 {{ batch.remaining_points }}</text></view></view><view class="expiry-date"><text :class="{ urgent: batch.days_remaining !== null && batch.days_remaining <= 7 }">{{ batch.days_remaining === null ? '长期有效' : `${batch.days_remaining} 天后到期` }}</text><text>{{ batch.expires_at ? formatDate(batch.expires_at) : '无到期日' }}</text></view></view>
+    <!-- 积分 · points 设计屏 -->
+    <view class="pt-hero">
+      <text class="pt-lab">当前可用积分</text>
+      <text class="pt-num">{{ points ? points.available_points : '—' }}</text>
+      <view class="pt-r3">
+        <view><text class="pt-b">{{ points ? points.expiring_points : '—' }}</text><text>即将到期</text></view>
+        <view><text class="pt-b">{{ points ? points.expiring_7_days : '—' }}</text><text>7 天内到期</text></view>
+        <view><text class="pt-b">{{ couponsError ? '—' : coupons.length }}</text><text>可用优惠券</text></view>
+      </view>
+    </view>
+
+    <view class="card expiry-card">
+      <view class="sec-title"><text class="sec-h">积分到期计划</text><text class="sec-more">{{ points?.next_expiration_at ? `${formatDate(points.next_expiration_at)} 到期` : '暂无到期批次' }}</text></view>
+      <view class="expiry-window">
+        <view><text class="ew-lab">30 天内到期</text><text class="ew-val">{{ points ? points.expiring_30_days : '—' }}<text v-if="points"> 积分</text></text></view>
+        <view><text class="ew-lab">最近到期日</text><text class="ew-val">{{ points?.next_expiration_at ? formatDate(points.next_expiration_at) : (pointsError ? '加载失败' : '暂无') }}</text></view>
+      </view>
+      <view v-for="batch in pointBatches" :key="batch.id" class="pt-row">
+        <view class="pt-ic" :class="batch.days_remaining !== null && batch.days_remaining <= 7 ? 'ic-orange' : 'ic-green'">{{ sourceText(batch.source_code).slice(0, 1) }}</view>
+        <view class="pt-main"><text class="pt-title">{{ sourceText(batch.source_code) }}</text><text class="pt-note">获得 {{ batch.issued_points }} · 剩余 {{ batch.remaining_points }}</text></view>
+        <view class="expiry-date"><text :class="{ urgent: batch.days_remaining !== null && batch.days_remaining <= 7 }">{{ batch.days_remaining === null ? '长期有效' : `${batch.days_remaining} 天后到期` }}</text><text>{{ batch.expires_at ? formatDate(batch.expires_at) : '无到期日' }}</text></view>
+      </view>
       <text v-if="!pointsError && pointBatches.length === 0" class="empty">当前没有待到期的积分批次</text>
     </view>
 
-    <view class="section-card ledger-card"><view class="section-head"><text class="section-title">积分明细</text><text class="section-action">来源与到账时间</text></view><view v-for="item in pointTransactions" :key="item.id" class="ledger-row"><view><text class="row-title">{{ pointTypeText(item.type) }} · {{ sourceText(item.source_code) }}</text><text class="row-note">{{ formatTime(item.created_at) }}</text></view><text :class="item.change_points >= 0 ? 'plus' : 'minus'">{{ signed(item.change_points) }}</text></view><text v-if="!pointsError && pointTransactions.length === 0" class="empty">暂无积分流水</text></view>
+    <text class="pt-day">积分明细 · 来源与到账时间</text>
+    <view class="card pt-ledger">
+      <view v-for="item in pointTransactions" :key="item.id" class="pt-row">
+        <view class="pt-ic" :class="item.change_points >= 0 ? 'ic-green' : 'ic-gray'">{{ pointTypeText(item.type).slice(0, 1) }}</view>
+        <view class="pt-main"><text class="pt-title">{{ pointTypeText(item.type) }} · {{ sourceText(item.source_code) }}</text><text class="pt-note">{{ formatTime(item.created_at) }}</text></view>
+        <text class="pt-amt" :class="item.change_points >= 0 ? 'in' : 'out'">{{ signed(item.change_points) }}</text>
+      </view>
+      <text v-if="!pointsError && pointTransactions.length === 0" class="empty">暂无积分流水</text>
+    </view>
 
-    <view id="wallet-ledger" class="section-card ledger-card"><view class="section-head"><text class="section-title">余额明细</text><text class="section-action">余额无有效期</text></view><view v-for="item in walletTransactions" :key="item.id" class="ledger-row"><view><text class="row-title">{{ walletTypeText(item.type) }}</text><text class="row-note">{{ formatTime(item.created_at) }} · {{ item.remark }}</text></view><text :class="item.change_amount >= 0 ? 'plus' : 'minus'">{{ signedMoney(item.change_amount) }}</text></view><text v-if="!walletError && walletTransactions.length === 0" class="empty">暂无余额流水或尚未同意钱包规则</text></view>
+    <text class="pt-day">收支明细 · 余额无有效期</text>
+    <view id="wallet-ledger" class="card pt-ledger">
+      <view v-for="item in walletTransactions" :key="item.id" class="pt-row">
+        <view class="pt-ic" :class="item.change_amount >= 0 ? 'ic-green' : 'ic-orange'">{{ walletTypeText(item.type).slice(0, 1) }}</view>
+        <view class="pt-main"><text class="pt-title">{{ walletTypeText(item.type) }}</text><text class="pt-note">{{ formatTime(item.created_at) }} · {{ item.remark }}</text></view>
+        <text class="pt-amt" :class="item.change_amount >= 0 ? 'in' : 'out'">{{ signedMoney(item.change_amount) }}</text>
+      </view>
+      <text v-if="!walletError && walletTransactions.length === 0" class="empty">暂无余额流水或尚未同意钱包规则</text>
+    </view>
 
-    <view class="section-card withdrawal-card"><view class="section-head"><text class="section-title">余额提现</text><text class="section-action">手续费以实时试算为准</text></view><text class="withdraw-tip">提现金额提交后将冻结，审核通过后按后台当前费率扣除手续费并打款。</text><input v-if="modules.isEnabled('module_withdraw')" class="input" type="digit" placeholder="输入提现金额（元）" disabled @click="openWithdraw" /><button v-if="modules.isEnabled('module_withdraw')" class="primary" aria-label="打开提现页面" @click="openWithdraw">计算手续费</button><view v-for="item in withdrawals" :key="item.id" class="withdrawal-row"><view><text class="row-title">{{ item.withdrawal_no }}</text><text class="row-note">{{ formatTime(item.created_at) }} · {{ item.workflow?.next_action || '请稍后刷新提现处理状态。' }}</text></view><view class="withdrawal-amount"><text>¥{{ money(item.requested_amount) }}</text><text>{{ item.workflow?.status_label || withdrawalStatusText(item.status) }}</text></view></view><text v-if="!walletError && !loading && withdrawals.length === 0" class="empty withdrawal-empty">暂无提现记录</text></view>
+    <!-- 优惠券 · coupons 设计屏 -->
+    <text class="pt-day">优惠券 · 可用 {{ couponsError ? '—' : coupons.length }} 张</text>
+    <view v-for="item in coupons" :key="item.id" class="cp" :class="{ 'c-orange': item.points_discount && !item.cash_discount_amount }">
+      <view class="cp-left">
+        <text class="cp-val" v-if="item.cash_discount_amount"><text class="cp-unit">¥</text>{{ money(item.cash_discount_amount) }}</text>
+        <text class="cp-val" v-else-if="item.points_discount">{{ item.points_discount }}<text class="cp-unit"> 积分</text></text>
+        <text class="cp-val" v-else>券</text>
+        <text class="cp-type">{{ item.cash_discount_amount ? '现金券' : item.points_discount ? '积分券' : '优惠券' }}</text>
+      </view>
+      <view class="cp-sep" />
+      <view class="cp-mid">
+        <text class="cp-name">{{ item.name }}</text>
+        <text class="cp-time">有效至 {{ formatTime(item.valid_to) }}</text>
+      </view>
+    </view>
+    <view v-if="!couponsError && coupons.length === 0" class="card"><text class="empty">暂无可用优惠券</text></view>
 
-    <view class="section-card coupon-section"><view class="section-head"><text class="section-title">优惠券</text><text class="section-action">可用优惠券</text></view><view v-for="item in coupons" :key="item.id" class="coupon-row"><view><text class="row-title">{{ item.name }}</text><text class="row-note">有效至 {{ formatTime(item.valid_to) }}</text></view><view class="discount"><text v-if="item.cash_discount_amount">减 ¥{{ money(item.cash_discount_amount) }}</text><text v-if="item.points_discount">减 {{ item.points_discount }} 积分</text></view></view><text v-if="!couponsError && coupons.length === 0" class="empty">暂无可用优惠券</text></view>
+    <view class="card withdrawal-card">
+      <view class="sec-title"><text class="sec-h">余额提现</text><text class="sec-more">手续费以实时试算为准</text></view>
+      <text class="withdraw-tip">提现金额提交后将冻结，审核通过后按后台当前费率扣除手续费并打款。</text>
+      <button v-if="modules.isEnabled('module_withdraw')" class="withdraw-entry" aria-label="打开提现页面" @click="openWithdraw">去提现 · 计算手续费</button>
+      <view v-for="item in withdrawals" :key="item.id" class="pt-row">
+        <view class="pt-ic ic-orange">提</view>
+        <view class="pt-main"><text class="pt-title">{{ item.withdrawal_no }}</text><text class="pt-note">{{ formatTime(item.created_at) }} · {{ item.workflow?.next_action || '请稍后刷新提现处理状态。' }}</text></view>
+        <view class="withdrawal-amount"><text>¥{{ money(item.requested_amount) }}</text><text>{{ item.workflow?.status_label || withdrawalStatusText(item.status) }}</text></view>
+      </view>
+      <text v-if="!walletError && !loading && withdrawals.length === 0" class="empty">暂无提现记录</text>
+    </view>
 
     </template>
     <AppTabBar current-target="account" />
@@ -137,6 +185,86 @@ function scrollToWallet() { uni.pageScrollTo({ selector: '#wallet-ledger', durat
 </script>
 
 <style scoped>
-.page{min-height:100vh;box-sizing:border-box;padding:0 28rpx 96rpx;background:linear-gradient(180deg,#f2fbff 0,#f9fcfd 720rpx,#f6f9fc 100%);color:#10213a}.asset-hero{position:relative;min-height:278rpx;margin:0 -28rpx 0;padding:50rpx 46rpx 30rpx;box-sizing:border-box;overflow:hidden;background:#e7f8ff}.asset-hero::after{content:'';position:absolute;inset:auto 0 0;height:110rpx;background:linear-gradient(180deg,transparent,rgba(246,251,253,.98))}.hero-copy{position:relative;z-index:1;width:65%}.hero-kicker{display:block;color:#2b72d5;font-size:13px;font-weight:850;letter-spacing:3rpx}.hero-title{display:block;margin-top:12rpx;color:#102f5a;font-size:26px;font-weight:900;line-height:1.2}.hero-subtitle{display:block;margin-top:14rpx;color:#57749f;font-size:14px;line-height:1.65}.module-state{margin-top:18rpx;padding:26rpx;border:1rpx solid #dce9ef;border-radius:22rpx;background:#fff;color:#748099;text-align:center;font-size:14px}.overview-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.45fr .85fr;gap:14rpx;margin-top:-22rpx}.wallet-card{display:flex;min-height:242rpx;box-sizing:border-box;flex-direction:column;justify-content:space-between;padding:26rpx;border-radius:28rpx;background:linear-gradient(135deg,#237be2,#25bdc1);box-shadow:0 16rpx 34rpx rgba(32,120,188,.18);color:#fff}.wallet-top{display:flex;align-items:center;gap:14rpx}.asset-icon{display:flex;align-items:center;justify-content:center;width:62rpx;height:62rpx;flex:none;border-radius:20rpx;font-weight:900}.wallet-icon{background:rgba(255,255,255,.9);color:#2f83e6;font-size:19px}.wallet-label{font-size:14px;font-weight:800}.wallet-value{display:block;margin-top:10rpx;font-size:26px;font-weight:900;letter-spacing:.5rpx}.wallet-note{display:block;margin-top:3rpx;color:rgba(255,255,255,.82);font-size:13px}.wallet-actions{display:grid;grid-template-columns:1.15fr 1fr;gap:10rpx;margin-top:16rpx}.wallet-actions button{height:58rpx;margin:0;border:0;border-radius:999rpx;font-size:13px;font-weight:850;line-height:58rpx}.recharge-button{background:#fff;color:#1674dd}.ledger-button{background:rgba(255,255,255,.95);color:#1674dd}.mini-assets{display:grid;grid-template-rows:1fr 1fr;gap:12rpx}.mini-asset{display:flex;align-items:center;gap:12rpx;padding:18rpx;border:1rpx solid #dfe9f2;border-radius:24rpx;background:rgba(255,255,255,.96);box-shadow:0 8rpx 20rpx rgba(31,56,92,.05)}.points-icon{background:#e8f4ff;color:#2d86e5;font-size:17px}.coupon-icon{background:#e8f1ff;color:#3488e7;font-size:14px}.mini-label,.mini-value,.mini-note{display:block}.mini-label{font-size:13px;font-weight:700}.mini-value{margin-top:3rpx;color:#10213a;font-size:19px;font-weight:900}.mini-note{margin-top:2rpx;color:#748099;font-size:12px}.asset-status{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:16rpx;padding:20rpx 12rpx;border:1rpx solid #e2e9f0;border-radius:23rpx;background:#fff;box-shadow:0 8rpx 20rpx rgba(31,56,92,.05)}.asset-status>view{min-width:0;padding:0 12rpx;border-right:1rpx solid #e2e9f0}.asset-status>view:last-child{border-right:0}.status-label,.status-value,.status-note{display:block}.status-label{color:#748099;font-size:13px;white-space:nowrap}.status-value{margin-top:8rpx;color:#10213a;font-size:15px;font-weight:900}.status-note{margin-top:4rpx;overflow:hidden;color:#748099;font-size:12px;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}.module-error{display:flex;align-items:center;justify-content:space-between;gap:14rpx;margin-top:16rpx;padding:16rpx 18rpx;border:1rpx solid #efb4a8;border-radius:16rpx;background:#fff5f2;color:#b42318;font-size:13px}.module-error text{min-width:0;line-height:1.45}.module-error button{height:50rpx;flex:none;margin:0;padding:0 14rpx;border:1rpx solid #b42318;border-radius:11rpx;background:#fff;color:#b42318;font-size:13px;line-height:48rpx}.warning{margin-top:18rpx;padding:19rpx;border-radius:17rpx;background:#fff5e7;color:#a55d00;font-size:13px;line-height:1.5}.section-card{margin-top:22rpx;padding:27rpx;border:1rpx solid #e2e9f0;border-radius:27rpx;background:rgba(255,255,255,.98);box-shadow:0 10rpx 28rpx rgba(31,56,92,.06)}.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12rpx}.section-title{display:block;color:#10213a;font-size:17px;font-weight:900}.section-subtitle{display:block;margin-top:8rpx;color:#748099;font-size:13px;line-height:1.45}.section-action{color:#6b83a6;font-size:13px;white-space:nowrap}.expiry-summary{text-align:right}.expiry-number{display:block;color:#f06622;font-size:21px;font-weight:900}.expiry-summary>text:last-child{display:block;color:#2f67df;font-size:12px}.expiry-window{display:grid;grid-template-columns:1fr 1fr;gap:12rpx;margin-top:20rpx}.expiry-window>view{padding:18rpx;border-radius:18rpx;background:linear-gradient(135deg,#edf9f7,#f1fbfc)}.expiry-window>view>text:first-child{display:block;color:#748099;font-size:13px}.window-value{display:block;margin-top:8rpx;color:#10213a;font-size:14px;font-weight:850}.expiry-row,.ledger-row,.coupon-row,.withdrawal-row{display:flex;align-items:center;justify-content:space-between;gap:14rpx;padding:20rpx 0;border-bottom:1rpx solid #e8eef3}.expiry-source{display:flex;align-items:center;min-width:0;gap:12rpx}.source-icon{display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;flex:none;border-radius:16rpx;background:#e7f7f2;color:#10876a;font-size:13px;font-weight:900}.row-title,.row-note{display:block}.row-title{color:#1a2d47;font-size:13px;font-weight:750}.row-note{margin-top:6rpx;color:#7a8aa0;font-size:12px;line-height:1.4}.expiry-date{flex:none;text-align:right}.expiry-date>text{display:block;color:#748099;font-size:12px}.expiry-date>text:first-child{font-weight:750;color:#49617d}.expiry-date .urgent{color:#ef641c}.empty{display:block;padding:28rpx 0;color:#748099;text-align:center;font-size:13px}.ledger-card .section-head{align-items:center}.ledger-row:last-of-type,.coupon-row:last-of-type{border-bottom:0}.plus{color:#0f8a61;font-size:14px;font-weight:850}.minus{color:#d14343;font-size:14px;font-weight:850}.withdrawal-card{background:linear-gradient(145deg,#fff,#f3fbfa)}.withdraw-tip{display:block;margin-top:12rpx;color:#748099;font-size:13px;line-height:1.55}.input{width:100%;height:72rpx;margin-top:18rpx;padding:0 20rpx;box-sizing:border-box;border:1rpx solid #ccd9e7;border-radius:17rpx;background:#fbfdff;color:#748099;font-size:14px}.input[disabled]{opacity:1}.primary{width:100%;height:72rpx;margin-top:14rpx;border:0;border-radius:999rpx;background:linear-gradient(135deg,#247fe4,#23bcb9);box-shadow:0 10rpx 20rpx rgba(32,119,188,.15);color:#fff;font-size:15px;font-weight:850;line-height:72rpx}.withdrawal-row{align-items:flex-start}.withdrawal-row>view:first-child{min-width:0;flex:1}.withdrawal-amount{flex:none;text-align:right;color:#2f67df;font-size:13px}.withdrawal-amount text{display:block}.withdrawal-empty{padding-bottom:5rpx}.discount{color:#0f8a61;text-align:right;font-size:13px}.discount text{display:block;margin-top:4rpx}.coupon-section{padding-bottom:21rpx}.coupon-row:last-of-type{border-bottom:0}@media screen and (max-width:360px){.page{padding-left:20rpx;padding-right:20rpx}.asset-hero{margin-left:-20rpx;margin-right:-20rpx;padding-left:32rpx;padding-right:32rpx}.overview-grid{grid-template-columns:1fr}.mini-assets{grid-template-columns:1fr 1fr;grid-template-rows:auto}.asset-status{grid-template-columns:1fr}.asset-status>view{padding:12rpx 0;border-right:0;border-bottom:1rpx solid #e2e9f0}.asset-status>view:last-child{border-bottom:0}.status-note{white-space:normal}}
-.asset-hero-art{position:absolute;right:0;bottom:0;width:330rpx;height:330rpx}
+.page{min-height:100vh;box-sizing:border-box;padding:0 24rpx 120rpx;background:#F4F6F4;color:#191B1F}
+.module-state{margin-top:20rpx;padding:40rpx;border-radius:32rpx;background:#fff;color:#767C85;text-align:center;font-size:26rpx}
+/* 钱包余额卡 · wallet 屏 */
+.wallet-head{position:relative;overflow:hidden;margin:20rpx 0 0;padding:40rpx 36rpx 32rpx;border-radius:36rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;box-shadow:0 20rpx 48rpx rgba(11,191,99,.28)}
+.wallet-head::before{content:"";position:absolute;top:-160rpx;right:-80rpx;width:360rpx;height:360rpx;border-radius:50%;background:rgba(255,255,255,.10)}
+.wh-lab{position:relative;display:block;font-size:24rpx;opacity:.85}
+.wh-row{position:relative;display:flex;align-items:flex-end;justify-content:space-between;margin-top:16rpx}
+.wh-num{font-size:72rpx;font-weight:800;line-height:1.1}
+.wh-actions{display:flex;gap:18rpx}
+.wh-pill{height:64rpx;margin:0;padding:0 32rpx;border-radius:32rpx;font-size:24rpx;font-weight:700;line-height:64rpx}
+.wh-pill.ghost{border:2rpx solid rgba(255,255,255,.7);background:transparent;color:#fff}
+.wh-pill.solid{border:0;background:#fff;color:#08A152}
+.wh-pill::after{border:0}
+.wh-foot{position:relative;display:flex;gap:32rpx;margin-top:28rpx;padding-top:24rpx;border-top:1rpx solid rgba(255,255,255,.25);font-size:22rpx}
+.wh-b{font-size:26rpx;font-weight:700}
+.wh-link{margin-left:auto;color:rgba(255,255,255,.9)}
+/* 积分卡 · points 屏 */
+.pt-hero{position:relative;overflow:hidden;margin:20rpx 0 0;padding:36rpx;border-radius:36rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;box-shadow:0 20rpx 48rpx rgba(11,191,99,.28)}
+.pt-hero::before{content:"";position:absolute;top:-200rpx;right:-100rpx;width:400rpx;height:400rpx;border-radius:50%;background:rgba(255,255,255,.10)}
+.pt-lab{position:relative;display:block;font-size:24rpx;opacity:.85}
+.pt-num{position:relative;display:block;margin-top:8rpx;font-size:76rpx;font-weight:800;line-height:1.1}
+.pt-r3{position:relative;display:flex;margin-top:28rpx}
+.pt-r3>view{flex:1;font-size:22rpx;opacity:.9}
+.pt-r3 .pt-b{display:block;margin-bottom:4rpx;font-size:32rpx;font-weight:800}
+/* 通用卡片与分节 */
+.card{margin:20rpx 0 0;border-radius:32rpx;background:#fff;overflow:hidden;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.sec-title{display:flex;align-items:center;justify-content:space-between;padding:28rpx 28rpx 20rpx}
+.sec-h{display:flex;align-items:center;font-size:30rpx;font-weight:700}
+.sec-h::before{content:"";width:8rpx;height:28rpx;margin-right:14rpx;border-radius:4rpx;background:#0BBF63}
+.sec-more{font-size:24rpx;color:#AEB3BB}
+.pt-day{display:block;padding:28rpx 8rpx 8rpx;font-size:22rpx;color:#AEB3BB}
+/* 流水行 */
+.pt-row{display:flex;align-items:center;gap:22rpx;padding:24rpx 30rpx;background:#fff}
+.pt-row+.pt-row{border-top:1rpx solid #F5F6F6}
+.pt-ic{display:flex;align-items:center;justify-content:center;width:76rpx;height:76rpx;flex:none;border-radius:24rpx;font-size:28rpx;font-weight:800}
+.pt-ic.ic-green{background:#E7F9EF;color:#08A152}
+.pt-ic.ic-orange{background:#FFF2E5;color:#F2620A}
+.pt-ic.ic-gray{background:#F2F4F3;color:#767C85}
+.pt-main{flex:1;min-width:0}
+.pt-title{display:block;font-size:27rpx;font-weight:600;color:#191B1F}
+.pt-note{display:block;margin-top:6rpx;font-size:22rpx;color:#AEB3BB;line-height:1.4}
+.pt-amt{font-size:32rpx;font-weight:800;flex:none}
+.pt-amt.in{color:#08A152}
+.pt-amt.out{color:#191B1F}
+/* 到期计划 */
+.expiry-card{padding-bottom:8rpx}
+.expiry-window{display:grid;grid-template-columns:1fr 1fr;gap:16rpx;margin:0 28rpx 8rpx}
+.expiry-window>view{padding:24rpx;border-radius:24rpx;background:#F7F9F8}
+.ew-lab{display:block;font-size:24rpx;color:#767C85}
+.ew-val{display:block;margin-top:12rpx;font-size:30rpx;font-weight:800;color:#191B1F}
+.expiry-date{flex:none;text-align:right}
+.expiry-date>text{display:block;font-size:22rpx;color:#767C85}
+.expiry-date>text:first-child{font-weight:700;color:#191B1F}
+.expiry-date .urgent{color:#F2620A}
+/* 优惠券 · coupons 屏 */
+.cp{position:relative;display:flex;height:196rpx;margin:20rpx 0 0;border-radius:28rpx;overflow:hidden;color:#fff;background:linear-gradient(120deg,#14C96E,#08A152);box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.cp.c-orange{background:linear-gradient(120deg,#FF9A3D,#F2620A)}
+.cp-left{display:flex;flex-direction:column;align-items:center;justify-content:center;width:216rpx;flex:none}
+.cp-val{font-size:52rpx;font-weight:900;line-height:1}
+.cp-unit{font-size:26rpx;font-weight:700}
+.cp-type{margin-top:8rpx;font-size:20rpx;opacity:.9}
+.cp-sep{position:relative;width:0;margin:20rpx 0;border-left:3rpx dashed rgba(255,255,255,.65)}
+.cp-sep::before{content:"";position:absolute;left:-13rpx;top:-32rpx;width:22rpx;height:22rpx;border-radius:50%;background:#F4F6F4}
+.cp-sep::after{content:"";position:absolute;left:-13rpx;bottom:-32rpx;width:22rpx;height:22rpx;border-radius:50%;background:#F4F6F4}
+.cp-mid{flex:1;min-width:0;padding:28rpx 16rpx 24rpx 28rpx}
+.cp-name{display:block;font-size:28rpx;font-weight:800}
+.cp-time{display:block;margin-top:14rpx;font-size:20rpx;opacity:.75}
+/* 提现区 */
+.withdrawal-card{padding-bottom:16rpx}
+.withdraw-tip{display:block;margin:0 28rpx;font-size:24rpx;color:#767C85;line-height:1.6}
+.withdraw-entry{height:80rpx;margin:20rpx 28rpx 8rpx;border:0;border-radius:40rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:80rpx;box-shadow:0 12rpx 28rpx rgba(11,191,99,.3)}
+.withdraw-entry::after{border:0}
+.withdrawal-amount{flex:none;text-align:right}
+.withdrawal-amount text{display:block;font-size:26rpx;font-weight:700;color:#191B1F}
+.withdrawal-amount text:last-child{margin-top:6rpx;font-size:22rpx;font-weight:400;color:#AEB3BB}
+/* 状态与错误 */
+.empty{display:block;padding:40rpx 0;color:#AEB3BB;text-align:center;font-size:26rpx}
+.module-error{display:flex;align-items:center;justify-content:space-between;gap:16rpx;margin-top:20rpx;padding:20rpx 24rpx;border-radius:24rpx;background:#FFEEEA;color:#FF2442;font-size:24rpx}
+.module-error text{min-width:0;line-height:1.45}
+.module-error button{height:56rpx;flex:none;margin:0;padding:0 24rpx;border:2rpx solid #FF2442;border-radius:28rpx;background:#fff;color:#FF2442;font-size:24rpx;line-height:52rpx}
+.module-error button::after{border:0}
+.warning{margin-top:20rpx;padding:24rpx;border-radius:24rpx;background:#FFF2E5;color:#F2620A;font-size:24rpx;line-height:1.5}
 </style>

@@ -36,6 +36,19 @@ services:
     <<: *api
     command: ["php", "artisan", "schedule:work"]
 
+  reverb:
+    <<: *api
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    # 容器内固定 8080（nginx 经 backend 网络反代 /app/）；宿主机默认 8081，
+    # 避开同机 nginx 网关占用的 8080。
+    ports:
+      - "${REVERB_BIND_ADDRESS:-127.0.0.1}:${REVERB_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   nginx:
     image: task-mall-web:${RELEASE_VERSION:-local}
     pull_policy: never

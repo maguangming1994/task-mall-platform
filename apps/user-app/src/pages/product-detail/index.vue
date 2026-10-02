@@ -6,53 +6,86 @@
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view v-if="loading" class="loading-shell tm-page-shell"><view class="detail-cover tm-skeleton" /><view class="loading-line tm-skeleton" /><view class="loading-line short tm-skeleton" /></view>
-    <view v-else-if="loadError" class="missing tm-page-shell"><text>商品详情加载失败</text><small>{{ loadError }}</small><button class="tm-primary-button" @click="load">重新加载</button><button class="tm-secondary-button" @click="backToMall">返回商城</button></view>
-    <view v-else-if="product">
-      <view class="commerce-topbar">
-        <button class="commerce-back" aria-label="返回商城" @click="backToMall">‹</button>
-        <view class="commerce-topbar-title"><text>商品详情</text><small>TASK · REWARD · LIFE</small></view>
-        <button class="commerce-cart" aria-label="打开购物车" @click="openCart">购物车</button>
-      </view>
-      <swiper v-if="product.gallery_images.length" class="detail-gallery" circular :indicator-dots="true" :autoplay="product.gallery_images.length > 1">
-        <swiper-item v-for="image in product.gallery_images" :key="image.url"><image class="detail-cover" :src="image.url" mode="aspectFill" /></swiper-item>
-      </swiper>
-      <view v-else class="detail-cover placeholder"><text>{{ product.name.slice(0, 1) }}</text><small>任务商城精选</small></view>
-
-      <view class="detail-body">
-        <view class="title-row"><view><text class="title">{{ product.name }}</text><text class="subtitle">{{ product.subtitle || product.description_text }}</text></view><text class="current-price">{{ priceText(selectedOption) }}</text></view>
-
-        <view class="mode-list">
-          <view v-for="option in selectedSku?.purchase_options.filter((item) => item.enabled)" :key="option.id" class="mode-pill" :class="{ active: option.id === selectedOption?.id }" @click="selectedOptionId = option.id">
-            <text>{{ modeText(option.purchase_mode) }}</text><small>{{ priceText(option) }}</small>
-          </view>
-        </view>
-
-        <view class="option-section">
-          <view class="section-label"><text>选择规格</text><text>{{ selectedSku ? `库存 ${selectedSku.stock}` : '' }}</text></view>
-          <view class="sku-list">
-            <view v-for="sku in product.skus" :key="sku.id" class="sku-pill" :class="{ active: sku.id === selectedSkuId, disabled: sku.stock < 1 }" @click="selectSku(sku.id)">{{ sku.name }}</view>
-          </view>
-          <view v-if="selectedSku" class="spec-grid">
-            <view v-for="(value, key) in selectedSku.specs" :key="key" class="spec"><text>{{ key }}</text><strong>{{ value }}</strong></view>
-          </view>
-        </view>
-
-        <view v-if="!selectedSku || !selectedOption" class="availability-note"><text>当前商品暂无可购买规格</text><small>请返回商城或稍后重试。</small></view>
-        <view class="delivery-note"><text>{{ deliveryText(selectedSku?.fulfillment_type || '') }}</text><text>支持现金、积分、现金 + 积分三种购买方式；运费仅支持现金支付。</text></view>
-
-        <view class="description tm-panel">
-          <text class="section-title">商品介绍</text>
-          <rich-text class="rich-content" :nodes="product.description" />
-        </view>
-      </view>
-
-      <view class="bottom-actions">
-        <button class="tm-secondary-button" :disabled="!canBuy" :loading="submitting && action === 'cart'" @click="submit('cart')">加入购物车</button>
-        <button class="tm-primary-button" :disabled="!canBuy" :loading="submitting && action === 'buy'" @click="submit('buy')">立即购买</button>
-      </view>
+    <view v-if="loading" class="loading-shell">
+      <view class="loading-hero tm-skeleton" />
+      <view class="loading-line tm-skeleton" />
+      <view class="loading-line short tm-skeleton" />
     </view>
-    <view v-else class="missing tm-page-shell"><text>商品暂不可用</text><button class="tm-primary-button" @click="backToMall">返回商城</button></view>
+    <view v-else-if="loadError" class="missing">
+      <text class="missing-title">商品详情加载失败</text>
+      <small>{{ loadError }}</small>
+      <button class="btn-main" @click="load">重新加载</button>
+      <button class="btn-ghost" @click="backToMall">返回商城</button>
+    </view>
+    <template v-else-if="product">
+      <view class="detail-hero">
+        <swiper v-if="product.gallery_images.length" class="hero-swiper" circular :indicator-dots="product.gallery_images.length > 1" :autoplay="product.gallery_images.length > 1">
+          <swiper-item v-for="image in product.gallery_images" :key="image.url"><image class="hero-img" :src="image.url" mode="aspectFill" /></swiper-item>
+        </swiper>
+        <view v-else class="hero-img hero-placeholder"><text>{{ product.name.slice(0, 1) }}</text></view>
+        <view class="hero-nav">
+          <button class="hero-btn" aria-label="返回商城" @click="backToMall">‹</button>
+          <button class="hero-btn cart-btn" aria-label="打开购物车" @click="openCart">购物车</button>
+        </view>
+      </view>
+
+      <view class="title-card">
+        <view class="price-row">
+          <text class="price">{{ priceText(selectedOption) }}</text>
+          <text class="spacer" />
+          <text v-if="selectedSku" class="people">库存 {{ selectedSku.stock }}</text>
+        </view>
+        <text class="p-name">{{ product.name }}</text>
+        <text v-if="product.subtitle || product.description_text" class="p-sub">{{ product.subtitle || product.description_text }}</text>
+        <view class="tags">
+          <text class="tag tag-green">{{ deliveryText(selectedSku?.fulfillment_type || '') }}</text>
+          <text v-if="selectedOption && selectedOption.points > 0" class="tag tag-orange">支持积分</text>
+        </view>
+      </view>
+
+      <view class="form-card">
+        <view v-if="selectedSku && selectedSku.purchase_options.filter((item) => item.enabled).length" class="frow">
+          <text class="f-label">方式</text>
+          <view class="chip-pick">
+            <text v-for="option in selectedSku.purchase_options.filter((item) => item.enabled)" :key="option.id" :class="{ on: option.id === selectedOption?.id }" @click="selectedOptionId = option.id">{{ modeText(option.purchase_mode) }}</text>
+          </view>
+        </view>
+        <view class="frow">
+          <text class="f-label">规格</text>
+          <view class="chip-pick">
+            <text v-for="sku in product.skus" :key="sku.id" :class="{ on: sku.id === selectedSkuId, off: sku.stock < 1 }" @click="selectSku(sku.id)">{{ sku.name }}</text>
+          </view>
+        </view>
+        <view v-for="(value, key) in selectedSku?.specs || {}" :key="key" class="frow">
+          <text class="f-label">{{ key }}</text>
+          <text class="f-val">{{ value }}</text>
+        </view>
+        <view class="frow">
+          <text class="f-label">配送</text>
+          <text class="f-val">{{ deliveryText(selectedSku?.fulfillment_type || '') }}</text>
+        </view>
+      </view>
+
+      <view v-if="!selectedSku || !selectedOption" class="availability-note">
+        <text>当前商品暂无可购买规格</text>
+        <small>请返回商城或稍后重试。</small>
+      </view>
+
+      <view class="card desc-card">
+        <view class="sec-title"><text>商品介绍</text></view>
+        <rich-text class="rich-content" :nodes="product.description" />
+      </view>
+
+      <view class="action-bar">
+        <view class="ab-ic"><text class="ab-ic-ico">♡</text><text>收藏</text></view>
+        <button class="ab-duo cart" :disabled="!canBuy" :loading="submitting && action === 'cart'" @click="submit('cart')">加入购物车</button>
+        <button class="ab-duo buy" :disabled="!canBuy" :loading="submitting && action === 'buy'" @click="submit('buy')">立即兑换</button>
+      </view>
+    </template>
+    <view v-else class="missing">
+      <text class="missing-title">商品暂不可用</text>
+      <button class="btn-main" @click="backToMall">返回商城</button>
+    </view>
     </template>
   </view>
 </template>
@@ -139,27 +172,59 @@ function openCart() { uni.navigateTo({ url: '/pages/cart/index' }) }
 </script>
 
 <style scoped>
-.page{min-height:100vh;background:var(--tm-canvas)}.detail-gallery,.detail-cover{display:block;width:100%;height:590rpx}.detail-cover.placeholder{display:flex;align-items:center;justify-content:center;flex-direction:column;background:linear-gradient(145deg,#d8eeeb,#f4eadc);color:var(--tm-brand-700)}.detail-cover.placeholder text{font-size:44px;font-weight:950}.detail-cover.placeholder small{margin-top:10rpx;font-size:14px}.detail-body{padding:30rpx 28rpx 150rpx}.title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:24rpx}.title,.subtitle,.current-price,.section-title,.rich-content{display:block}.title{font-size:22px;font-weight:950;line-height:1.3}.subtitle{margin-top:8rpx;color:var(--tm-ink-500);font-size:14px}.current-price{flex:none;color:var(--tm-reward-600);font-size:19px;font-weight:950}.mode-list{display:flex;gap:12rpx;margin-top:24rpx;overflow-x:auto}.mode-pill{min-width:155rpx;padding:14rpx 18rpx;border:1rpx solid var(--tm-line);border-radius:15rpx;background:#fff;color:var(--tm-ink-700)}.mode-pill text,.mode-pill small{display:block}.mode-pill text{font-size:14px;font-weight:800}.mode-pill small{margin-top:5rpx;font-size:13px}.mode-pill.active{border-color:var(--tm-brand-600);background:var(--tm-brand-50);color:var(--tm-brand-700)}.option-section{margin-top:30rpx}.section-label{display:flex;justify-content:space-between;color:var(--tm-ink-500);font-size:13px}.section-label text:first-child{color:var(--tm-ink-900);font-size:15px;font-weight:900}.sku-list{display:flex;gap:12rpx;margin-top:16rpx;flex-wrap:wrap}.sku-pill{padding:14rpx 22rpx;border:1rpx solid var(--tm-line);border-radius:14rpx;background:#fff;color:var(--tm-ink-700);font-size:14px}.sku-pill.active{border-color:var(--tm-brand-600);background:var(--tm-brand-50);color:var(--tm-brand-700);font-weight:800}.sku-pill.disabled{opacity:.42}.spec-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10rpx;margin-top:16rpx}.spec{display:flex;justify-content:space-between;padding:16rpx;border-radius:13rpx;background:#fff}.spec text{color:var(--tm-ink-500);font-size:13px}.spec strong{font-size:14px}.delivery-note{margin-top:24rpx;padding:20rpx;border-radius:16rpx;background:var(--tm-reward-100);color:#89500c;font-size:13px;line-height:1.55}.delivery-note text{display:block}.delivery-note text:first-child{font-weight:900}.description{margin-top:24rpx;padding:26rpx}.section-title{font-size:17px;font-weight:900}.rich-content{margin-top:18rpx;color:var(--tm-ink-700);font-size:14px}.bottom-actions{position:fixed;z-index:50;right:0;bottom:0;left:0;display:flex;gap:14rpx;padding:16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));border-top:1rpx solid var(--tm-line);background:#fff}.bottom-actions button{flex:1;margin:0}.loading-shell{padding-top:0}.loading-line{height:32rpx;margin-top:28rpx;border-radius:10rpx}.loading-line.short{width:58%}.missing{text-align:center;padding-top:180rpx}.missing text{display:block;margin-bottom:30rpx;color:var(--tm-ink-500)}
-@media screen and (min-width:768px){.page{width:750rpx;margin:0 auto}.bottom-actions{right:auto;left:50%;width:750rpx;box-sizing:border-box;transform:translateX(-50%)}}
-.availability-note{margin-top:24rpx;padding:20rpx;border:1rpx solid #f0b4a8;border-radius:16rpx;background:#fff4f2;color:#b42318;font-size:14px}.availability-note text,.availability-note small,.missing text,.missing small{display:block}.availability-note small,.missing small{margin-top:8rpx;color:var(--tm-ink-500);font-size:13px}.missing{text-align:center;padding:180rpx 34rpx 40rpx}.missing text{font-size:17px;font-weight:850}.missing button{width:280rpx;height:70rpx;margin:20rpx auto 0;line-height:70rpx}.missing button+button{margin-top:12rpx}.missing button::after{border:0}
-.commerce-topbar{display:flex;align-items:center;justify-content:space-between;gap:16rpx;padding:18rpx 24rpx 14rpx;background:rgba(255,255,255,.96);border-bottom:1rpx solid var(--tm-line);box-sizing:border-box}.commerce-back,.commerce-cart{display:flex;align-items:center;justify-content:center;flex:none;margin:0;border:1rpx solid var(--tm-line);border-radius:999rpx;background:var(--tm-surface);color:var(--tm-ink-900);box-shadow:none}.commerce-back{width:66rpx;height:62rpx;font-size:26px;line-height:55rpx}.commerce-cart{height:58rpx;padding:0 20rpx;font-size:13px;font-weight:800;line-height:56rpx}.commerce-back::after,.commerce-cart::after{border:0}.commerce-topbar-title{min-width:0;flex:1;text-align:center}.commerce-topbar-title text,.commerce-topbar-title small{display:block}.commerce-topbar-title text{font-size:17px;font-weight:900}.commerce-topbar-title small{margin-top:2rpx;color:var(--tm-ink-500);font-size:10px;letter-spacing:1.2rpx}
-/* V09 campus commerce surface */
-.page{background:linear-gradient(180deg,var(--tm-campus-cyan-soft) 0,var(--tm-canvas) 700rpx);color:var(--tm-ink-900)}
-.detail-gallery,.detail-cover{border-bottom:0}
-.detail-cover.placeholder{background:linear-gradient(145deg,var(--tm-campus-cyan-soft),var(--tm-reward-100));color:var(--tm-brand-700)}
-.title-row,.description{border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-lg);background:var(--tm-surface);box-shadow:var(--tm-shadow-sm)}
-.title-row{padding:24rpx}
-.mode-pill,.sku-pill{border:1rpx solid var(--tm-line);box-shadow:none;background:var(--tm-surface)}
-.mode-pill.active,.sku-pill.active{border-color:var(--tm-brand-500);background:var(--tm-brand-50);color:var(--tm-brand-700);box-shadow:none}
-.mode-pill:active,.sku-pill:active{transform:scale(.98)}
-.spec{border:1rpx solid var(--tm-line);background:var(--tm-surface-soft)}
-.delivery-note{border:1rpx solid rgba(183,123,18,.18);background:var(--tm-reward-100);box-shadow:none;color:#89500c}
-.description{padding:26rpx}
-.bottom-actions{border-top:1rpx solid var(--tm-line);background:rgba(255,255,255,.96);box-shadow:0 -8rpx 24rpx rgba(7,26,51,.06);padding-bottom:calc(16rpx + env(safe-area-inset-bottom))}
-.bottom-actions button{border:1rpx solid transparent;box-shadow:none}
-.bottom-actions button[disabled],.sku-pill.disabled{opacity:.45}
-.bottom-actions button[disabled]{filter:saturate(.55)}
-.loading-shell,.missing{margin:0 28rpx;border-radius:var(--tm-radius-lg)}
-.missing{background:var(--tm-surface);box-shadow:var(--tm-shadow-sm)}
-@media (prefers-reduced-motion: reduce){.mode-pill:active,.sku-pill:active{transform:none}}
+.page{min-height:100vh;padding-bottom:200rpx;background:#F4F6F4;color:#191B1F}
+.detail-hero{position:relative}
+.hero-swiper,.hero-img{display:block;width:100%;height:560rpx}
+.hero-placeholder{display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#E7F9EF,#FFF2E5);color:#08A152;font-size:80rpx;font-weight:900}
+.hero-nav{position:absolute;top:0;right:0;left:0;display:flex;align-items:center;justify-content:space-between;padding:24rpx 24rpx 80rpx;background:linear-gradient(to bottom,rgba(0,0,0,.28),transparent)}
+.hero-btn{display:flex;align-items:center;justify-content:center;min-width:60rpx;height:60rpx;margin:0;padding:0 16rpx;border-radius:999rpx;background:rgba(255,255,255,.92);color:#191B1F;font-size:34rpx;line-height:56rpx}
+.hero-btn.cart-btn{font-size:24rpx;font-weight:700}
+.hero-btn::after{border:0}
+.title-card{position:relative;margin:-32rpx 24rpx 0;padding:28rpx;border-radius:32rpx;background:#fff;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.price-row{display:flex;align-items:baseline;gap:16rpx}
+.price{color:#FF3B30;font-size:44rpx;font-weight:800}
+.spacer{flex:1}
+.people{color:#AEB3BB;font-size:22rpx}
+.p-name{display:block;margin-top:16rpx;font-size:34rpx;font-weight:700;line-height:1.4}
+.p-sub{display:block;margin-top:8rpx;color:#767C85;font-size:26rpx;line-height:1.5}
+.tags{display:flex;gap:10rpx;margin-top:18rpx}
+.tag{display:inline-flex;align-items:center;height:36rpx;padding:0 14rpx;border-radius:10rpx;font-size:20rpx}
+.tag-green{background:#E7F9EF;color:#08A152}
+.tag-orange{background:#FFF2E5;color:#F2620A}
+.form-card{margin:20rpx 24rpx 0;padding:4rpx 28rpx;border-radius:32rpx;background:#fff}
+.frow{display:flex;align-items:center;gap:20rpx;min-height:96rpx;padding:24rpx 0;border-bottom:1rpx solid #F5F6F6}
+.frow:last-child{border-bottom:0}
+.f-label{width:96rpx;flex:none;font-size:28rpx;font-weight:600;color:#191B1F}
+.f-val{flex:1;font-size:26rpx;color:#767C85}
+.chip-pick{display:flex;flex:1;flex-wrap:wrap;gap:14rpx}
+.chip-pick text{padding:14rpx 26rpx;border-radius:14rpx;background:#F2F4F3;color:#767C85;font-size:26rpx}
+.chip-pick text.on{background:#E7F9EF;color:#08A152;font-weight:700;box-shadow:inset 0 0 0 2rpx #0BBF63}
+.chip-pick text.off{opacity:.4}
+.availability-note{margin:20rpx 24rpx 0;padding:28rpx;border-radius:32rpx;background:#FFEEEA;color:#FF3B30;font-size:26rpx}
+.availability-note text,.availability-note small{display:block}
+.availability-note small{margin-top:6rpx;color:#767C85;font-size:24rpx}
+.card{margin:20rpx 24rpx 0;overflow:hidden;border-radius:32rpx;background:#fff}
+.sec-title{display:flex;align-items:center;padding:26rpx 28rpx 18rpx}
+.sec-title text{display:flex;align-items:center;gap:14rpx;font-size:30rpx;font-weight:700}
+.sec-title text::before{width:8rpx;height:28rpx;border-radius:4rpx;background:#0BBF63;content:''}
+.rich-content{display:block;padding:0 28rpx 28rpx;color:#3A3D43;font-size:26rpx;line-height:1.7}
+.action-bar{position:fixed;z-index:50;right:0;bottom:0;left:0;display:flex;align-items:center;gap:14rpx;padding:16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));border-top:1rpx solid #EDEFEF;background:#fff}
+.ab-ic{display:flex;flex-direction:column;align-items:center;gap:4rpx;width:84rpx;color:#767C85;font-size:20rpx}
+.ab-ic-ico{font-size:38rpx;line-height:1}
+.ab-duo{flex:1;height:84rpx;margin:0;border-radius:999rpx;font-size:28rpx;font-weight:700;line-height:84rpx}
+.ab-duo::after{border:0}
+.ab-duo.cart{background:#FFF2E5;color:#F2620A}
+.ab-duo.buy{background:linear-gradient(135deg,#FF9A3D,#F2620A);color:#fff;box-shadow:0 12rpx 28rpx rgba(242,98,10,.28)}
+.ab-duo[disabled]{opacity:.5}
+.loading-shell{padding:24rpx}
+.loading-hero{height:560rpx;border-radius:32rpx}
+.loading-line{height:32rpx;margin-top:28rpx;border-radius:12rpx}
+.loading-line.short{width:58%}
+.missing{padding:200rpx 48rpx 60rpx;text-align:center}
+.missing-title{display:block;font-size:32rpx;font-weight:700}
+.missing small{display:block;margin-top:12rpx;color:#767C85;font-size:26rpx}
+.btn-main,.btn-ghost{width:320rpx;height:80rpx;border-radius:999rpx;font-size:28rpx;line-height:80rpx}
+.btn-main{margin:32rpx auto 0;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-weight:700}
+.btn-ghost{margin:16rpx auto 0;border:1rpx solid #EDEFEF;background:#fff;color:#767C85}
+.btn-main::after,.btn-ghost::after{border:0}
 </style>

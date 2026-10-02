@@ -92,40 +92,27 @@ function open(target: NavigationTarget) {
 </script>
 
 <style scoped>
-.tabbar-spacer{height:calc(138rpx + env(safe-area-inset-bottom))}
-.tabbar{position:fixed;z-index:var(--tm-z-bottom-nav,950);right:18rpx;bottom:calc(12rpx + env(safe-area-inset-bottom));left:18rpx;display:flex;align-items:stretch;height:112rpx;padding:10rpx 12rpx;border:1rpx solid;border-color:var(--tabbar-border,#e2e9f0);border-radius:30rpx;background-color:var(--tabbar-background,#fff);box-shadow:var(--tm-shadow-float,0 20rpx 48rpx rgba(31,56,92,.14));box-sizing:border-box;backdrop-filter:blur(18rpx)}
-.tabbar-item{position:relative;z-index:0;display:flex;min-width:0;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:5rpx;padding:5rpx 4rpx;color:var(--tabbar-muted,#748099);transition:transform var(--tm-motion-fast,160ms) var(--tm-ease,cubic-bezier(.2,.75,.25,1)),color var(--tm-motion-fast,160ms) ease}
-.tabbar-item.active{color:var(--tabbar-active,#12a66a);font-weight:800}
-.tabbar-item.active::before{content:'';position:absolute;z-index:-1;inset:2rpx 8rpx;border-radius:22rpx;background:#eef8f2}
-.tabbar-icon-wrap{display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;border-radius:16rpx;transition:transform var(--tm-motion-fast,160ms) var(--tm-ease,cubic-bezier(.2,.75,.25,1))}
-.tabbar-icon{display:block;width:38rpx;height:38rpx}
-.tabbar-label{overflow:hidden;max-width:100%;font-size:13px;font-weight:700;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
-.tabbar-item.featured{z-index:0;padding:5rpx 4rpx}
-.tabbar-item.featured .tabbar-icon-wrap{width:48rpx;height:48rpx;margin-top:0;border:0;border-radius:16rpx;background:transparent;box-shadow:none}
-.tabbar-item.featured .tabbar-icon{width:38rpx;height:38rpx}
-.tabbar-item.featured .tabbar-label{margin-top:0;font-weight:700}
-.tabbar-item.featured.active .tabbar-label{font-weight:800}
-.tabbar-item.featured.active::before{display:block}
-.tabbar-item.featured:active .tabbar-icon-wrap{transform:scale(.94)}
-.tabbar-shell.flat .tabbar-spacer{height:calc(116rpx + env(safe-area-inset-bottom))}
-.tabbar-shell.flat .tabbar{right:0;bottom:0;left:0;height:calc(108rpx + env(safe-area-inset-bottom));padding:11rpx 20rpx calc(9rpx + env(safe-area-inset-bottom));border-right:0;border-bottom:0;border-left:0;border-radius:0;background:#fff;box-shadow:0 -8rpx 25rpx rgba(36,62,92,.075);backdrop-filter:none}
-.tabbar-shell.flat .tabbar-item{gap:4rpx;padding:4rpx}
-.tabbar-shell.flat .tabbar-item.active::before{display:none}
-.tabbar-shell.flat .tabbar-icon-wrap,.tabbar-shell.flat .tabbar-item.featured .tabbar-icon-wrap{width:45rpx;height:45rpx}
-.tabbar-shell.flat .tabbar-icon,.tabbar-shell.flat .tabbar-item.featured .tabbar-icon{width:36rpx;height:36rpx}
-.tabbar-shell.flat .tabbar-label{font-size:13px}
-@media (prefers-reduced-motion: reduce){.tabbar-item,.tabbar-icon-wrap{transition:none}.tabbar-item:active .tabbar-icon-wrap{transform:none}}
-@media screen and (min-width:768px){.tabbar{right:auto;left:50%;width:690rpx;transform:translateX(-50%)}.tabbar-shell.flat .tabbar{right:auto;left:50%;width:750rpx;transform:translateX(-50%)}}
+/* ============ v13 凸起 TabBar ============ */
+.tabbar-spacer{height:calc(172rpx + env(safe-area-inset-bottom))}
+.tabbar{position:fixed;z-index:var(--tm-z-bottom-nav,950);right:0;bottom:0;left:0;display:flex;align-items:flex-start;height:calc(152rpx + env(safe-area-inset-bottom));padding:16rpx 8rpx 0;border-top:1rpx solid #EDEFEF;background:#fff;box-sizing:border-box}
+.tabbar-item{position:relative;z-index:0;display:flex;min-width:0;flex:1;align-items:center;flex-direction:column;gap:4rpx;padding-top:8rpx;color:var(--tabbar-muted,#AEB3BB);transition:color var(--tm-motion-fast,160ms) ease}
+.tabbar-item.active{color:var(--tabbar-active,#0BBF63);font-weight:600}
+.tabbar-icon-wrap{display:flex;align-items:center;justify-content:center;width:46rpx;height:46rpx;border-radius:16rpx;transition:transform var(--tm-motion-fast,160ms) var(--tm-ease,cubic-bezier(.2,.75,.25,1))}
+.tabbar-icon{display:block;width:40rpx;height:40rpx}
+.tabbar-label{overflow:hidden;max-width:100%;font-size:20rpx;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
 
-/* Keep navigation readable at the same physical scale across phone widths. */
-.tabbar-spacer{height:calc(76px + env(safe-area-inset-bottom))}
-.tabbar{right:12px;bottom:calc(8px + env(safe-area-inset-bottom));left:12px;height:64px;padding:6px 8px;border-radius:18px}
-.tabbar-item{gap:3px;padding:3px 2px}.tabbar-item.active::before{inset:1px 5px;border-radius:14px}
-.tabbar-icon-wrap,.tabbar-item.featured .tabbar-icon-wrap{width:28px;height:28px;border-radius:9px}.tabbar-icon,.tabbar-item.featured .tabbar-icon{width:24px;height:24px}
-.tabbar-label,.tabbar-shell.flat .tabbar-label{font-size:13px;line-height:1.2}
-.tabbar-shell.flat .tabbar-spacer{height:calc(64px + env(safe-area-inset-bottom))}
-.tabbar-shell.flat .tabbar{height:calc(64px + env(safe-area-inset-bottom));padding:6px 10px calc(6px + env(safe-area-inset-bottom))}
-.tabbar-shell.flat .tabbar-item{gap:3px;padding:3px 2px}.tabbar-shell.flat .tabbar-icon-wrap,.tabbar-shell.flat .tabbar-item.featured .tabbar-icon-wrap{width:28px;height:28px}.tabbar-shell.flat .tabbar-icon,.tabbar-shell.flat .tabbar-item.featured .tabbar-icon{width:24px;height:24px}
-.tabbar-shell.flat .tabbar-item.active::before{display:block;z-index:1;top:-6px;right:28%;bottom:auto;left:28%;height:3px;border-radius:999px;background:var(--tabbar-active,#12a66a)}
-@media screen and (min-width:768px){.tabbar{right:auto;left:50%;width:690rpx;transform:translateX(-50%)}.tabbar-shell.flat .tabbar{right:auto;left:50%;width:750rpx;transform:translateX(-50%)}}
+/* 商城中间项：绿色渐变圆形凸起按钮 */
+.tabbar-item.featured{padding-top:0}
+.tabbar-item.featured .tabbar-icon-wrap{width:96rpx;height:96rpx;margin-top:-48rpx;border:8rpx solid #fff;border-radius:50%;background:linear-gradient(135deg,#12D978,#08A152);box-shadow:0 12rpx 32rpx rgba(11,191,99,.35)}
+.tabbar-item.featured .tabbar-icon{width:48rpx;height:48rpx}
+.tabbar-item.featured .tabbar-label{margin-top:4rpx;font-weight:400}
+.tabbar-item.featured.active .tabbar-label{font-weight:600}
+.tabbar-item.featured:active .tabbar-icon-wrap{transform:scale(.94)}
+
+/* flat 与 v13 底栏形态一致，仅保留兼容入口 */
+.tabbar-shell.flat .tabbar-spacer{height:calc(172rpx + env(safe-area-inset-bottom))}
+.tabbar-shell.flat .tabbar{right:0;left:0;border-right:0;border-bottom:0;border-left:0;border-radius:0;background:#fff;box-shadow:none;backdrop-filter:none}
+
+@media (prefers-reduced-motion: reduce){.tabbar-item,.tabbar-icon-wrap{transition:none}.tabbar-item:active .tabbar-icon-wrap{transform:none}}
+@media screen and (min-width:768px){.tabbar{right:auto;left:50%;width:750rpx;transform:translateX(-50%)}}
 </style>

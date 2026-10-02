@@ -1,38 +1,52 @@
 <template>
-  <view class="page tm-page-shell">
+  <view class="page">
     <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_mall_trade" />
     <view v-else-if="!modules.resolved" class="mp-skeleton">
       <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="commerce-hero" aria-label="支付结果">
-      <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
-      <view class="commerce-hero-copy">
-        <text class="commerce-hero-kicker">PAYMENT RESULT</text>
-        <text class="commerce-hero-title">支付结果</text>
-        <text class="commerce-hero-sub">支付状态、订单编号与资产变动均可追踪</text>
-      </view>
+    <view v-if="loading" class="state">
+      <view class="state-spinner" />
+      <text class="state-title">正在同步支付结果</text>
+      <text class="state-copy">请稍候，正在获取订单状态。</text>
     </view>
+    <view v-else-if="loadError" class="state error">
+      <text class="state-title">订单信息加载失败</text>
+      <text class="state-copy">{{ loadError }}</text>
+      <button class="btn-main" :loading="loading" :disabled="loading" @click="loadOrder">重新加载</button>
+      <button class="btn-ghost" :disabled="!orderIds.length" @click="goOrderEntry">返回订单</button>
+    </view>
+    <template v-else>
+      <view class="result">
+        <view class="result-icon" :class="{ failure: !isSuccess }">{{ isSuccess ? '✓' : '!' }}</view>
+        <text class="result-title">{{ title }}</text>
+        <text class="result-copy">{{ copy }}</text>
+        <text v-if="orders.length" class="result-amount">{{ totalAmountText }}</text>
+      </view>
 
-    <view v-if="loading" class="result-state tm-panel"><view class="result-spinner tm-skeleton" /><text>正在同步支付结果</text><small>请稍候，正在获取订单状态。</small></view>
-    <view v-else-if="loadError" class="result-state error-state tm-panel"><text class="result-state-title">订单信息加载失败</text><small>{{ loadError }}</small><button class="primary" :loading="loading" :disabled="loading" @click="loadOrder">重新加载</button><button class="secondary" :disabled="!orderIds.length" @click="goOrderEntry">返回订单</button></view>
-    <view v-else class="result-card tm-panel">
-      <view class="success-mark" :class="{ failure: !isSuccess }">{{ isSuccess ? '✓' : '!' }}</view>
-      <text class="result-title">{{ title }}</text>
-      <text class="result-copy">{{ copy }}</text>
-      <text v-if="orders.length" class="result-amount">{{ totalAmountText }}</text>
-    </view>
-    <view v-if="!loading && !loadError && orders.length" class="detail-card tm-panel">
-      <view v-for="item in orders" :key="item.id" class="order-result">
-        <view class="kv"><text>支付方式</text><text>{{ paymentText(item.cash_payment_method) }}</text></view>
-        <view class="kv"><text>订单编号</text><text selectable>{{ item.order_no }}</text></view>
-        <view class="kv"><text>现金运费</text><text>¥{{ money(item.shipping_amount) }}</text></view>
-        <view class="kv"><text>当前状态</text><text>{{ statusText(item.status) }}</text></view>
+      <view v-if="orders.length" class="info-card">
+        <view v-for="item in orders" :key="item.id" class="info-group">
+          <view class="info-row"><text>支付方式</text><text>{{ paymentText(item.cash_payment_method) }}</text></view>
+          <view class="info-row"><text>订单编号</text><text selectable>{{ item.order_no }}</text></view>
+          <view class="info-row"><text>现金运费</text><text>¥{{ money(item.shipping_amount) }}</text></view>
+          <view class="info-row"><text>当前状态</text><text>{{ statusText(item.status) }}</text></view>
+        </view>
       </view>
-    </view>
-    <view v-if="!loading && !loadError && hasPoints" class="asset-note tm-panel"><view class="note-icon">积</view><view><text>积分变动已记入资产流水</text><text>退款时会根据实际退回时间重新计算积分有效期。</text></view></view>
-    <view v-if="!loading && !loadError" class="actions"><button class="secondary" @click="goHome">返回首页</button><button class="primary" :disabled="!orderIds.length" @click="goOrderEntry">{{ isSuccess ? '查看订单' : resultStatus === 'pending' ? '返回订单继续确认' : '返回订单重试支付' }}</button></view>
+
+      <view v-if="!loading && !loadError && hasPoints" class="tips-card">
+        <view class="tips-ic">积</view>
+        <view class="tips-body">
+          <text class="tips-title">积分变动已记入资产流水</text>
+          <text class="tips-sub">退款时会根据实际退回时间重新计算积分有效期。</text>
+        </view>
+      </view>
+
+      <view class="actions">
+        <button class="btn-ghost" @click="goHome">返回首页</button>
+        <button class="btn-main" :disabled="!orderIds.length" @click="goOrderEntry">{{ isSuccess ? '查看订单' : resultStatus === 'pending' ? '返回订单继续确认' : '返回订单重试支付' }}</button>
+      </view>
+    </template>
     </template>
   </view>
 </template>
@@ -130,17 +144,37 @@ function goHome(){uni.reLaunch({url:'/pages/index/index'})}
 </script>
 
 <style scoped>
-.commerce-hero{position:relative;min-height:220rpx;overflow:hidden;margin-bottom:18rpx;border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-lg);background:linear-gradient(135deg,#e7fff1 0,#dff8fb 58%,#eef6ff 100%);box-shadow:var(--tm-shadow-sm)}
-.commerce-hero-art{position:absolute;right:-16rpx;top:0;width:68%;height:100%;opacity:.78;object-position:right center}.commerce-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(231,255,241,.98) 0,rgba(231,255,241,.9) 34%,rgba(231,255,241,.12) 78%,rgba(231,255,241,0) 100%)}
-.commerce-hero-copy{position:relative;z-index:1;width:57%;padding:26rpx 24rpx}.commerce-hero-kicker,.commerce-hero-title,.commerce-hero-sub{display:block}.commerce-hero-kicker{color:var(--tm-brand-700);font-size:13px;font-weight:850;letter-spacing:2.4rpx}.commerce-hero-title{margin-top:10rpx;color:var(--tm-ink-900);font-size:22px;font-weight:950;line-height:1.2}.commerce-hero-sub{margin-top:10rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.55}
-
-.page{min-height:100vh;padding-top:70rpx;background:radial-gradient(circle at 85% 4%,rgba(118,223,99,.32),transparent 250rpx),linear-gradient(180deg,var(--tm-campus-cyan-soft),var(--tm-canvas) 560rpx)}.result-card{padding:50rpx 30rpx;text-align:center}.success-mark{display:flex;align-items:center;justify-content:center;width:112rpx;height:112rpx;margin:0 auto;border-radius:38rpx;background:linear-gradient(145deg,var(--tm-brand-600),var(--tm-campus-cyan));box-shadow:0 14rpx 32rpx rgba(23,105,255,.22);color:#fff;font-size:30px;font-weight:900}.result-title,.result-copy,.result-amount{display:block}.result-title{margin-top:26rpx;font-size:22px;font-weight:950}.result-copy{margin-top:10rpx;color:var(--tm-ink-500);font-size:14px}.result-amount{margin-top:24rpx;color:var(--tm-reward-600);font-size:21px;font-weight:950}.detail-card{margin-top:20rpx;padding:24rpx}.order-result + .order-result{margin-top:18rpx;padding-top:8rpx;border-top:1rpx solid var(--tm-line)}.kv{display:flex;justify-content:space-between;gap:20rpx;padding:16rpx 0;border-bottom:1rpx solid var(--tm-line);font-size:14px}.kv:last-child{border-bottom:0}.kv text:last-child{max-width:65%;text-align:right;font-weight:800}.asset-note{display:flex;gap:18rpx;margin-top:20rpx;padding:24rpx;background:var(--tm-campus-yellow-soft)}.note-icon{display:flex;align-items:center;justify-content:center;width:62rpx;height:62rpx;flex:none;border-radius:20rpx;background:var(--tm-campus-yellow);color:#7a5600;font-weight:950}.asset-note text{display:block}.asset-note text:first-child{font-size:14px;font-weight:900}.asset-note text:last-child{margin-top:6rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.5}.actions{display:grid;grid-template-columns:1fr 1.4fr;gap:15rpx;margin-top:26rpx}.actions button{height:82rpx;margin:0;border-radius:21rpx;font-size:14px;font-weight:900;line-height:80rpx}.secondary{border:1rpx solid var(--tm-line);background:#fff;color:var(--tm-ink-900)}.primary{background:var(--tm-brand-600);color:#fff}.tm-panel{border-color:rgba(7,26,51,.09);border-radius:30rpx;box-shadow:0 14rpx 38rpx rgba(7,26,51,.07)}
-.success-mark.failure{background:linear-gradient(145deg,#f15b63,#ff9c70);box-shadow:0 14rpx 32rpx rgba(208,55,65,.2)}
-.page{background:linear-gradient(180deg,var(--tm-campus-cyan-soft) 0,var(--tm-canvas) 620rpx);color:var(--tm-ink-900)}
-.tm-panel,.result-state{border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-lg);box-shadow:var(--tm-shadow-sm);background:var(--tm-surface)}
-.result-card{padding:50rpx 30rpx}.success-mark{box-shadow:var(--tm-shadow-card)}.success-mark.failure{box-shadow:var(--tm-shadow-card)}
-.result-state{margin:0 0 20rpx;padding:54rpx 28rpx;text-align:center}.result-spinner{width:72rpx;height:72rpx;margin:0 auto;border-radius:24rpx}.result-state>text,.result-state>small{display:block}.result-state>text{margin-top:18rpx;font-size:17px;font-weight:900}.result-state>small{margin-top:9rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.5}.result-state.error-state{border-color:rgba(209,67,67,.22);background:var(--tm-campus-coral-soft)}.result-state-title{color:var(--tm-danger)}
-.result-state .primary{height:70rpx;margin-top:22rpx;border:1rpx solid transparent;border-radius:18rpx;background:var(--tm-brand-600);color:#fff;line-height:68rpx}.result-state .primary[disabled]{opacity:.46}
-.result-state .secondary{height:70rpx;margin-top:12rpx;border:1rpx solid var(--tm-line);border-radius:18rpx;background:var(--tm-surface);color:var(--tm-ink-900);line-height:68rpx}.result-state .secondary[disabled]{opacity:.46}
-.secondary{border:1rpx solid var(--tm-line);box-shadow:none}.primary{border:1rpx solid transparent;box-shadow:none}.primary[disabled]{opacity:.46;filter:saturate(.55)}
+.page{min-height:100vh;padding:48rpx 24rpx 120rpx;background:#F4F6F4;color:#191B1F}
+.state{display:flex;flex-direction:column;align-items:center;padding:140rpx 48rpx 60rpx;text-align:center}
+.state-spinner{width:72rpx;height:72rpx;margin:0 auto;border:6rpx solid #E7F9EF;border-top-color:#0BBF63;border-radius:50%;animation:res-spin .8s linear infinite}
+.state-title{display:block;margin-top:28rpx;font-size:32rpx;font-weight:700}
+.state-copy{display:block;margin-top:10rpx;color:#767C85;font-size:26rpx;line-height:1.6}
+.state .btn-main,.state .btn-ghost{width:320rpx;height:80rpx;border-radius:999rpx;font-size:28rpx;line-height:80rpx}
+.state .btn-main{margin-top:32rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-weight:700}
+.state .btn-ghost{margin-top:16rpx;border:1rpx solid #EDEFEF;background:#fff;color:#767C85}
+.state .btn-main::after,.state .btn-ghost::after{border:0}
+.state.error .state-title{color:#FF3B30}
+.result{display:flex;flex-direction:column;align-items:center;padding:80rpx 48rpx 20rpx;text-align:center}
+.result-icon{display:flex;align-items:center;justify-content:center;width:184rpx;height:184rpx;margin:0 auto;border-radius:50%;background:linear-gradient(135deg,#12D978,#08A152);box-shadow:0 28rpx 60rpx rgba(11,191,99,.32);color:#fff;font-size:52rpx;font-weight:900}
+.result-icon.failure{background:linear-gradient(135deg,#FF9A3D,#F2620A);box-shadow:0 28rpx 60rpx rgba(242,98,10,.28)}
+.result-title{display:block;margin-top:44rpx;font-size:44rpx;font-weight:800}
+.result-copy{display:block;margin-top:16rpx;color:#767C85;font-size:26rpx;line-height:1.6}
+.result-amount{display:block;margin-top:40rpx;color:#FF3B30;font-size:38rpx;font-weight:800}
+.info-card{margin:24rpx 0 0;padding:8rpx 28rpx;border-radius:32rpx;background:#fff}
+.info-group+.info-group{margin-top:10rpx;padding-top:10rpx;border-top:1rpx solid #F5F6F6}
+.info-row{display:flex;justify-content:space-between;gap:24rpx;padding:20rpx 0;border-bottom:1rpx solid #F5F6F6;font-size:26rpx}
+.info-row:last-child{border-bottom:0}
+.info-row text:last-child{max-width:65%;text-align:right;font-weight:600}
+.tips-card{display:flex;align-items:center;gap:22rpx;margin:24rpx 0 0;padding:28rpx;border-radius:32rpx;background:#fff}
+.tips-ic{display:flex;align-items:center;justify-content:center;width:76rpx;height:76rpx;flex:none;border-radius:24rpx;background:#E7F9EF;color:#08A152;font-size:30rpx;font-weight:800}
+.tips-body{min-width:0;flex:1}
+.tips-title{display:block;font-size:28rpx;font-weight:600}
+.tips-sub{display:block;margin-top:6rpx;color:#767C85;font-size:24rpx;line-height:1.5}
+.actions{display:flex;gap:24rpx;margin-top:52rpx;padding:0 8rpx}
+.actions button{flex:1;height:88rpx;margin:0;border-radius:999rpx;font-size:30rpx;font-weight:700;line-height:88rpx}
+.actions button::after{border:0}
+.btn-ghost{border:1rpx solid #EDEFEF;background:#F2F4F3;color:#767C85}
+.btn-main{background:linear-gradient(135deg,#12D978,#08A152);color:#fff;box-shadow:0 16rpx 36rpx rgba(11,191,99,.3)}
+.btn-main[disabled]{opacity:.5}
+@keyframes res-spin{to{transform:rotate(360deg)}}
 </style>

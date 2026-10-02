@@ -45,6 +45,19 @@ class NotificationSceneRegistry
             'post_appeal_submitted' => $this->scene('community', '申诉已提交', '帖子申诉已提交', '“{{post_title}}”的申诉已提交，请等待复核。', ['in_app'], 60, false, 'pages/community/index?view=mine'),
             'post_restored' => $this->scene('community', '申诉通过', '帖子已恢复', '“{{post_title}}”的申诉已通过，内容已经恢复。', ['in_app', 'wechat_mini'], 70, true),
             'post_appeal_rejected' => $this->scene('community', '申诉未通过', '帖子申诉未通过', '“{{post_title}}”的申诉未通过：{{review_note}}', ['in_app', 'wechat_mini'], 80, true, 'pages/community/index?view=mine'),
+
+            'second_hand_item_approved' => $this->scene('second_hand', '审核通过', '闲置商品审核通过', '你发布的“{{item_title}}”已通过审核，公开展示中。', ['in_app'], 10),
+            'second_hand_item_rejected' => $this->scene('second_hand', '审核未通过', '闲置商品审核未通过', '你发布的“{{item_title}}”未通过审核：{{review_note}}', ['in_app'], 20, false, 'pages/second-hand/my-items'),
+            'second_hand_order_created' => $this->scene('second_hand', '有人下单', '闲置订单已创建', '你的“{{item_title}}”被下单了，等待买家支付。', ['in_app'], 30),
+            'second_hand_order_paid' => $this->scene('second_hand', '买家已付款', '买家已付款', '你的“{{item_title}}”订单已支付 ¥{{amount}}，请尽快发货。', ['in_app'], 40),
+            'second_hand_order_shipped' => $this->scene('second_hand', '卖家已发货', '卖家已发货', '你购买的“{{item_title}}”已发货，收货后请及时确认。', ['in_app'], 50),
+            'second_hand_order_completed' => $this->scene('second_hand', '货款到账', '闲置订单已完成', '你的“{{item_title}}”订单已完成，¥{{amount}} 已结算到你的钱包。', ['in_app'], 60),
+            'second_hand_order_cancelled' => $this->scene('second_hand', '订单取消', '闲置订单已取消', '你购买的“{{item_title}}”订单已取消，款项已退回钱包。', ['in_app'], 70),
+            'second_hand_rating_received' => $this->scene('second_hand', '收到评价', '收到闲置订单评价', '对方给了你一个 {{score}} 星评价。', ['in_app'], 80),
+            'second_hand_refund_requested' => $this->scene('second_hand', '退款申请', '买家申请退款', '“{{item_title}}”订单买家申请退款 ¥{{amount}}，24 小时内未处理将自动同意。', ['in_app'], 90),
+            'second_hand_refund_approved' => $this->scene('second_hand', '退款成功', '退款已到账', '“{{item_title}}”退款 ¥{{amount}} 已退回你的钱包。', ['in_app'], 100, true),
+            'second_hand_refund_rejected' => $this->scene('second_hand', '退款被拒', '退款申请被拒绝', '“{{item_title}}”退款申请被卖家拒绝：{{review_note}}，可申请平台介入。', ['in_app'], 110),
+            'second_hand_refund_arbitrated' => $this->scene('second_hand', '平台仲裁', '平台仲裁结果', '“{{item_title}}”平台仲裁结果：{{review_note}}', ['in_app'], 120, true),
         ];
     }
 
@@ -70,12 +83,13 @@ class NotificationSceneRegistry
         $variables = match ($domain) {
             'task' => ['task_title', 'status_text', 'task_claim_id', 'task_id', 'deadline', 'review_note', 'reward_summary', 'progress_summary', 'occurred_at'],
             'order' => ['order_no', 'status_text', 'order_id', 'amount', 'refund_amount', 'refunded_points', 'refund_summary', 'tracking_text', 'occurred_at'],
+            'second_hand' => ['item_title', 'item_id', 'order_id', 'amount', 'score', 'review_note', 'occurred_at'],
             default => ['post_title', 'status_text', 'post_id', 'review_note', 'occurred_at'],
         };
 
         return [
             'domain' => $domain,
-            'domain_name' => ['task' => '任务进度', 'order' => '订单状态', 'community' => '帖子发布'][$domain],
+            'domain_name' => ['task' => '任务进度', 'order' => '订单状态', 'community' => '帖子发布', 'second_hand' => '闲置交易'][$domain],
             'name' => $name,
             'category' => $domain === 'community' ? 'community' : $domain,
             'default_subject' => $subject,
@@ -86,6 +100,7 @@ class NotificationSceneRegistry
             'deep_link' => $deepLink ?? match ($domain) {
                 'task' => 'pages/task-claim/index?id={{task_claim_id}}',
                 'order' => 'pages/order-detail/index?id={{order_id}}',
+                'second_hand' => 'pages/second-hand/order-detail?id={{order_id}}',
                 default => 'pages/community-detail/index?id={{post_id}}',
             },
             'subscription_context' => $domain,

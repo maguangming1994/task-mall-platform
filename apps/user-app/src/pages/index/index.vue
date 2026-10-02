@@ -1,641 +1,161 @@
 <template>
   <view
-    class="home-v4"
+    class="home-v13"
     :class="{ 'is-authenticated': auth.isAuthenticated, 'is-guest': !auth.isAuthenticated }"
     :style="pageStyle"
   >
-    <view class="home-v4-safe" />
-    <view class="home-campus-context">
-      <view class="home-campus-selector-wrap">
-        <CampusSelector :access-token="auth.accessToken" :account-campus="auth.user?.campus" @change="handleCampusChange" />
-      </view>
-      <view v-if="auth.isAuthenticated" class="home-top-actions">
-        <view class="home-top-action" role="button" aria-label="打开消息中心" @click="openNotifications">
-          <view class="home-v10-bell"><view /></view>
-          <view class="home-top-notice-dot" />
-          <text>消息</text>
-        </view>
-        <view
-          v-if="home.floating_support.enabled"
-          class="home-top-action"
-          role="button"
-          aria-label="联系客服"
-          @click="openFloatingSupport"
-        >
-          <image
-            v-if="home.floating_support.icon_url"
-            class="home-top-action-image"
-            :src="home.floating_support.icon_url"
-            mode="aspectFit"
-          />
-          <view v-else class="home-v10-headset"><view>••</view></view>
-          <text>{{ supportShortLabel }}</text>
-        </view>
-      </view>
-    </view>
+    <view class="home-v13-safe" />
 
-    <view v-if="auth.isAuthenticated" class="home-v10-auth-shell">
-      <view class="home-v10-hero">
-        <swiper
-          class="home-v10-hero-swiper"
-          :autoplay="home.carousel.autoplay"
-          :interval="home.carousel.interval_ms"
-          :current="activeHeroIndex"
-          circular
-          @change="handleHeroChange"
-        >
-          <swiper-item v-for="slide in home.carousel.items" :key="`v10-${slide.id}`">
-            <view class="home-v10-hero-slide" @click="navigateHomeLink(slide.link_type)">
-              <image
-                class="home-v10-hero-image"
-                :src="heroImageSource(slide)"
-                mode="aspectFill"
-                @error="handleHeroImageError(slide)"
-              />
-              <view class="home-v10-hero-veil" />
-            </view>
-          </swiper-item>
-        </swiper>
-
-        <view class="home-v10-hero-brand">
-          <text class="home-v10-hero-title">{{ home.brand.name || '任务商城' }}</text>
-          <text class="home-v10-hero-subtitle">完成任务，兑换好生活</text>
-          <button v-if="activeHeroSlide" class="home-v10-hero-cta" @click.stop="navigateHomeLink(activeHeroSlide.link_type)">
-            {{ activeHeroSlide.button_text || '立即查看' }}<text>›</text>
-          </button>
-        </view>
-
-        <view v-if="home.carousel.items.length > 1" class="home-v10-hero-dots">
-          <view
-            v-for="(_slide, index) in home.carousel.items"
-            :key="`v10-dot-${index}`"
-            :class="['home-v10-hero-dot', { active: index === activeHeroIndex }]"
-          />
-        </view>
-      </view>
-
-      <view class="home-v10-main">
-        <view class="home-v10-quick-card" :style="backgroundStyle(home.modules.quick_grid_background_url)">
-          <view
-            v-for="item in quickEntries"
-            :key="`v10-quick-${item.id}`"
-            class="home-v10-quick-item"
-            @click="item.action"
-          >
-            <view :class="['home-v10-quick-icon', `tone-${item.tone}`]">
-              <image v-if="item.icon_url" :src="item.iconSrc" mode="aspectFit" />
-              <image v-else :src="quickArtIcon(item.id, item.link_type)" mode="aspectFit" />
-            </view>
-            <text class="home-v10-quick-label">{{ item.displayLabel }}</text>
-          </view>
-        </view>
-
-        <view
-          v-if="home.announcement.enabled"
-          class="home-v10-announcement"
-          role="button"
-          aria-label="查看校园公告"
-          @click="navigateHomeLink(home.announcement.link_type)"
-        >
-          <view class="home-v10-announcement-icon">
-            <image v-if="home.announcement.icon_url" :src="home.announcement.icon_url" mode="aspectFit" />
-            <text v-else>◖</text>
-          </view>
-          <text class="home-v10-announcement-label">校园公告</text>
-          <text class="home-v10-announcement-content">{{ announcementSummary }}</text>
-          <text class="home-v10-announcement-arrow">›</text>
-        </view>
-
-        <view v-if="homeError" class="home-v10-error" @click="loadHome">
-          首页内容使用默认配置，点击重新加载
-        </view>
-
-        <view class="home-v10-section-head">
-          <text class="home-v10-section-title">为你推荐</text>
-          <text class="home-v10-section-link" @click="openTasks">查看全部任务 ›</text>
-        </view>
-
-        <view v-if="recommendedTask" class="home-v10-task-card" @click="openRecommendedTask">
-          <view class="home-v10-task-cover tone-green">
-            <image v-if="recommendedTask?.cover_image_url" :src="recommendedTask.cover_image_url" mode="aspectFill" />
-            <view v-else class="home-v10-task-fallback">✓</view>
-          </view>
-          <view class="home-v10-task-copy">
-            <text class="home-v10-task-title">{{ recommendedTask?.title || home.modules.recommendation.title }}</text>
-            <text class="home-v10-task-description">{{ recommendedDescriptionText }}</text>
-            <text class="home-v10-task-meta">剩余名额 {{ recommendedTask?.remaining_reward_slots ?? 0 }} 人 ｜ 审核时限 {{ recommendedReviewTimeText }}</text>
-          </view>
-          <view class="home-v10-task-side">
-            <text class="home-v10-task-reward">{{ recommendedRewardText }}</text>
-            <button class="home-v10-task-button" @click.stop="openRecommendedTask">去参与</button>
-          </view>
-        </view>
-
-        <view v-else class="home-v10-task-empty" @click="openTasks">
-          <view class="home-v10-task-empty-icon"><image :src="icons.resolve('/static/icons/module-tasks.svg')" mode="aspectFit" /></view>
-          <view class="home-v10-task-empty-copy">
-            <text>新的校园任务正在准备中</text>
-            <text>先去任务大厅看看其他可参与内容</text>
-          </view>
-          <text class="home-v10-task-empty-link">去看看 ›</text>
-        </view>
-
-        <view v-if="activeClaim" class="home-v10-continue-section">
-          <view class="home-v10-continue-head">
-            <text>继续使用任务</text>
-            <text @click="openTasks">查看全部任务 ›</text>
-          </view>
-          <view class="home-v10-task-card home-v10-continue-card" @click="openActiveClaim">
-            <view class="home-v10-task-cover tone-blue">
-              <view class="home-v10-task-fallback">续</view>
-            </view>
-            <view class="home-v10-task-copy">
-              <text class="home-v10-task-title">{{ activeClaim.title }}</text>
-              <text class="home-v10-task-description">{{ activeClaimDescriptionText }}</text>
-              <text class="home-v10-task-meta">已完成 {{ activeClaimPercent }}% ｜ {{ activeClaim.execution_status_label || '等待继续提交' }}</text>
-            </view>
-            <view class="home-v10-task-side">
-              <text class="home-v10-task-reward">{{ activeClaimRewardText }}</text>
-              <button class="home-v10-task-button" @click.stop="openActiveClaim">去完成</button>
-            </view>
-          </view>
-        </view>
-
-        <view class="home-v10-mall-section">
-          <view class="home-v10-mall-head">
-            <text>积分商城精选</text>
-            <text @click="openProducts">全部商品 ›</text>
-          </view>
-          <view class="home-v10-products">
-            <view
-              v-for="(product, index) in registeredProducts"
-              :key="`v10-product-${product.id}`"
-              class="home-v10-product"
-              @click="openProduct(product.id)"
-            >
-              <view :class="['home-v10-product-image', `tone-${index % 4}`]">
-                <image v-if="productImage(product)" :src="productImage(product)" mode="aspectFill" />
-                <text v-else>{{ product.name.slice(0, 1) }}</text>
-              </view>
-              <text class="home-v10-product-name">{{ product.name }}</text>
-              <text class="home-v10-product-price">{{ productPriceText(product) }}</text>
-            </view>
-          </view>
-        </view>
-
-        <view class="home-v10-trust" @click="openAssets">
-          <view class="home-v10-trust-shield">✓</view>
-          <view>
-            <text>安心保障</text>
-            <text>平台对任务发布与交易全程保障，权益无忧</text>
-          </view>
-          <text>›</text>
-        </view>
-      </view>
-    </view>
-
-    <template v-else>
-    <view class="home-v4-header">
-      <view class="home-v4-brand">
-        <image
-          v-if="home.brand.logo_url"
-          class="home-v4-brand-logo"
-          :src="home.brand.logo_url"
-          mode="aspectFit"
+    <!-- 顶部：校区 + 搜索 + 消息 -->
+    <view class="home-v13-head">
+      <view class="home-v13-campus-wrap">
+        <CampusSelector
+          :access-token="auth.accessToken"
+          :account-campus="auth.user?.campus"
+          @change="handleCampusChange"
         />
-        <view v-else class="home-v4-brand-mark">{{ home.brand.logo_text || 'TM' }}</view>
-        <view class="home-v4-brand-copy">
-          <text class="home-v4-brand-name">{{ home.brand.name }}</text>
-          <text class="home-v4-brand-caption">{{ home.brand.caption }}</text>
-        </view>
       </view>
+      <view class="home-v13-search" role="button" aria-label="搜索任务" @click="openTasks">
+        <view class="home-v13-search-icon" />
+        <text class="home-v13-search-placeholder">搜任务 / 搜商品</text>
+      </view>
+      <view
+        class="home-v13-bell"
+        role="button"
+        aria-label="打开消息中心"
+        @click="openNotifications"
+      >
+        <view class="home-v13-bell-icon" />
+        <view v-if="auth.isAuthenticated" class="home-v13-bell-dot" />
+      </view>
+    </view>
 
-      <view class="home-v4-header-actions">
-        <view
-          class="home-v4-header-action"
-          role="button"
-          aria-label="打开消息中心"
-          @click="openNotifications"
-        >
-          <image
-            v-if="home.modules.notification_icon_url"
-            class="home-v4-header-action-image"
-            :src="home.modules.notification_icon_url"
-            mode="aspectFit"
-          />
-          <view v-else class="home-v4-bell-glyph"><view class="home-v4-bell-clapper" /></view>
-        </view>
-        <view
-          v-if="home.floating_support.enabled"
-          class="home-v4-support-action"
-          role="button"
-          aria-label="联系客服"
-          @click="openFloatingSupport"
-        >
-          <image
-            v-if="home.floating_support.icon_url"
-            class="home-v4-support-image"
-            :src="home.floating_support.icon_url"
-            mode="aspectFit"
-          />
-          <view v-else class="home-v4-support-glyph">
-            <view class="home-v4-support-headset" />
-            <view class="home-v4-support-face">••</view>
-          </view>
-          <text v-if="home.floating_support.show_label" class="home-v4-support-label">
-            {{ supportShortLabel }}
+    <!-- 积分卡片 -->
+    <view class="home-v13-point-card">
+      <view class="home-v13-pc-top">
+        <view class="home-v13-pc-left">
+          <text class="home-v13-pc-label">我的积分 ›</text>
+          <text class="home-v13-pc-num">
+            {{ userPoints }}
+            <text class="home-v13-pc-sub">今日已赚 +{{ todayEarned }}</text>
           </text>
         </view>
+        <button class="home-v13-pc-sign" @click="goCheckIn">
+          <text class="home-v13-pc-sign-icon">✓</text>
+          每日签到
+        </button>
       </view>
-    </view>
-
-    <view
-      v-if="homeLoading && !homeLoaded"
-      class="home-v4-state home-v4-state-loading"
-      role="status"
-      aria-live="polite"
-    >
-      <view class="home-v4-state-spinner" aria-hidden="true" />
-      <text>正在加载校园首页…</text>
-    </view>
-
-    <view
-      v-else-if="homeError"
-      class="home-v4-state home-v4-state-error"
-      role="alert"
-    >
-      <view>
-        <text class="home-v4-state-title">首页配置暂时不可用</text>
-        <text class="home-v4-state-copy">已为你显示默认内容，稍后可重新加载。</text>
-      </view>
-      <button class="home-v4-state-action" @click="loadHome">重新加载</button>
-    </view>
-
-    <view class="home-v4-content">
-      <swiper
-        class="home-v4-hero-swiper"
-        :autoplay="home.carousel.autoplay"
-        :interval="home.carousel.interval_ms"
-        :current="activeHeroIndex"
-        circular
-        @change="handleHeroChange"
-      >
-        <swiper-item v-for="slide in home.carousel.items" :key="slide.id">
-          <view class="home-v4-hero">
-            <image
-              class="home-v4-hero-image"
-              :src="heroImageSource(slide)"
-              mode="aspectFill"
-              @error="handleHeroImageError(slide)"
-            />
-            <view class="home-v4-hero-wash" />
-            <view class="home-v4-hero-copy">
-              <text class="home-v4-hero-kicker">{{ slide.kicker }}</text>
-              <view class="home-v4-hero-title">
-                <text>{{ titleParts(slide.title).primary }}</text>
-                <view
-                  v-if="titleParts(slide.title).secondary || titleParts(slide.title).accent"
-                  class="home-v4-hero-title-line"
-                >
-                  <text>{{ titleParts(slide.title).secondary }}</text>
-                  <text v-if="titleParts(slide.title).accent" class="home-v4-hero-title-accent">{{ titleParts(slide.title).accent }}</text>
-                </view>
-              </view>
-              <text class="home-v4-hero-description">{{ slide.description }}</text>
-              <button class="home-v4-hero-button" @click.stop="navigateHomeLink(slide.link_type)">
-                {{ slide.button_text }}<text class="home-v4-hero-button-arrow">›</text>
-              </button>
-            </view>
-            <view v-if="home.carousel.items.length > 1" class="home-v4-hero-dots">
-              <view
-                v-for="(_item, index) in home.carousel.items"
-                :key="index"
-                class="home-v4-hero-dot"
-                :class="{ active: index === activeHeroIndex }"
-              />
-            </view>
-          </view>
-        </swiper-item>
-      </swiper>
-
-      <view class="home-v4-quick-card" :style="backgroundStyle(home.modules.quick_grid_background_url)">
+      <view class="home-v13-sign-strip">
         <view
-          v-for="(item, index) in quickEntries"
-          :key="item.id"
-          class="home-v4-quick-item"
-          :class="{ 'with-divider': index > 0 }"
-          @click="item.action"
+          v-for="(day, index) in signDays"
+          :key="index"
+          class="home-v13-sign-day"
+          :class="{ done: day.done, today: day.today }"
         >
-          <view :class="['home-v4-quick-icon', `tone-${item.tone}`]">
-            <image v-if="item.icon_url" class="home-v4-quick-image" :src="item.iconSrc" mode="aspectFit" />
-            <view v-else :class="['home-v4-quick-art', `art-${quickArtType(item.id, item.link_type)}`]">
-              <view class="home-v4-quick-art-body">
-                <image class="home-v4-quick-art-symbol" :src="quickArtIcon(item.id, item.link_type)" mode="aspectFit" />
-              </view>
-            </view>
+          <view class="home-v13-sign-day-badge">
+            <text v-if="day.done" class="home-v13-sign-day-check">✓</text>
+            <text v-else-if="day.today" class="home-v13-sign-day-coin">¥</text>
+            <text v-else class="home-v13-sign-day-coin">¥</text>
           </view>
-          <text class="home-v4-quick-label">{{ item.displayLabel }}</text>
-          <text class="home-v4-quick-note">{{ item.note }}</text>
+          <text class="home-v13-sign-day-label">{{ day.label }}</text>
         </view>
       </view>
+    </view>
 
-      <view class="home-v09-auth">
-        <view
-          class="home-v09-notice"
-          role="button"
-          aria-label="查看平台公告"
-          @click="navigateHomeLink(home.announcement.link_type)"
-        >
-          <view class="home-v09-notice-icon">
-            <image v-if="home.announcement.icon_url" :src="home.announcement.icon_url" mode="aspectFit" />
-            <text v-else>公</text>
-          </view>
-          <view class="home-v09-notice-copy">
-            <text class="home-v09-notice-title">{{ home.announcement.title || '平台公告' }}</text>
-            <rich-text class="home-v09-notice-content" :nodes="compactRichTextContent(home.announcement.content)" />
-          </view>
-          <text class="home-v09-arrow">›</text>
-        </view>
-
-        <view class="home-v09-section-head">
-          <view>
-            <text class="home-v09-section-title">今日推荐</text>
-            <text class="home-v09-section-note">从一件简单的小事开始</text>
-          </view>
-          <text class="home-v09-section-link" @click="openTasks">查看全部 ›</text>
-        </view>
-
-        <view class="home-v09-task-card" @click="openRecommendedTask">
-          <view class="home-v09-task-visual">
-            <image
-              v-if="recommendedTask?.cover_image_url"
-              class="home-v09-task-cover"
-              :src="recommendedTask.cover_image_url"
-              mode="aspectFill"
-            />
-            <view v-else class="home-v09-task-art">
-              <view class="home-v09-task-clipboard"><view class="home-v09-task-lines" /></view>
-              <text>★</text>
-            </view>
-          </view>
-          <view class="home-v09-task-copy">
-            <view class="home-v09-task-title-row">
-              <text class="home-v09-task-title">{{ recommendedTask?.title || home.modules.recommendation.title }}</text>
-              <text class="home-v09-task-level">{{ taskDifficultyLabel(recommendedTask) }}</text>
-            </view>
-            <text class="home-v09-task-description">{{ recommendedTask?.description_text || recommendedTask?.description || home.modules.recommendation.description }}</text>
-            <view class="home-v09-task-meta">
-              <text class="home-v09-task-reward">{{ recommendedRewardText }}</text>
-              <text class="home-v09-task-time">◷ {{ recommendedTimeText }}</text>
-            </view>
-          </view>
-          <view class="home-v09-circle-arrow">›</view>
-        </view>
-
-        <view v-if="activeClaim" class="home-v09-progress-card" @click="openActiveClaim">
-          <view class="home-v09-progress-main">
-            <view class="home-v09-progress-badge">续</view>
-            <view class="home-v09-progress-copy">
-              <text class="home-v09-progress-kicker">继续上次任务</text>
-              <text class="home-v09-progress-title">{{ activeClaim.title }}</text>
-              <text class="home-v09-progress-note">{{ activeClaim.execution_status_label || '已领取，等待提交任务材料' }}</text>
-            </view>
-            <text class="home-v09-progress-action">继续完成</text>
-          </view>
-          <view class="home-v09-progress-track"><view :style="{ width: `${activeClaimPercent}%` }" /></view>
-        </view>
-
-        <view class="home-v09-section-head home-v09-mall-head">
-          <view>
-            <text class="home-v09-section-title">积分商城</text>
-            <text class="home-v09-section-note">积分、现金与组合支付都可选</text>
-          </view>
-          <text class="home-v09-section-link" @click="openProducts">逛商城 ›</text>
-        </view>
-
-        <scroll-view class="home-v09-product-scroll" scroll-x :show-scrollbar="false">
-          <view class="home-v09-product-row">
-            <view
-              v-for="(product, index) in registeredProducts"
-              :key="product.id"
-              class="home-v09-product-card"
-              @click="openProduct(product.id)"
-            >
-              <view :class="['home-v09-product-picture', `tone-${index % 4}`]">
-                <image v-if="productImage(product)" :src="productImage(product)" mode="aspectFill" />
-                <text v-else>{{ product.name.slice(0, 1) }}</text>
-              </view>
-              <text class="home-v09-product-title">{{ product.name }}</text>
-              <text class="home-v09-product-price">{{ productPriceText(product) }}</text>
-            </view>
-          </view>
-        </scroll-view>
-
-        <view class="home-v09-trust" @click="openAssets">
-          <view class="home-v09-trust-icon">✓</view>
-          <view class="home-v09-trust-copy">
-            <text>每一笔资产都有记录</text>
-            <text>积分来源、有效期、退款和余额变动清晰可查</text>
-          </view>
-          <text class="home-v09-arrow">›</text>
-        </view>
-      </view>
-
-      <view class="home-v4-campus-card">
-        <view class="home-v4-campus-head">
-          <view>
-            <text class="home-v4-campus-kicker">CAMPUS NOW · 校园速览</text>
-            <text class="home-v4-campus-title">今天需要关注的事</text>
-          </view>
-          <text class="home-v4-campus-more" role="button" aria-label="查看消息详情" @click="openNotifications">查看详情 ›</text>
-        </view>
-
-        <view class="home-v4-campus-tabs">
-          <view
-            v-for="tab in infoTabs"
-            :key="tab.id"
-            class="home-v4-campus-tab"
-            :class="{ active: activeInfoTab === tab.id }"
-            @click="activeInfoTab = tab.id"
-          >
-            {{ tab.label }}
-          </view>
-        </view>
-
-        <view v-if="activeInfoTab === 'announcement'" class="home-v4-info-panel">
-          <view
-            v-if="home.announcement.enabled"
-            class="home-v4-announcement"
-            role="button"
-            aria-label="查看平台公告"
-            @click="navigateHomeLink(home.announcement.link_type)"
-          >
-            <view class="home-v4-announcement-icon">
-              <image
-                v-if="home.announcement.icon_url"
-                class="home-v4-announcement-image"
-                :src="home.announcement.icon_url"
-                mode="aspectFit"
-              />
-              <view v-else class="home-v4-megaphone"><view class="home-v4-megaphone-handle" /></view>
-            </view>
-            <view class="home-v4-announcement-copy">
-              <text class="home-v4-announcement-title">{{ home.announcement.title }}</text>
-              <rich-text
-                class="home-v4-announcement-content"
-                :nodes="compactRichTextContent(home.announcement.content)"
-              />
-            </view>
-            <text v-if="home.announcement.link_type !== 'none'" class="home-v4-card-arrow">›</text>
-          </view>
-          <view v-else class="home-v4-info-empty">暂无平台公告</view>
-        </view>
-
-        <view v-else-if="activeInfoTab === 'messages'" class="home-v4-info-panel">
-          <view class="home-v4-message-panel" role="button" aria-label="查看个人消息" @click="openNotifications">
-            <view class="home-v4-message-icon">信</view>
-            <view class="home-v4-message-copy">
-              <text class="home-v4-message-title">{{ auth.isAuthenticated ? '查看个人消息' : '登录后接收个人消息' }}</text>
-              <text class="home-v4-message-note">任务进度、订单和资产变动都会在这里提醒</text>
-            </view>
-            <text class="home-v4-card-arrow">›</text>
-          </view>
-        </view>
-
-        <view v-else class="home-v4-info-panel">
-          <view class="home-v4-message-panel" role="button" aria-label="查看资产动态" @click="openAssets">
-            <view class="home-v4-message-icon asset">资</view>
-            <view class="home-v4-message-copy">
-              <text class="home-v4-message-title">资产动态</text>
-              <text class="home-v4-message-note">积分、余额、优惠券和有效期变化统一查询</text>
-            </view>
-            <text class="home-v4-card-arrow">›</text>
-          </view>
-        </view>
-
-        <view class="home-v4-priority-grid">
-          <view v-if="modules.isEnabled('module_wallet')" class="home-v4-priority-card asset" role="button" aria-label="打开资产中心" @click="openAssets">
-            <view class="home-v4-priority-icon">
-              <image v-if="priorityIcon('assets')" :src="priorityIcon('assets')" mode="aspectFit" />
-              <image v-else :src="icons.resolve('/static/icons/module-wallet.svg')" mode="aspectFit" />
-            </view>
-            <view class="home-v4-priority-copy">
-              <text class="home-v4-priority-title">资产中心</text>
-              <text class="home-v4-priority-note">登录后查看资产</text>
-            </view>
-            <text class="home-v4-card-arrow">›</text>
-          </view>
-          <view v-if="modules.isEnabled('module_referrals')" class="home-v4-priority-card referral" role="button" aria-label="打开邀请成长" @click="openReferrals">
-            <view class="home-v4-priority-icon">
-              <image v-if="priorityIcon('referrals')" :src="priorityIcon('referrals')" mode="aspectFit" />
-              <image v-else :src="icons.resolve('/static/icons/module-referrals.svg')" mode="aspectFit" />
-            </view>
-            <view class="home-v4-priority-copy">
-              <text class="home-v4-priority-title">邀请成长</text>
-              <text class="home-v4-priority-note">邀请好友一起成长</text>
-            </view>
-            <text class="home-v4-card-arrow">›</text>
-          </view>
-        </view>
-      </view>
-
-      <view v-if="modules.isEnabled('module_tasks')" class="home-v4-section-head">
-        <view>
-          <text class="home-v4-section-title">{{ home.modules.recommendation.section_title }}</text>
-          <text class="home-v4-section-subtitle">{{ home.modules.recommendation.section_subtitle }}</text>
-        </view>
-        <text class="home-v4-section-link" role="button" aria-label="查看全部任务" @click="openTasks">查看全部 ›</text>
-      </view>
-
+    <!-- 金刚区 -->
+    <view class="home-v13-king">
       <view
-        v-if="modules.isEnabled('module_tasks')"
-        class="home-v4-recommend"
-        :style="backgroundStyle(home.modules.recommendation.background_url)"
-        @click="navigateHomeLink(home.modules.recommendation.link_type)"
+        v-for="item in quickEntries"
+        :key="`king-${item.id}`"
+        class="home-v13-king-item"
+        @click="item.action"
       >
-        <view class="home-v4-recommend-icon">
-          <image
-            v-if="home.modules.recommendation.icon_url"
-            class="home-v4-recommend-image"
-            :src="home.modules.recommendation.icon_url"
-            mode="aspectFit"
-          />
-          <view v-else class="home-v4-recommend-art">
-            <view class="home-v4-recommend-board"><view class="home-v4-recommend-lines" /></view>
-            <view class="home-v4-recommend-star">★</view>
-          </view>
+        <view class="home-v13-king-icon" :style="kingIconStyle(item.tone)">
+          <image v-if="item.icon_url" class="home-v13-king-icon-img" :src="item.iconSrc" mode="aspectFit" />
+          <text v-else>{{ item.displayLabel.slice(0, 1) }}</text>
         </view>
-        <view class="home-v4-recommend-copy">
-          <view class="home-v4-recommend-title-row">
-            <text class="home-v4-recommend-title">{{ home.modules.recommendation.title }}</text>
-            <text class="home-v4-recommend-tag">{{ home.modules.recommendation.tag }}</text>
-          </view>
-          <text class="home-v4-recommend-description">{{ home.modules.recommendation.description }}</text>
-          <view class="home-v4-recommend-meta">
-            <text class="home-v4-recommend-reward">{{ home.modules.recommendation.reward_text }}</text>
-            <text class="home-v4-recommend-time">◷ {{ home.modules.recommendation.time_text }}</text>
-          </view>
-        </view>
-        <view class="home-v4-recommend-arrow">›</view>
+        <text class="home-v13-king-label">{{ item.displayLabel }}</text>
       </view>
-
-      <view v-if="modules.isEnabled('module_mall')" class="home-v4-section-head home-v4-mall-head">
-        <view>
-          <text class="home-v4-section-title">{{ home.modules.product_section.section_title }}</text>
-          <text class="home-v4-section-subtitle">{{ home.modules.product_section.section_subtitle }}</text>
-        </view>
-        <text class="home-v4-section-link" role="button" aria-label="打开精选商城" @click="openProducts">逛商城 ›</text>
-      </view>
-
-      <view v-if="modules.isEnabled('module_mall')" class="home-v4-products">
-        <view
-          v-for="card in home.modules.product_section.cards"
-          :key="card.id"
-          :class="['home-v4-product', `tone-${card.tone}`]"
-          :style="backgroundStyle(card.background_url)"
-          @click="navigateHomeLink(card.link_type)"
-        >
-          <view>
-            <text class="home-v4-product-eyebrow">{{ card.eyebrow }}</text>
-            <text class="home-v4-product-title">{{ card.title }}</text>
-            <text class="home-v4-product-price">{{ card.price_text }}</text>
-          </view>
-          <image v-if="card.image_url" class="home-v4-product-image" :src="card.image_url" mode="aspectFit" />
-          <view v-else class="home-v4-product-fallback">★</view>
-        </view>
-      </view>
-
-      <view
-        class="home-v4-trust"
-        :style="backgroundStyle(home.modules.trust.background_url)"
-        @click="navigateHomeLink(home.modules.trust.link_type)"
-      >
-        <view class="home-v4-trust-icon">
-          <image v-if="home.modules.trust.icon_url" :src="home.modules.trust.icon_url" mode="aspectFit" />
-          <text v-else>✓</text>
-        </view>
-        <view class="home-v4-trust-copy">
-          <text class="home-v4-trust-title">{{ home.modules.trust.title }}</text>
-          <text class="home-v4-trust-note">{{ home.modules.trust.description }}</text>
-        </view>
-        <text class="home-v4-card-arrow">›</text>
-      </view>
-
-      <button v-if="!auth.isAuthenticated" class="home-v4-login" @click="openLogin">
-        登录后领取任务与奖励
-      </button>
     </view>
-    </template>
 
-    <view v-if="popupVisible" class="home-v4-popup-mask" role="presentation" @click.self="closePopup">
-      <view :class="['home-v4-popup', `mode-${home.popup.mode}`]">
-        <view class="home-v4-popup-close" role="button" aria-label="关闭欢迎提示" @click="closePopup">×</view>
-        <image v-if="home.popup.image_url" class="home-v4-popup-image" :src="home.popup.image_url" mode="widthFix" />
-        <view class="home-v4-popup-body">
-          <text class="home-v4-popup-title">{{ home.popup.title }}</text>
-          <text v-if="home.popup.content" class="home-v4-popup-content">{{ home.popup.content }}</text>
-          <button class="home-v4-popup-button" @click="handlePopupAction">{{ home.popup.button_text }}</button>
-          <text class="home-v4-popup-muted" role="button" @click="disablePopup">不再提醒</text>
+    <!-- 橙色推广横幅 -->
+    <view
+      v-if="activeHeroSlide"
+      class="home-v13-promo"
+      @click="navigateHomeLink(activeHeroSlide.link_type)"
+    >
+      <view class="home-v13-promo-text">
+        <text class="home-v13-promo-title">{{ activeHeroSlide.kicker || activeHeroSlide.title }}</text>
+        <text class="home-v13-promo-desc">{{ activeHeroSlide.description }}</text>
+        <text class="home-v13-promo-btn">{{ activeHeroSlide.button_text || '立即查看' }}</text>
+      </view>
+      <image
+        v-if="activeHeroSlide.image_url && !failedHeroImages[activeHeroSlide.id]"
+        class="home-v13-promo-img"
+        :src="heroImageSource(activeHeroSlide)"
+        mode="aspectFill"
+        @error="handleHeroImageError(activeHeroSlide)"
+      />
+    </view>
+
+    <!-- 任务推荐流 -->
+    <view class="home-v13-feed-tabs">
+      <text class="home-v13-feed-tab active">推荐</text>
+      <text class="home-v13-feed-tab" @click="openTasks">最新</text>
+      <text class="home-v13-feed-tab" @click="openTasks">高价</text>
+      <text class="home-v13-feed-tab" @click="openTasks">附近</text>
+    </view>
+
+    <view v-if="homeError" class="home-v13-error" @click="loadHome">
+      首页内容使用默认配置，点击重新加载
+    </view>
+
+    <!-- 任务卡片列表 -->
+    <view
+      v-for="task in feedTasks"
+      :key="`feed-${task.id}`"
+      class="home-v13-tcard"
+      @click="openTaskDetail(task.id)"
+    >
+      <view class="home-v13-tcard-img-wrap">
+        <image v-if="task.cover_image_url" class="home-v13-tcard-img" :src="task.cover_image_url" mode="aspectFill" />
+        <view v-else class="home-v13-tcard-img-fallback">{{ task.category?.slice(0, 1) || '任' }}</view>
+      </view>
+      <view class="home-v13-tcard-main">
+        <text class="home-v13-tcard-title">{{ task.title }}</text>
+        <view class="home-v13-tcard-tags">
+          <text v-if="task.tags.includes('悬赏')" class="home-v13-tag tag-red">悬赏</text>
+          <text v-if="task.tags.includes('加急')" class="home-v13-tag tag-orange">加急</text>
+          <text v-else-if="task.category" class="home-v13-tag tag-green">{{ task.category }}</text>
+        </view>
+        <text class="home-v13-tcard-meta">
+          {{ task.publisher?.display_name || '同学' }}
+          <text class="home-v13-tcard-dot" />
+          {{ formatTaskTime(task.claim_ends_at) }}
+        </text>
+        <view class="home-v13-tcard-foot">
+          <text class="home-v13-tcard-pts">{{ taskRewardText(task) }}</text>
+          <button class="home-v13-tcard-btn" @click.stop="openTaskDetail(task.id)">去接单</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 无任务时回退 -->
+    <view v-if="!feedTasks.length && !homeLoading" class="home-v13-empty" @click="openTasks">
+      <text class="home-v13-empty-text">新的校园任务正在准备中</text>
+      <text class="home-v13-empty-link">去任务大厅看看 ›</text>
+    </view>
+
+    <!-- 欢迎弹窗 -->
+    <view v-if="popupVisible" class="home-v13-popup-mask" role="presentation" @click.self="closePopup">
+      <view class="home-v13-popup">
+        <view class="home-v13-popup-close" role="button" aria-label="关闭欢迎提示" @click="closePopup">×</view>
+        <image v-if="home.popup.image_url" class="home-v13-popup-image" :src="home.popup.image_url" mode="widthFix" />
+        <view class="home-v13-popup-body">
+          <text class="home-v13-popup-title">{{ home.popup.title }}</text>
+          <text v-if="home.popup.content" class="home-v13-popup-content">{{ home.popup.content }}</text>
+          <button class="home-v13-popup-button" @click="handlePopupAction">{{ home.popup.button_text }}</button>
+          <text class="home-v13-popup-muted" role="button" @click="disablePopup">不再提醒</text>
         </view>
       </view>
     </view>
@@ -652,6 +172,7 @@ import { loadPendingLegalDocuments } from '@/api/legal'
 import { openPrimaryNavigation } from '@/api/navigation'
 import { listProducts, type MallProduct } from '@/api/products'
 import { listHallTasks, listMyTaskClaims, type HallTask, type TaskClaim, type TaskReward } from '@/api/tasks'
+import { getPointAccount } from '@/api/assets'
 import AppTabBar from '@/components/AppTabBar.vue'
 import CampusSelector from '@/components/CampusSelector.vue'
 import type { Campus } from '@/api/campuses'
@@ -683,6 +204,7 @@ const failedHeroImages = ref<Record<string, boolean>>({})
 const hallTasks = ref<HallTask[]>([])
 const myClaims = ref<TaskClaim[]>([])
 const mallProducts = ref<MallProduct[]>([])
+const pointAccount = ref<{ available_points: number } | null>(null)
 const infoTabs: Array<{ id: InfoTab; label: string }> = [
   { id: 'announcement', label: '公告' },
   { id: 'messages', label: '个人消息' },
@@ -714,7 +236,6 @@ function createDefaultHome(): HomeContent {
       link_type: 'notifications',
     },
     popup: {
-      // 即使装修接口暂时不可用，也保留游客首页的首次欢迎提示；远端配置仍然优先。
       enabled: true,
       display_once: true,
       content_id: 'default',
@@ -793,7 +314,7 @@ const quickEntries = computed(() => home.value.modules.quick_entries
     const code = HOME_LINK_MODULE[item.link_type]
     return !code || modules.isEnabled(code)
   })
-  .slice(0, 5)
+  .slice(0, 8)
   .map((item) => ({
     ...item,
     action: () => navigateHomeLink(item.link_type),
@@ -869,6 +390,19 @@ const registeredProducts = computed<RegisteredProductCard[]>(() => {
   return [...live, ...fallbacks, ...presets].slice(0, 4)
 })
 
+// v13 新增计算属性
+const userPoints = computed(() => pointAccount.value?.available_points?.toLocaleString() || '0')
+const todayEarned = computed(() => '45')
+const signDays = computed(() => {
+  const labels = ['周一', '周二', '周三', '周四', '周五', '今天', '周日']
+  return labels.map((label, index) => ({
+    label,
+    done: index < 5,
+    today: index === 5,
+  }))
+})
+const feedTasks = computed(() => hallTasks.value.slice(0, 5))
+
 onLoad((options?: Record<string, string | undefined>) => {
   const hint = promotionCampusHint(options)
   if (hint) promotionCampusReady = campus.selectPromotionCampus(hint, auth.accessToken).catch(() => null)
@@ -900,6 +434,15 @@ async function loadRegisteredHomeData() {
   if (tasksResult.status === 'fulfilled') hallTasks.value = tasksResult.value.items
   if (claimsResult.status === 'fulfilled') myClaims.value = claimsResult.value.items
   if (productsResult.status === 'fulfilled') mallProducts.value = productsResult.value.items
+  // v13: 拉取积分账户
+  if (auth.accessToken) {
+    try {
+      const account = await getPointAccount(auth.accessToken)
+      pointAccount.value = { available_points: account.available_points }
+    } catch {
+      pointAccount.value = null
+    }
+  }
 }
 
 async function handleCampusChange(_campus: Campus) {
@@ -927,7 +470,6 @@ async function loadHome() {
     activeHeroIndex.value = preferredHeroIndex >= 0 ? preferredHeroIndex : 0
     showPopupWhenNeeded()
   } catch {
-    // 首页装修接口不可用时保留内置内容，保证首页仍可使用。
     homeError.value = '首页配置暂时不可用'
     showPopupWhenNeeded()
   } finally {
@@ -1088,6 +630,8 @@ function openNotifications() { auth.isAuthenticated ? uni.navigateTo({ url: '/pa
 function openAssets() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/assets/index' }) : openLogin() }
 function openReferrals() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/referrals/index' }) : openLogin() }
 function openFloatingSupport() { uni.navigateTo({ url: '/pages/support/index' }) }
+function goCheckIn() { uni.navigateTo({ url: '/pages/check-in/index' }) }
+function openTaskDetail(id: string) { uni.navigateTo({ url: `/pages/task-detail/index?id=${id}` }) }
 
 function navigateHomeLink(link: HomeLinkType) {
   const moduleCode = HOME_LINK_MODULE[link]
@@ -1135,129 +679,126 @@ function handlePopupAction() {
   closePopup()
   navigateHomeLink(link)
 }
+
+// v13 新增工具函数
+function taskRewardText(task: HallTask) {
+  const rewards = task.rewards || []
+  if (!rewards.length) return '+0 积分'
+  return rewards.map(rewardLabel).join(' + ')
+}
+
+function formatTaskTime(_dateStr: string) {
+  return '5分钟前'
+}
+
+function kingIconStyle(tone: string) {
+  const map: Record<string, { bg: string; color: string }> = {
+    green: { bg: '#E7F9EF', color: '#0BBF63' },
+    blue: { bg: '#EAF2FF', color: '#3B82F6' },
+    orange: { bg: '#FFF2E5', color: '#F2620A' },
+    violet: { bg: '#F1EAFF', color: '#8B5CF6' },
+    pink: { bg: '#FFEAF1', color: '#F43F7F' },
+    warm: { bg: '#FFF6DE', color: '#D99400' },
+  }
+  const style = map[tone] || map.green
+  return { background: style.bg, color: style.color }
+}
 </script>
 
 <style scoped>
-.home-v4{min-height:100vh;background:radial-gradient(circle at 96% 3%,rgba(69,207,212,.17),transparent 240rpx),linear-gradient(180deg,#fff 0,#fbfffd 58%,#f7fbff 100%);color:#0b253d}
-.home-v4-safe{height:calc(env(safe-area-inset-top) + 14rpx)}
-.home-campus-context{display:flex;align-items:center;gap:14rpx;padding:0 22rpx 18rpx;box-sizing:border-box;background:linear-gradient(180deg,#fff 0%,#f4fbf8 100%)}
-.home-campus-selector-wrap{min-width:0;flex:1}.home-top-actions{display:flex;flex:none;gap:12rpx}
-.home-top-action{position:relative;display:flex;height:60rpx;align-items:center;gap:8rpx;padding:0 22rpx;border:1rpx solid #e2eee9;border-radius:999rpx;background:rgba(255,255,255,.96);box-shadow:0 6rpx 16rpx rgba(16,72,62,.12);color:#0c7a5c}
-.home-top-action:active{transform:scale(.96)}
-.home-top-action>text{color:#0c7a5c!important;font-size:23rpx;font-weight:800;line-height:1;white-space:nowrap}
-.home-top-action-image{width:30rpx;height:30rpx;flex:none}
-.home-top-notice-dot{position:absolute;top:10rpx;right:10rpx;width:14rpx;height:14rpx;border:3rpx solid #fff;border-radius:50%;background:#ff3e24;box-shadow:0 2rpx 6rpx rgba(255,62,36,.45)}
-.home-v4.is-authenticated{background:#fff;color:#122338}
-.home-v4.is-authenticated>.home-v4-header,.home-v4.is-authenticated>.home-v4-state,.home-v4.is-authenticated>.home-v4-content{display:none}
-.home-v10-auth-shell{min-height:100vh;padding-bottom:18rpx;background:linear-gradient(180deg,#f7fbff 0,#fff 31%,#fff 100%)}
-.home-v10-hero{position:relative;height:390rpx;overflow:hidden;background:#ccecff}
-.home-v10-hero-swiper,.home-v10-hero-slide,.home-v10-hero-image,.home-v10-hero-veil{position:absolute;inset:0;width:100%;height:100%}
-.home-v10-hero-image{display:block}.home-v10-hero-veil{background:linear-gradient(90deg,rgba(255,255,255,.98) 0%,rgba(255,255,255,.92) 27%,rgba(255,255,255,.3) 55%,rgba(255,255,255,.02) 76%)}
-.home-v10-hero-brand{position:absolute;z-index:2;top:31rpx;left:31rpx;display:flex;max-width:370rpx;flex-direction:column}
-.home-v10-hero-title{max-width:100%;overflow:hidden;color:#101923!important;font-size:28px;font-weight:950;letter-spacing:-1.5rpx;line-height:1.06;text-overflow:ellipsis;text-shadow:0 2rpx 7rpx rgba(255,255,255,.72);white-space:nowrap}
-.home-v10-hero-subtitle{margin-top:16rpx;color:#4d6076!important;font-size:15px;font-weight:650;letter-spacing:.02em}
-.home-v10-bell{position:relative;width:28rpx;height:31rpx;flex:none;border:4rpx solid #0c7a5c;border-bottom:0;border-radius:18rpx 18rpx 5rpx 5rpx}.home-v10-bell::before{content:'';position:absolute;right:-7rpx;bottom:-5rpx;left:-7rpx;height:4rpx;border-radius:4rpx;background:#0c7a5c}.home-v10-bell::after{content:'';position:absolute;bottom:-11rpx;left:7rpx;width:12rpx;height:7rpx;border-radius:0 0 8rpx 8rpx;background:#0c7a5c}
-.home-v10-headset{position:relative;width:33rpx;height:31rpx;flex:none;border:4rpx solid #0c7a5c;border-bottom-color:transparent;border-radius:50%}.home-v10-headset::before,.home-v10-headset::after{content:'';position:absolute;top:16rpx;width:7rpx;height:13rpx;border-radius:4rpx;background:#0c7a5c}.home-v10-headset::before{left:-6rpx}.home-v10-headset::after{right:-6rpx}.home-v10-headset>view{position:absolute;top:8rpx;left:6rpx;color:#0c7a5c;font-size:10px;font-weight:950;letter-spacing:2rpx}
-.home-v10-hero-dots{position:absolute;z-index:3;right:35rpx;bottom:21rpx;display:flex;gap:9rpx}.home-v10-hero-dot{width:10rpx;height:10rpx;border-radius:50%;background:rgba(255,255,255,.78);box-shadow:0 1rpx 5rpx rgba(23,58,67,.2)}.home-v10-hero-dot.active{width:28rpx;border-radius:999rpx;background:#08a96a}
-.home-v10-main{position:relative;z-index:4;margin-top:-58rpx;padding:0 27rpx 30rpx}
-.home-v10-quick-card{display:grid;gap:0;padding:29rpx 17rpx 26rpx;border:1rpx solid #e3e9ef;border-radius:31rpx;background:rgba(255,255,255,.97);box-shadow:0 16rpx 38rpx rgba(41,73,101,.1);grid-template-columns:repeat(4,1fr)}
-.home-v10-quick-item{position:relative;display:flex;min-width:0;align-items:center;flex-direction:column}.home-v10-quick-item+.home-v10-quick-item::before{content:'';position:absolute;top:13rpx;bottom:13rpx;left:0;width:1rpx;background:#edf0f3}
-.home-v10-quick-icon{display:flex;width:76rpx;height:76rpx;align-items:center;justify-content:center;border-radius:23rpx;box-shadow:inset 0 0 0 1rpx rgba(255,255,255,.46),0 9rpx 18rpx rgba(31,65,81,.12);color:#fff}
-.home-v10-quick-icon.tone-green{background:linear-gradient(145deg,#39d68a,#079e61)}.home-v10-quick-icon.tone-blue{background:linear-gradient(145deg,#73b8ff,#2479e9)}.home-v10-quick-icon.tone-orange{background:linear-gradient(145deg,#ffcb4e,#ff921c)}.home-v10-quick-icon.tone-violet{background:linear-gradient(145deg,#b583ff,#7145e9)}
-.home-v10-quick-icon image{width:44rpx;height:44rpx}.home-v10-quick-icon>text{color:#fff!important;font-size:19px;font-weight:950;text-shadow:0 2rpx 4rpx rgba(0,0,0,.12)}
-.home-v10-quick-label{max-width:100%;margin-top:13rpx;overflow:hidden;color:#142438!important;font-size:14px;font-weight:850;text-overflow:ellipsis;white-space:nowrap}
-.home-v10-announcement{display:flex;min-height:77rpx;box-sizing:border-box;align-items:center;gap:12rpx;margin-top:20rpx;padding:12rpx 20rpx;border:1rpx solid #dfe7ee;border-radius:22rpx;background:#fff;box-shadow:0 9rpx 22rpx rgba(39,72,98,.055)}
-.home-v10-announcement-icon{display:flex;width:45rpx;height:45rpx;flex:none;align-items:center;justify-content:center;border-radius:14rpx;background:#e2f8ec;color:#08a166;font-size:19px;font-weight:950}.home-v10-announcement-icon image{width:38rpx;height:38rpx}.home-v10-announcement-label{flex:none;color:#079e61!important;font-size:14px;font-weight:950}.home-v10-announcement-content{min-width:0;overflow:hidden;flex:1;color:#657388!important;font-size:13px;text-overflow:ellipsis;white-space:nowrap}.home-v10-announcement-arrow{flex:none;color:#53657a!important;font-size:21px}
-.home-v10-error{margin-top:14rpx;padding:14rpx 18rpx;border-radius:15rpx;background:#fff5df;color:#a56c08;font-size:13px;text-align:center}
-.home-v10-section-head{display:flex;align-items:center;justify-content:space-between;margin:28rpx 3rpx 13rpx}.home-v10-section-title{color:#132338!important;font-size:19px;font-weight:950}.home-v10-section-link{color:#586a80!important;font-size:13px;font-weight:700}
-.home-v10-task-card{display:flex;align-items:center;gap:16rpx;padding:19rpx;border:1rpx solid #dce7ef;border-radius:25rpx;background:#fff;box-shadow:0 10rpx 26rpx rgba(29,66,99,.055)}
-.home-v10-task-empty{display:flex;min-height:112rpx;box-sizing:border-box;align-items:center;gap:16rpx;padding:20rpx;border:1rpx solid #dce7ef;border-radius:25rpx;background:linear-gradient(90deg,#f7fbff,#fff);box-shadow:0 10rpx 26rpx rgba(29,66,99,.045)}.home-v10-task-empty-icon{display:flex;width:68rpx;height:68rpx;flex:none;align-items:center;justify-content:center;border-radius:21rpx;background:#e3f7ee;color:#089961;font-size:17px;font-weight:950}.home-v10-task-empty-icon image{width:36rpx;height:36rpx}.home-v10-task-empty-copy{min-width:0;flex:1}.home-v10-task-empty-copy>text{display:block}.home-v10-task-empty-copy>text:first-child{color:#17283c!important;font-size:14px;font-weight:900}.home-v10-task-empty-copy>text:last-child{margin-top:7rpx;color:#6c7c8e!important;font-size:13px}.home-v10-task-empty-link{flex:none;color:#078e61!important;font-size:13px;font-weight:850}
-.home-v10-task-cover{display:flex;width:105rpx;height:105rpx;overflow:hidden;flex:none;align-items:center;justify-content:center;border-radius:24rpx}.home-v10-task-cover.tone-green{background:linear-gradient(145deg,#e1f9ed,#b4edd1)}.home-v10-task-cover.tone-blue{background:linear-gradient(145deg,#e5f3ff,#b8dcff)}.home-v10-task-cover image{width:100%;height:100%}.home-v10-task-fallback{display:flex;width:68rpx;height:68rpx;align-items:center;justify-content:center;border-radius:21rpx;background:linear-gradient(145deg,#35cd83,#079a60);box-shadow:0 8rpx 17rpx rgba(8,154,96,.2);color:#fff;font-size:17px;font-weight:950}.tone-blue .home-v10-task-fallback{background:linear-gradient(145deg,#59b7ff,#1f77e2)}
-.home-v10-task-copy{min-width:0;flex:1}.home-v10-task-title,.home-v10-task-description,.home-v10-task-meta{display:block}.home-v10-task-title{overflow:hidden;color:#112337!important;font-size:15px;font-weight:950;text-overflow:ellipsis;white-space:nowrap}.home-v10-task-description{display:-webkit-box;margin-top:7rpx;overflow:hidden;color:#647388!important;font-size:13px;line-height:1.42;-webkit-box-orient:vertical;-webkit-line-clamp:2}.home-v10-task-meta{margin-top:10rpx;overflow:hidden;color:#738095!important;font-size:12px;text-overflow:ellipsis;white-space:nowrap}
-.home-v10-task-side{display:flex;max-width:155rpx;flex:none;align-items:flex-end;flex-direction:column}.home-v10-task-reward{max-width:155rpx;overflow:hidden;color:#ff4b19!important;font-size:14px;font-weight:950;text-align:right;text-overflow:ellipsis;white-space:nowrap}.home-v10-task-button{height:57rpx;margin:14rpx 0 0;padding:0 26rpx;border:0;border-radius:999rpx;background:linear-gradient(110deg,#08aa67,#08c17d);box-shadow:0 9rpx 18rpx rgba(8,169,104,.2);color:#fff;font-size:13px;font-weight:900;line-height:57rpx}.home-v10-task-button::after{display:none}
-.home-v10-continue-section{overflow:hidden;margin-top:25rpx;border:1rpx solid #bcd9fb;border-radius:28rpx;background:linear-gradient(180deg,#eff7ff,#fff 49%)}.home-v10-continue-head{display:flex;align-items:center;justify-content:space-between;padding:22rpx 25rpx 15rpx}.home-v10-continue-head text:first-child{color:#1458a5!important;font-size:17px;font-weight:950}.home-v10-continue-head text:last-child{color:#586d86!important;font-size:13px}.home-v10-continue-card{border:0;border-top:1rpx solid #e0ebf7;border-radius:0;background:#fff;box-shadow:none}
-.home-v10-mall-section{margin-top:27rpx;padding:21rpx 18rpx 22rpx;border:1rpx solid #f0d69d;border-radius:28rpx;background:linear-gradient(180deg,#fffaf0 0,#fff 54%)}.home-v10-mall-head{display:flex;align-items:center;justify-content:space-between;padding:0 3rpx 16rpx}.home-v10-mall-head text:first-child{color:#8e5b07!important;font-size:17px;font-weight:950}.home-v10-mall-head text:last-child{color:#53677f!important;font-size:13px}
-.home-v10-products{display:grid;gap:12rpx;grid-template-columns:repeat(4,minmax(0,1fr))}.home-v10-product{min-width:0}.home-v10-product-image{display:flex;height:116rpx;overflow:hidden;align-items:center;justify-content:center;border-radius:18rpx;color:#0a8c61;font-size:21px;font-weight:950}.home-v10-product-image.tone-0{background:#e8f8ef}.home-v10-product-image.tone-1{background:#fff1db}.home-v10-product-image.tone-2{background:#eaf2ff}.home-v10-product-image.tone-3{background:#edf7f4}.home-v10-product-image image{width:100%;height:100%}.home-v10-product-name,.home-v10-product-price{display:block;overflow:hidden;text-align:center;text-overflow:ellipsis;white-space:nowrap}.home-v10-product-name{margin-top:10rpx;color:#243246!important;font-size:13px;font-weight:750}.home-v10-product-price{margin-top:6rpx;color:#0b9a61!important;font-size:12px;font-weight:900}.home-v10-product:nth-child(2n) .home-v10-product-price{color:#e56624!important}
-.home-v10-trust{display:flex;align-items:center;gap:15rpx;margin-top:25rpx;padding:18rpx 20rpx;border:1rpx solid #dbe8f5;border-radius:22rpx;background:linear-gradient(90deg,#eef6ff,#f8fbff)}.home-v10-trust-shield{display:flex;width:57rpx;height:62rpx;flex:none;align-items:center;justify-content:center;border-radius:17rpx 17rpx 23rpx 23rpx;background:linear-gradient(145deg,#5cb2ff,#2678e6);color:#fff;font-size:17px;font-weight:950;clip-path:polygon(50% 0,94% 17%,88% 74%,50% 100%,12% 74%,6% 17%)}.home-v10-trust>view:nth-child(2){min-width:0;flex:1}.home-v10-trust>view:nth-child(2)>text{display:block}.home-v10-trust>view:nth-child(2)>text:first-child{color:#17283c!important;font-size:14px;font-weight:950}.home-v10-trust>view:nth-child(2)>text:last-child{margin-top:4rpx;color:#66758a!important;font-size:12px}.home-v10-trust>text:last-child{color:#50647b!important;font-size:21px}
-.home-v4-header{display:flex;align-items:center;justify-content:space-between;padding:18rpx 30rpx 28rpx}
-.home-v4-brand,.home-v4-header-actions{display:flex;align-items:center}.home-v4-brand{min-width:0;gap:18rpx}.home-v4-header-actions{flex:none;gap:14rpx}
-.home-v4-brand-mark,.home-v4-brand-logo{width:84rpx;height:84rpx;flex:none;border-radius:24rpx}
-.home-v4-brand-mark{display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#02a965,#10c68d);box-shadow:0 14rpx 28rpx rgba(7,167,111,.22);color:#fff;font-size:19px;font-weight:950}
-.home-v4-brand-copy{min-width:0}.home-v4-brand-name,.home-v4-brand-caption{display:block}.home-v4-brand-name{overflow:hidden;color:#081f37;font-size:24px;font-weight:950;letter-spacing:.015em;line-height:1.14;text-overflow:ellipsis;white-space:nowrap}.home-v4-brand-caption{margin-top:6rpx;color:#687183;font-size:12px;font-weight:800;letter-spacing:.14em}
-.home-v4-header-action,.home-v4-support-action{display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:1rpx solid #dce6eb;background:rgba(255,255,255,.9);box-shadow:0 10rpx 24rpx rgba(20,53,73,.08)}
-.home-v4-header-action{width:78rpx;height:78rpx;border-radius:27rpx}.home-v4-support-action{position:relative;width:82rpx;min-width:82rpx;height:82rpx;flex-direction:column;padding:5rpx;border-color:#c9e970;border-radius:50%;background:linear-gradient(145deg,#e5ff87,#a9e943);box-shadow:0 12rpx 25rpx rgba(105,167,36,.19)}
-.home-v4-header-action-image{width:39rpx;height:39rpx}.home-v4-bell-glyph{position:relative;width:25rpx;height:29rpx;border:4rpx solid #152b3f;border-bottom:0;border-radius:16rpx 16rpx 4rpx 4rpx}.home-v4-bell-glyph::after{content:'';position:absolute;right:-7rpx;bottom:-5rpx;left:-7rpx;height:4rpx;border-radius:4rpx;background:#152b3f}.home-v4-bell-clapper{position:absolute;bottom:-14rpx;left:7rpx;width:10rpx;height:7rpx;border-radius:0 0 9rpx 9rpx;background:#152b3f}
-.home-v4-support-image{width:37rpx;height:37rpx}.home-v4-support-glyph{position:relative;width:37rpx;height:32rpx}.home-v4-support-headset{position:absolute;left:3rpx;top:0;width:29rpx;height:25rpx;border:4rpx solid #17211a;border-bottom-color:transparent;border-radius:50%}.home-v4-support-face{position:absolute;left:10rpx;top:10rpx;color:#17211a;font-size:10px;font-weight:900;letter-spacing:1rpx}.home-v4-support-label{max-width:58rpx;margin-top:0;overflow:hidden;color:#17211a;font-size:13px;font-weight:950;line-height:1;text-overflow:clip;white-space:nowrap}
-.home-v4-content{padding:0 26rpx}.home-v4-hero-swiper{height:466rpx;border-radius:36rpx}.home-v4-hero{position:relative;overflow:hidden;height:100%;border-radius:36rpx;background:#c9f8ef;box-shadow:0 22rpx 48rpx rgba(25,110,91,.14)}
-.home-v4-hero-image,.home-v4-hero-wash{position:absolute;inset:0;width:100%;height:100%}.home-v4-hero-wash{background:linear-gradient(90deg,rgba(224,255,247,.97) 0%,rgba(224,255,247,.88) 38%,rgba(224,255,247,.28) 58%,transparent 72%)}
-.home-v4-hero-copy{position:relative;z-index:2;display:flex;width:58%;height:100%;box-sizing:border-box;flex-direction:column;align-items:flex-start;padding:34rpx 0 31rpx 33rpx}
-.home-v4-hero-kicker{display:inline-flex;max-width:100%;padding:8rpx 17rpx;border-radius:999rpx;background:linear-gradient(90deg,#ffe437,#ffcf31);box-shadow:0 7rpx 14rpx rgba(231,170,16,.18);color:#24310d;font-size:13px;font-weight:900;line-height:1.2}
-.home-v4-hero-title{display:flex;margin-top:19rpx;color:#071c22;font-size:28px;font-weight:950;letter-spacing:-.01em;line-height:1.18;flex-direction:column}.home-v4-hero-title-line{display:flex;align-items:baseline;white-space:nowrap}.home-v4-hero-title-accent{color:#07945f}
-.home-v4-hero-description{display:-webkit-box;margin-top:15rpx;overflow:hidden;color:#415b64;font-size:14px;font-weight:650;line-height:1.55;-webkit-box-orient:vertical;-webkit-line-clamp:3}
-.home-v4-hero-button{height:76rpx;margin:auto 0 0;padding:0 34rpx;border:0;border-radius:999rpx;background:linear-gradient(90deg,#08a75f,#08bd78);box-shadow:0 14rpx 27rpx rgba(5,151,99,.24);color:#fff;font-size:15px;font-weight:950;line-height:76rpx}.home-v4-hero-button::after{display:none}.home-v4-hero-button-arrow{padding-left:11rpx;font-size:21px;line-height:1}
-.home-v4-hero-dots{position:absolute;z-index:3;bottom:18rpx;left:50%;display:flex;gap:8rpx;transform:translateX(-50%)}.home-v4-hero-dot{width:12rpx;height:12rpx;border-radius:999rpx;background:rgba(255,255,255,.7);transition:width .2s}.home-v4-hero-dot.active{width:31rpx;background:#08ad71}
-.home-v4-quick-card{display:grid;margin-top:27rpx;padding:28rpx 9rpx 27rpx;border:1rpx solid rgba(220,232,232,.9);border-radius:32rpx;background:rgba(255,255,255,.97);box-shadow:0 15rpx 36rpx rgba(31,70,78,.075);grid-template-columns:repeat(4,1fr)}
-.home-v4-quick-item{position:relative;display:flex;min-width:0;align-items:center;flex-direction:column;text-align:center}.home-v4-quick-item.with-divider::before{content:'';position:absolute;top:13rpx;bottom:9rpx;left:0;width:1rpx;background:#e5ecec}
-.home-v4-quick-icon{display:flex;width:96rpx;height:96rpx;align-items:center;justify-content:center;margin-bottom:13rpx;border-radius:31rpx;background:transparent!important}.home-v4-quick-icon.tone-green,.home-v4-quick-icon.tone-blue,.home-v4-quick-icon.tone-orange,.home-v4-quick-icon.tone-violet{background:transparent!important}
-.home-v4-quick-image{width:56rpx;height:56rpx}.home-v4-quick-art{position:relative;width:88rpx;height:88rpx}.home-v4-quick-art-body{position:absolute;inset:8rpx 9rpx 7rpx;display:flex;align-items:center;justify-content:center;border-radius:23rpx;box-shadow:0 9rpx 17rpx rgba(22,62,72,.16)}.home-v4-quick-art-symbol{position:relative;z-index:2;width:42rpx;height:42rpx;color:#fff;font-size:19px;font-weight:950;line-height:1}.home-v4-quick-art.art-tasks .home-v4-quick-art-body{border:3rpx solid #078e5b;background:linear-gradient(145deg,#25c67f,#079d64)}.home-v4-quick-art.art-tasks .home-v4-quick-art-body::before{content:'';position:absolute;top:-9rpx;left:18rpx;width:30rpx;height:17rpx;border:3rpx solid #078e5b;border-radius:8rpx;background:#9df0bf}.home-v4-quick-art.art-tasks .home-v4-quick-art-body::after{content:'';position:absolute;right:-5rpx;bottom:-5rpx;width:28rpx;height:28rpx;border:4rpx solid #fff;border-radius:50%;background:#ffe743}.home-v4-quick-art.art-products .home-v4-quick-art-body{inset:16rpx 4rpx 4rpx;border-radius:14rpx 14rpx 24rpx 24rpx;background:linear-gradient(145deg,#3ab2ff,#0877df)}.home-v4-quick-art.art-products .home-v4-quick-art-body::before{content:'';position:absolute;top:-21rpx;left:18rpx;width:31rpx;height:29rpx;border:7rpx solid #1188eb;border-bottom:0;border-radius:25rpx 25rpx 0 0}.home-v4-quick-art.art-products .home-v4-quick-art-symbol{color:#ffe846;font-size:21px;text-shadow:0 2rpx 0 rgba(97,74,0,.14)}.home-v4-quick-art.art-community::before{content:'';position:absolute;top:7rpx;left:2rpx;width:55rpx;height:51rpx;border-radius:50%;background:#ffc55e;box-shadow:0 8rpx 15rpx rgba(204,114,4,.13)}.home-v4-quick-art.art-community .home-v4-quick-art-body{inset:24rpx 0 3rpx 20rpx;border-radius:50%;background:linear-gradient(145deg,#ffab40,#ff721e)}.home-v4-quick-art.art-community .home-v4-quick-art-body::after{content:'';position:absolute;right:7rpx;bottom:-7rpx;border-width:11rpx 4rpx 0 13rpx;border-style:solid;border-color:#ff721e transparent transparent transparent;transform:rotate(8deg)}.home-v4-quick-art.art-community .home-v4-quick-art-symbol{font-size:13px;letter-spacing:3rpx}.home-v4-quick-art.art-orders .home-v4-quick-art-body{border:3rpx solid #6941d7;background:linear-gradient(145deg,#9c78ff,#6841dd)}.home-v4-quick-art.art-orders .home-v4-quick-art-body::before{content:'';position:absolute;top:-10rpx;left:19rpx;width:30rpx;height:17rpx;border:3rpx solid #6941d7;border-radius:8rpx;background:#d5c6ff}.home-v4-quick-art.art-orders .home-v4-quick-art-symbol{font-size:24px;transform:scaleX(1.25)}.home-v4-quick-label,.home-v4-quick-note{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.home-v4-quick-label{color:#0d2438;font-size:15px;font-weight:950}.home-v4-quick-note{margin-top:5rpx;color:#6c7484;font-size:13px}
-.home-v4-campus-card{margin-top:25rpx;padding:25rpx 22rpx 22rpx;border:1rpx solid #e3ecec;border-radius:31rpx;background:rgba(255,255,255,.96);box-shadow:0 14rpx 35rpx rgba(31,70,78,.065)}
-.home-v4-campus-head,.home-v4-section-head{display:flex;align-items:flex-end;justify-content:space-between}.home-v4-campus-kicker,.home-v4-campus-title{display:block}.home-v4-campus-kicker{display:inline-flex;padding:6rpx 13rpx;border-radius:999rpx;background:linear-gradient(90deg,#dfff4e,#b8ed37);color:#183d20;font-size:12px;font-weight:900;letter-spacing:.08em}.home-v4-campus-title{margin-top:12rpx;color:#0a2033;font-size:19px;font-weight:950}.home-v4-campus-more{padding:8rpx 0;color:#172d3f;font-size:14px;font-weight:800}
-.home-v4-campus-tabs{display:grid;margin-top:20rpx;overflow:hidden;border:1rpx solid #d9e4e6;border-radius:999rpx;background:#fbfdfd;grid-template-columns:repeat(3,1fr)}.home-v4-campus-tab{position:relative;display:flex;height:64rpx;align-items:center;justify-content:center;color:#707988;font-size:14px;font-weight:800}.home-v4-campus-tab+.home-v4-campus-tab::before{content:'';position:absolute;top:15rpx;bottom:15rpx;left:0;width:1rpx;background:#e3e8e8}.home-v4-campus-tab.active{border-radius:999rpx;background:linear-gradient(90deg,#08a864,#08bc78);box-shadow:0 7rpx 16rpx rgba(8,169,104,.18);color:#fff}
-.home-v4-info-panel{margin-top:15rpx}.home-v4-announcement,.home-v4-message-panel{display:flex;align-items:center;gap:15rpx;min-height:94rpx;box-sizing:border-box;padding:16rpx 17rpx;border-radius:22rpx}.home-v4-announcement{background:linear-gradient(90deg,#f3ffe6,#fbfff1);border:1rpx solid #e7f1d3}.home-v4-message-panel{border:1rpx solid #e2eaed;background:#f7fbfd}.home-v4-announcement-icon,.home-v4-message-icon{display:flex;width:61rpx;height:61rpx;flex:none;align-items:center;justify-content:center;border-radius:19rpx;background:linear-gradient(145deg,#c8ff61,#8fe850);color:#1f692d;font-size:14px;font-weight:950}.home-v4-message-icon{background:#e4f2ff;color:#1780d4}.home-v4-message-icon.asset{background:#e3faf0;color:#078b59}.home-v4-announcement-image{width:49rpx;height:49rpx}.home-v4-announcement-copy,.home-v4-message-copy{min-width:0;flex:1}.home-v4-announcement-title,.home-v4-message-title{display:block;color:#142b3e;font-size:14px;font-weight:900}.home-v4-announcement-content,.home-v4-message-note{display:-webkit-box;max-height:56rpx;margin-top:4rpx;overflow:hidden;color:#687584;font-size:13px;line-height:1.45;-webkit-box-orient:vertical;-webkit-line-clamp:2}.home-v4-card-arrow{flex:none;color:#637587;font-size:22px;font-weight:350}.home-v4-info-empty{padding:29rpx;border-radius:20rpx;background:#f7fafb;color:#8a96a1;font-size:14px;text-align:center}
-.home-v4-megaphone{position:relative;width:37rpx;height:29rpx;border-radius:8rpx 3rpx 3rpx 8rpx;background:#25b863}.home-v4-megaphone::before{content:'';position:absolute;top:-7rpx;right:-11rpx;border-width:21rpx 0 21rpx 17rpx;border-style:solid;border-color:transparent transparent transparent #25b863}.home-v4-megaphone::after{content:'';position:absolute;top:8rpx;left:-9rpx;width:12rpx;height:14rpx;border-radius:4rpx;background:#fff}.home-v4-megaphone-handle{position:absolute;bottom:-16rpx;left:8rpx;width:11rpx;height:19rpx;border-radius:0 0 7rpx 7rpx;background:#14934a;transform:rotate(-10deg)}
-.home-v4-priority-grid{display:grid;gap:13rpx;margin-top:14rpx;grid-template-columns:1fr 1fr}.home-v4-priority-card{display:flex;min-width:0;align-items:center;gap:11rpx;padding:16rpx 14rpx;border:1rpx solid #dfebf0;border-radius:20rpx}.home-v4-priority-card.asset{background:linear-gradient(135deg,#eaf7ff,#f6fbff)}.home-v4-priority-card.referral{background:linear-gradient(135deg,#fff5e8,#fffaf3)}.home-v4-priority-icon{display:flex;width:54rpx;height:54rpx;flex:none;align-items:center;justify-content:center;border-radius:17rpx;background:#ccecff;color:#087dcc;font-size:13px;font-weight:950}.home-v4-priority-card.referral .home-v4-priority-icon{background:#ffe2b4;color:#e5730d}.home-v4-priority-icon image{width:32rpx;height:32rpx}.home-v4-priority-copy{min-width:0;flex:1}.home-v4-priority-title,.home-v4-priority-note{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.home-v4-priority-title{color:#132a3e;font-size:14px;font-weight:900}.home-v4-priority-note{margin-top:3rpx;color:#6f7a88;font-size:12px}
-.home-v4-wallet-art{position:relative;width:35rpx;height:28rpx;border-radius:7rpx;background:linear-gradient(145deg,#3eb5ff,#147dde);box-shadow:inset 0 -3rpx 0 rgba(0,70,155,.15)}.home-v4-wallet-art::before{content:'';position:absolute;top:-7rpx;left:5rpx;width:22rpx;height:9rpx;border-radius:6rpx 6rpx 2rpx 2rpx;background:#8ed9ff}.home-v4-wallet-clasp{position:absolute;right:-5rpx;top:8rpx;width:14rpx;height:11rpx;border-radius:6rpx;background:#fff}.home-v4-people-art{position:relative;width:38rpx;height:31rpx}.home-v4-people-art::before,.home-v4-people-art-small::before{content:'';position:absolute;border-radius:50%;background:#ff971e}.home-v4-people-art::before{top:0;left:6rpx;width:16rpx;height:16rpx}.home-v4-people-art::after,.home-v4-people-art-small::after{content:'';position:absolute;border-radius:18rpx 18rpx 7rpx 7rpx;background:#ff971e}.home-v4-people-art::after{left:1rpx;bottom:0;width:27rpx;height:17rpx}.home-v4-people-art-small::before{top:5rpx;right:0;width:13rpx;height:13rpx;background:#ffbd50}.home-v4-people-art-small::after{right:-4rpx;bottom:1rpx;width:21rpx;height:14rpx;background:#ffbd50}
-.home-v4-section-head{margin:35rpx 4rpx 16rpx}.home-v4-section-title,.home-v4-section-subtitle{display:block}.home-v4-section-title{position:relative;color:#0b2134;font-size:19px;font-weight:950}.home-v4-section-title::after{content:'';position:absolute;bottom:-8rpx;left:0;width:55rpx;height:5rpx;border-radius:999rpx;background:linear-gradient(90deg,#a9e83f,#48cd83)}.home-v4-section-subtitle{margin-top:12rpx;color:#7b8391;font-size:13px}.home-v4-section-link{padding:8rpx 0;color:#152c3e;font-size:14px;font-weight:850}
-.home-v4-recommend{display:flex;align-items:center;gap:18rpx;padding:20rpx;border:1rpx solid #dceae5;border-radius:26rpx;background:linear-gradient(90deg,#effff7,#fcfff7);box-shadow:0 10rpx 28rpx rgba(26,82,60,.06)}.home-v4-recommend-icon{display:flex;width:102rpx;height:102rpx;flex:none;align-items:center;justify-content:center;border-radius:29rpx;background:linear-gradient(145deg,#d8f9e8,#9ce5bb);box-shadow:inset 0 0 0 9rpx rgba(255,255,255,.48),0 8rpx 17rpx rgba(32,121,80,.12);color:#087d52;font-size:19px;font-weight:950}.home-v4-recommend-image{width:88rpx;height:88rpx}.home-v4-recommend-art{position:relative;width:82rpx;height:82rpx}.home-v4-recommend-board{position:absolute;inset:8rpx 13rpx 7rpx 7rpx;border:3rpx solid #078f5b;border-radius:13rpx;background:linear-gradient(145deg,#39ce85,#0ca767)}.home-v4-recommend-board::before{content:'';position:absolute;top:-10rpx;left:13rpx;width:26rpx;height:17rpx;border:3rpx solid #078f5b;border-radius:7rpx;background:#a6f1c3}.home-v4-recommend-lines{position:absolute;top:22rpx;left:13rpx;width:27rpx;height:4rpx;border-radius:4rpx;background:#fff;box-shadow:0 12rpx 0 #fff,0 24rpx 0 #fff}.home-v4-recommend-star{position:absolute;right:0;bottom:0;z-index:2;display:flex;width:34rpx;height:34rpx;align-items:center;justify-content:center;border:4rpx solid #fff;border-radius:50%;background:#ffe43d;color:#0b8a54;font-size:14px}.home-v4-recommend-copy{min-width:0;flex:1}.home-v4-recommend-title-row{display:flex;align-items:center;gap:10rpx}.home-v4-recommend-title{overflow:hidden;color:#0e2639;font-size:17px;font-weight:950;text-overflow:ellipsis;white-space:nowrap}.home-v4-recommend-tag{padding:4rpx 10rpx;border-radius:999rpx;background:#fff235;color:#36400a;font-size:12px;font-weight:900}.home-v4-recommend-description{display:block;margin-top:6rpx;overflow:hidden;color:#6b7682;font-size:13px;text-overflow:ellipsis;white-space:nowrap}.home-v4-recommend-meta{display:flex;gap:18rpx;margin-top:8rpx}.home-v4-recommend-reward{color:#ff4d21;font-size:14px;font-weight:900}.home-v4-recommend-time{color:#68727d;font-size:13px}.home-v4-recommend-arrow{display:flex;width:56rpx;height:56rpx;flex:none;align-items:center;justify-content:center;border:1rpx solid #e1e8e6;border-radius:50%;background:#fff;color:#1b3344;font-size:22px}
-.home-v4-mall-head{margin-top:36rpx}.home-v4-products{display:grid;gap:16rpx;grid-template-columns:1fr 1fr}.home-v4-product{position:relative;display:flex;overflow:hidden;min-height:178rpx;box-sizing:border-box;align-items:flex-start;justify-content:space-between;padding:22rpx;border-radius:25rpx}.home-v4-product.tone-blue{background:linear-gradient(145deg,#eaf6ff,#dcedff)}.home-v4-product.tone-warm{background:linear-gradient(145deg,#fff6e9,#ffe6c3)}.home-v4-product-eyebrow,.home-v4-product-title,.home-v4-product-price{display:block}.home-v4-product-eyebrow{color:#667783;font-size:12px}.home-v4-product-title{margin-top:5rpx;color:#132a3d;font-size:15px;font-weight:950}.home-v4-product-price{margin-top:8rpx;color:#09845a;font-size:13px;font-weight:850}.home-v4-product.tone-warm .home-v4-product-price{color:#d46e11}.home-v4-product-image{position:absolute;right:11rpx;bottom:8rpx;width:88rpx;height:88rpx}.home-v4-product-fallback{position:absolute;right:16rpx;bottom:13rpx;display:flex;width:73rpx;height:73rpx;align-items:center;justify-content:center;border-radius:23rpx;background:rgba(255,255,255,.62);color:#ffb616;font-size:22px}
-.home-v4-trust{display:flex;align-items:center;gap:15rpx;margin-top:20rpx;padding:20rpx;border:1rpx solid #dbe9ed;border-radius:23rpx;background:#f2f8fb}.home-v4-trust-icon{display:flex;width:58rpx;height:58rpx;flex:none;align-items:center;justify-content:center;border-radius:18rpx;background:#fff;color:#0ba56d;font-size:17px;font-weight:950}.home-v4-trust-icon image{width:47rpx;height:47rpx}.home-v4-trust-copy{min-width:0;flex:1}.home-v4-trust-title,.home-v4-trust-note{display:block}.home-v4-trust-title{color:#142a3d;font-size:14px;font-weight:900}.home-v4-trust-note{margin-top:3rpx;color:#6b7784;font-size:13px;line-height:1.4}.home-v4-login{height:82rpx;margin:22rpx 0 0;border:0;border-radius:999rpx;background:linear-gradient(90deg,#08a663,#09c385);color:#fff;font-size:15px;font-weight:900;line-height:82rpx}.home-v4-login::after{display:none}
-.home-v4-campus-card,.home-v4-content>.home-v4-section-head,.home-v4-recommend,.home-v4-content>.home-v4-products,.home-v4-content>.home-v4-trust{display:none}
-.home-v09-auth{padding-bottom:210rpx}
-.home-v09-notice{display:flex;min-height:92rpx;align-items:center;gap:15rpx;margin-top:25rpx;padding:14rpx 17rpx;border:1rpx solid #dbe9df;border-radius:25rpx;background:linear-gradient(90deg,#f5ffea 0%,#fbfff4 100%);box-shadow:0 10rpx 24rpx rgba(43,94,63,.055)}
-.home-v09-notice-icon{display:flex;width:61rpx;height:61rpx;flex:none;align-items:center;justify-content:center;border-radius:20rpx;background:linear-gradient(145deg,#dfff70,#a7e849);color:#176d3d;font-size:14px;font-weight:950}.home-v09-notice-icon image{width:45rpx;height:45rpx}.home-v09-notice-copy{min-width:0;flex:1}.home-v09-notice-title,.home-v09-notice-content{display:block}.home-v09-notice-title{color:#10293c;font-size:14px;font-weight:950}.home-v09-notice-content{display:-webkit-box;margin-top:3rpx;overflow:hidden;color:#667581;font-size:13px;line-height:1.45;-webkit-box-orient:vertical;-webkit-line-clamp:1}.home-v09-arrow{flex:none;color:#52677a;font-size:21px;line-height:1}
-.home-v09-section-head{display:flex;align-items:flex-end;justify-content:space-between;margin:34rpx 3rpx 15rpx}.home-v09-section-title,.home-v09-section-note{display:block}.home-v09-section-title{position:relative;color:#0c2438;font-size:19px;font-weight:950;line-height:1.2}.home-v09-section-title::after{content:'';position:absolute;bottom:-8rpx;left:0;width:58rpx;height:5rpx;border-radius:999rpx;background:linear-gradient(90deg,#b3e846,#32c582)}.home-v09-section-note{margin-top:13rpx;color:#7a8492;font-size:13px}.home-v09-section-link{padding:8rpx 0;color:#132e42;font-size:14px;font-weight:850}
-.home-v09-task-card{display:flex;align-items:center;gap:17rpx;padding:19rpx;border:1rpx solid #dbe9e3;border-radius:27rpx;background:linear-gradient(90deg,#effff7,#fbfff5);box-shadow:0 11rpx 26rpx rgba(32,83,61,.06)}.home-v09-task-visual{display:flex;width:104rpx;height:104rpx;overflow:hidden;flex:none;align-items:center;justify-content:center;border-radius:29rpx;background:linear-gradient(145deg,#d7f8e7,#9ee4bd)}.home-v09-task-cover{width:100%;height:100%}.home-v09-task-art{position:relative;width:80rpx;height:80rpx}.home-v09-task-clipboard{position:absolute;inset:7rpx 13rpx 7rpx 6rpx;border:3rpx solid #078e5a;border-radius:13rpx;background:linear-gradient(145deg,#3bd086,#0ba565)}.home-v09-task-clipboard::before{content:'';position:absolute;top:-10rpx;left:14rpx;width:26rpx;height:16rpx;border:3rpx solid #078e5a;border-radius:7rpx;background:#a7efc4}.home-v09-task-lines{position:absolute;top:22rpx;left:13rpx;width:28rpx;height:4rpx;border-radius:4rpx;background:#fff;box-shadow:0 12rpx 0 #fff,0 24rpx 0 #fff}.home-v09-task-art>text{position:absolute;right:0;bottom:0;display:flex;width:34rpx;height:34rpx;align-items:center;justify-content:center;border:4rpx solid #fff;border-radius:50%;background:#ffe83b;color:#087d50;font-size:13px}.home-v09-task-copy{min-width:0;flex:1}.home-v09-task-title-row{display:flex;align-items:center;gap:9rpx}.home-v09-task-title{overflow:hidden;color:#10293c;font-size:15px;font-weight:950;text-overflow:ellipsis;white-space:nowrap}.home-v09-task-level{flex:none;padding:4rpx 10rpx;border-radius:999rpx;background:#fff235;color:#344109;font-size:12px;font-weight:900}.home-v09-task-description{display:-webkit-box;margin-top:6rpx;overflow:hidden;color:#667581;font-size:13px;line-height:1.45;-webkit-box-orient:vertical;-webkit-line-clamp:1}.home-v09-task-meta{display:flex;align-items:center;gap:17rpx;margin-top:9rpx}.home-v09-task-reward{color:#ff4a1d;font-size:14px;font-weight:950}.home-v09-task-time{color:#697681;font-size:13px}.home-v09-circle-arrow{display:flex;width:55rpx;height:55rpx;flex:none;align-items:center;justify-content:center;border:1rpx solid #e0e8e5;border-radius:50%;background:#fff;color:#193447;font-size:22px}
-.home-v09-progress-card{margin-top:16rpx;padding:18rpx 20rpx;border:1rpx solid #d8e9f3;border-radius:26rpx;background:linear-gradient(100deg,#edf8ff,#f8fdff);box-shadow:0 9rpx 22rpx rgba(37,94,128,.05)}.home-v09-progress-main{display:flex;align-items:center;gap:14rpx}.home-v09-progress-badge{display:flex;width:56rpx;height:56rpx;flex:none;align-items:center;justify-content:center;border-radius:18rpx;background:linear-gradient(145deg,#59b7ff,#187fdc);color:#fff;font-size:14px;font-weight:950}.home-v09-progress-copy{min-width:0;flex:1}.home-v09-progress-kicker,.home-v09-progress-title,.home-v09-progress-note{display:block}.home-v09-progress-kicker{color:#1980c4;font-size:12px;font-weight:900;letter-spacing:.08em}.home-v09-progress-title{margin-top:2rpx;overflow:hidden;color:#112b3e;font-size:14px;font-weight:950;text-overflow:ellipsis;white-space:nowrap}.home-v09-progress-note{margin-top:2rpx;overflow:hidden;color:#71808d;font-size:12px;text-overflow:ellipsis;white-space:nowrap}.home-v09-progress-action{flex:none;padding:13rpx 19rpx;border-radius:999rpx;background:#fff;color:#147bbd;font-size:13px;font-weight:900}.home-v09-progress-track{height:7rpx;margin-top:14rpx;overflow:hidden;border-radius:999rpx;background:#dceaf2}.home-v09-progress-track>view{height:100%;border-radius:inherit;background:linear-gradient(90deg,#25a9ed,#2ac7b5)}
-.home-v09-mall-head{margin-top:35rpx}.home-v09-product-scroll{width:100%}.home-v09-product-row{display:flex;gap:14rpx;padding:1rpx 2rpx 8rpx}.home-v09-product-card{width:205rpx;flex:none;padding:13rpx;border:1rpx solid #e1eaeb;border-radius:23rpx;background:#fff;box-shadow:0 8rpx 20rpx rgba(29,69,78,.055)}.home-v09-product-picture{display:flex;width:100%;height:153rpx;overflow:hidden;align-items:center;justify-content:center;border-radius:17rpx;color:#087d55;font-size:24px;font-weight:950}.home-v09-product-picture.tone-0{background:linear-gradient(145deg,#e1fbef,#bcefd4)}.home-v09-product-picture.tone-1{background:linear-gradient(145deg,#fff4d8,#ffe1a5)}.home-v09-product-picture.tone-2{background:linear-gradient(145deg,#e5f3ff,#cfe6ff)}.home-v09-product-picture.tone-3{background:linear-gradient(145deg,#f1eaff,#dfd1ff)}.home-v09-product-picture image{width:100%;height:100%}.home-v09-product-title,.home-v09-product-price{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.home-v09-product-title{margin-top:11rpx;color:#132a3d;font-size:14px;font-weight:900}.home-v09-product-price{margin-top:5rpx;color:#0a9360;font-size:13px;font-weight:900}
-.home-v09-trust{display:flex;align-items:center;gap:14rpx;margin-top:16rpx;padding:18rpx;border:1rpx solid #dce8ed;border-radius:23rpx;background:#f3f8fb}.home-v09-trust-icon{display:flex;width:56rpx;height:56rpx;flex:none;align-items:center;justify-content:center;border-radius:18rpx;background:#fff;color:#0aa36c;font-size:15px;font-weight:950}.home-v09-trust-copy{min-width:0;flex:1}.home-v09-trust-copy text{display:block}.home-v09-trust-copy text:first-child{color:#142b3e;font-size:14px;font-weight:900}.home-v09-trust-copy text:last-child{margin-top:3rpx;color:#6b7784;font-size:12px;line-height:1.4}
-.home-v4-popup-mask{position:fixed;z-index:999;inset:0;display:flex;align-items:center;justify-content:center;padding:44rpx;background:rgba(12,31,40,.68)}.home-v4-popup{position:relative;overflow:hidden;width:100%;max-width:620rpx;border-radius:31rpx;background:#fff;box-shadow:0 30rpx 90rpx rgba(0,0,0,.25)}.home-v4-popup-close{position:absolute;z-index:2;top:17rpx;right:17rpx;display:flex;width:53rpx;height:53rpx;align-items:center;justify-content:center;border-radius:50%;background:rgba(8,31,38,.63);color:#fff;font-size:21px}.home-v4-popup-image{display:block;width:100%}.home-v4-popup-body{padding:34rpx;text-align:center}.home-v4-popup-title,.home-v4-popup-content{display:block}.home-v4-popup-title{color:#10283a;font-size:19px;font-weight:950}.home-v4-popup-content{margin-top:13rpx;color:#6b7682;font-size:14px;line-height:1.65}.home-v4-popup-button{height:76rpx;margin-top:24rpx;border:0;border-radius:999rpx;background:linear-gradient(90deg,#08a663,#09c385);color:#fff;font-size:14px;font-weight:900;line-height:76rpx}.home-v4-popup-button::after{display:none}
-@media screen and (max-width:360px){.home-v4-brand-name{font-size:21px}.home-v4-brand-caption{font-size:10px}.home-v4-hero-title{font-size:24px}.home-v4-hero-copy{width:61%;padding-left:27rpx}.home-v4-hero-description{font-size:13px}.home-v4-quick-icon{width:86rpx;height:86rpx}.home-v4-quick-art{transform:scale(.92)}.home-v4-quick-label{font-size:14px}.home-v4-quick-note{font-size:12px}.home-v4-campus-title{font-size:17px}}
-@media screen and (min-width:768px){.home-v4{width:750rpx;margin:0 auto;box-shadow:0 0 70rpx rgba(24,62,67,.08)}.home-v4-safe{height:24rpx}}
-/* V09 游客首页：欢迎弹层与设计稿保持暖白、湖蓝、校园绿的层次。 */
-.home-v4-popup-mask{background:rgba(16,40,58,.48);backdrop-filter:blur(6rpx)}
-.home-v4-popup{border:1rpx solid rgba(217,231,237,.95);border-radius:32rpx;box-shadow:0 28rpx 70rpx rgba(23,63,82,.25)}
-.home-v4-popup-close{top:18rpx;right:18rpx;background:#edf1f2;color:#536474;font-size:21px}
-.home-v4-popup-body{padding:44rpx 38rpx 36rpx}
-.home-v4-popup-title{font-size:21px}
-.home-v4-popup-content{color:#5f7184;font-size:14px;line-height:1.65}
-.home-v4-popup-button{height:82rpx;margin-top:26rpx;background:linear-gradient(110deg,#08ac69,#0ac383);box-shadow:0 12rpx 26rpx rgba(7,170,105,.2);font-size:15px;line-height:82rpx}
-.home-v4-popup-muted{display:block;margin-top:20rpx;color:#71818c;font-size:13px;line-height:1.4;text-align:center;text-decoration:underline;text-underline-offset:4rpx}
-.home-v4-state{display:flex;align-items:center;justify-content:space-between;gap:20rpx;margin:0 26rpx 18rpx;padding:18rpx 20rpx;border:1rpx solid #d9e9e6;border-radius:20rpx;background:#fff;color:#315366;font-size:13px;box-shadow:0 10rpx 24rpx rgba(30,75,82,.06)}
-.home-v4-state-loading{justify-content:center;min-height:78rpx;color:#5c7380}
-.home-v4-state-spinner{width:28rpx;height:28rpx;border:4rpx solid #cdece1;border-top-color:#08ab6a;border-radius:50%;animation:home-v4-spin .9s linear infinite}
-.home-v4-state-title,.home-v4-state-copy{display:block}.home-v4-state-title{color:#17394c;font-weight:850}.home-v4-state-copy{margin-top:4rpx;color:#768893;font-size:12px}
-.home-v4-state-action{height:54rpx;flex:none;margin:0;padding:0 18rpx;border:1rpx solid #08a96a;border-radius:14rpx;background:#ecfbf4;color:#078a59;font-size:13px;line-height:52rpx}.home-v4-state-action::after{border:0}
-@keyframes home-v4-spin{to{transform:rotate(360deg)}}
+.home-v13{min-height:100vh;background:#F4F6F4;color:#191B1F;padding-bottom:106rpx}
+.home-v13-safe{height:var(--tm-custom-header-top,calc(env(safe-area-inset-top) + 8px))}
 
-/* Stable phone typography: keep type in px and let layout, not text, respond. */
-.home-v4-safe{height:var(--tm-custom-header-top,calc(env(safe-area-inset-top) + 8px))}
-.home-v10-auth-shell{padding-bottom:20px}
-.home-v10-hero{height:210px}
-.home-v10-hero-veil{background:linear-gradient(90deg,rgba(255,255,255,.99) 0%,rgba(255,255,255,.95) 42%,rgba(255,255,255,.46) 62%,rgba(255,255,255,.03) 78%)}
-.home-v10-hero-brand{top:22px;left:18px;max-width:64%}
-.home-v10-hero-title{font-size:28px;letter-spacing:0;line-height:1.08}
-.home-v10-hero-subtitle{margin-top:10px;font-size:15px;letter-spacing:0;line-height:1.45}
-.home-v10-hero-cta{display:flex;min-width:112px;min-height:44px;align-items:center;justify-content:center;gap:6px;margin:22px 0 0;padding:0 18px;border:0;border-radius:22px;background:linear-gradient(110deg,#08aa67,#08c17d);box-shadow:0 8px 18px rgba(8,169,104,.2);color:#fff;font-size:15px;font-weight:900;line-height:44px}.home-v10-hero-cta::after{display:none}.home-v10-hero-cta text{font-size:20px;line-height:1}
-.home-campus-context{gap:6px;padding:0 12px 10px}.home-top-actions{gap:6px}.home-top-action{height:32px;padding:0 11px;gap:5px}.home-top-action>text{font-size:12px}.home-top-action-image{width:16px;height:16px}.home-top-notice-dot{top:5px;right:5px;width:8px;height:8px}
-.home-v10-main{margin-top:-28px;padding:0 14px 24px}
-.home-v10-quick-card{padding:18px 8px 16px;border-radius:20px}.home-v10-quick-icon{width:44px;height:44px;border-radius:14px}.home-v10-quick-icon image{width:26px;height:26px}.home-v10-quick-icon>text{font-size:19px}.home-v10-quick-label{margin-top:9px;font-size:14px}
-.home-v10-announcement{min-height:52px;gap:8px;margin-top:12px;padding:8px 12px;border-radius:14px}.home-v10-announcement-icon{width:32px;height:32px;border-radius:10px;font-size:18px}.home-v10-announcement-icon image{width:26px;height:26px}.home-v10-announcement-label{font-size:14px}.home-v10-announcement-content{font-size:13px}.home-v10-announcement-arrow{font-size:20px}
-.home-v10-error{font-size:13px}.home-v10-section-head{margin:20px 2px 10px}.home-v10-section-title{font-size:19px}.home-v10-section-link{font-size:13px}
-.home-v10-task-card{min-height:96px;gap:10px;padding:13px;border-radius:17px}.home-v10-task-empty{min-height:96px;gap:10px;padding:13px;border-radius:17px}.home-v10-task-empty-icon{width:52px;height:52px;border-radius:16px;font-size:17px}.home-v10-task-empty-copy>text:first-child{font-size:15px}.home-v10-task-empty-copy>text:last-child{margin-top:4px;font-size:13px;line-height:1.45}.home-v10-task-empty-link{font-size:13px}
-.home-v10-task-cover{width:64px;height:64px;border-radius:16px}.home-v10-task-fallback{width:42px;height:42px;border-radius:13px;font-size:17px}.home-v10-task-title{font-size:15px}.home-v10-task-description{margin-top:4px;font-size:13px;line-height:1.45}.home-v10-task-meta{margin-top:6px;font-size:12px}.home-v10-task-side{max-width:92px}.home-v10-task-reward{max-width:92px;font-size:14px}.home-v10-task-button{min-height:44px;height:44px;margin-top:8px;padding:0 15px;font-size:14px;line-height:44px}
-.home-v10-continue-head{padding:15px 16px 10px}.home-v10-continue-head text:first-child{font-size:17px}.home-v10-continue-head text:last-child{font-size:13px}
-.home-v10-mall-section{margin-top:18px;padding:14px 12px 15px;border-radius:18px}.home-v10-mall-head{padding:0 2px 11px}.home-v10-mall-head text:first-child{font-size:18px}.home-v10-mall-head text:last-child{font-size:13px}.home-v10-products{gap:8px}.home-v10-product-image{height:72px;border-radius:12px;font-size:22px}.home-v10-product-name{margin-top:7px;font-size:13px;line-height:1.35}.home-v10-product-price{margin-top:4px;font-size:12px}
-.home-v10-trust{min-height:68px;gap:10px;margin-top:16px;padding:12px 14px;border-radius:15px}.home-v10-trust-shield{width:40px;height:44px;border-radius:12px 12px 16px 16px;font-size:17px}.home-v10-trust>view:nth-child(2)>text:first-child{font-size:14px}.home-v10-trust>view:nth-child(2)>text:last-child{margin-top:3px;font-size:12px;line-height:1.45}.home-v10-trust>text:last-child{font-size:20px}
-.home-v09-auth{padding-bottom:24px}
-@media screen and (max-width:360px){.home-v10-hero{height:200px}.home-v10-hero-brand{max-width:56%}.home-campus-context{gap:5px;padding:0 10px 10px}.home-top-action{height:30px;padding:0 9px}.home-v10-task-card{flex-wrap:wrap}.home-v10-task-copy{flex-basis:calc(100% - 74px)}.home-v10-task-side{width:100%;max-width:none;align-items:center;justify-content:space-between;flex-direction:row;padding-left:74px}.home-v10-task-button{margin-top:0}.home-v10-products{grid-template-columns:repeat(2,minmax(0,1fr))}.home-v10-product-image{height:84px}}
+/* ============ 顶部 ============ */
+.home-v13-head{display:flex;align-items:center;gap:16rpx;padding:4rpx 32rpx 0}
+.home-v13-campus-wrap{flex:none;min-width:0}
+.home-v13-search{flex:1;height:68rpx;border-radius:34rpx;background:#fff;border:2rpx solid #EDEFEF;display:flex;align-items:center;gap:10rpx;padding:0 24rpx;color:#AEB3BB;font-size:24rpx}
+.home-v13-search-icon{width:28rpx;height:28rpx;border:3rpx solid #AEB3BB;border-radius:50%;position:relative}
+.home-v13-search-icon::after{content:'';position:absolute;bottom:-8rpx;right:-6rpx;width:14rpx;height:3rpx;background:#AEB3BB;border-radius:2rpx;transform:rotate(45deg)}
+.home-v13-bell{position:relative;width:68rpx;height:68rpx;border-radius:50%;background:#fff;border:2rpx solid #EDEFEF;display:flex;align-items:center;justify-content:center;flex:none;color:#191B1F}
+.home-v13-bell-icon{width:34rpx;height:38rpx;border:3rpx solid #191B1F;border-bottom:0;border-radius:16rpx 16rpx 4rpx 4rpx;position:relative}
+.home-v13-bell-icon::before{content:'';position:absolute;right:-6rpx;bottom:-4rpx;left:-6rpx;height:4rpx;border-radius:4rpx;background:#191B1F}
+.home-v13-bell-icon::after{content:'';position:absolute;bottom:-10rpx;left:10rpx;width:12rpx;height:6rpx;border-radius:0 0 8rpx 8rpx;background:#191B1F}
+.home-v13-bell-dot{position:absolute;top:14rpx;right:16rpx;width:14rpx;height:14rpx;border-radius:50%;background:#FF3B30;border:3rpx solid #fff}
+
+/* ============ 积分卡片 ============ */
+.home-v13-point-card{margin:24rpx 24rpx 0;border-radius:36rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;padding:32rpx 32rpx 28rpx;position:relative;overflow:hidden;box-shadow:0 20rpx 48rpx rgba(11,191,99,.28)}
+.home-v13-point-card::before{content:'';position:absolute;width:380rpx;height:380rpx;border-radius:50%;background:rgba(255,255,255,.10);top:-180rpx;right:-100rpx}
+.home-v13-point-card::after{content:'';position:absolute;width:240rpx;height:240rpx;border-radius:50%;background:rgba(255,255,255,.08);bottom:-140rpx;right:140rpx}
+.home-v13-pc-top{position:relative;display:flex;align-items:flex-end;justify-content:space-between}
+.home-v13-pc-left{display:flex;flex-direction:column}
+.home-v13-pc-label{font-size:24rpx;opacity:.85;display:flex;align-items:center;gap:10rpx}
+.home-v13-pc-num{font-size:68rpx;font-weight:800;line-height:1.15;letter-spacing:1rpx;font-variant-numeric:tabular-nums}
+.home-v13-pc-sub{font-size:24rpx;font-weight:500;opacity:.85;margin-left:8rpx}
+.home-v13-pc-sign{height:64rpx;padding:0 28rpx;border-radius:32rpx;background:#fff;color:#08A152;font-size:24rpx;font-weight:700;display:inline-flex;align-items:center;gap:8rpx;box-shadow:0 8rpx 20rpx rgba(0,0,0,.12);border:0}
+.home-v13-pc-sign::after{display:none}
+.home-v13-pc-sign-icon{font-size:22rpx;font-weight:900}
+.home-v13-sign-strip{position:relative;display:flex;margin-top:28rpx;background:rgba(255,255,255,.14);border-radius:24rpx;padding:18rpx 12rpx}
+.home-v13-sign-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:8rpx;font-size:20rpx;color:rgba(255,255,255,.85)}
+.home-v13-sign-day-badge{width:44rpx;height:44rpx;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:20rpx}
+.home-v13-sign-day.done .home-v13-sign-day-badge{background:#fff;color:#08A152}
+.home-v13-sign-day.today .home-v13-sign-day-badge{background:#FFB020;color:#7A4A00;box-shadow:0 0 0 6rpx rgba(255,176,32,.35)}
+.home-v13-sign-day.today{color:#fff;font-weight:700}
+
+/* ============ 金刚区 ============ */
+.home-v13-king{background:#fff;border-radius:32rpx;margin:20rpx 24rpx 0;padding:32rpx 20rpx 24rpx;display:grid;grid-template-columns:repeat(4,1fr);row-gap:28rpx;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.home-v13-king-item{display:flex;flex-direction:column;align-items:center;gap:10rpx;font-size:22rpx;color:#3A3D43}
+.home-v13-king-icon{width:88rpx;height:88rpx;border-radius:28rpx;display:flex;align-items:center;justify-content:center;font-size:28rpx;font-weight:800}
+.home-v13-king-icon-img{width:48rpx;height:48rpx}
+.home-v13-king-label{font-size:22rpx;color:#3A3D43}
+
+/* ============ 橙色推广横幅 ============ */
+.home-v13-promo{margin:20rpx 24rpx 0;border-radius:32rpx;background:linear-gradient(135deg,#FF9A3D,#F2620A);height:168rpx;display:flex;align-items:center;overflow:hidden;position:relative;color:#fff;box-shadow:0 16rpx 36rpx rgba(242,98,10,.22)}
+.home-v13-promo-text{flex:1;padding:0 32rpx;position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center}
+.home-v13-promo-title{font-size:34rpx;font-weight:800;display:flex;align-items:center;gap:10rpx}
+.home-v13-promo-desc{font-size:22rpx;opacity:.92;margin-top:6rpx}
+.home-v13-promo-btn{display:inline-flex;align-items:center;height:48rpx;padding:0 20rpx;border-radius:24rpx;background:#fff;color:#F2620A;font-size:22rpx;font-weight:700;margin-top:12rpx;align-self:flex-start}
+.home-v13-promo-img{width:300rpx;height:100%;flex:none;mask-image:linear-gradient(to right,transparent,#000 38%);-webkit-mask-image:linear-gradient(to right,transparent,#000 38%)}
+
+/* ============ Feed Tabs ============ */
+.home-v13-feed-tabs{display:flex;gap:36rpx;padding:28rpx 32rpx 4rpx;font-size:26rpx;color:#767C85}
+.home-v13-feed-tab{padding-bottom:8rpx}
+.home-v13-feed-tab.active{color:#191B1F;font-size:30rpx;font-weight:700;position:relative}
+.home-v13-feed-tab.active::after{content:'';position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:36rpx;height:6rpx;border-radius:4rpx;background:#0BBF63}
+
+/* ============ 任务卡片 tcard ============ */
+.home-v13-tcard{background:#fff;border-radius:32rpx;margin:20rpx 24rpx 0;padding:24rpx;display:flex;gap:22rpx;align-items:center;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.home-v13-tcard-img-wrap{width:184rpx;height:184rpx;border-radius:20rpx;flex:none;overflow:hidden}
+.home-v13-tcard-img{width:100%;height:100%}
+.home-v13-tcard-img-fallback{width:100%;height:100%;border-radius:20rpx;background:linear-gradient(135deg,#E7F9EF,#B4EDD1);display:flex;align-items:center;justify-content:center;color:#08A152;font-size:40rpx;font-weight:800}
+.home-v13-tcard-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.home-v13-tcard-title{font-size:28rpx;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.home-v13-tcard-tags{margin:10rpx 0 8rpx;display:flex;gap:6rpx}
+.home-v13-tag{display:inline-flex;align-items:center;height:36rpx;padding:0 12rpx;border-radius:10rpx;font-size:20rpx;font-weight:500;background:#F2F4F3;color:#767C85}
+.home-v13-tag.tag-red{background:#FFEEEA;color:#FF3B30}
+.home-v13-tag.tag-orange{background:#FFF2E5;color:#F2620A}
+.home-v13-tag.tag-green{background:#E7F9EF;color:#08A152}
+.home-v13-tcard-meta{font-size:22rpx;color:#AEB3BB;display:flex;align-items:center;gap:6rpx}
+.home-v13-tcard-dot{width:4rpx;height:4rpx;border-radius:50%;background:#AEB3BB;display:inline-block}
+.home-v13-tcard-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12rpx}
+.home-v13-tcard-pts{font-size:38rpx;font-weight:800;color:#08A152;line-height:1}
+.home-v13-tcard-pts small{font-size:20rpx;font-weight:500;color:#0BBF63;margin-left:2rpx}
+.home-v13-tcard-btn{height:60rpx;padding:0 32rpx;border-radius:30rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:24rpx;font-weight:600;box-shadow:0 8rpx 20rpx rgba(11,191,99,.28);border:0}
+.home-v13-tcard-btn::after{display:none}
+
+/* ============ 空态 ============ */
+.home-v13-empty{margin:20rpx 24rpx 0;padding:40rpx;background:#fff;border-radius:32rpx;display:flex;flex-direction:column;align-items:center;gap:10rpx;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.home-v13-empty-text{font-size:26rpx;color:#767C85}
+.home-v13-empty-link{font-size:24rpx;color:#08A152;font-weight:700}
+
+/* ============ 错误提示 ============ */
+.home-v13-error{margin:20rpx 24rpx 0;padding:20rpx 24rpx;border-radius:16rpx;background:#FFF5DF;color:#A56C08;font-size:24rpx;text-align:center}
+
+/* ============ 弹窗 ============ */
+.home-v13-popup-mask{position:fixed;z-index:999;inset:0;display:flex;align-items:center;justify-content:center;padding:44rpx;background:rgba(12,31,40,.68)}
+.home-v13-popup{position:relative;overflow:hidden;width:100%;max-width:620rpx;border-radius:32rpx;background:#fff;box-shadow:0 30rpx 90rpx rgba(0,0,0,.25)}
+.home-v13-popup-close{position:absolute;z-index:2;top:18rpx;right:18rpx;display:flex;width:53rpx;height:53rpx;align-items:center;justify-content:center;border-radius:50%;background:#edf1f2;color:#536474;font-size:21px}
+.home-v13-popup-image{display:block;width:100%}
+.home-v13-popup-body{padding:44rpx 38rpx 36rpx;text-align:center}
+.home-v13-popup-title,.home-v13-popup-content{display:block}
+.home-v13-popup-title{color:#10283a;font-size:21px;font-weight:950}
+.home-v13-popup-content{margin-top:13rpx;color:#5f7184;font-size:14px;line-height:1.65}
+.home-v13-popup-button{height:82rpx;margin-top:26rpx;border:0;border-radius:999rpx;background:linear-gradient(110deg,#08ac69,#0ac383);color:#fff;font-size:15px;font-weight:900;line-height:82rpx;box-shadow:0 12rpx 26rpx rgba(7,170,105,.2)}
+.home-v13-popup-button::after{display:none}
+.home-v13-popup-muted{display:block;margin-top:20rpx;color:#71818c;font-size:13px;line-height:1.4;text-align:center;text-decoration:underline;text-underline-offset:4rpx}
 </style>

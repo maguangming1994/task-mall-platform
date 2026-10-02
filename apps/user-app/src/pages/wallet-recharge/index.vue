@@ -7,10 +7,13 @@
     </view>
     <template v-else>
     <view class="balance-card">
-      <text class="eyebrow">CAMPUS WALLET</text><text class="balance-label">当前可用余额</text>
+      <view class="balance-ic">¥</view>
+      <view class="balance-main">
+        <text class="balance-label">当前余额</text>
+        <text class="balance-tip">{{ wallet ? '余额无有效期，可用于商城现金部分的全额支付' : '余额信息暂不可用，请重试加载' }}</text>
+      </view>
       <text class="balance">{{ wallet ? `¥${money(wallet.available_amount)}` : '—' }}</text>
-      <text class="balance-tip">{{ wallet ? '余额无有效期，可用于商城现金部分的全额支付' : '余额信息暂不可用，请重试加载' }}</text>
-      <button v-if="returnToCheckout" class="tm-secondary-button return-checkout" @click="backToCheckout">返回结算</button>
+      <button v-if="returnToCheckout" class="return-checkout" @click="backToCheckout">返回结算</button>
     </view>
 
     <view v-if="loading && !wallet" class="state-card loading-state" role="status" aria-live="polite"><text class="state-title">正在加载充值信息…</text><text class="state-copy">余额和充值记录马上就会显示。</text></view>
@@ -37,9 +40,13 @@
 
       <template v-else-if="method === 'online'">
         <text class="form-title">线上支付充值</text><text class="form-desc">选择金额后使用微信支付。支付回调成功才会增加余额，请勿重复付款。</text>
-        <view class="amount-grid"><view v-for="item in presets" :key="item" class="amount-option" :class="{ active: amountYuan === String(item) }" @click="amountYuan = String(item)"><strong>¥{{ item }}</strong><text>到账 {{ item }} 元</text></view></view>
-        <input v-model="amountYuan" class="input" type="digit" placeholder="或输入其他金额（1-50000 元）" />
-        <button class="tm-primary-button submit" :loading="submitting || onlinePaying" :disabled="onlinePaying" @click="submitOnline">{{ onlineRecharge && isOnlinePending ? '继续微信支付' : '微信支付' }}</button>
+        <view class="frow-label">充值金额</view>
+        <view class="chip-pick"><view v-for="item in presets" :key="item" class="chip" :class="{ on: amountYuan === String(item) }" @click="amountYuan = String(item)">¥{{ item }}</view></view>
+        <view class="frow-label">自定义</view>
+        <input v-model="amountYuan" class="input" type="digit" placeholder="输入金额，最低 1 元，最高 50000 元" />
+        <view class="pay-row"><text class="pay-label">支付方式</text><text class="pay-value">微信支付</text><view class="pay-check">✓</view></view>
+        <view class="tip-card">充值即时到账；余额可用于校园闲置担保交易，确认收货后结算给卖家；支持随时提现回微信零钱。</view>
+        <button class="tm-primary-button submit" :loading="submitting || onlinePaying" :disabled="onlinePaying" @click="submitOnline">{{ onlineRecharge && isOnlinePending ? '继续微信支付' : `确认充值 ¥${amountYuan || '0'}` }}</button>
       </template>
 
       <template v-else>
@@ -241,74 +248,85 @@ function toast(error: unknown, fallback: string) { uni.showToast({ title: error 
 </script>
 
 <style scoped>
-.return-checkout{margin-top:20rpx;border:2rpx solid #fff;color:#173d39;background:#fff;box-shadow:none}
-.page{min-height:100vh;padding:28rpx 26rpx 90rpx;background:linear-gradient(180deg,#dff5f1 0,var(--tm-canvas) 500rpx)}.balance-card{padding:32rpx;border:2rpx solid var(--tm-ink-900);border-radius:28rpx;background:linear-gradient(135deg,#173d39,#1b756b);color:#fff;box-shadow:0 8rpx 0 rgba(20,37,35,.2)}.eyebrow,.balance-label,.balance,.balance-tip,.form-title,.form-desc,.record-title,.record-time,.review-result,.empty{display:block}.eyebrow{font-size:13px;font-weight:850;letter-spacing:3rpx;color:#a9eadf}.balance-label{margin-top:25rpx;font-size:14px}.balance{margin-top:8rpx;font-size:30px;font-weight:950}.balance-tip{margin-top:15rpx;color:#d6efeb;font-size:13px}.method-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;margin-top:22rpx}.method-tab{display:flex;align-items:center;justify-content:center;gap:9rpx;padding:20rpx 8rpx;border:2rpx solid var(--tm-ink-900);border-radius:18rpx;background:#fff;font-size:14px;font-weight:850;box-shadow:0 4rpx 0 rgba(22,22,22,.12)}.method-tab.active{background:var(--tm-campus-yellow)}.method-icon{display:flex;align-items:center;justify-content:center;width:36rpx;height:36rpx;border-radius:11rpx;background:var(--tm-brand-600);color:#fff;font-size:12px}.form-card,.record-card{margin-top:22rpx;padding:26rpx;border:2rpx solid var(--tm-ink-900);box-shadow:0 6rpx 0 rgba(22,22,22,.12)}.form-title{font-size:17px;font-weight:950}.form-desc{margin-top:8rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.55}.input,.textarea{box-sizing:border-box;width:100%;margin-top:18rpx;padding:0 20rpx;border:2rpx solid var(--tm-ink-900);border-radius:16rpx;background:#fff;font-size:14px}.input{height:78rpx}.textarea{height:150rpx;padding-top:18rpx}.submit{margin-top:22rpx;border:2rpx solid var(--tm-ink-900);box-shadow:0 5rpx 0 var(--tm-ink-900)}.amount-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;margin-top:20rpx}.amount-option{padding:18rpx 8rpx;border:2rpx solid var(--tm-ink-900);border-radius:16rpx;text-align:center;background:#fff}.amount-option.active{background:var(--tm-campus-lime)}.amount-option strong,.amount-option text{display:block}.amount-option strong{font-size:15px}.amount-option text{margin-top:4rpx;color:var(--tm-ink-500);font-size:12px}.proofs{display:flex;flex-wrap:wrap;gap:12rpx;margin-top:18rpx}.proof,.add-proof{width:142rpx;height:142rpx;border:2rpx dashed var(--tm-ink-900);border-radius:16rpx;overflow:hidden}.proof{position:relative}.proof image{width:100%;height:100%}.proof text{position:absolute;right:5rpx;bottom:5rpx;padding:5rpx 9rpx;border-radius:999rpx;background:rgba(0,0,0,.7);color:#fff;font-size:12px}.add-proof{display:flex;align-items:center;justify-content:center;flex-direction:column;background:#f8fbfb}.add-proof text{font-size:22px}.add-proof small{font-size:12px}.review-note{margin-top:16rpx;padding:16rpx;border-radius:14rpx;background:#fff5d8;color:#815f10;font-size:13px}.section-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:15rpx;border-bottom:1rpx solid var(--tm-line)}.section-head text:first-child{font-size:17px;font-weight:950}.section-head text:last-child{color:var(--tm-ink-500);font-size:13px}.record-row{display:flex;justify-content:space-between;align-items:flex-start;gap:15rpx;padding:21rpx 0;border-bottom:1rpx solid var(--tm-line)}.record-row>view{min-width:0;flex:1}.record-title{font-size:14px;font-weight:850}.record-time,.review-result{margin-top:7rpx;color:var(--tm-ink-500);font-size:12px;line-height:1.4}.status{padding:7rpx 12rpx;border-radius:999rpx;background:#eef1f1;font-size:12px;white-space:nowrap}.status.succeeded{background:#d9f3e7;color:#067647}.status.pending_review,.status.pending_payment{background:#fff0cf;color:#9b6200}.status.rejected{background:#fee4e2;color:#b42318}.empty{padding:32rpx;text-align:center;color:var(--tm-ink-500)}
-.state-card{margin-top:20rpx;padding:30rpx;text-align:center;border:2rpx solid #b42318;border-radius:22rpx;background:#fff7f5;color:#b42318}.state-title,.state-copy{display:block}.state-title{font-size:15px;font-weight:850}.state-copy{margin-top:7rpx;font-size:13px;line-height:1.5}.state-action{height:62rpx;margin:18rpx auto 0;padding:0 22rpx;border:2rpx solid #b42318;border-radius:14rpx;background:#fff;color:#b42318;font-size:13px;line-height:58rpx}.state-action::after{border:0}.online-result{margin-top:22rpx;padding:26rpx;border:2rpx solid var(--tm-ink-900);background:var(--tm-campus-cyan-soft)}.result-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15rpx}.result-status{padding:7rpx 12rpx;border-radius:999rpx;background:var(--tm-campus-yellow);font-size:13px;font-weight:850}.result-amount{display:block;margin-top:20rpx;color:var(--tm-reward-600);font-size:24px;font-weight:950}.result-copy{display:block;margin-top:8rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.5}.result-actions{display:flex;flex-wrap:wrap;gap:10rpx;margin-top:18rpx}.result-actions button{flex:1;min-width:180rpx;height:62rpx;margin:0;border-radius:14rpx;font-size:13px;line-height:60rpx}.result-actions button::after{border:0}.result-pending_payment{background:var(--tm-campus-yellow-soft)}.result-succeeded{background:var(--tm-campus-lime-soft)}.result-expired,.result-rejected{background:var(--tm-campus-coral-soft)}
-/* V09 campus cards: light borders, rounded surfaces and restrained shadows. */
-.balance-card{border:0;box-shadow:0 16rpx 34rpx rgba(22,91,107,.18)}
-.method-tab{border:1rpx solid #d6e5e7;box-shadow:0 8rpx 18rpx rgba(24,79,91,.06);font-weight:750}
-.method-tab.active{border-color:#65c8bf;background:#e4faf5;color:#135b58}
-.form-card,.record-card{border:1rpx solid #d8e7e8;box-shadow:0 12rpx 28rpx rgba(25,72,89,.07)}
-.input,.textarea{border:1rpx solid #cfe0e2;background:#fbfefe}
-.amount-option{border:1rpx solid #d6e5e7;box-shadow:none}
-.amount-option.active{border-color:#8ed7c4;background:#eaf9f0}
-.submit{border:0;box-shadow:0 10rpx 20rpx rgba(24,125,111,.18)}
-.proof,.add-proof{border:1rpx dashed #b9d5d8}
-.online-result{border:1rpx solid #cfe5e6}
-.state-card{border:1rpx solid #f1c9c2;box-shadow:0 8rpx 20rpx rgba(151,67,52,.06)}
-.action-error{display:flex;align-items:center;justify-content:space-between;gap:14rpx;margin-bottom:18rpx;padding:16rpx 18rpx;border:1rpx solid #f0c6bf;border-radius:16rpx;background:#fff5f2;color:#b42318;font-size:13px;line-height:1.45}
+.page{min-height:100vh;padding:24rpx 28rpx 120rpx;background:#F4F6F4;color:#191B1F}
+/* 余额卡 */
+.balance-card{display:flex;align-items:center;gap:24rpx;margin:0 0 20rpx;padding:28rpx 24rpx;border-radius:32rpx;background:#fff;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.balance-ic{display:flex;align-items:center;justify-content:center;width:76rpx;height:76rpx;flex:none;border-radius:24rpx;background:#E7F9EF;color:#08A152;font-size:36rpx;font-weight:900}
+.balance-main{flex:1;min-width:0}
+.balance-label{display:block;font-size:28rpx;font-weight:700;color:#191B1F}
+.balance-tip{display:block;margin-top:6rpx;font-size:22rpx;color:#767C85}
+.balance{font-size:36rpx;font-weight:800;color:#08A152;flex:none}
+.return-checkout{height:56rpx;margin:0;padding:0 28rpx;border:2rpx solid #0BBF63;border-radius:28rpx;background:#fff;color:#08A152;font-size:24rpx;font-weight:700;line-height:52rpx}
+.return-checkout::after{border:0}
+/* 标签切换 */
+.method-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;margin-top:8rpx}
+.method-tab{display:flex;align-items:center;justify-content:center;gap:8rpx;padding:24rpx 8rpx;border-radius:24rpx;background:#fff;font-size:28rpx;font-weight:700;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 8rpx 20rpx rgba(23,26,23,.05)}
+.method-tab.active{background:#E7F9EF;color:#08A152}
+.method-icon{display:flex;align-items:center;justify-content:center;width:40rpx;height:40rpx;border-radius:14rpx;background:#0BBF63;color:#fff;font-size:20rpx;font-weight:700}
+.method-tab.active .method-icon{background:#08A152}
+/* 表单卡片 */
+.form-card,.record-card{margin-top:20rpx;padding:28rpx;border-radius:32rpx;background:#fff;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.form-title{display:block;font-size:30rpx;font-weight:700;color:#191B1F}
+.form-desc{display:block;margin-top:10rpx;color:#767C85;font-size:24rpx;line-height:1.55}
+.input,.textarea{box-sizing:border-box;width:100%;margin-top:18rpx;padding:0 24rpx;border:2rpx solid #EDEFEF;border-radius:24rpx;background:#F7F9F8;font-size:26rpx;color:#191B1F}
+.input::placeholder{color:#AEB3BB}
+.input{height:84rpx}
+.textarea{height:160rpx;padding-top:20rpx}
+.submit{height:80rpx;margin-top:24rpx;border:0;border-radius:40rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:80rpx;box-shadow:0 12rpx 28rpx rgba(11,191,99,.3)}
+.submit::after{border:0}
+/* chip-pick 金额选项 */
+.frow-label{display:block;margin-top:24rpx;font-size:26rpx;font-weight:600;color:#191B1F}
+.chip-pick{display:flex;flex-wrap:wrap;gap:16rpx;margin-top:14rpx}
+.chip{height:64rpx;padding:0 28rpx;border-radius:32rpx;border:2rpx solid #EDEFEF;background:#F7F9F8;font-size:26rpx;font-weight:600;color:#767C85;line-height:60rpx}
+.chip.on{border-color:#0BBF63;color:#08A152;background:#E7F9EF}
+/* 支付方式行 */
+.pay-row{display:flex;align-items:center;gap:14rpx;margin-top:24rpx;padding:24rpx 0;border-top:1rpx solid #EDEFEF}
+.pay-label{font-size:26rpx;font-weight:600;color:#191B1F;flex:1}
+.pay-value{font-size:26rpx;font-weight:600;color:#191B1F}
+.pay-check{display:flex;align-items:center;justify-content:center;width:36rpx;height:36rpx;border-radius:50%;background:#0BBF63;color:#fff;font-size:20rpx;font-weight:700}
+/* 提示卡 */
+.tip-card{margin-top:20rpx;padding:24rpx;border-radius:24rpx;background:#FFF2E5;color:#767C85;font-size:22rpx;line-height:1.6}
+/* 记录卡片 */
+.section-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:18rpx;border-bottom:1rpx solid #EDEFEF}
+.section-head text:first-child{font-size:30rpx;font-weight:700}
+.section-head text:last-child{color:#AEB3BB;font-size:24rpx}
+.record-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16rpx;padding:22rpx 0;border-bottom:1rpx solid #EDEFEF}
+.record-row>view{min-width:0;flex:1}
+.record-title{display:block;font-size:28rpx;font-weight:600;color:#191B1F}
+.record-time,.review-result{display:block;margin-top:8rpx;color:#AEB3BB;font-size:22rpx;line-height:1.4}
+.status{padding:8rpx 16rpx;border-radius:999rpx;background:#F7F9F8;font-size:22rpx;color:#767C85;white-space:nowrap}
+.status.succeeded{background:#E7F9EF;color:#08A152}
+.status.pending_review,.status.pending_payment{background:#FFF2E5;color:#F2620A}
+.status.rejected{background:#FFEEEA;color:#FF2442}
+.empty{padding:40rpx 0;text-align:center;color:#AEB3BB;font-size:26rpx}
+/* 状态卡 */
+.state-card{margin-top:20rpx;padding:40rpx;text-align:center;border-radius:32rpx;background:#fff;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05);color:#767C85}
+.state-title,.state-copy{display:block}.state-title{font-size:30rpx;font-weight:700;color:#191B1F}.state-copy{margin-top:10rpx;font-size:24rpx;color:#767C85;line-height:1.5}
+.state-action{height:64rpx;margin:20rpx auto 0;padding:0 32rpx;border:2rpx solid #FF2442;border-radius:32rpx;background:#fff;color:#FF2442;font-size:24rpx;line-height:60rpx}.state-action::after{border:0}
+.error-state{color:#FF2442}
+.error-state .state-title{color:#FF2442}
+/* 线上充值结果 */
+.online-result{margin-top:20rpx;padding:28rpx;border-radius:32rpx;background:#E7F9EF}
+.result-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16rpx}
+.result-status{padding:8rpx 16rpx;border-radius:999rpx;background:#0BBF63;color:#fff;font-size:24rpx;font-weight:700}
+.result-amount{display:block;margin-top:24rpx;color:#08A152;font-size:36rpx;font-weight:800}
+.result-copy{display:block;margin-top:10rpx;color:#767C85;font-size:24rpx;line-height:1.5}
+.result-actions{display:flex;flex-wrap:wrap;gap:12rpx;margin-top:20rpx}
+.result-actions button{flex:1;min-width:200rpx;height:68rpx;margin:0;border-radius:24rpx;font-size:24rpx;line-height:66rpx}
+.result-actions button::after{border:0}
+.result-pending_payment{background:#FFF2E5}
+.result-succeeded{background:#E7F9EF}
+.result-expired,.result-rejected{background:#FFEEEA}
+/* 附件与备注 */
+.proofs{display:flex;flex-wrap:wrap;gap:16rpx;margin-top:20rpx}
+.proof,.add-proof{width:152rpx;height:152rpx;border:2rpx dashed #D7DBD8;border-radius:24rpx;overflow:hidden}
+.proof{position:relative}.proof image{width:100%;height:100%}
+.proof text{position:absolute;right:8rpx;bottom:8rpx;padding:6rpx 12rpx;border-radius:999rpx;background:rgba(0,0,0,.65);color:#fff;font-size:20rpx}
+.add-proof{display:flex;align-items:center;justify-content:center;flex-direction:column;background:#F7F9F8}.add-proof text{font-size:32rpx;color:#AEB3BB}.add-proof small{font-size:20rpx;color:#AEB3BB}
+.review-note{margin-top:20rpx;padding:20rpx;border-radius:20rpx;background:#FFF2E5;color:#767C85;font-size:22rpx}
+/* 错误提示 */
+.action-error{display:flex;align-items:center;justify-content:space-between;gap:16rpx;margin-bottom:20rpx;padding:20rpx 24rpx;border-radius:24rpx;background:#FFEEEA;color:#FF2442;font-size:24rpx;line-height:1.45}
 .action-error text{min-width:0;flex:1}
-.action-error button{flex:none;margin:0;padding:0 14rpx;height:50rpx;border:1rpx solid #dc8f84;border-radius:12rpx;background:#fff;color:#a33d32;font-size:13px;line-height:48rpx}
+.action-error button{flex:none;margin:0;padding:0 20rpx;height:52rpx;border:2rpx solid #FF2442;border-radius:16rpx;background:#fff;color:#FF2442;font-size:22rpx;line-height:48rpx}
 .action-error button::after{border:0}
-/* V09 普通注册用户：充值页与资产总览保持同一套校园蓝青资产视觉。 */
-.page{background:radial-gradient(circle at 92% 8%,rgba(91,210,198,.18),transparent 260rpx),linear-gradient(180deg,#edfaff 0,#f8fcfd 620rpx,#f4f8fa 100%)!important}
-.balance-card{background:linear-gradient(135deg,#1268c9 0%,#1598d5 56%,#26c6b9 100%)!important;box-shadow:0 16rpx 34rpx rgba(19,113,159,.18)!important}
-.balance-card .eyebrow{color:#e7fbff!important}
-.balance-card .balance-label{color:rgba(255,255,255,.92)!important}
-.balance-card .balance{color:#fff!important}
-.balance-card .balance-tip{color:rgba(255,255,255,.84)!important}
-.method-tabs{gap:10rpx}
-.method-tab{background:#fff!important;color:#2e5062!important}
-.method-tab.active{border-color:#67cdb4!important;background:#e9fbef!important;color:#14735f!important}
-.method-icon{background:#e4f7f2!important;color:#16826b!important}
-.form-card,.record-card{background:rgba(255,255,255,.98)!important}
-.form-title{color:#15324a!important}
-.form-desc,.record-time,.review-result,.empty{color:#526b7c!important}
-.submit{background:linear-gradient(135deg,#16a6d8,#20bca7)!important;color:#fff!important}
-.review-note{background:#fff8df!important;color:#735c19!important}
-</style>
-
-<style scoped>
-/* V09 mobile recharge surface: preserve the three payment flows while matching the 26 card layout. */
-.page{min-height:100vh;padding:24rpx 28rpx 72rpx;background:radial-gradient(circle at 90% 5%,rgba(91,210,198,.18),transparent 250rpx),linear-gradient(180deg,#f0fbff 0,#f7fbfd 640rpx,#f4f8fb 100%)!important}
-.balance-card{min-height:276rpx;padding:36rpx 38rpx;border:0;border-radius:31rpx;background:linear-gradient(135deg,#237fd8 0%,#2b9dcc 54%,#28bcb8 100%)!important;box-shadow:0 18rpx 38rpx rgba(35,126,177,.18)!important}
-.balance-card .eyebrow{color:rgba(255,255,255,.24)!important;font-size:14px;letter-spacing:3rpx}
-.balance-card .balance-label{margin-top:40rpx;color:#fff!important;font-size:15px;font-weight:750}
-.balance-card .balance{margin-top:10rpx;color:#fff!important;font-size:34px;font-weight:950}
-.balance-card .balance-tip{margin-top:15rpx;color:rgba(255,255,255,.9)!important;font-size:14px}
-.method-tabs{gap:12rpx;margin-top:23rpx}
-.method-tab{min-height:86rpx;padding:14rpx 7rpx;border:1rpx solid #dfebf3;border-radius:22rpx;background:rgba(255,255,255,.98)!important;box-shadow:0 8rpx 20rpx rgba(31,56,92,.05);color:#10213a!important;font-size:14px;font-weight:800}
-.method-tab.active{border:2rpx solid #257be4!important;background:#fff!important;color:#2474cf!important}
-.method-icon{width:42rpx;height:42rpx;border-radius:14rpx;background:#edf5ff!important;color:#2678dc!important;font-size:13px}
-.form-card,.record-card{margin-top:25rpx;padding:31rpx;border:1rpx solid #dfeaf2; border-radius:27rpx;background:rgba(255,255,255,.98)!important;box-shadow:0 12rpx 30rpx rgba(31,56,92,.055)!important}
-.form-title{font-size:19px;font-weight:900;color:#10213a!important}
-.form-desc{margin-top:11rpx;color:#71819a!important;font-size:14px;line-height:1.55}
-.input,.textarea{border:1rpx solid #d4e1ed;border-radius:17rpx;background:#fbfdff;font-size:14px}
-.input{height:84rpx;margin-top:21rpx}
-.submit{height:80rpx;margin-top:23rpx;border:0;box-shadow:0 10rpx 20rpx rgba(36,122,218,.16)!important;background:linear-gradient(135deg,#237ce6,#23b9b1)!important;font-size:15px;line-height:80rpx}
-.amount-grid{gap:11rpx;margin-top:21rpx}
-.amount-option{padding:18rpx 7rpx;border:1rpx solid #dce8f1;border-radius:17rpx;background:#fbfdff}
-.amount-option.active{border-color:#80d6bf;background:#ecfaf3}
-.record-card{padding-bottom:20rpx}
-.section-head{padding-bottom:18rpx;border-bottom:1rpx solid #e7eef4}
-.section-head text:first-child{font-size:19px;font-weight:900;color:#10213a}
-.section-head text:last-child{color:#71819a;font-size:13px}
-.record-row{padding:22rpx 0;border-bottom:1rpx solid #e7eef4}
-.record-title{font-size:14px;color:#223650}.record-time,.review-result{color:#7b8ba0;font-size:12px}
-.empty{padding:76rpx 0 45rpx;color:#71819a;font-size:14px;font-weight:750}
-.empty::before{content:'⌕';display:block;width:93rpx;height:93rpx;margin:0 auto 18rpx;border:8rpx solid #cfdbe8;border-radius:25rpx;color:#cfdbe8;font-size:34px;line-height:82rpx}
-.review-note{border-radius:15rpx;background:#f1fbf7;color:#657f81}
-.state-card{border:1rpx solid #dce9f1;border-radius:20rpx;background:#fff;color:#71819a}
-.action-error{border-color:#f1c7c0;border-radius:16rpx;background:#fff5f2}
-@media screen and (max-width:360px){.page{padding-left:20rpx;padding-right:20rpx}.balance-card{padding-left:27rpx;padding-right:27rpx}.balance-card .balance{font-size:30px}.form-card,.record-card{padding-left:23rpx;padding-right:23rpx}}
 </style>

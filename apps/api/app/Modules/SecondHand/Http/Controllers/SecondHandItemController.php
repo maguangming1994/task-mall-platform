@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\SecondHand\Models\SecondHandCategory;
 use App\Modules\SecondHand\Models\SecondHandItem;
+use App\Modules\SecondHand\Services\SecondHandNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rule;
 
 class SecondHandItemController extends Controller
 {
+    public function __construct(private readonly SecondHandNotificationService $notify) {}
+
     private const CONDITIONS = [
         'new' => '全新',
         'like_new' => '几乎全新',
@@ -50,7 +53,7 @@ class SecondHandItemController extends Controller
         $page = $data['page'] ?? 1;
         $size = $data['page_size'] ?? 20;
 
-        $query = SecondHandItem::query()->where('status', 'on_sale');
+        $query = SecondHandItem::query()->where('status', 'on_sale')->where('audit_status', 'approved');
         if (! empty($data['category_id'])) {
             $query->whereHas('category', fn ($q) => $q->where('public_id', $data['category_id']));
         }
@@ -91,6 +94,9 @@ class SecondHandItemController extends Controller
         $item->loadMissing(['seller', 'category']);
         $isOwner = $request->user()?->id === $item->seller_user_id;
 
+        // 非本人查看时，审核不通过的商品不可见
+        abort_unless($isOwner || $item->audit_status === 'approved', 404);
+
         return ApiResponse::success($this->present($item, true, $isOwner));
     }
 
@@ -112,6 +118,7 @@ class SecondHandItemController extends Controller
                 'trade_type' => $data['trade_type'] ?? 'meetup',
                 'location' => $data['location'] ?? null,
                 'status' => 'on_sale',
+                'audit_status' => 'pending',
                 'idempotency_key_hash' => hash('sha256', $request->header('Idempotency-Key') ?: ($request->ip().'|'.$user->id.'|'.microtime(true))),
             ]);
         });
@@ -148,6 +155,47 @@ class SecondHandItemController extends Controller
         $item->update(['status' => 'off_shelf']);
 
         return ApiResponse::success(['id' => $item->public_id, 'status' => 'off_shelf']);
+    }
+
+    // ---------- Admin 审核 ----------
+
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'audit_status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'page_size' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+        $page = $data['page'] ?? 1;
+        $size = $data['page_size'] ?? 20;
+
+        $query = SecondHandItem::query()
+            ->when($data['audit_status'] ?? null, fn ($q, $s) => $q->where('audit_status', $s))
+            ->latest('id');
+        $total = $query->count();
+        $items = $query->forPage($page, $size)->with('seller')->get();
+
+        return ApiResponse::success([
+            'items' => $items->map(fn (SecondHandItem $i) => $this->present($i)),
+            'pagination' => ['page' => $page, 'page_size' => $size, 'total' => $total],
+        ]);
+    }
+
+    public function adminReview(Request $request, SecondHandItem $item): JsonResponse
+    {
+        $data = $request->validate([
+            'decision' => ['required', 'in:approve,reject'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        if ($data['decision'] === 'approve') {
+            $item->update(['audit_status' => 'approved', 'rejected_reason' => null]);
+        } else {
+            $item->update(['audit_status' => 'rejected', 'rejected_reason' => $data['reason'] ?? '未通过审核']);
+        }
+        $this->notify->itemReviewed($item, $data['decision'] === 'approve', $data['reason'] ?? null);
+
+        return ApiResponse::success($this->present($item, true));
     }
 
     public function mine(Request $request): JsonResponse
@@ -199,6 +247,8 @@ class SecondHandItemController extends Controller
             'cover' => $item->cover_file_public_id,
             'images' => $item->images ?? [],
             'status' => $item->status,
+            'audit_status' => $item->audit_status,
+            'rejected_reason' => $item->rejected_reason,
             'trade_type' => $item->trade_type,
             'location' => $item->location,
             'view_count' => (int) $item->view_count,

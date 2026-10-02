@@ -6,24 +6,39 @@
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="commerce-hero" aria-label="订单旅程">
-      <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
-      <view class="commerce-hero-copy">
-        <text class="commerce-hero-kicker">ORDER JOURNEY</text>
-        <text class="commerce-hero-title">我的订单</text>
-        <text class="commerce-hero-sub">支付、履约、确认与售后，每一步都有清晰记录</text>
+    <view class="subnav"><text class="nav-title">订单与任务</text></view>
+
+    <scroll-view class="tabs" scroll-x>
+      <view v-for="tab in tabs" :key="tab.value" :class="['tab', { active: activeStatus === tab.value }]" @click="activeStatus = tab.value">
+        {{ tab.label }}<text v-if="tabCount(tab.value)" class="tab-count">{{ tabCount(tab.value) }}</text>
       </view>
-    </view>
-    <view class="heading"><text class="eyebrow">ORDER JOURNEY</text><text class="title">我的订单</text><text class="sub">每个拆分订单独立支付、履约和售后，状态变化清晰可追踪</text></view>
-    <view class="order-tools"><button class="after-sale" @click="openAfterSales"><text>售</text><view><strong>售后服务</strong><small>退款、退货与换货进度</small></view><b>›</b></button></view>
-    <scroll-view class="tabs" scroll-x><view v-for="tab in tabs" :key="tab.value" :class="['tab',{active:activeStatus===tab.value}]" @click="activeStatus=tab.value">{{ tab.label }}<text v-if="tabCount(tab.value)">{{ tabCount(tab.value) }}</text></view></scroll-view>
+    </scroll-view>
+
+    <button class="after-sale" @click="openAfterSales">
+      <text class="as-ic">售</text>
+      <view class="as-main"><text class="as-title">售后服务</text><text class="as-sub">退款、退货与换货进度</text></view>
+      <text class="as-arrow">›</text>
+    </button>
+
     <view v-if="loading" class="skeleton-list"><view v-for="index in 3" :key="index" class="skeleton-card tm-skeleton" /></view>
-    <view v-else-if="loadError" class="error-state"><text class="error-title">订单暂时无法加载</text><text class="error-copy">{{ loadError }}</text><button class="error-action" @click="reloadOrders">重新加载</button></view>
+    <view v-else-if="loadError" class="state-card error">
+      <text class="state-title">订单暂时无法加载</text>
+      <text class="state-copy">{{ loadError }}</text>
+      <button class="btn-main" @click="reloadOrders">重新加载</button>
+    </view>
+
     <view v-for="order in filteredOrders" :key="order.id" class="card" @click="openOrder(order)">
-      <view class="row"><text class="number">{{ order.order_no }}</text><text class="status" :class="{ pending: order.status === 'pending_payment', success: ['fulfilled', 'completed'].includes(order.status), danger: ['cancelled', 'closed', 'refunded'].includes(order.status) }">{{ statusText(order.status) }}</text></view>
+      <view class="row"><text class="number">{{ order.order_no }}</text><text class="status-tag" :class="{ pending: order.status === 'pending_payment', success: ['fulfilled', 'completed'].includes(order.status), danger: ['cancelled', 'closed', 'refunded'].includes(order.status) }">{{ statusText(order.status) }}</text></view>
       <text class="meta">{{ fulfillmentText(order.fulfillment_type) }} · {{ paymentText(order.cash_payment_method) }}</text>
-      <view v-for="item in order.items" :key="item.id" class="item"><text>{{ item.product_name }} · {{ item.sku_name }} × {{ item.quantity }}</text><text>{{ modeText(item.purchase_mode) }}</text></view>
-      <view class="total"><text>应付</text><text>{{ amountText(order.payable_cash_amount, order.payable_points) }}</text></view>
+      <view v-for="item in order.items" :key="item.id" class="item-row">
+        <view class="item-mark">{{ item.product_name.slice(0, 1) }}</view>
+        <view class="item-main">
+          <text class="item-name">{{ item.product_name }}</text>
+          <text class="item-sku">{{ item.sku_name }} · {{ modeText(item.purchase_mode) }}</text>
+          <text class="item-qty">×{{ item.quantity }}</text>
+        </view>
+      </view>
+      <view class="total"><text>应付</text><text class="total-val">{{ amountText(order.payable_cash_amount, order.payable_points) }}</text></view>
       <text v-if="order.shipping_amount" class="shipping">含现金运费 ¥{{ money(order.shipping_amount) }}</text>
       <view v-for="fulfillment in order.fulfillments || []" :key="fulfillment.id" class="delivery">
         <text class="delivery-title">{{ fulfillmentText(fulfillment.method) }}</text>
@@ -35,7 +50,13 @@
       <button v-if="order.status === 'pending_payment'" class="pay" :loading="payingOrderId === order.id || isPaymentPolling(order.id)" :disabled="!!payingOrderId || isPaymentPolling(order.id)" @click.stop="pay(order)">{{ isPaymentPolling(order.id) ? '支付结果确认中…' : (order.cash_payment_method === 'wallet' ? '余额全额支付' : '微信支付') }}</button>
       <button v-if="order.status === 'fulfilled'" class="pay" :loading="payingOrderId === order.id" @click.stop="confirmComplete(order)">确认完成</button>
     </view>
-    <view v-if="!loading && !loadError && !filteredOrders.length" class="empty-card"><view class="empty-icon">单</view><text class="empty-title">{{ activeStatus === 'all' ? '还没有订单' : '当前状态暂无订单' }}</text><text class="empty-copy">商城支持现金、积分和现金＋积分三种购买方式</text><button class="empty-action" @click="openProducts">去逛商城</button></view>
+
+    <view v-if="!loading && !loadError && !filteredOrders.length" class="state-card">
+      <view class="state-icon">单</view>
+      <text class="state-title">{{ activeStatus === 'all' ? '还没有订单' : '当前状态暂无订单' }}</text>
+      <text class="state-copy">商城支持现金、积分和现金＋积分三种购买方式</text>
+      <button class="btn-main" @click="openProducts">去逛商城</button>
+    </view>
     </template>
     <AppTabBar current-target="account" />
   </view>
@@ -216,27 +237,53 @@ function tabCount(status: string) { return status === 'all' ? visibleOrders.valu
 </script>
 
 <style scoped>
-.page{min-height:100vh;padding:32rpx 28rpx 90rpx;background:var(--tm-canvas);box-sizing:border-box}.heading{padding:22rpx 8rpx 16rpx}.eyebrow,.title,.sub,.meta,.shipping,.empty-title,.empty-copy{display:block}.eyebrow{color:var(--tm-brand-600);font-size:13px;font-weight:800;letter-spacing:2.5rpx}.title{margin-top:10rpx;font-size:24px;font-weight:850}.sub{margin-top:10rpx;color:var(--tm-ink-500);font-size:14px;line-height:1.6}.after-sale{display:flex;align-items:center;width:100%;height:auto;margin:8rpx 0 18rpx;padding:22rpx 24rpx;text-align:left;border:1rpx solid #dce6ff;border-radius:24rpx;background:#eef4ff;color:var(--tm-ink-900);line-height:1.3}.after-sale::after{border:0}.after-sale>text{display:flex;align-items:center;justify-content:center;width:60rpx;height:60rpx;margin-right:18rpx;border-radius:18rpx;background:#fff;color:var(--tm-brand-700);font-weight:850}.after-sale view{flex:1}.after-sale strong,.after-sale small{display:block}.after-sale strong{font-size:15px}.after-sale small{margin-top:5rpx;color:var(--tm-ink-500);font-size:13px}.after-sale b{color:var(--tm-brand-600);font-size:22px}.tabs{width:100%;white-space:nowrap}.tab{display:inline-flex;align-items:center;gap:7rpx;margin-right:12rpx;padding:14rpx 22rpx;border:1rpx solid var(--tm-line);border-radius:999rpx;background:#fff;color:var(--tm-ink-500);font-size:14px}.tab.active{border-color:var(--tm-brand-600);background:var(--tm-brand-600);color:#fff}.tab text{font-size:13px}.card{margin-top:20rpx;padding:28rpx;border:1rpx solid var(--tm-line);border-radius:26rpx;background:#fff;box-shadow:var(--tm-shadow-sm)}.row,.item,.total{display:flex;justify-content:space-between;gap:20rpx}.number{font-size:14px;font-weight:750}.status{padding:6rpx 12rpx;border-radius:10rpx;background:var(--tm-reward-100);color:var(--tm-reward-600);font-size:13px;font-weight:750}.meta{margin-top:10rpx;color:var(--tm-ink-500);font-size:14px}.item{margin-top:20rpx;padding-top:20rpx;border-top:1rpx solid var(--tm-line);font-size:15px}.total{margin-top:22rpx;font-size:17px;font-weight:800}.shipping{margin-top:10rpx;color:var(--tm-ink-500);font-size:14px}.pay{height:76rpx;margin-top:22rpx;border-radius:18rpx;background:var(--tm-brand-600);color:#fff;font-weight:800;line-height:76rpx}.skeleton-card{height:290rpx;margin-top:20rpx;border-radius:26rpx}.empty-card{margin-top:26rpx;padding:70rpx 34rpx;text-align:center;border:1rpx solid var(--tm-line);border-radius:28rpx;background:#fff}.empty-icon{display:flex;align-items:center;justify-content:center;width:88rpx;height:88rpx;margin:0 auto;border-radius:28rpx;background:var(--tm-brand-100);color:var(--tm-brand-700);font-size:19px;font-weight:850}.empty-title{margin-top:22rpx;font-size:17px;font-weight:800}.empty-copy{margin-top:10rpx;color:var(--tm-ink-500);font-size:14px;line-height:1.6}.empty-action{width:260rpx;height:72rpx;margin-top:24rpx;border-radius:18rpx;background:var(--tm-brand-600);color:#fff;font-size:14px;line-height:72rpx}
-.after-sale{border-color:#d6e9e7;background:#f2f9f8}
-.delivery{margin-top:14rpx;padding:16rpx 18rpx;border-radius:14rpx;background:#f3f7f7;color:var(--tm-ink-500);font-size:13px}.delivery text{display:block}.delivery-title{margin-bottom:6rpx;color:var(--tm-ink-900);font-weight:800}
-.card-entry{display:flex;justify-content:space-between;margin-top:20rpx;padding-top:18rpx;border-top:1rpx solid var(--tm-line);color:var(--tm-brand-700);font-size:14px;font-weight:850}
-/* V09 campus commerce surface */
-.commerce-hero{position:relative;min-height:250rpx;overflow:hidden;margin-bottom:18rpx;border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-lg);background:linear-gradient(135deg,#e7f4ff 0,#e3f9f6 58%,#edf7ff 100%);box-shadow:var(--tm-shadow-sm)}
-.commerce-hero-art{position:absolute;right:-16rpx;top:0;width:68%;height:100%;opacity:.84;object-position:right center}.commerce-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(231,244,255,.98) 0,rgba(231,244,255,.9) 34%,rgba(231,244,255,.12) 78%,rgba(231,244,255,0) 100%)}
-.commerce-hero-copy{position:relative;z-index:1;width:57%;padding:28rpx 24rpx}.commerce-hero-kicker,.commerce-hero-title,.commerce-hero-sub{display:block}.commerce-hero-kicker{color:var(--tm-brand-700);font-size:13px;font-weight:850;letter-spacing:2.4rpx}.commerce-hero-title{margin-top:10rpx;color:var(--tm-ink-900);font-size:22px;font-weight:950;line-height:1.2}.commerce-hero-sub{margin-top:10rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.55}.page > .heading{display:none}
-.page{background:linear-gradient(180deg,var(--tm-campus-cyan-soft) 0,var(--tm-canvas) 520rpx);color:var(--tm-ink-900)}
-.heading{margin:0 0 16rpx;padding:26rpx 24rpx;border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-lg);background:var(--tm-surface);box-shadow:var(--tm-shadow-sm)}
-.eyebrow{color:var(--tm-brand-600)}.sub{color:var(--tm-ink-500);font-weight:500}
-.after-sale,.card,.empty-card,.error-state{border:1rpx solid var(--tm-line);box-shadow:var(--tm-shadow-sm);background:var(--tm-surface)}
-.after-sale{background:var(--tm-campus-cyan-soft)}.after-sale>text{border:0;background:var(--tm-surface)}
-.tab{border:1rpx solid var(--tm-line);color:var(--tm-ink-500);box-shadow:none;background:var(--tm-surface)}
-.tab.active{border-color:var(--tm-brand-500);background:var(--tm-brand-600);color:#fff;box-shadow:none}
-.status{border:0;background:var(--tm-reward-100);color:var(--tm-reward-600)}
-.status.pending{background:var(--tm-reward-100);color:var(--tm-reward-600)}.status.success{background:var(--tm-growth-100);color:var(--tm-growth-700)}.status.danger{background:var(--tm-campus-coral-soft);color:var(--tm-danger)}
-.delivery{border:0;background:var(--tm-surface-soft)}
-.pay,.empty-action,.error-action{border:1rpx solid transparent;background:var(--tm-brand-600);box-shadow:none}
-.empty-icon{border:0;background:var(--tm-brand-100)}
-.error-state{margin-top:22rpx;padding:48rpx 28rpx;text-align:center;background:var(--tm-campus-coral-soft)}.error-title,.error-copy{display:block}.error-title{font-size:17px;font-weight:900}.error-copy{margin-top:10rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.5}.error-action{height:68rpx;margin:22rpx auto 0;padding:0 26rpx;border-radius:18rpx;color:#fff;line-height:68rpx}.error-action::after{border:0}
-.pay[disabled],.empty-action[disabled],.error-action[disabled]{opacity:.46;filter:saturate(.55)}
-.empty-card{padding:72rpx 34rpx 54rpx}.empty-icon{position:relative;width:154rpx;height:118rpx;margin:0 auto;border-radius:34rpx;background:linear-gradient(145deg,#e2f6f8,#edf7ff);font-size:0}.empty-icon::before{content:'';position:absolute;left:28rpx;top:28rpx;width:88rpx;height:56rpx;border:5rpx solid #4bb7cd;border-radius:11rpx 11rpx 18rpx 18rpx;background:#fff;box-sizing:border-box}.empty-icon::after{content:'⌕';position:absolute;right:8rpx;bottom:4rpx;display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;border:5rpx solid #1268c9;border-radius:50%;background:#fff;color:#1268c9;font-size:21px;font-weight:900;box-sizing:border-box}
+.page{min-height:100vh;padding-bottom:120rpx;background:#F4F6F4;color:#191B1F}
+.subnav{display:flex;align-items:center;justify-content:center;height:88rpx;background:#fff}
+.nav-title{font-size:32rpx;font-weight:700}
+.tabs{display:flex;white-space:nowrap;border-bottom:1rpx solid #EDEFEF;background:#fff;padding:0 16rpx}
+.tab{position:relative;display:inline-flex;align-items:center;gap:8rpx;padding:24rpx 24rpx;color:#767C85;font-size:26rpx}
+.tab.active{color:#08A152;font-size:28rpx;font-weight:800}
+.tab.active::after{position:absolute;right:24rpx;bottom:0;left:24rpx;height:6rpx;border-radius:3rpx;background:linear-gradient(135deg,#12D978,#08A152);content:''}
+.tab-count{color:#AEB3BB;font-size:22rpx}
+.tab.active .tab-count{color:#08A152}
+.after-sale{display:flex;align-items:center;width:auto;margin:20rpx 24rpx 0;padding:24rpx 28rpx;border-radius:32rpx;background:#fff;text-align:left}
+.after-sale::after{border:0}
+.as-ic{display:flex;align-items:center;justify-content:center;width:72rpx;height:72rpx;flex:none;border-radius:22rpx;background:#E7F9EF;color:#08A152;font-size:28rpx;font-weight:800}
+.as-main{min-width:0;flex:1;margin-left:22rpx}
+.as-title{display:block;font-size:28rpx;font-weight:700}
+.as-sub{display:block;margin-top:6rpx;color:#767C85;font-size:24rpx}
+.as-arrow{color:#AEB3BB;font-size:34rpx}
+.skeleton-list{margin:0 24rpx}
+.skeleton-card{height:320rpx;margin-top:20rpx;border-radius:32rpx}
+.card{margin:20rpx 24rpx 0;padding:28rpx;border-radius:32rpx;background:#fff;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:20rpx}
+.number{font-size:26rpx;font-weight:700}
+.status-tag{display:inline-flex;align-items:center;height:40rpx;padding:0 16rpx;border-radius:12rpx;background:#F2F4F3;color:#767C85;font-size:22rpx}
+.status-tag.pending{background:#FFF2E5;color:#F2620A}
+.status-tag.success{background:#E7F9EF;color:#08A152}
+.status-tag.danger{background:#FFEEEA;color:#FF3B30}
+.meta{display:block;margin-top:10rpx;color:#AEB3BB;font-size:24rpx}
+.item-row{display:flex;gap:20rpx;margin-top:22rpx;padding-top:22rpx;border-top:1rpx solid #F5F6F6}
+.item-mark{display:flex;align-items:center;justify-content:center;width:132rpx;height:132rpx;flex:none;border-radius:20rpx;background:#E7F9EF;color:#08A152;font-size:40rpx;font-weight:900}
+.item-main{min-width:0;flex:1}
+.item-name{display:block;font-size:26rpx;font-weight:600;line-height:1.45}
+.item-sku{display:block;margin-top:8rpx;color:#AEB3BB;font-size:22rpx}
+.item-qty{display:block;margin-top:8rpx;color:#767C85;font-size:22rpx}
+.total{display:flex;align-items:baseline;justify-content:space-between;margin-top:22rpx;font-size:26rpx;color:#767C85}
+.total-val{color:#FF3B30;font-size:32rpx;font-weight:800}
+.shipping{display:block;margin-top:10rpx;color:#AEB3BB;font-size:24rpx}
+.delivery{margin-top:16rpx;padding:20rpx 22rpx;border-radius:20rpx;background:#F7F9F8;color:#767C85;font-size:24rpx}
+.delivery text{display:block}
+.delivery-title{margin-bottom:6rpx;color:#191B1F;font-weight:700}
+.card-entry{display:flex;justify-content:space-between;margin-top:20rpx;padding-top:20rpx;border-top:1rpx solid #F5F6F6;color:#08A152;font-size:26rpx;font-weight:700}
+.pay{height:80rpx;margin-top:20rpx;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:80rpx;box-shadow:0 12rpx 28rpx rgba(11,191,99,.3)}
+.pay::after{border:0}
+.pay[disabled]{opacity:.5}
+.state-card{margin:20rpx 24rpx 0;padding:80rpx 40rpx;border-radius:32rpx;background:#fff;text-align:center}
+.state-icon{display:flex;align-items:center;justify-content:center;width:120rpx;height:120rpx;margin:0 auto;border-radius:32rpx;background:#E7F9EF;color:#08A152;font-size:34rpx;font-weight:800}
+.state-title{display:block;margin-top:24rpx;font-size:30rpx;font-weight:700}
+.state-copy{display:block;margin:12rpx auto 0;max-width:560rpx;color:#767C85;font-size:24rpx;line-height:1.6}
+.state-card.error .state-title{color:#FF3B30}
+.btn-main{height:80rpx;margin:32rpx auto 0;padding:0 48rpx;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:80rpx}
+.btn-main::after{border:0}
 </style>

@@ -10,21 +10,37 @@
     <view v-else-if="loadError" class="state-error"><text class="state-error-icon">!</text><text class="state-error-title">任务详情加载失败</text><text class="state-error-copy">{{ loadError }}</text><button class="state-error-action" @click="loadTask">重试</button></view>
     <view v-else-if="!task" class="state-text">任务不存在或已经下线</view>
     <template v-else>
-      <view class="detail-pagebar">
-        <text class="detail-pagebar-back" @click="goBack">‹</text>
-        <text class="detail-pagebar-title">任务详情</text>
-        <view class="detail-pagebar-share" @click="openSharePanel"><text class="detail-pagebar-share-icon">↗</text><text>分享</text></view>
-      </view>
       <view class="detail-hero">
-        <image class="detail-hero-art" :src="heroImageSrc" mode="aspectFill" @error="onHeroImageError" />
-        <view class="hero-badges"><text class="hero-badge">{{ categoryLabel(task.category) }}</text><text class="hero-badge">{{ taskTypeLabel(task.task_type) }}</text></view>
-        <text class="detail-title">{{ task.title }}</text>
-        <text v-if="task.description_text" class="detail-summary">{{ task.description_text }}</text>
-        <view class="publisher-row"><text>{{ task.publisher.display_name }}</text><text class="verified-badge">✓ {{ task.publisher.publisher_badge }}</text></view>
+        <image class="detail-hero-img" :src="heroImageSrc" mode="aspectFill" @error="onHeroImageError" />
+        <view class="hero-nav">
+          <view class="hero-nav-btn" @click="goBack">‹</view>
+          <view class="hero-nav-btn" @click="openSharePanel">↗</view>
+        </view>
       </view>
 
-      <view v-if="task.steps.length" class="content-card task-steps-card">
-        <text class="section-title">任务步骤 / 流程</text>
+      <view class="detail-title-card">
+        <text class="detail-h1">{{ task.title }}</text>
+        <view class="tags">
+          <text class="tag tag-red">悬赏</text>
+          <text class="tag tag-orange">{{ categoryLabel(task.category) }}</text>
+          <text class="tag">{{ taskTypeLabel(task.task_type) }}</text>
+        </view>
+        <view class="price-row">
+          <text class="big">{{ primaryRewardText(task) }}</text>
+          <text class="sp" />
+          <text class="people">{{ task.view_count }} 人浏览 · 剩余 {{ task.remaining_reward_slots }} 份</text>
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="info-row"><text class="info-ic">⏱</text><text>限时完成</text><text class="sp" /><text class="v">领取后 {{ task.completion_window_hours }} 小时</text></view>
+        <view class="info-row"><text class="info-ic">📅</text><text>领取截止</text><text class="sp" /><text class="v">{{ formatTime(task.claim_ends_at) }}</text></view>
+        <view class="info-row"><text class="info-ic">✓</text><text>通过率</text><text class="sp" /><text class="v">{{ passRateText(task.pass_rate_percent) }} · 已完成 {{ task.completed_user_count }} 单</text></view>
+        <view class="info-row"><text class="info-ic">☎</text><text>联系方式</text><text class="sp" /><text class="v">接单后按步骤指引联系</text></view>
+      </view>
+
+      <view v-if="task.steps.length" class="card steps-card">
+        <view class="sec-title"><text class="sec-h2">任务步骤 / 流程</text><text v-if="evidenceSummary.requiredCount" class="sec-more">{{ evidenceSummary.requiredCount }} 项必做</text></view>
         <view v-for="(step, index) in task.steps" :key="step.id" class="step-row">
           <view class="step-index">{{ index + 1 }}</view>
           <view class="step-main">
@@ -35,69 +51,78 @@
             <text class="step-input-tip">{{ stepInputText(step.input_type) }}</text>
           </view>
         </view>
-        <view v-if="evidenceSummary.requiredCount" class="evidence-inline">
-          <view class="section-head"><text class="evidence-inline-title">提交材料</text><text class="view-count">{{ evidenceSummary.requiredCount }} 项必做</text></view>
-          <text class="evidence-inline-copy">截图 {{ evidenceSummary.imageCount }} 项 · 文字 {{ evidenceSummary.textCount }} 项 · 确认 {{ evidenceSummary.confirmCount }} 项，具体要求以步骤为准。</text>
+      </view>
+
+      <view class="card">
+        <view class="sec-title"><text class="sec-h2">任务说明</text><text class="sec-more">{{ task.view_count }} 次浏览</text></view>
+        <rich-text class="desc rich-content" :nodes="taskDescriptionContent(task.description)" />
+        <view v-if="task.tags.length" class="tag-row"><text v-for="tag in task.tags" :key="tag" class="tag tag-green">{{ tag }}</text></view>
+      </view>
+
+      <view class="card">
+        <view class="sec-title"><text class="sec-h2">领取与审核规则</text></view>
+        <view class="info-row"><text>领取截止</text><text class="sp" /><text class="v">{{ formatTime(task.claim_ends_at) }}</text></view>
+        <view class="info-row"><text>完成时限</text><text class="sp" /><text class="v">领取后 {{ task.completion_window_hours }} 小时</text></view>
+        <view class="info-row"><text>提交机会</text><text class="sp" /><text class="v">最多 {{ task.submission_limit }} 次</text></view>
+        <view class="info-row"><text>审核期限</text><text class="sp" /><text class="v">提交后 {{ task.review_deadline_hours }} 小时</text></view>
+        <view class="info-row"><text>申诉期限</text><text class="sp" /><text class="v">审核结果后 {{ task.appeal_deadline_days }} 天</text></view>
+      </view>
+
+      <view v-if="task.rules.length" class="card">
+        <view class="sec-title"><text class="sec-h2">补充要求</text></view>
+        <view class="rules-list"><text v-for="(rule, index) in task.rules" :key="index" class="rule-copy">{{ ruleText(rule, index) }}</text></view>
+      </view>
+
+      <view class="card">
+        <view class="publisher">
+          <view class="av">{{ (task.publisher.display_name || '校').charAt(0) }}</view>
+          <view class="publisher-main">
+            <view class="nm"><text>{{ task.publisher.display_name }}</text><text class="tag tag-orange">{{ task.publisher.publisher_badge }}</text></view>
+            <text class="sub">已完成 {{ task.completed_user_count }} 单 · 通过率 {{ passRateText(task.pass_rate_percent) }}</text>
+          </view>
+          <text class="sp" />
         </view>
       </view>
 
-      <view class="reward-card">
-        <view><text class="section-eyebrow">完成任务可获得</text><text class="reward-main">{{ primaryRewardText(task) }}</text></view>
-        <view class="slot-box"><text class="slot-value">{{ task.remaining_reward_slots }}</text><text class="slot-label">剩余名额</text></view>
-      </view>
-      <view v-if="task.rewards.length > 1" class="reward-list"><text v-for="(reward, index) in task.rewards" :key="index" class="reward-pill">{{ rewardText(reward) }}</text></view>
-
-      <view class="stats-card">
-        <view class="stat"><text class="stat-value">{{ task.completion_window_hours }}小时</text><text class="stat-label">限时完成</text></view>
-        <view class="stat"><text class="stat-value">{{ task.review_deadline_hours }}小时</text><text class="stat-label">限时审核</text></view>
-        <view class="stat"><text class="stat-value">{{ task.completed_user_count }}</text><text class="stat-label">已完成数</text></view>
-        <view class="stat"><text class="stat-value">{{ passRateText(task.pass_rate_percent) }}</text><text class="stat-label">通过率</text></view>
-      </view>
-
-      <view class="content-card task-description-card">
-        <view class="section-head"><text class="section-title">任务说明</text><text class="view-count">◉ {{ task.view_count }} 次浏览</text></view>
-        <rich-text class="description rich-content" :nodes="taskDescriptionContent(task.description)" />
-        <view class="tag-row"><text v-for="tag in task.tags" :key="tag" class="task-tag">{{ tag }}</text></view>
-      </view>
-
-      <view class="content-card review-rules-card">
-        <text class="section-title">领取与审核规则</text>
-        <view class="rule-row"><text class="rule-label">领取截止</text><text class="rule-value">{{ formatTime(task.claim_ends_at) }}</text></view>
-        <view class="rule-row"><text class="rule-label">完成时限</text><text class="rule-value">领取后 {{ task.completion_window_hours }} 小时</text></view>
-        <view class="rule-row"><text class="rule-label">提交机会</text><text class="rule-value">最多 {{ task.submission_limit }} 次</text></view>
-        <view class="rule-row"><text class="rule-label">审核期限</text><text class="rule-value">提交后 {{ task.review_deadline_hours }} 小时</text></view>
-        <view class="rule-row"><text class="rule-label">申诉期限</text><text class="rule-value">审核结果后 {{ task.appeal_deadline_days }} 天</text></view>
-      </view>
-
-      <view v-if="task.rules.length" class="content-card supplement-card">
-        <text class="section-title">补充要求</text>
-        <view class="rules-list">
-          <text v-for="(rule, index) in task.rules" :key="index" class="rule-copy">{{ ruleText(rule, index) }}</text>
-        </view>
-      </view>
-
-      <text class="report-link compact-report" @click="reportCurrentTask">发现任务有问题？举报此任务</text>
+      <text class="report-link" @click="reportCurrentTask">发现任务有问题？举报此任务</text>
       <view class="bottom-space" />
 
-      <view class="fixed-action">
-        <view class="fixed-reward"><text class="fixed-caption">任务奖励</text><text class="fixed-value">{{ primaryRewardText(task) }}</text></view>
-        <button class="claim-button" :disabled="claiming || (!task.can_claim && auth.isAuthenticated)" :loading="claiming" @click="claimCurrentTask">{{ !auth.isAuthenticated ? '登录后领取' : task.can_claim ? '立即领取' : reasonText(task.claim_unavailable_reason) }}</button>
+      <view class="action-bar">
+        <view class="ab-ic" @click="openSharePanel"><text class="ab-ic-glyph">↗</text><text>分享</text></view>
+        <view class="ab-ic" @click="reportCurrentTask"><text class="ab-ic-glyph">!</text><text>举报</text></view>
+        <button class="ab-main" :disabled="claiming || (!task.can_claim && auth.isAuthenticated)" :loading="claiming" @click="claimCurrentTask">{{ !auth.isAuthenticated ? '登录后接单' : task.can_claim ? `我要接单 · ${primaryRewardText(task)}` : reasonText(task.claim_unavailable_reason) }}</button>
       </view>
 
-      <view v-if="claimConfirmVisible" class="claim-confirm-mask" @click.self="closeClaimConfirm">
-        <view class="claim-confirm-sheet">
-          <view class="claim-confirm-icon">✓</view>
-          <text class="claim-confirm-title">确认领取任务</text>
-          <text class="claim-confirm-task">{{ task.title }}</text>
-          <text class="claim-confirm-copy">领取后需在 {{ task.completion_window_hours }} 小时内完成，系统会立即预留全部奖励。</text>
-          <view class="claim-confirm-meta"><view><text class="claim-confirm-reward">{{ primaryRewardText(task) }}</text><text>完成奖励</text></view><view><text class="claim-confirm-slots">{{ task.remaining_reward_slots }}</text><text>剩余名额</text></view></view>
-          <view class="claim-confirm-actions"><button class="claim-confirm-cancel" @click="closeClaimConfirm">取消</button><button class="claim-confirm-submit" :loading="claiming" @click="confirmClaim">确认领取</button></view>
+      <template v-if="claimConfirmVisible">
+        <view class="sheet-mask" @click.self="closeClaimConfirm" />
+        <view class="sheet">
+          <view class="sheet-grip" />
+          <text class="sheet-h3">确认接单</text>
+          <view class="task-sum">
+            <view class="task-sum-icon">任</view>
+            <view class="task-sum-main">
+              <text class="task-sum-title">{{ task.title }}</text>
+              <text class="task-sum-sub">领取后 {{ task.completion_window_hours }} 小时内完成 · 剩余 {{ task.remaining_reward_slots }} 份</text>
+            </view>
+            <text class="pts">{{ primaryRewardText(task) }}</text>
+          </view>
+          <view class="notice-list">
+            <view class="notice-li"><text class="notice-check">✓</text>接单后请尽快按步骤完成，系统会立即预留全部奖励</view>
+            <view class="notice-li"><text class="notice-check">✓</text>完成后按步骤提交材料，审核通过即可到账 {{ primaryRewardText(task) }}</view>
+            <view class="notice-li"><text class="notice-check">✓</text>超时未提交将释放奖励名额，请合理安排时间</view>
+          </view>
+          <view class="sheet-btns">
+            <button class="cancel" @click="closeClaimConfirm">我再看看</button>
+            <button class="ok" :loading="claiming" @click="confirmClaim">确认接单</button>
+          </view>
         </view>
-      </view>
+      </template>
 
-      <view v-if="shareVisible" class="share-mask" @click.self="closeSharePanel">
-        <view class="share-sheet">
-          <view class="share-sheet-head"><view><text class="share-kicker">SHARE TASK</text><text class="share-title">分享这个校园任务</text></view><button class="share-close" @click="closeSharePanel">×</button></view>
+      <template v-if="shareVisible">
+        <view class="sheet-mask" @click.self="closeSharePanel" />
+        <view class="sheet">
+          <view class="sheet-grip" />
+          <text class="sheet-h3">分享这个校园任务</text>
           <view class="share-options">
             <!-- #ifdef MP-WEIXIN -->
             <button class="share-option" open-type="share"><text class="share-option-icon friend">友</text><text class="share-option-name">微信好友</text></button>
@@ -111,7 +136,7 @@
           </view>
           <text class="share-tip">分享内容将带上任务标题、奖励和任务详情入口。</text>
         </view>
-      </view>
+      </template>
 
       <view v-if="posterVisible" class="poster-mask" @click.self="closePoster">
         <view class="poster-sheet">
@@ -418,145 +443,126 @@ function savePoster() {
 </script>
 
 <style scoped>
-.page{min-height:100vh;padding:0 28rpx;box-sizing:border-box;background:var(--tm-canvas)}.state-text{padding:180rpx 0;text-align:center;color:var(--tm-ink-500)}.detail-hero{position:relative;padding:34rpx 4rpx 20rpx;color:var(--tm-ink-900)}.share-button{position:absolute;z-index:2;right:4rpx;top:28rpx;padding:9rpx 18rpx;border:1rpx solid var(--tm-line);border-radius:18rpx;background:#fff;color:var(--tm-brand-700);font-size:13px;font-weight:700}.hero-badges{display:flex;gap:10rpx;padding-right:100rpx}.hero-badge{padding:7rpx 14rpx;border-radius:10rpx;background:var(--tm-brand-50);color:var(--tm-brand-700);font-size:13px;font-weight:700}.detail-title{display:block;margin-top:22rpx;padding-right:60rpx;font-size:22px;font-weight:850;line-height:1.35}.publisher-row{display:flex;align-items:center;gap:12rpx;margin-top:18rpx;color:var(--tm-ink-500);font-size:14px}.verified-badge{padding:4rpx 10rpx;border-radius:8rpx;background:var(--tm-brand-50);color:var(--tm-brand-700)}.reward-card{display:flex;align-items:center;justify-content:space-between;margin-top:20rpx;padding:28rpx;border:1rpx solid #ffe0bd;border-radius:28rpx;background:linear-gradient(135deg,#fffaf3,#fff2df)}.section-eyebrow,.reward-main,.slot-value,.slot-label,.section-title,.description,.rule-copy,.safety-title,.safety-copy,.fixed-caption,.fixed-value{display:block}.section-eyebrow{color:#9a6b43;font-size:13px}.reward-main{margin-top:7rpx;color:#f05f22;font-size:22px;font-weight:850}.slot-box{text-align:right}.slot-value{color:var(--tm-brand-700);font-size:21px;font-weight:850}.slot-label{margin-top:3rpx;color:#98a2b3;font-size:13px}.reward-list{display:flex;gap:10rpx;margin-top:12rpx}.reward-pill{padding:8rpx 14rpx;border-radius:12rpx;background:var(--tm-reward-100);color:var(--tm-reward-600);font-size:14px;font-weight:750}.stats-card{display:grid;grid-template-columns:repeat(4,1fr);margin-top:20rpx;padding:24rpx 8rpx;border:1rpx solid var(--tm-line);border-radius:26rpx;background:#fff}.stat{text-align:center;border-right:1rpx solid var(--tm-line)}.stat:last-child{border-right:0}.stat-value,.stat-label{display:block}.stat-value{font-size:14px;font-weight:850}.stat-label{margin-top:7rpx;color:#98a2b3;font-size:12px}.content-card{margin-top:20rpx;padding:28rpx;border:1rpx solid var(--tm-line);border-radius:28rpx;background:#fff}.section-head{display:flex;align-items:center;justify-content:space-between}.section-title{font-size:17px;font-weight:850}.view-count{color:#98a2b3;font-size:13px}.description{margin-top:20rpx;color:#475467;font-size:15px;line-height:1.75}.tag-row{display:flex;gap:10rpx;flex-wrap:wrap;margin-top:20rpx}.task-tag{padding:8rpx 14rpx;border-radius:10rpx;background:#f4f6f9;color:#667085;font-size:13px}.step-row{display:flex;gap:18rpx;padding:24rpx 0;border-bottom:1rpx solid #f0f2f5}.step-row:last-child{padding-bottom:0;border-bottom:0}.step-index{display:flex;align-items:center;justify-content:center;width:50rpx;height:50rpx;flex:none;border-radius:15rpx;background:var(--tm-brand-600);color:#fff;font-size:14px;font-weight:800}.step-main{min-width:0;flex:1}.step-title-row{display:flex;align-items:center;gap:10rpx}.step-title{font-size:15px;font-weight:800}.required-badge{padding:3rpx 8rpx;border-radius:7rpx;background:#fff0ed;color:#d92d20;font-size:12px}.step-description{display:block;margin-top:8rpx;color:#667085;font-size:14px;line-height:1.55}.step-input-tip{display:block;margin-top:9rpx;color:var(--tm-brand-600);font-size:13px}.rule-row{display:flex;align-items:flex-start;justify-content:space-between;gap:24rpx;padding:19rpx 0;border-bottom:1rpx solid #f0f2f5}.rule-row:last-child{padding-bottom:0;border-bottom:0}.rule-label{color:#667085;font-size:14px}.rule-value{text-align:right;font-size:14px;font-weight:700}.rule-copy{margin-top:16rpx;color:#475467;font-size:14px;line-height:1.65}.safety-card{margin-top:20rpx;padding:24rpx 26rpx;border-radius:24rpx;background:var(--tm-brand-50)}.safety-title{color:var(--tm-brand-700);font-size:15px;font-weight:800}.safety-copy{margin-top:8rpx;color:#5c6f91;font-size:14px;line-height:1.6}.report-link{display:block;padding:28rpx 0;text-align:center;color:#98a2b3;font-size:14px}.bottom-space{height:150rpx}.fixed-action{position:fixed;z-index:20;left:0;right:0;bottom:0;display:flex;align-items:center;gap:24rpx;padding:18rpx 28rpx calc(18rpx + env(safe-area-inset-bottom));border-top:1rpx solid var(--tm-line);background:rgba(255,255,255,.96);box-shadow:0 -10rpx 30rpx rgba(29,43,73,.08)}.fixed-reward{min-width:180rpx}.fixed-caption{color:#98a2b3;font-size:13px}.fixed-value{margin-top:3rpx;color:#f05f22;font-size:17px;font-weight:850}.claim-button{height:82rpx;flex:1;margin:0;border-radius:20rpx;background:var(--tm-brand-600);color:#fff;font-size:15px;font-weight:800;line-height:82rpx}.claim-button::after{border:0}.claim-button[disabled]{background:#d0d5dd;color:#fff}@media screen and (min-width:768px){.page{width:750rpx;margin:0 auto}.fixed-action{left:50%;width:750rpx;box-sizing:border-box;transform:translateX(-50%)}}
-.task-cover{display:block;width:calc(100% + 56rpx);height:360rpx;margin:0 -28rpx;background:#eaf0fa}.step-guide-image{display:block;width:100%;max-height:520rpx;margin-top:16rpx;border-radius:18rpx;background:#f2f4f7}.step-actions{display:flex;gap:12rpx;margin-top:14rpx}.step-action{height:58rpx;margin:0;padding:0 20rpx;border:0;border-radius:14rpx;background:var(--tm-brand-600);color:#fff;font-size:13px;line-height:58rpx}.step-action.secondary{border:1rpx solid var(--tm-brand-500);background:#fff;color:var(--tm-brand-700)}.step-action::after{border:0}
-/* Task Experience V4: 与首页、任务大厅统一的柔和蓝青视觉系统。 */
-.page{background:radial-gradient(circle at 94% 2%,rgba(57,211,214,.22),transparent 27%),linear-gradient(180deg,#eaf9ff 0,#f6fbff 34%,#f5f7fb 100%)}
-.task-cover{height:330rpx;border:0;border-radius:0 0 30rpx 30rpx;box-shadow:0 16rpx 34rpx rgba(31,89,122,.12)}
-.detail-hero{overflow:hidden;margin-top:20rpx;padding:30rpx 28rpx 28rpx;border:0;border-radius:30rpx;background:linear-gradient(128deg,#1265d8 0%,#168ee3 55%,#28c4c6 100%);box-shadow:0 18rpx 42rpx rgba(26,105,169,.2);color:#fff}
-.detail-hero::after{content:'';position:absolute;right:-65rpx;bottom:-92rpx;width:230rpx;height:230rpx;border-radius:50%;background:rgba(255,255,255,.1)}
-.detail-title{position:relative;z-index:1;font-size:22px}.share-button,.hero-badge,.verified-badge{border:0;box-shadow:none}.share-button{background:rgba(255,255,255,.94);color:#136ac8}.hero-badge{background:rgba(255,255,255,.18);color:#fff;backdrop-filter:blur(8rpx)}.publisher-row{position:relative;z-index:1;color:rgba(255,255,255,.78)}.verified-badge{background:rgba(216,255,234,.94);color:#087a4b}
-.reward-card,.stats-card,.content-card,.safety-card{border:1rpx solid #dce9ef;box-shadow:0 13rpx 32rpx rgba(34,76,100,.075)}.content-card{padding:27rpx 28rpx;background:rgba(255,255,255,.96)}.content-card:nth-of-type(even){background:rgba(255,255,255,.96)}.section-title{color:#12314b;font-size:17px}.reward-card{border-color:#f3dfb5;background:linear-gradient(135deg,#fffaf0 0%,#fff3d7 58%,#f0fbff 100%)}.stats-card{background:rgba(255,255,255,.96)}
-.reward-pill,.task-tag,.required-badge{border:0}.reward-pill{border-radius:999rpx;background:#fff3c8;color:#8c6200}.task-tag{border-radius:999rpx;background:#edf8fc;color:#28728c}.step-row{gap:16rpx;padding:23rpx 0;border-bottom-color:#e8f0f3}.step-index{width:48rpx;height:48rpx;border:0;border-radius:15rpx;background:linear-gradient(145deg,#1268dc,#20b9c8);box-shadow:0 7rpx 16rpx rgba(18,104,220,.18)}.step-title{color:#17344b}.required-badge{border-radius:999rpx;background:#fff0ec;color:#d74628}.step-description{color:#627787;line-height:1.6}.step-input-tip{display:inline-block;margin-top:10rpx;padding:5rpx 10rpx;border-radius:999rpx;background:#edf7ff;color:#1670c7}
-.step-guide-image{border:1rpx solid #dce8ed;box-shadow:0 8rpx 22rpx rgba(34,75,99,.08)}.step-action{border:0;background:linear-gradient(135deg,#1268dc,#1c9ed4);box-shadow:none}.step-action.secondary{border:1rpx solid #b8d7e8;background:#fff;color:#146bc2}.description{padding:0;border:0;background:transparent;color:#526878;line-height:1.75}.rule-row{border-bottom-color:#e8f0f3}.rule-label{color:#748694}.rule-value{color:#263f54}
-.safety-card{background:linear-gradient(135deg,#eaf9ff,#edfbf4)}.safety-title{color:#126bc3}.safety-copy{color:#5d7485}.fixed-action{border-top:1rpx solid rgba(199,218,228,.9);background:rgba(255,255,255,.94);box-shadow:0 -12rpx 34rpx rgba(31,76,101,.1);backdrop-filter:blur(18rpx)}.claim-button{border:0;background:linear-gradient(135deg,#1268dc,#19a8cf);box-shadow:0 10rpx 22rpx rgba(18,104,220,.2)}
-.rich-content{display:block;width:100%;margin-top:16rpx!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible;color:#526878;font-size:15px;line-height:1.75}
-.share-mask,.poster-mask{position:fixed;z-index:80;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:24rpx;box-sizing:border-box;background:rgba(9,35,57,.45);backdrop-filter:blur(8rpx)}.share-sheet,.poster-sheet{width:100%;max-width:720rpx;padding:30rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));box-sizing:border-box;border-radius:34rpx;background:#fff;box-shadow:0 30rpx 80rpx rgba(13,42,64,.25)}.share-sheet-head,.poster-head{display:flex;align-items:center;justify-content:space-between}.share-kicker,.poster-kicker,.share-title,.poster-title{display:block}.share-kicker,.poster-kicker{color:#1576ca;font-size:13px;font-weight:850;letter-spacing:2rpx}.share-title,.poster-title{margin-top:5rpx;color:#14344c;font-size:19px;font-weight:850}.share-close,.poster-close{width:62rpx;height:62rpx;margin:0;padding:0;border:0;border-radius:50%;background:#f0f6f9;color:#557183;font-size:21px;line-height:58rpx}.share-close::after,.poster-close::after,.share-option::after,.poster-copy::after,.poster-save::after{border:0}.share-options{display:grid;grid-template-columns:repeat(4,1fr);gap:14rpx;margin-top:30rpx}.share-option{display:flex;flex-direction:column;align-items:center;gap:12rpx;margin:0;padding:0;border:0;background:transparent;color:#36536a;font-size:14px;line-height:1.25}.share-option-icon{display:flex;align-items:center;justify-content:center;width:82rpx;height:82rpx;border-radius:26rpx;color:#fff;font-size:15px;font-weight:850;box-shadow:0 10rpx 22rpx rgba(24,88,130,.15)}.share-option-icon.friend{background:linear-gradient(145deg,#14b769,#36d39b)}.share-option-icon.timeline{background:linear-gradient(145deg,#1a77dc,#25b8d1)}.share-option-icon.poster{background:linear-gradient(145deg,#f3a229,#ffcb4c)}.share-option-icon.link{background:linear-gradient(145deg,#7658d8,#a284f4)}.share-option-name{font-weight:750}.share-tip,.poster-tip{display:block;margin-top:28rpx;padding:18rpx 20rpx;border-radius:18rpx;background:#f3f9fc;color:#6a8191;font-size:13px;line-height:1.5}
-.poster-mask{z-index:90;align-items:center;padding:28rpx}.poster-sheet{padding-bottom:28rpx}.poster-preview{position:relative;margin:24rpx auto 0;overflow:hidden;border-radius:24rpx;background:linear-gradient(145deg,#e6f4fa,#f6fbfd);box-shadow:0 14rpx 36rpx rgba(26,75,103,.14)}.poster-canvas{display:block}.poster-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18rpx;background:rgba(242,249,252,.94);color:#5c788b;font-size:14px}.poster-loading-dot{width:42rpx;height:42rpx;border:6rpx solid #cfe6ee;border-top-color:#1598c8;border-radius:50%;animation:poster-spin .8s linear infinite}.poster-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:16rpx;margin-top:20rpx}.poster-copy,.poster-save{height:76rpx;margin:0;border:0;border-radius:20rpx;font-size:14px;font-weight:800;line-height:76rpx}.poster-copy{background:#edf6fa;color:#286784}.poster-save{background:linear-gradient(135deg,#1268dc,#1bb5c7);color:#fff}.poster-save[disabled]{background:#cbd9df;color:#fff}@keyframes poster-spin{to{transform:rotate(360deg)}}
-@media screen and (max-width:380px){.share-options{gap:6rpx}.share-option-icon{width:72rpx;height:72rpx;border-radius:22rpx}.share-option-name{font-size:13px}}
-  .state-error{display:flex;align-items:center;flex-direction:column;margin:120rpx 12rpx 0;padding:42rpx 28rpx;border:1rpx solid #f0d1cc;border-radius:28rpx;background:#fff8f6;box-shadow:0 14rpx 30rpx rgba(113,63,55,.08);text-align:center}.state-error-icon{display:flex;width:64rpx;height:64rpx;align-items:center;justify-content:center;border-radius:22rpx;background:#fff0ed;color:#d92d20;font-size:19px;font-weight:900}.state-error-title{margin-top:18rpx;color:#8f2e26;font-size:17px;font-weight:900}.state-error-copy{margin-top:8rpx;color:#a96f68;font-size:13px;line-height:1.5}.state-error-action{height:62rpx;margin-top:24rpx;padding:0 28rpx;border:1rpx solid #e4aaa1;border-radius:999rpx;background:#fff;color:#b53b30;font-size:14px;font-weight:800;line-height:60rpx}.state-error-action::after{border:0}
-  .claim-confirm-mask{position:fixed;z-index:100;inset:0;display:flex;align-items:center;justify-content:center;padding:34rpx;background:rgba(13,37,55,.48);backdrop-filter:blur(8rpx)}.claim-confirm-sheet{width:100%;max-width:650rpx;padding:40rpx 34rpx 30rpx;box-sizing:border-box;border:1rpx solid #dbe8ee;border-radius:32rpx;background:#fff;box-shadow:0 26rpx 70rpx rgba(19,54,74,.25);text-align:center}.claim-confirm-icon{display:flex;width:104rpx;height:104rpx;align-items:center;justify-content:center;margin:0 auto;border-radius:50%;background:linear-gradient(145deg,#e2f5ff,#eafbf2);color:#1682d4;font-size:30px;font-weight:950;box-shadow:0 8rpx 22rpx rgba(32,127,185,.13)}.claim-confirm-title{display:block;margin-top:21rpx;color:#14344d;font-size:19px;font-weight:950}.claim-confirm-copy{display:block;margin:12rpx auto 0;max-width:500rpx;color:#647988;font-size:14px;line-height:1.65}.claim-confirm-meta{display:grid;grid-template-columns:1fr 1fr;margin-top:24rpx;padding:20rpx 8rpx;border-top:1rpx solid #e4edf1;border-bottom:1rpx solid #e4edf1}.claim-confirm-meta>view{display:flex;align-items:center;flex-direction:column;border-right:1rpx solid #e4edf1}.claim-confirm-meta>view:last-child{border-right:0}.claim-confirm-meta text:last-child{margin-top:5rpx;color:#83929e;font-size:13px}.claim-confirm-reward{color:#ef5b32;font-size:17px;font-weight:950}.claim-confirm-slots{color:#176fca;font-size:17px;font-weight:950}.claim-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:16rpx;margin-top:24rpx}.claim-confirm-actions button{height:76rpx;margin:0;border-radius:20rpx;font-size:15px;font-weight:900;line-height:76rpx}.claim-confirm-cancel{border:1rpx solid #d8e2e7;background:#f7fafb;color:#586e7c}.claim-confirm-submit{border:0;background:linear-gradient(110deg,#08a967,#0ac180);box-shadow:0 10rpx 22rpx rgba(7,166,101,.2);color:#fff}.claim-confirm-actions button::after{border:0}
-  .detail-loading{padding-top:24rpx}.detail-skeleton{border-radius:28rpx;background:linear-gradient(100deg,#e6f1f5 30%,#f8fcfd 45%,#e6f1f5 60%);background-size:220% 100%;animation:detail-skeleton-shimmer 1.25s ease-in-out infinite}.detail-skeleton-hero{height:300rpx}.detail-skeleton-card{height:230rpx;margin-top:20rpx}.detail-skeleton-card.short{height:150rpx}@keyframes detail-skeleton-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
-  .evidence-card{background:linear-gradient(145deg,#fff 0%,#f2fbff 100%)}.evidence-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10rpx;margin-top:18rpx}.evidence-grid view{padding:16rpx 8rpx;border:1rpx solid #dcebf0;border-radius:17rpx;background:#f8fcfd;text-align:center}.evidence-grid strong,.evidence-grid text{display:block}.evidence-grid strong{color:#1473c8;font-size:17px;font-weight:950}.evidence-grid text{margin-top:4rpx;color:#718695;font-size:13px}.evidence-note{display:block;margin-top:15rpx;color:#79909e;font-size:13px;line-height:1.55}
-/* V09 任务详情：对应 03/04 的顶部导航、校园主视觉和 hero→步骤→奖励→规则顺序。 */
-.page{padding:0 28rpx calc(154rpx + env(safe-area-inset-bottom));background:linear-gradient(180deg,#edf9ff 0%,#f7fbfd 46%,#f2f7fa 100%)}
-.detail-pagebar{display:flex;align-items:center;justify-content:space-between;height:88rpx;margin:0 -4rpx}.detail-pagebar-back{width:76rpx;color:#18364d;font-size:30px;font-weight:300;line-height:1;text-align:left}.detail-pagebar-title{color:#17334a;font-size:19px;font-weight:900}.detail-pagebar-share{padding:8rpx 17rpx;border:1rpx solid #bdd9e8;border-radius:999rpx;background:#fff;color:#1475c8;font-size:13px;font-weight:850}
-.task-cover{display:none}.detail-hero{position:relative;min-height:272rpx;margin:0 0 18rpx;padding:28rpx 28rpx 25rpx;overflow:hidden;border:1rpx solid #c9e2ee;border-radius:29rpx;background:linear-gradient(125deg,#eaf8ff 0%,#ddf2ff 58%,#f3faff 100%);box-shadow:0 12rpx 28rpx rgba(31,87,116,.08);color:#12324a}.detail-hero::after{content:'';position:absolute;right:-76rpx;bottom:-92rpx;width:240rpx;height:240rpx;border-radius:50%;background:rgba(32,185,205,.15)}.detail-hero-art{position:absolute;z-index:0;right:-2rpx;bottom:0;width:55%;height:100%;object-fit:cover;opacity:.9}.detail-hero::before{content:'';position:absolute;z-index:1;left:0;top:0;bottom:0;width:62%;background:linear-gradient(90deg,rgba(234,248,255,.98),rgba(234,248,255,.85),rgba(234,248,255,0))}.hero-badges,.detail-title,.detail-summary,.publisher-row{position:relative;z-index:2}.hero-badges{gap:8rpx;padding-right:40%}.hero-badge{padding:6rpx 12rpx;border-radius:9rpx;background:#fff;border:1rpx solid #b8dce9;color:#1b72bd;font-size:13px;font-weight:850}.detail-title{max-width:58%;margin-top:17rpx;padding-right:0;color:#12324a;font-size:21px;line-height:1.28;font-weight:950}.detail-summary{display:block;max-width:58%;margin-top:9rpx;color:#536f82;font-size:13px;line-height:1.5}.publisher-row{gap:9rpx;margin-top:13rpx;color:#5c7787;font-size:13px}.verified-badge{padding:4rpx 9rpx;background:#e5fbef;color:#078354;font-size:12px}
-.content-card,.reward-card,.stats-card,.safety-card{border-color:#d7e8ef;border-radius:25rpx;box-shadow:0 10rpx 25rpx rgba(32,79,102,.06)}.content-card{margin-top:16rpx;padding:24rpx 25rpx;background:rgba(255,255,255,.96)}.section-title{color:#133750;font-size:17px}.step-row{padding:19rpx 0;border-bottom-color:#e3edf1}.step-index{width:45rpx;height:45rpx;border-radius:14rpx;background:linear-gradient(145deg,#1676d7,#1cbcc4);box-shadow:0 5rpx 12rpx rgba(24,119,205,.16);font-size:14px}.step-title{color:#163b54;font-size:15px}.step-description{color:#607b8c;font-size:13px}.step-input-tip{background:#edf8ff;color:#1475c6;font-size:13px}.evidence-inline{margin-top:17rpx;padding-top:17rpx;border-top:1rpx solid #e4eef2}.evidence-inline-title{color:#316076;font-size:14px;font-weight:850}.evidence-inline-copy{display:block;margin-top:8rpx;color:#78909e;font-size:13px;line-height:1.5}
-.reward-card{margin-top:16rpx;padding:23rpx 25rpx;background:linear-gradient(135deg,#fffaf0,#fff3d7 65%,#f2fbff)}.section-eyebrow{color:#956d46;font-size:13px}.reward-main{margin-top:5rpx;color:#ef5e2f;font-size:21px}.slot-value{color:#116cca;font-size:19px}.slot-label{font-size:12px}.reward-list{gap:8rpx;margin-top:10rpx}.reward-pill{padding:7rpx 12rpx;background:#fff4ca;font-size:13px}.stats-card{margin-top:16rpx;padding:20rpx 6rpx;background:#fff}.stat-value{color:#183d59;font-size:14px}.stat-label{font-size:12px}.description,.rich-content{margin-top:15rpx;color:#526f81;font-size:14px;line-height:1.65}.tag-row{gap:8rpx;margin-top:14rpx}.task-tag{padding:6rpx 11rpx;background:#edf8fc;color:#28728c;font-size:13px}.rule-row{padding:16rpx 0;border-bottom-color:#e6eef2}.rule-label{color:#708797;font-size:13px}.rule-value{color:#1d4058;font-size:13px}.rule-copy{margin-top:12rpx;color:#5a7587;font-size:14px}.safety-card{margin-top:16rpx;padding:20rpx 23rpx;background:linear-gradient(135deg,#eaf9ff,#edfbf4)}.safety-title{font-size:14px}.safety-copy{margin-top:6rpx;font-size:13px}.report-link{padding:22rpx 0;font-size:13px}.bottom-space{height:114rpx}
-.fixed-action{padding:14rpx 23rpx calc(14rpx + env(safe-area-inset-bottom));background:rgba(255,255,255,.96)}.fixed-reward{min-width:165rpx}.fixed-caption{font-size:12px}.fixed-value{font-size:15px}.claim-button{height:74rpx;border-radius:999rpx;background:linear-gradient(110deg,#10ae72,#27c4a3);box-shadow:0 8rpx 18rpx rgba(10,169,112,.18);font-size:15px;line-height:74rpx}
-.claim-confirm-sheet{max-width:620rpx;padding:29rpx 25rpx 24rpx;border-radius:29rpx}.claim-confirm-icon{width:72rpx;height:72rpx;border-radius:22rpx;font-size:22px}.claim-confirm-title{margin-top:14rpx;font-size:17px}.claim-confirm-task{display:block;margin-top:6rpx;color:#153b55;font-size:14px;font-weight:850}.claim-confirm-copy{margin-top:9rpx;font-size:13px}.claim-confirm-meta{margin-top:18rpx;padding:16rpx 6rpx}.claim-confirm-reward,.claim-confirm-slots{font-size:15px}.claim-confirm-actions{margin-top:18rpx}.claim-confirm-actions button{height:66rpx;border-radius:18rpx;font-size:14px;line-height:66rpx}.share-mask,.poster-mask{padding:20rpx}.share-sheet,.poster-sheet{border-radius:29rpx}
-/* V09 parity tune: 03/04/05 对齐顶部导航、hero 比例、步骤层级和固定领取栏。 */
-.detail-pagebar{height:78rpx;margin:0 -28rpx;padding:0 28rpx;box-sizing:border-box;background:#fff;border-bottom:1rpx solid #edf3f6}
-.detail-pagebar-back{width:64rpx;font-size:26px;line-height:1}
-.detail-pagebar-title{font-size:19px;letter-spacing:.2rpx}
-.detail-pagebar-share{min-width:70rpx;box-sizing:border-box;padding:8rpx 2rpx;border:0;border-radius:0;background:transparent;color:#17334a;text-align:center;font-size:13px}
-.detail-hero{height:230rpx;min-height:230rpx;box-sizing:border-box;padding:22rpx 28rpx 17rpx}
-.detail-hero-art{right:-4rpx;width:52%;height:100%;object-position:right center}
-.detail-title{max-width:57%;font-size:22px;line-height:1.3}
-.detail-summary{max-width:57%;overflow:hidden;font-size:14px;white-space:nowrap;text-overflow:ellipsis}
-.content-card{padding:25rpx 26rpx}
-.task-steps-card{padding:23rpx 25rpx 19rpx}
-.section-title{font-size:17px}
-.step-row{padding:16rpx 0}
-.step-index{width:46rpx;height:46rpx}
-.step-title{font-size:15px}
-.step-description{font-size:14px;line-height:1.58}
-.reward-main{font-size:21px}
-.stats-card{padding-top:21rpx;padding-bottom:21rpx}
-.stat-value{font-size:14px}
-.stat-label{font-size:12px}
-.description,.rich-content{font-size:14px;line-height:1.68}
-.rule-label,.rule-value{font-size:14px}
-.rule-copy{font-size:14px}
-.fixed-action{min-height:108rpx;box-sizing:border-box}
-.detail-pagebar-share{display:flex;align-items:center;justify-content:center;gap:6rpx}
-.detail-pagebar-share-icon{font-size:17px;font-weight:700;line-height:1}
-.step-guide-link{display:inline-flex;align-items:center;margin-top:8rpx;padding:5rpx 10rpx;border-radius:999rpx;background:#edf8ff;color:#1475c6;font-size:13px;line-height:1.2}
-.evidence-inline{display:none}
-/* 任务详情设计稿为 2x 输出：步骤区保持紧凑，避免把奖励与规则整体推到首屏之外。 */
-.task-steps-card{padding:20rpx 24rpx 12rpx}
-.task-steps-card .section-title{font-size:15px}
-.task-steps-card .step-row{gap:14rpx;padding:10rpx 0}
-.task-steps-card .step-index{width:36rpx;height:36rpx;border-radius:11rpx;font-size:13px}
-.task-steps-card .step-title{font-size:14px}
-.task-steps-card .required-badge{padding:2rpx 6rpx;font-size:10px}
-.task-steps-card .step-description{margin-top:4rpx;font-size:13px;line-height:1.35}
-.task-steps-card .step-input-tip{display:inline-flex;margin-top:5rpx;padding:3rpx 8rpx;font-size:12px;line-height:1.2}
-.reward-card{padding:18rpx 24rpx}
-.stats-card{padding-top:16rpx;padding-bottom:16rpx}
-/* V09 03/04 最终像素复核：以 426px 设计稿视口校准边距、首屏比例和规则卡层级。 */
-.page{padding-left:32rpx;padding-right:32rpx}
-.detail-pagebar{height:76rpx;margin-left:-32rpx;margin-right:-32rpx;padding-left:32rpx;padding-right:32rpx}
-.detail-hero{height:230rpx;min-height:230rpx;margin-top:0;margin-bottom:18rpx;border-radius:28rpx;padding:22rpx 28rpx 17rpx}
-.detail-hero-art{left:0;right:auto;width:100%;height:100%;object-fit:cover;opacity:1}
-.detail-hero::before{width:64%;background:linear-gradient(90deg,rgba(234,248,255,.99) 0%,rgba(234,248,255,.9) 55%,rgba(234,248,255,.12) 100%)}
-.detail-title{max-width:58%;font-size:21px;line-height:1.28}
-.detail-summary{max-width:58%;font-size:13px;line-height:1.45}
-.task-steps-card{margin-top:0;padding:20rpx 24rpx 13rpx}
-.task-steps-card .step-row{padding:12rpx 0}
-.task-steps-card .step-row:last-child{padding-bottom:4rpx}
-.reward-card{margin-top:16rpx;min-height:94rpx;box-sizing:border-box}
-.rules-list{margin-top:12rpx;padding:9rpx 14rpx;border:1rpx solid #d7eaf2;border-radius:16rpx;background:#f4fbfe}
-.supplement-card .rule-copy{display:block;margin-top:6rpx;font-size:13px;line-height:1.5}
-.supplement-card .rule-copy:first-child{margin-top:0}
-.fixed-action{padding-left:32rpx;padding-right:32rpx}
-
-/* V09 final parity: 03-任务详情与奖励。保持动态数据与业务操作，仅校准成品稿的视觉密度。 */
-.page{background:linear-gradient(180deg,#f8fcfe 0%,#f6fafc 100%)}
-.detail-pagebar{height:74rpx;border-bottom-color:#eaf1f5}
-.detail-pagebar-back{font-size:24px}
-.detail-pagebar-title{font-size:19px}
-.detail-pagebar-share{min-width:86rpx;color:#16354c;font-size:14px;font-weight:700}
-.detail-pagebar-share-icon{font-size:17px}
-.detail-hero{height:226rpx;min-height:226rpx;margin-bottom:18rpx;padding:22rpx 30rpx 17rpx;border-color:#d8eaf2;border-radius:30rpx;box-shadow:0 12rpx 30rpx rgba(39,93,117,.065)}
-.detail-hero-art{object-position:center center}
-.detail-hero::before{width:66%;background:linear-gradient(90deg,rgba(239,249,255,.99) 0%,rgba(239,249,255,.93) 54%,rgba(239,249,255,.12) 100%)}
-.hero-badges{padding-right:41%}
-.hero-badge{padding:6rpx 13rpx;border-color:#c5e1ec;background:rgba(255,255,255,.82);font-size:13px}
-.detail-title{max-width:60%;margin-top:18rpx;color:#102f49;font-size:22px;line-height:1.28}
-.detail-summary{max-width:60%;margin-top:10rpx;color:#496b80;font-size:14px;line-height:1.5}
-.publisher-row{margin-top:14rpx;color:#527386;font-size:13px}
-.content-card,.reward-card,.stats-card,.safety-card{border-color:#dfeaf0;box-shadow:0 10rpx 28rpx rgba(45,84,105,.055)}
-.task-steps-card{padding:20rpx 24rpx 12rpx}
-.task-steps-card .section-title{font-size:15px}
-.task-steps-card .step-row{gap:14rpx;padding:10rpx 0}
-.task-steps-card .step-index{width:36rpx;height:36rpx;border-radius:11rpx;font-size:13px}
-.task-steps-card .step-title{font-size:14px}
-.task-steps-card .step-description{margin-top:4rpx;font-size:13px;line-height:1.38}
-.task-steps-card .step-input-tip{margin-top:5rpx;padding:3rpx 8rpx;font-size:12px}
-.reward-card{min-height:94rpx;padding:18rpx 24rpx;border-color:#f1d79d;background:linear-gradient(110deg,#fffaf0 0%,#fff6df 62%,#f8fcff 100%)}
-.reward-main{font-size:22px}
-.slot-value{font-size:21px}
-.stats-card{padding:18rpx 7rpx}
-.stat-value{font-size:14px}
-.stat-label{font-size:12px}
-.content-card{padding:24rpx 26rpx}
-.description,.rich-content{font-size:14px;line-height:1.64}
-.rule-row{padding:14rpx 0}
-.rules-list{padding:12rpx 16rpx;background:#f6fbfd}
-.fixed-action{min-height:112rpx;padding-top:15rpx;padding-bottom:calc(15rpx + env(safe-area-inset-bottom));box-shadow:0 -8rpx 28rpx rgba(29,64,84,.08)}
-.claim-button{height:76rpx;line-height:76rpx}
-/* V09 lower-page parity: keep all actions, but fold secondary information into the compact review flow. */
-.page{padding-bottom:calc(118rpx + env(safe-area-inset-bottom))}
-.task-steps-card .step-actions{gap:8rpx;margin-top:8rpx}
-.task-steps-card .step-action{height:44rpx;margin:0;padding:0 14rpx;border-radius:999rpx;font-size:12px;line-height:44rpx}
-.task-steps-card{padding:10rpx 24rpx 18rpx}
-.reward-card{padding-top:15rpx;padding-bottom:15rpx}
-.stats-card{padding-top:15rpx;padding-bottom:15rpx}
-.task-description-card{padding:14rpx 24rpx}
-.task-description-card .description,.task-description-card .rich-content{margin-top:8rpx!important;font-size:13px;line-height:1.52}
-.task-description-card .tag-row{margin-top:8rpx}
-.task-description-card .task-tag{padding:5rpx 10rpx;font-size:12px}
-.review-rules-card{padding:14rpx 24rpx}
-.review-rules-card .rule-row{min-height:38rpx;box-sizing:border-box;padding:5rpx 0}
-.review-rules-card .rule-label,.review-rules-card .rule-value{font-size:13px}
-.review-rules-card .rule-value{max-width:68%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:right}
-.supplement-card{padding:10rpx 22rpx}
-.supplement-card .rules-list{margin-top:6rpx;padding:3rpx 8rpx;border-radius:14rpx}
-.supplement-card .rule-copy{margin-top:2rpx;font-size:13px;line-height:1.25}
-.compact-report{display:block;height:52rpx;margin-top:16rpx;padding:0;color:#6d8290;font-size:13px;line-height:52rpx;text-align:center}
-.bottom-space{height:0}
-.fixed-reward{width:30%;min-width:0}
-.fixed-action{min-height:96rpx;padding-top:7rpx;padding-bottom:calc(7rpx + env(safe-area-inset-bottom))}
+/* v13 任务详情 */
+.page{min-height:100vh;padding:0 24rpx calc(140rpx + env(safe-area-inset-bottom));box-sizing:border-box;background:#F4F6F4}
+.state-text{padding:180rpx 0;text-align:center;color:#767C85}
+.detail-hero{position:relative;height:480rpx;margin:0 -24rpx;border-radius:0 0 32rpx 32rpx;overflow:hidden}
+.detail-hero-img{width:100%;height:100%}
+.hero-nav{position:absolute;top:calc(env(safe-area-inset-top) + 12rpx);left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:0 24rpx;z-index:2}
+.hero-nav-btn{width:68rpx;height:68rpx;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(0,0,0,.35);color:#fff;font-size:32rpx;font-weight:300;line-height:1}
+.detail-title-card{position:relative;z-index:2;margin:-32rpx 16rpx 0;padding:28rpx 26rpx;border-radius:32rpx;background:#fff;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.detail-h1{display:block;font-size:36rpx;font-weight:800;color:#191B1F;line-height:1.45}
+.tags{display:flex;flex-wrap:wrap;gap:8rpx;margin-top:18rpx}
+.tag{display:inline-flex;align-items:center;height:36rpx;padding:0 12rpx;border-radius:10rpx;font-size:20rpx;font-weight:500;background:#F2F4F3;color:#767C85}
+.tag-red{background:#FFEEEA;color:#FF3B30}
+.tag-orange{background:#FFF2E5;color:#F2620A}
+.tag-green{background:#E7F9EF;color:#08A152}
+.price-row{display:flex;align-items:baseline;gap:16rpx;margin-top:18rpx}
+.big{font-size:52rpx;font-weight:800;color:#FF3B30;line-height:1}
+.people{font-size:22rpx;color:#AEB3BB}
+.sp{flex:1}
+.card{margin-top:20rpx;padding:12rpx 26rpx;border-radius:32rpx;background:#fff;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.info-row{display:flex;align-items:center;gap:16rpx;padding:18rpx 0;font-size:26rpx;color:#3A3D43;border-bottom:2rpx solid #F5F6F6}
+.info-row:last-child{border-bottom:0}
+.info-ic{font-size:26rpx;color:#0BBF63;flex:none}
+.info-row .v{font-size:24rpx;color:#767C85}
+.sec-title{display:flex;align-items:center;justify-content:space-between;padding:22rpx 0 18rpx}
+.sec-h2{font-size:30rpx;font-weight:700;color:#191B1F}
+.sec-h2::before{content:'';display:inline-block;width:8rpx;height:28rpx;border-radius:4rpx;background:linear-gradient(135deg,#12D978,#08A152);margin-right:14rpx;vertical-align:middle}
+.sec-more{font-size:22rpx;color:#AEB3BB}
+.desc{padding:4rpx 0 18rpx;font-size:28rpx;line-height:1.75;color:#3A3D43}
+.tag-row{display:flex;gap:10rpx;flex-wrap:wrap;margin-top:16rpx}
+.step-row{display:flex;gap:28rpx;padding:22rpx 0;border-bottom:2rpx solid #F5F6F6}
+.step-row:last-child{padding-bottom:0;border-bottom:0}
+.step-index{display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;flex:none;border-radius:16rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:24rpx;font-weight:700}
+.step-main{min-width:0;flex:1}
+.step-title-row{display:flex;align-items:center;gap:12rpx}
+.step-title{font-size:28rpx;font-weight:700;color:#191B1F}
+.required-badge{padding:4rpx 10rpx;border-radius:8rpx;background:#FFEEEA;color:#FF3B30;font-size:20rpx}
+.step-description{display:block;margin-top:10rpx;color:#767C85;font-size:24rpx;line-height:1.55}
+.step-input-tip{display:inline-block;margin-top:10rpx;padding:5rpx 12rpx;border-radius:999rpx;background:#E7F9EF;color:#08A152;font-size:22rpx}
+.step-actions{display:flex;gap:16rpx;margin-top:14rpx}
+.step-action{height:58rpx;margin:0;padding:0 24rpx;border:0;border-radius:16rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:24rpx;line-height:58rpx}
+.step-action.secondary{border:2rpx solid #0BBF63;background:#fff;color:#08A152}
+.step-action::after{border:0}
+.rule-row{display:flex;align-items:center;justify-content:space-between;gap:24rpx;padding:18rpx 0;border-bottom:2rpx solid #F5F6F6}
+.rule-row:last-child{padding-bottom:0;border-bottom:0}
+.rule-label{color:#767C85;font-size:26rpx}
+.rule-value{text-align:right;font-size:26rpx;font-weight:600;color:#3A3D43}
+.rules-list{margin-top:10rpx;padding:12rpx 16rpx;border-radius:16rpx;background:#F7F9F8}
+.rule-copy{display:block;margin-top:6rpx;color:#3A3D43;font-size:26rpx;line-height:1.5}
+.rule-copy:first-child{margin-top:0}
+.publisher{display:flex;align-items:center;gap:20rpx;padding:18rpx 0}
+.av{width:84rpx;height:84rpx;border-radius:50%;background:linear-gradient(135deg,#12D978,#08A152);display:flex;align-items:center;justify-content:center;color:#fff;font-size:34rpx;font-weight:700;flex:none}
+.publisher-main{min-width:0;flex:1}
+.nm{display:flex;align-items:center;gap:10rpx;font-size:28rpx;font-weight:700;color:#191B1F}
+.sub{font-size:22rpx;color:#AEB3BB;margin-top:4rpx}
+.report-link{display:block;padding:28rpx 0;text-align:center;color:#767C85;font-size:26rpx}
+.bottom-space{height:20rpx}
+.action-bar{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;padding:16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));gap:12rpx;background:#fff;border-top:2rpx solid #EDEFEF;z-index:50}
+.ab-ic{width:96rpx;display:flex;flex-direction:column;align-items:center;gap:4rpx;font-size:20rpx;color:#767C85}
+.ab-ic-glyph{font-size:32rpx;line-height:1}
+.ab-main{flex:1;height:84rpx;border-radius:42rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:30rpx;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 12rpx 28rpx rgba(11,191,99,.3);margin:0;border:0;line-height:84rpx}
+.ab-main::after{border:0}
+.ab-main[disabled]{box-shadow:none;opacity:.5}
+.sheet-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:90;padding:12rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));background:#fff;border-radius:40rpx 40rpx 0 0}
+.sheet-grip{width:72rpx;height:8rpx;border-radius:4rpx;background:#E1E4E2;margin:16rpx auto 28rpx}
+.sheet-h3{display:block;font-size:34rpx;font-weight:800;text-align:center;color:#191B1F}
+.task-sum{display:flex;gap:22rpx;background:#F7F9F8;border-radius:24rpx;padding:22rpx;margin-top:28rpx}
+.task-sum-icon{width:116rpx;height:116rpx;border-radius:24rpx;background:linear-gradient(135deg,#12D978,#08A152);display:flex;align-items:center;justify-content:center;color:#fff;font-size:40rpx;font-weight:700;flex:none}
+.task-sum-main{min-width:0;flex:1}
+.task-sum-title{display:block;font-size:26rpx;font-weight:700;color:#191B1F;line-height:1.4}
+.task-sum-sub{display:block;font-size:22rpx;color:#767C85;margin-top:8rpx}
+.pts{margin-left:auto;font-size:36rpx;font-weight:800;color:#FF3B30;white-space:nowrap;flex:none}
+.notice-list{margin-top:24rpx}
+.notice-li{display:flex;gap:16rpx;font-size:24rpx;color:#767C85;line-height:1.6;padding:6rpx 0}
+.notice-check{color:#0BBF63;flex:none;margin-top:2rpx}
+.sheet-btns{display:flex;gap:20rpx;margin-top:28rpx}
+.sheet-btns button{flex:1;height:88rpx;border-radius:44rpx;font-size:30rpx;font-weight:700;margin:0;border:0;line-height:88rpx}
+.sheet-btns .cancel{background:#F2F4F3;color:#767C85}
+.sheet-btns .ok{background:linear-gradient(135deg,#12D978,#08A152);color:#fff;box-shadow:0 12rpx 28rpx rgba(11,191,99,.3)}
+.sheet-btns button::after{border:0}
+.share-options{display:grid;grid-template-columns:repeat(4,1fr);gap:16rpx;margin-top:32rpx}
+.share-option{display:flex;flex-direction:column;align-items:center;gap:12rpx;margin:0;padding:0;border:0;background:transparent;color:#3A3D43;font-size:24rpx;line-height:1.25}
+.share-option-icon{display:flex;align-items:center;justify-content:center;width:96rpx;height:96rpx;border-radius:32rpx;color:#fff;font-size:28rpx;font-weight:700;box-shadow:0 10rpx 22rpx rgba(24,88,130,.15)}
+.share-option-icon.friend{background:linear-gradient(145deg,#14b769,#36d39b)}
+.share-option-icon.timeline{background:linear-gradient(145deg,#1a77dc,#25b8d1)}
+.share-option-icon.poster{background:linear-gradient(145deg,#f3a229,#ffcb4c)}
+.share-option-icon.link{background:linear-gradient(145deg,#7658d8,#a284f4)}
+.share-option-name{font-weight:700}
+.share-tip{display:block;margin-top:28rpx;padding:18rpx 20rpx;border-radius:18rpx;background:#F7F9F8;color:#767C85;font-size:22rpx;line-height:1.5}
+.poster-mask{position:fixed;z-index:90;inset:0;display:flex;align-items:center;justify-content:center;padding:28rpx;background:rgba(0,0,0,.45)}
+.poster-sheet{width:100%;max-width:720rpx;padding:30rpx 28rpx 28rpx;box-sizing:border-box;border-radius:34rpx;background:#fff}
+.poster-head{display:flex;align-items:center;justify-content:space-between}
+.poster-kicker,.poster-title{display:block}
+.poster-kicker{color:#08A152;font-size:24rpx;font-weight:700;letter-spacing:2rpx}
+.poster-title{margin-top:5rpx;color:#191B1F;font-size:36rpx;font-weight:800}
+.poster-close{width:62rpx;height:62rpx;margin:0;padding:0;border:0;border-radius:50%;background:#F2F4F3;color:#767C85;font-size:28rpx;line-height:60rpx}
+.poster-close::after{border:0}
+.poster-preview{position:relative;margin:24rpx auto 0;overflow:hidden;border-radius:24rpx;background:#F7F9F8}
+.poster-canvas{display:block}
+.poster-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18rpx;background:rgba(247,249,248,.94);color:#767C85;font-size:26rpx}
+.poster-loading-dot{width:42rpx;height:42rpx;border:6rpx solid #EDEFEF;border-top-color:#0BBF63;border-radius:50%;animation:poster-spin .8s linear infinite}
+.poster-tip{display:block;margin-top:20rpx;color:#767C85;font-size:24rpx}
+.poster-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:16rpx;margin-top:20rpx}
+.poster-copy,.poster-save{height:76rpx;margin:0;border:0;border-radius:20rpx;font-size:26rpx;font-weight:700;line-height:76rpx}
+.poster-copy{background:#F2F4F3;color:#3A3D43}
+.poster-save{background:linear-gradient(135deg,#12D978,#08A152);color:#fff}
+.poster-save[disabled]{background:#EDEFEF;color:#fff}
+@keyframes poster-spin{to{transform:rotate(360deg)}}
+.state-error{display:flex;align-items:center;flex-direction:column;margin:120rpx 12rpx 0;padding:42rpx 28rpx;border-radius:28rpx;background:#fff;box-shadow:0 14rpx 30rpx rgba(23,26,23,.08);text-align:center}
+.state-error-icon{display:flex;width:64rpx;height:64rpx;align-items:center;justify-content:center;border-radius:22rpx;background:#FFEEEA;color:#FF3B30;font-size:28rpx;font-weight:900}
+.state-error-title{margin-top:18rpx;color:#191B1F;font-size:30rpx;font-weight:900}
+.state-error-copy{margin-top:8rpx;color:#767C85;font-size:24rpx;line-height:1.5}
+.state-error-action{height:62rpx;margin-top:24rpx;padding:0 28rpx;border-radius:999rpx;background:#F2F4F3;color:#3A3D43;font-size:26rpx;font-weight:700;line-height:60rpx}
+.state-error-action::after{border:0}
+.detail-loading{padding-top:24rpx}
+.detail-skeleton{border-radius:28rpx;background:linear-gradient(100deg,#e6f1f5 30%,#f8fcfd 45%,#e6f1f5 60%);background-size:220% 100%;animation:detail-skeleton-shimmer 1.25s ease-in-out infinite}
+.detail-skeleton-hero{height:480rpx}
+.detail-skeleton-card{height:230rpx;margin-top:20rpx}
+.detail-skeleton-card.short{height:150rpx}
+@keyframes detail-skeleton-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.rich-content{display:block;width:100%;margin-top:16rpx!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible;color:#3A3D43;font-size:28rpx;line-height:1.75}
+@media screen and (min-width:768px){.page{width:750rpx;margin:0 auto}.action-bar{left:50%;width:750rpx;box-sizing:border-box;transform:translateX(-50%)}.sheet{width:750rpx;margin:0 auto;left:50%;transform:translateX(-50%);border-radius:40rpx 40rpx 0 0}}
 </style>

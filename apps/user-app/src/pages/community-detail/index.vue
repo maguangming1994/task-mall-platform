@@ -1,55 +1,91 @@
 <template>
-  <view class="page tm-page-shell">
+  <view class="page">
     <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_community" />
     <view v-else-if="!modules.resolved" class="mp-skeleton">
       <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="community-topbar">
-      <button class="community-back" aria-label="返回社区" @click="goCommunity">‹</button>
-      <view class="community-topbar-title"><text>动态详情</text><small>CAMPUS COMMUNITY</small></view>
-      <button class="community-topbar-share" aria-label="分享动态" @click="openSharePanel">分享</button>
+    <view class="subnav">
+      <button class="nav-back" aria-label="返回社区" @click="goCommunity">‹</button>
+      <text class="nav-title">动态详情</text>
+      <button v-if="post" class="nav-more" aria-label="更多操作" @click="report('post', post.id)">•••</button>
+      <view v-else class="nav-more" />
     </view>
     <view v-if="loading" class="loading-shell">
-      <view class="loading-hero tm-panel tm-skeleton" />
+      <view class="loading-hero tm-skeleton" />
       <view class="loading-line tm-skeleton" />
       <view class="loading-line short tm-skeleton" />
-      <view class="loading-comments tm-panel tm-skeleton" />
+      <view class="loading-comments tm-skeleton" />
     </view>
-    <view v-else-if="invalidId" class="state-card tm-panel">
+    <view v-else-if="invalidId" class="state-card">
       <view class="state-icon">链</view>
       <text class="state-title">动态链接无效</text>
       <text class="state-copy">请从社区列表重新打开一条动态。</text>
-      <button class="state-action" @click="goCommunity">返回社区</button>
+      <button class="btn-main" @click="goCommunity">返回社区</button>
     </view>
-    <view v-else-if="loadError" class="state-card tm-panel error-card">
+    <view v-else-if="loadError" class="state-card error">
       <view class="state-icon">!</view>
       <text class="state-title">动态加载失败</text>
       <text class="state-copy">{{ loadError }}</text>
-      <button class="state-action" @click="loadPost">重新加载</button>
+      <button class="btn-main" @click="loadPost">重新加载</button>
     </view>
-    <view v-else-if="notFound" class="state-card tm-panel">
+    <view v-else-if="notFound" class="state-card">
       <view class="state-icon">空</view>
       <text class="state-title">这条动态不存在或已下线</text>
       <text class="state-copy">你可以回到社区，看看其他校园分享。</text>
-      <button class="state-action" @click="goCommunity">返回社区</button>
+      <button class="btn-main" @click="goCommunity">返回社区</button>
     </view>
     <template v-else-if="post">
-      <view class="post-card tm-panel">
-        <view class="author-row"><view class="avatar">{{ avatarText(post.author.nickname) }}</view><view class="author-main"><text>{{ post.author.nickname }}</text><text>校园伙伴 · {{ formatTime(post.published_at || post.created_at) }}</text></view><view class="author-actions"><button class="share-inline" @click="openSharePanel">分享</button><button class="more" @click="report('post',post.id)">•••</button></view></view>
-        <view class="category-chip"># {{ post.category_label }}</view>
-        <text class="title">{{ post.title }}</text>
-        <text class="content">{{ post.content }}</text>
-        <view v-if="images.length" :class="['media-grid',`count-${Math.min(images.length,3)}`]"><image v-for="(item,index) in images" :key="item.file_id" :src="communityAttachmentUrl(item)" mode="aspectFill" @click="previewImages(index)" /></view>
-        <view class="metrics"><text>{{ post.comment_count }} 条评论</text><text :class="{liked:post.liked_by_me}" @click="toggleLike">{{ post.liked_by_me ? '♥ 已赞' : '♡ 点赞' }} {{ post.like_count }}</text></view>
+      <view class="card post-card">
+        <view class="publisher">
+          <view class="avatar">{{ avatarText(post.author.nickname) }}</view>
+          <view class="pub-main">
+            <text class="pub-name">{{ post.author.nickname }}</text>
+            <text class="pub-sub">校园伙伴 · {{ formatTime(post.published_at || post.created_at) }}</text>
+          </view>
+          <button class="btn-follow" @click="openSharePanel">分享</button>
+        </view>
+        <view class="post-body">
+          <text class="post-topic"># {{ post.category_label }}</text>
+          <text class="post-title">{{ post.title }}</text>
+          <text class="post-content">{{ post.content }}</text>
+        </view>
+        <view v-if="images.length" :class="['post-imgs', `count-${Math.min(images.length, 3)}`]">
+          <image v-for="(item, index) in images" :key="item.file_id" :src="communityAttachmentUrl(item)" mode="aspectFill" @click="previewImages(index)" />
+        </view>
+        <view class="metrics">
+          <text :class="['metric-like', { liked: post.liked_by_me }]" @click="toggleLike">{{ post.liked_by_me ? '♥' : '♡' }} {{ post.like_count }} 赞</text>
+          <text class="metric">▢ {{ post.comment_count }} 评论</text>
+        </view>
       </view>
-      <view class="comment-section tm-panel">
-        <view class="section-head"><text>全部评论</text><text>{{ comments.length }}</text></view>
-        <view v-if="commentsLoading" class="state">评论加载中…</view><view v-else-if="commentsError" class="state error"><text>{{ commentsError }}</text><text @click="retryComments">重新加载</text></view><view v-else-if="!comments.length" class="state">还没有评论，来坐第一排吧。</view>
-        <view v-for="item in comments" v-else :key="item.id" :class="['comment-row', { 'reply-row': item.parent_comment_id }]"><view class="comment-avatar">{{ avatarText(item.author.nickname) }}</view><view class="comment-main"><view class="comment-head"><text>{{ item.author.nickname }}<text v-if="item.parent_comment_id" class="comment-reply-target"> 回复 @{{ parentCommentAuthor(item) }}</text></text><text>{{ formatTime(item.created_at) }}</text></view><text class="comment-content">{{ item.content }}</text><view class="comment-actions"><text v-if="!item.parent_comment_id" @click="openCommentComposer(item)">回复</text><text v-if="auth.user?.id!==item.author.id" @click="report('comment',item.id)">举报</text></view></view></view>
+
+      <view class="card comments-card">
+        <view class="sec-head"><text>全部评论</text><text class="sec-count">{{ comments.length }}</text></view>
+        <view v-if="commentsLoading" class="cstate">评论加载中…</view>
+        <view v-else-if="commentsError" class="cstate error"><text>{{ commentsError }}</text><text class="cstate-retry" @click="retryComments">重新加载</text></view>
+        <view v-else-if="!comments.length" class="cstate">还没有评论，来坐第一排吧。</view>
+        <view v-for="item in comments" v-else :key="item.id" :class="['cmt', { 'cmt-reply-row': item.parent_comment_id }]">
+          <view class="cmt-av">{{ avatarText(item.author.nickname) }}</view>
+          <view class="cmt-main">
+            <view class="cmt-nm">
+              <text>{{ item.author.nickname }}<text v-if="item.parent_comment_id" class="cmt-reply-target"> 回复 @{{ parentCommentAuthor(item) }}</text></text>
+              <text class="cmt-time">{{ formatTime(item.created_at) }}</text>
+            </view>
+            <text class="cmt-txt">{{ item.content }}</text>
+            <view class="cmt-actions">
+              <text v-if="!item.parent_comment_id" @click="openCommentComposer(item)">回复</text>
+              <text v-if="auth.user?.id !== item.author.id" @click="report('comment', item.id)">举报</text>
+            </view>
+          </view>
+        </view>
       </view>
-      <view class="composer"><view @click="openCommentComposer()">友善评论，说说你的想法…</view><button :class="{liked:post.liked_by_me}" @click="toggleLike">{{ post.liked_by_me ? '♥' : '♡' }}</button><button @click="openSharePanel">分享</button></view>
+
+      <view class="cmt-bar">
+        <view class="cmt-input" @click="openCommentComposer()">说点什么…</view>
+        <view class="cmt-ic" :class="{ hot: post.liked_by_me }" @click="toggleLike"><text class="cmt-ic-ico">{{ post.liked_by_me ? '♥' : '♡' }}</text><text>{{ post.like_count }}</text></view>
+        <view class="cmt-ic" @click="openSharePanel"><text class="cmt-ic-ico">↗</text><text>分享</text></view>
+      </view>
     </template>
 
     <CommunityCommentComposer
@@ -333,16 +369,94 @@ function toast(error: unknown) { uni.showToast({ title: error instanceof Error ?
 function goCommunity() { uni.reLaunch({ url: '/pages/community/index' }) }
 </script>
 <style scoped>
-.page{min-height:100vh;padding-bottom:150rpx;background:linear-gradient(180deg,var(--tm-campus-cyan-soft),var(--tm-canvas) 430rpx)}
-.loading-shell{display:flex;flex-direction:column;gap:18rpx}.loading-hero{height:420rpx}.loading-line{width:78%;height:28rpx;border-radius:10rpx}.loading-line.short{width:48%}.loading-comments{height:360rpx;margin-top:6rpx}
-.state-card{margin-top:140rpx;padding:68rpx 28rpx;text-align:center}.state-icon{display:flex;align-items:center;justify-content:center;width:88rpx;height:88rpx;margin:0 auto;border-radius:28rpx;background:var(--tm-campus-yellow);color:var(--tm-ink-900);font-size:19px;font-weight:900}.state-title,.state-copy{display:block}.state-title{margin-top:24rpx;font-size:17px;font-weight:900}.state-copy{margin-top:10rpx;color:var(--tm-ink-500);font-size:14px;line-height:1.6}.state-action{width:250rpx;height:68rpx;margin:24rpx auto 0;border-radius:18rpx;background:var(--tm-brand-600);color:#fff;font-size:14px;font-weight:850;line-height:68rpx}.error-card .state-icon{background:var(--tm-campus-coral-soft);color:var(--tm-danger)}
-.post-card{padding:26rpx}.author-row{display:flex;align-items:center;gap:14rpx}.avatar,.comment-avatar{display:flex;align-items:center;justify-content:center;flex:none;width:58rpx;height:58rpx;border-radius:50%;background:linear-gradient(145deg,var(--tm-campus-yellow),var(--tm-campus-coral));color:var(--tm-ink-900);font-weight:900}.author-main{min-width:0;flex:1}.author-main text{display:block}.author-main text:first-child{font-size:15px;font-weight:900}.author-main text:last-child{margin-top:5rpx;color:var(--tm-ink-500);font-size:13px}.author-actions{display:flex;align-items:center;gap:6rpx}.share-inline,.more{height:52rpx;margin:0;padding:0 14rpx;border:1rpx solid var(--tm-line);border-radius:14rpx;background:#fff;color:var(--tm-brand-700);font-size:13px;line-height:50rpx}.more{padding:0 8rpx;color:var(--tm-ink-500);font-size:15px}.category-chip{display:inline-block;margin-top:20rpx;padding:7rpx 13rpx;border-radius:999rpx;background:var(--tm-brand-100);color:var(--tm-brand-700);font-size:13px;font-weight:800}.title{display:block;margin-top:17rpx;font-size:19px;font-weight:900;line-height:1.4}.content{display:block;margin-top:10rpx;color:var(--tm-ink-700);font-size:14px;line-height:1.7;white-space:pre-wrap}.media-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8rpx;margin-top:18rpx}.media-grid.count-1{grid-template-columns:1fr}.media-grid.count-2{grid-template-columns:repeat(2,1fr)}.media-grid image{width:100%;height:190rpx;border-radius:16rpx;background:#edf2f5}.media-grid.count-1 image{height:340rpx}.metrics{display:flex;align-items:center;justify-content:space-between;margin-top:20rpx;padding-top:17rpx;border-top:1rpx solid var(--tm-line);color:var(--tm-ink-500);font-size:13px}.metrics .liked{color:var(--tm-danger);font-weight:850}.comment-section{margin-top:18rpx;padding:26rpx}.section-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:17rpx;border-bottom:1rpx solid var(--tm-line);font-size:15px;font-weight:900}.section-head text:last-child{color:var(--tm-ink-500);font-size:13px}.state{padding:32rpx 8rpx;text-align:center;color:var(--tm-ink-500);font-size:13px}.state.error{color:#c84455}.state.error text:last-child{display:inline-block;margin-left:16rpx;color:var(--tm-brand-700);font-weight:850}.comment-row{display:flex;gap:12rpx;padding:20rpx 0;border-bottom:1rpx solid var(--tm-line)}.comment-avatar{width:44rpx;height:44rpx;font-size:12px}.comment-main{min-width:0;flex:1}.comment-head,.comment-actions{display:flex;align-items:center;justify-content:space-between;gap:12rpx}.comment-head text:first-child{font-size:13px;font-weight:850}.comment-head text:last-child{color:var(--tm-ink-500);font-size:12px}.comment-content{display:block;margin-top:7rpx;color:var(--tm-ink-700);font-size:14px;line-height:1.55;white-space:pre-wrap}.comment-actions{justify-content:flex-start;margin-top:9rpx;color:var(--tm-ink-500);font-size:12px}.composer{position:fixed;z-index:20;right:0;bottom:0;left:0;display:flex;align-items:center;gap:10rpx;padding:16rpx 28rpx calc(16rpx + env(safe-area-inset-bottom));border-top:1rpx solid var(--tm-line);background:rgba(255,255,255,.96);backdrop-filter:blur(14px)}.composer>view{overflow:hidden;flex:1;height:64rpx;padding:0 20rpx;border:1rpx solid var(--tm-line);border-radius:999rpx;background:#fff;color:var(--tm-ink-500);font-size:13px;line-height:64rpx;white-space:nowrap}.composer button{width:64rpx;height:64rpx;margin:0;padding:0;border:1rpx solid var(--tm-line);border-radius:50%;background:#fff;color:var(--tm-brand-700);font-size:14px;line-height:62rpx}.composer button:last-child{width:94rpx;border-radius:999rpx;background:var(--tm-brand-600);color:#fff;font-size:13px}.composer button.liked{color:var(--tm-danger)}
-.share-mask,.poster-mask{position:fixed;z-index:80;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:24rpx;box-sizing:border-box;background:rgba(9,35,57,.45);backdrop-filter:blur(8rpx)}.share-sheet,.poster-sheet{width:100%;max-width:720rpx;padding:30rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));box-sizing:border-box;border-radius:34rpx;background:#fff;box-shadow:0 30rpx 80rpx rgba(13,42,64,.25)}.share-sheet-head,.poster-head{display:flex;align-items:center;justify-content:space-between}.share-kicker,.poster-kicker,.share-title,.poster-title{display:block}.share-kicker,.poster-kicker{color:#1576ca;font-size:13px;font-weight:850;letter-spacing:2rpx}.share-title,.poster-title{margin-top:5rpx;color:#14344c;font-size:19px;font-weight:850}.share-close,.poster-close{width:62rpx;height:62rpx;margin:0;padding:0;border:0;border-radius:50%;background:#f0f6f9;color:#557183;font-size:21px;line-height:58rpx}.share-options{display:grid;grid-template-columns:repeat(4,1fr);gap:14rpx;margin-top:30rpx}.share-option{display:flex;flex-direction:column;align-items:center;gap:12rpx;margin:0;padding:0;border:0;background:transparent;color:#36536a;font-size:14px;line-height:1.25}.share-option-icon{display:flex;align-items:center;justify-content:center;width:82rpx;height:82rpx;border-radius:26rpx;color:#fff;font-size:15px;font-weight:850;box-shadow:0 10rpx 22rpx rgba(24,88,130,.15)}.share-option-icon.friend{background:linear-gradient(145deg,#14b769,#36d39b)}.share-option-icon.timeline{background:linear-gradient(145deg,#1a77dc,#25b8d1)}.share-option-icon.poster{background:linear-gradient(145deg,#f3a229,#ffcb4c)}.share-option-icon.link{background:linear-gradient(145deg,#7658d8,#a284f4)}.share-option-name{font-weight:750}.share-tip,.poster-tip{display:block;margin-top:28rpx;padding:18rpx 20rpx;border-radius:18rpx;background:#f3f9fc;color:#6a8191;font-size:13px;line-height:1.5}.poster-mask{z-index:90;align-items:center;padding:28rpx}.poster-sheet{padding-bottom:28rpx}.poster-preview{position:relative;margin:24rpx auto 0;overflow:hidden;border-radius:24rpx;background:linear-gradient(145deg,#e6f4fa,#f6fbfd);box-shadow:0 14rpx 36rpx rgba(26,75,103,.14)}.poster-canvas{display:block}.poster-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18rpx;background:rgba(242,249,252,.94);color:#5c788b;font-size:14px}.poster-loading-dot{width:42rpx;height:42rpx;border:6rpx solid #cfe6ee;border-top-color:#1598c8;border-radius:50%;animation:poster-spin .8s linear infinite}.poster-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:16rpx;margin-top:20rpx}.poster-copy,.poster-save{height:76rpx;margin:0;border:0;border-radius:20rpx;font-size:14px;font-weight:800;line-height:76rpx}.poster-copy{background:#edf6fa;color:#286784}.poster-save{background:linear-gradient(135deg,#1268dc,#1bb5c7);color:#fff}.poster-save[disabled]{background:#cbd9df;color:#fff}@keyframes poster-spin{to{transform:rotate(360deg)}}
-@media screen and (max-width:380px){.share-options{gap:6rpx}.share-option-icon{width:72rpx;height:72rpx;border-radius:22rpx}.share-option-name{font-size:13px}}
-.page{background:radial-gradient(circle at 94% 0,rgba(55,205,212,.18),transparent 27%),linear-gradient(180deg,#eefaff 0,#f7fbfd 44%,#f4f8fa 100%)!important}.post-card,.comment-section,.state-card{border:1rpx solid #dce9ef!important;box-shadow:0 12rpx 30rpx rgba(34,78,103,.075)!important;background:rgba(255,255,255,.97)!important}.avatar,.comment-avatar{border:0!important;background:linear-gradient(145deg,#dff5ff,#e7faef)!important;color:#1475c5!important}.category-chip{border:0;background:#e8f8fb;color:#14758a}.share-inline,.more{border:1rpx solid #cfe1e9!important;background:#fff;color:#1475c5}.metrics,.section-head{border-color:#e1edf1!important}.composer{border-top:1rpx solid #dce9ef!important;background:rgba(255,255,255,.95)!important;box-shadow:0 -10rpx 28rpx rgba(31,76,101,.08)}.composer>view,.composer button{border:1rpx solid #cfe1e9!important;background:#fff!important;box-shadow:none!important}.composer button:last-child{border:0!important;background:linear-gradient(135deg,#1268c9,#19a7c8)!important}.state-card{margin-top:120rpx}.state-icon{border:0;background:#e8f7fb;color:#1477c7}.error-card .state-icon{background:#fff0ed;color:#c53c31}.state-action{border:1rpx solid #b9dbe5!important;border-radius:999rpx!important;background:#fff!important;color:#1475c5!important;box-shadow:none!important}.share-mask,.poster-mask{background:rgba(9,35,57,.46)!important}.share-sheet,.poster-sheet{border:1rpx solid #dce9ef;background:#fff!important;box-shadow:0 24rpx 60rpx rgba(13,67,91,.2)}.poster-save{border:0!important;background:linear-gradient(135deg,#08a967,#0abca1)!important;box-shadow:0 8rpx 18rpx rgba(8,169,103,.16)!important}.poster-copy{border:1rpx solid #cfe1e9!important;background:#f5fafc!important;color:#28708a!important}
-.community-topbar{display:flex;align-items:center;justify-content:space-between;gap:14rpx;margin:-18rpx -28rpx 18rpx;padding:14rpx 22rpx 12rpx;border-bottom:1rpx solid #dce9ef;background:rgba(255,255,255,.96);box-sizing:border-box}.community-back,.community-topbar-share{display:flex;align-items:center;justify-content:center;flex:none;margin:0;border:1rpx solid #cfe1e9;border-radius:999rpx;background:#fff;color:#1475c5;box-shadow:none}.community-back{width:62rpx;height:58rpx;font-size:24px;line-height:50rpx}.community-topbar-share{height:54rpx;padding:0 18rpx;font-size:13px;font-weight:850;line-height:52rpx}.community-back::after,.community-topbar-share::after{border:0}.community-topbar-title{min-width:0;flex:1;text-align:center}.community-topbar-title text,.community-topbar-title small{display:block}.community-topbar-title text{color:#14344c;font-size:17px;font-weight:900}.community-topbar-title small{margin-top:2rpx;color:#7892a1;font-size:10px;letter-spacing:1.8rpx}
-</style>
-<style scoped>
-.comment-row.reply-row{margin-left:34rpx;padding-left:12rpx;border-left:3rpx solid #d8ecef}
-.comment-reply-target{margin-left:6rpx;color:#1686a2;font-size:12px;font-weight:700}
+.page{min-height:100vh;padding-bottom:150rpx;background:#F4F6F4;color:#191B1F}
+.subnav{display:flex;align-items:center;height:88rpx;padding:0 16rpx;background:#fff}
+.nav-back{display:flex;align-items:center;justify-content:center;width:68rpx;height:68rpx;margin:0;padding:0;color:#191B1F;font-size:40rpx;line-height:60rpx}
+.nav-back::after{border:0}
+.nav-title{flex:1;font-size:32rpx;font-weight:700;text-align:center}
+.nav-more{display:flex;align-items:center;justify-content:center;width:68rpx;height:68rpx;margin:0;padding:0;color:#767C85;font-size:22rpx;letter-spacing:2rpx}
+.nav-more::after{border:0}
+.loading-shell{display:flex;flex-direction:column;gap:18rpx;padding:24rpx}
+.loading-hero{height:420rpx;border-radius:32rpx}
+.loading-line{width:78%;height:28rpx;border-radius:12rpx}
+.loading-line.short{width:48%}
+.loading-comments{height:360rpx;border-radius:32rpx}
+.state-card{margin:20rpx 24rpx 0;padding:100rpx 40rpx;border-radius:32rpx;background:#fff;text-align:center}
+.state-icon{display:flex;align-items:center;justify-content:center;width:120rpx;height:120rpx;margin:0 auto;border-radius:32rpx;background:#E7F9EF;color:#08A152;font-size:34rpx;font-weight:800}
+.state-card.error .state-icon{background:#FFEEEA;color:#FF3B30}
+.state-title{display:block;margin-top:24rpx;font-size:30rpx;font-weight:700}
+.state-copy{display:block;margin:12rpx auto 0;max-width:560rpx;color:#767C85;font-size:24rpx;line-height:1.6}
+.btn-main{height:80rpx;margin:32rpx auto 0;padding:0 48rpx;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:80rpx}
+.btn-main::after{border:0}
+.card{margin:20rpx 24rpx 0;border-radius:32rpx;background:#fff}
+.post-card{overflow:hidden;padding-bottom:24rpx}
+.publisher{display:flex;align-items:center;gap:20rpx;padding:28rpx 30rpx 12rpx}
+.avatar{display:flex;align-items:center;justify-content:center;width:88rpx;height:88rpx;flex:none;border-radius:50%;background:#E7F9EF;color:#08A152;font-size:34rpx;font-weight:800}
+.pub-main{min-width:0;flex:1}
+.pub-name{display:block;font-size:28rpx;font-weight:700}
+.pub-sub{display:block;margin-top:6rpx;color:#AEB3BB;font-size:22rpx}
+.btn-follow{height:56rpx;margin:0;padding:0 28rpx;border:1rpx solid #EDEFEF;border-radius:999rpx;background:#fff;color:#08A152;font-size:24rpx;font-weight:700;line-height:54rpx}
+.btn-follow::after{border:0}
+.post-body{padding:8rpx 30rpx 0}
+.post-topic{display:inline-block;padding:8rpx 16rpx;border-radius:999rpx;background:#E7F9EF;color:#08A152;font-size:22rpx;font-weight:700}
+.post-title{display:block;margin-top:16rpx;font-size:34rpx;font-weight:800;line-height:1.4}
+.post-content{display:block;margin-top:12rpx;color:#26282D;font-size:28rpx;line-height:1.75;white-space:pre-wrap}
+.post-imgs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10rpx;margin:12rpx 30rpx 0}
+.post-imgs.count-1{grid-template-columns:1fr}
+.post-imgs image{width:100%;height:300rpx;border-radius:20rpx;background:#F2F4F3}
+.post-imgs.count-1 image{height:420rpx}
+.metrics{display:flex;align-items:center;gap:48rpx;margin:20rpx 14rpx 0;padding:20rpx 16rpx 0;border-top:1rpx solid #F5F6F6;color:#767C85;font-size:24rpx}
+.metric-like{color:#767C85}
+.metric-like.liked{color:#FF3B30;font-weight:700}
+.comments-card{padding-bottom:8rpx}
+.sec-head{display:flex;align-items:center;justify-content:space-between;padding:26rpx 30rpx 18rpx;font-size:30rpx;font-weight:700}
+.sec-count{color:#AEB3BB;font-size:24rpx;font-weight:400}
+.cstate{padding:44rpx 30rpx;color:#AEB3BB;font-size:24rpx;text-align:center}
+.cstate.error{color:#FF3B30}
+.cstate-retry{display:inline-block;margin-left:16rpx;color:#08A152;font-weight:700}
+.cmt{display:flex;gap:20rpx;padding:26rpx 30rpx;border-top:1rpx solid #F5F6F6}
+.cmt-reply-row{margin-left:60rpx;padding-left:24rpx;border-left:4rpx solid #E7F9EF}
+.cmt-av{display:flex;align-items:center;justify-content:center;width:72rpx;height:72rpx;flex:none;border-radius:50%;background:#E7F9EF;color:#08A152;font-size:26rpx;font-weight:800}
+.cmt-main{min-width:0;flex:1}
+.cmt-nm{display:flex;align-items:center;justify-content:space-between;gap:20rpx;font-size:24rpx;color:#767C85}
+.cmt-time{color:#AEB3BB;font-size:22rpx}
+.cmt-reply-target{color:#08A152;font-size:22rpx;font-weight:700}
+.cmt-txt{display:block;margin-top:8rpx;color:#26282D;font-size:28rpx;line-height:1.6;white-space:pre-wrap}
+.cmt-actions{display:flex;gap:28rpx;margin-top:10rpx;color:#AEB3BB;font-size:22rpx}
+.cmt-bar{position:fixed;z-index:50;right:0;bottom:0;left:0;display:flex;align-items:center;gap:24rpx;height:120rpx;padding:0 28rpx calc(0rpx + env(safe-area-inset-bottom));border-top:1rpx solid #EDEFEF;background:#fff;box-sizing:border-box}
+.cmt-input{overflow:hidden;flex:1;height:72rpx;padding:0 28rpx;border-radius:999rpx;background:#F2F4F3;color:#AEB3BB;font-size:26rpx;line-height:72rpx;white-space:nowrap}
+.cmt-ic{display:flex;flex-direction:column;align-items:center;gap:2rpx;color:#767C85;font-size:20rpx}
+.cmt-ic-ico{font-size:40rpx;line-height:1}
+.cmt-ic.hot{color:#FF3B30}
+.share-mask,.poster-mask{position:fixed;z-index:80;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:24rpx;box-sizing:border-box;background:rgba(23,26,23,.45)}
+.share-sheet,.poster-sheet{width:100%;max-width:720rpx;padding:30rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));box-sizing:border-box;border-radius:36rpx;background:#fff;box-shadow:0 30rpx 80rpx rgba(23,26,23,.25)}
+.share-sheet-head,.poster-head{display:flex;align-items:center;justify-content:space-between}
+.share-kicker,.poster-kicker,.share-title,.poster-title{display:block}
+.share-kicker,.poster-kicker{color:#08A152;font-size:22rpx;font-weight:800;letter-spacing:2rpx}
+.share-title,.poster-title{margin-top:6rpx;color:#191B1F;font-size:34rpx;font-weight:800}
+.share-close,.poster-close{width:62rpx;height:62rpx;margin:0;padding:0;border:0;border-radius:50%;background:#F2F4F3;color:#767C85;font-size:34rpx;line-height:58rpx}
+.share-close::after,.poster-close::after{border:0}
+.share-options{display:grid;grid-template-columns:repeat(4,1fr);gap:14rpx;margin-top:30rpx}
+.share-option{display:flex;flex-direction:column;align-items:center;gap:12rpx;margin:0;padding:0;border:0;background:transparent;color:#3A3D43;font-size:24rpx;line-height:1.25}
+.share-option::after{border:0}
+.share-option-icon{display:flex;align-items:center;justify-content:center;width:84rpx;height:84rpx;border-radius:26rpx;color:#fff;font-size:28rpx;font-weight:800}
+.share-option-icon.friend{background:linear-gradient(135deg,#12D978,#08A152)}
+.share-option-icon.timeline{background:linear-gradient(135deg,#5AC8FA,#3B82F6)}
+.share-option-icon.poster{background:linear-gradient(135deg,#FF9A3D,#F2620A)}
+.share-option-icon.link{background:linear-gradient(135deg,#AEB3BB,#767C85)}
+.share-option-name{font-weight:600}
+.share-tip,.poster-tip{display:block;margin-top:28rpx;padding:20rpx 22rpx;border-radius:20rpx;background:#F7F9F8;color:#767C85;font-size:24rpx;line-height:1.5}
+.poster-mask{z-index:90;align-items:center;padding:28rpx}
+.poster-sheet{padding-bottom:28rpx}
+.poster-preview{position:relative;margin:24rpx auto 0;overflow:hidden;border-radius:24rpx;background:#F7F9F8}
+.poster-canvas{display:block}
+.poster-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18rpx;background:rgba(244,246,244,.94);color:#767C85;font-size:26rpx}
+.poster-loading-dot{width:42rpx;height:42rpx;border:6rpx solid #E7F9EF;border-top-color:#0BBF63;border-radius:50%;animation:poster-spin .8s linear infinite}
+.poster-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:16rpx;margin-top:20rpx}
+.poster-copy,.poster-save{height:80rpx;margin:0;border:0;border-radius:999rpx;font-size:26rpx;font-weight:700;line-height:80rpx}
+.poster-copy::after,.poster-save::after{border:0}
+.poster-copy{background:#F2F4F3;color:#767C85}
+.poster-save{background:linear-gradient(135deg,#12D978,#08A152);color:#fff}
+.poster-save[disabled]{background:#EDEFEF;color:#AEB3BB}
+@keyframes poster-spin{to{transform:rotate(360deg)}}
 </style>

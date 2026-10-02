@@ -20,6 +20,7 @@ import {
   SettingOutlined,
   ShopOutlined,
   ShoppingCartOutlined,
+  SwapOutlined,
   TeamOutlined,
   UserOutlined,
   WalletOutlined,
@@ -64,6 +65,7 @@ const AssetManagementPage = lazy(() => import('./features/assets/AssetManagement
 const ProductManagementPage = lazy(() => import('./features/products/ProductManagementPage').then((module) => ({ default: module.ProductManagementPage })))
 const AfterSaleManagementPage = lazy(() => import('./features/after-sales/AfterSaleManagementPage').then((module) => ({ default: module.AfterSaleManagementPage })))
 const CommunityManagementPage = lazy(() => import('./features/community/CommunityManagementPage').then((module) => ({ default: module.CommunityManagementPage })))
+const SecondHandManagementPage = lazy(() => import('./features/second-hand/SecondHandManagementPage').then((module) => ({ default: module.SecondHandManagementPage })))
 const OperationsPage = lazy(() => import('./features/operations/OperationsPage').then((module) => ({ default: module.OperationsPage })))
 const UserOperationsPage = lazy(() => import('./features/users/UserOperationsPage').then((module) => ({ default: module.UserOperationsPage })))
 const SupportTicketPage = lazy(() => import('./features/support/SupportTicketPage').then((module) => ({ default: module.SupportTicketPage })))
@@ -82,6 +84,7 @@ const iconMap: Record<string, ReactNode> = {
   SettingOutlined: <SettingOutlined />,
   SafetyCertificateOutlined: <SafetyCertificateOutlined />,
   CustomerServiceOutlined: <CustomerServiceOutlined />,
+  SwapOutlined: <SwapOutlined />,
 }
 
 const roleNames: Record<string, string> = {
@@ -256,6 +259,7 @@ function Workspace({ item }: { item: NavigationItem }) {
   if (item.code === 'mall') return <ProductManagementPage />
   if (item.code === 'orders') return <AfterSaleManagementPage />
   if (item.code === 'community') return <CommunityManagementPage />
+  if (item.code === 'second_hand') return <SecondHandManagementPage />
   if (item.code === 'operations') return <OperationsPage />
   if (item.code === 'support') return <SupportTicketPage />
   if (item.code !== 'workbench') {

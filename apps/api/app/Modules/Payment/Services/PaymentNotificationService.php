@@ -6,12 +6,14 @@ use App\Models\User;
 use App\Modules\Assets\Services\WalletRechargeService;
 use App\Modules\Payment\Contracts\WechatPaymentGateway;
 use App\Modules\Payment\Models\Payment;
+use App\Modules\SecondHand\Models\SecondHandOrder;
+use App\Modules\SecondHand\Services\SecondHandNotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PaymentNotificationService
 {
-    public function __construct(private readonly WechatPaymentGateway $gateway, private readonly OrderSettlementService $settlement, private readonly OrderPaymentReleaseService $release, private readonly WalletRechargeService $recharges) {}
+    public function __construct(private readonly WechatPaymentGateway $gateway, private readonly OrderSettlementService $settlement, private readonly OrderPaymentReleaseService $release, private readonly WalletRechargeService $recharges, private readonly SecondHandNotificationService $secondHandNotify) {}
 
     /** @param array<string,string|null> $headers */
     public function handle(array $headers, string $body): void
@@ -54,6 +56,19 @@ class PaymentNotificationService
                     $user = User::query()->findOrFail($locked->user_id);
                     if ($locked->wallet_recharge_id) {
                         $this->recharges->settleOnline($locked->walletRecharge);
+                    } elseif ($locked->second_hand_order_id) {
+                        $shOrder = SecondHandOrder::query()->lockForUpdate()->findOrFail($locked->second_hand_order_id);
+                        if ($shOrder->status === 'pending_payment') {
+                            $shOrder->update([
+                                'status' => 'paid',
+                                'paid_amount' => $shOrder->price,
+                                'paid_at' => now(),
+                                'cash_payment_method' => 'wechat',
+                            ]);
+                            $shOrder->item()->update(['status' => 'reserved']);
+                            $shOrder->loadMissing(['item', 'buyer', 'seller']);
+                            $this->secondHandNotify->orderPaid($shOrder);
+                        }
                     } else {
                         $this->settlement->settleExternal($locked->order, $user, $locked->cash_amount);
                     }
@@ -68,6 +83,8 @@ class PaymentNotificationService
                     $locked->update(['status' => $state === 'PAYERROR' ? 'failed' : 'closed', 'closed_at' => now()]);
                     if ($locked->wallet_recharge_id) {
                         $this->recharges->closeOnline($locked->walletRecharge, $state === 'PAYERROR' ? 'cancelled' : 'expired');
+                    } elseif ($locked->second_hand_order_id) {
+                        // 闲置订单支付关闭无需额外操作，买家可重新发起支付
                     } else {
                         $this->release->close($locked->order, 'payment_provider_closed', '微信支付渠道确认交易关闭，释放订单预占资源。');
                     }

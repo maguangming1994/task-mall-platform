@@ -1883,3 +1883,72 @@ export async function updateManagedCampus(id: string, input: ManagedCampusWriteI
 export async function updateManagedCampusAgents(id: string, adminUserIds: string[], primaryAdminUserId?: string): Promise<ManagedCampus> {
   return request(`/admin/campuses/${encodeURIComponent(id)}/agents`, { method: 'PUT', body: JSON.stringify({ admin_user_ids: adminUserIds, primary_admin_user_id: primaryAdminUserId || null }) })
 }
+
+export interface ManagedSecondHandItem {
+  id: string
+  title: string
+  price: number
+  condition: string
+  condition_label: string
+  description: string
+  trade_type: string
+  location: string
+  status: string
+  audit_status: string
+  rejected_reason: string | null
+  cover: string | null
+  images: string[]
+  view_count: number
+  favorite_count: number
+  seller: { id: string; nickname: string; avatar: string | null }
+  category: { id: string; name: string } | null
+  created_at: string
+}
+
+export interface ManagedSecondHandRefund {
+  id: string
+  order_id: string
+  amount: number
+  reason: string
+  images: string[]
+  status: string
+  seller_note: string | null
+  seller_responded_at: string | null
+  admin_note: string | null
+  arbitrated_at: string | null
+  auto_approve_at: string | null
+  buyer: { id: string; nickname: string; avatar: string | null }
+  seller: { id: string; nickname: string; avatar: string | null }
+  created_at: string
+}
+
+export interface SecondHandItemList {
+  items: ManagedSecondHandItem[]
+  pagination: { page: number; page_size: number; total: number; last_page: number }
+}
+
+export interface SecondHandRefundList {
+  items: ManagedSecondHandRefund[]
+  pagination: { page: number; page_size: number; total: number; last_page: number }
+}
+
+export async function listSecondHandItems(filters: { audit_status?: string; page?: number; page_size?: number } = {}): Promise<SecondHandItemList> {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  })
+  return request(`/admin/second-hand/items${query.size ? `?${query.toString()}` : ''}`)
+}
+export async function reviewSecondHandItem(id: string, input: { decision: 'approve' | 'reject'; reason?: string }): Promise<ManagedSecondHandItem> {
+  return request(`/admin/second-hand/items/${encodeURIComponent(id)}/review`, { method: 'POST', body: JSON.stringify(input) })
+}
+export async function listSecondHandRefunds(filters: { status?: string; page?: number; page_size?: number } = {}): Promise<SecondHandRefundList> {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  })
+  return request(`/admin/second-hand/refunds${query.size ? `?${query.toString()}` : ''}`)
+}
+export async function arbitrateSecondHandRefund(id: string, input: { decision: 'approve' | 'reject'; note: string }): Promise<ManagedSecondHandRefund> {
+  return request(`/admin/second-hand/refunds/${encodeURIComponent(id)}/arbitrate`, { method: 'POST', body: JSON.stringify(input) })
+}

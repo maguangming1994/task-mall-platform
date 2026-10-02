@@ -12,6 +12,7 @@ use App\Modules\Privacy\Services\AccountCancellationService;
 use App\Modules\Privacy\Services\DataDeletionService;
 use App\Modules\Refund\Services\ExchangeService;
 use App\Modules\Refund\Services\RefundService;
+use App\Modules\SecondHand\Http\Controllers\SecondHandRefundController;
 use App\Modules\Task\Models\TaskSubmission;
 use App\Modules\Task\Services\TaskAppealService;
 use App\Modules\Task\Services\TaskClaimService;
@@ -83,6 +84,10 @@ Artisan::command('refunds:sync-provider {--limit=100}', function (RefundService 
     $this->info('Synced provider refunds: '.$service->syncPendingProviderRefunds((int) $this->option('limit')));
 })->purpose('Query processing WeChat refunds and apply authoritative provider states');
 
+Artisan::command('second-hand:auto-approve-refunds {--limit=100}', function (SecondHandRefundController $controller) {
+    $this->info('Auto-approved second-hand refunds: '.$controller->autoApproveExpired((int) $this->option('limit')));
+})->purpose('Auto approve second-hand refunds whose seller response deadline expired');
+
 Artisan::command('withdrawals:sync-payouts {--limit=100}', function (WalletWithdrawalService $service) {
     $this->info('Synced wallet payouts: '.$service->syncPending((int) $this->option('limit')));
 })->purpose('Query processing wallet payouts and apply authoritative provider states');
@@ -145,6 +150,7 @@ Schedule::command('orders:close-expired-payments --limit=100')->everyMinute()->w
 Schedule::command('growth:scan-first-cash-orders --limit=500')->everyTenMinutes()->withoutOverlapping();
 Schedule::command('after-sales:close-expired --limit=500')->hourly()->withoutOverlapping();
 Schedule::command('refunds:sync-provider --limit=100')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('second-hand:auto-approve-refunds --limit=100')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('withdrawals:sync-payouts --limit=100')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('notifications:dispatch-business-events --limit=500')->everyMinute()->withoutOverlapping();
 Schedule::command('notifications:deliver --limit=500')->everyMinute()->withoutOverlapping();

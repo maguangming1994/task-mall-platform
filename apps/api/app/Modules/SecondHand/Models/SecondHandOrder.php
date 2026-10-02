@@ -53,4 +53,14 @@ class SecondHandOrder extends Model
     {
         return $this->belongsTo(SecondHandItem::class, 'item_id');
     }
+
+    public function refund()
+    {
+        return $this->hasOne(SecondHandRefund::class, 'order_id');
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(SecondHandRating::class, 'order_id');
+    }
 }

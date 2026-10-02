@@ -3,6 +3,7 @@
 namespace App\Modules\Chat\Http\Controllers;
 
 use App\Common\Support\ApiResponse;
+use App\Events\ChatMessageSent;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Chat\Models\ChatConversation;
@@ -134,6 +135,9 @@ class ChatController extends Controller
 
             return $msg;
         });
+
+        // 广播新消息到会话私有频道（对方实时接收）
+        broadcast(new ChatMessageSent($message, $conversation))->toOthers();
 
         return ApiResponse::success($this->presentMessage($message, $userId), 201);
     }

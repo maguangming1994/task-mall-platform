@@ -1,25 +1,17 @@
 <template>
   <view class="page">
-    <view class="heading">
-      <text class="eyebrow">MESSAGE CENTER</text>
-      <text class="title">消息中心</text>
-      <text class="sub">任务、订单、售后和资产变动统一留档，点击消息可前往对应业务页面</text>
-    </view>
-
-    <view class="summary-card">
-      <view class="summary-main">
-        <view class="summary-count">{{ unreadTotal }}</view>
-        <view><text class="summary-title">条未读消息</text><text class="summary-copy">共 {{ total }} 条{{ activeCategory ? categoryText(activeCategory) : '' }}消息</text></view>
-      </view>
-      <view class="summary-actions">
-        <button class="summary-button" @click="showSettings = !showSettings">{{ showSettings ? '收起设置' : '通知设置' }}</button>
-        <button class="summary-button primary" :disabled="unreadTotal === 0 || markingAll" :loading="markingAll" @click="readAll">全部已读</button>
+    <view class="subnav">
+      <view class="back" role="button" aria-label="返回" @click="goBack">‹</view>
+      <text class="subnav-title">消息中心</text>
+      <view class="subnav-right">
+        <text v-if="unreadTotal > 0" class="right-action" @click="readAll">全部已读</text>
+        <text class="right-action" @click="showSettings = !showSettings">{{ showSettings ? '收起' : '设置' }}</text>
       </view>
     </view>
 
     <view v-if="showSettings && preference" class="settings-card">
-      <view class="settings-head"><view class="settings-icon">信</view><view><text>通知偏好</text><text>外部渠道可关闭，站内关键记录始终保留</text></view></view>
-      <view class="setting-row"><view class="setting-copy"><text>微信通知</text><text>接收任务、订单与资产提醒</text></view><switch color="#16839b" :checked="preference.wechat_enabled" :disabled="savingPreference" @change="changePreference('wechat_enabled', $event)" /></view>
+      <view class="settings-head"><view class="settings-icon">🔔</view><view><text>通知偏好</text><text>外部渠道可关闭，站内关键记录始终保留</text></view></view>
+      <view class="setting-row"><view class="setting-copy"><text>微信通知</text><text>接收任务、订单与资产提醒</text></view><switch color="#0BBF63" :checked="preference.wechat_enabled" :disabled="savingPreference" @change="changePreference('wechat_enabled', $event)" /></view>
       <!-- #ifdef MP-WEIXIN -->
       <view v-if="wechatSubscriptions?.configured" class="subscription-section">
         <view class="subscription-heading"><text>小程序订阅提醒</text><text>微信一次授权对应一次后续服务通知</text></view>
@@ -30,8 +22,8 @@
         </view>
       </view>
       <!-- #endif -->
-      <view class="setting-row"><view class="setting-copy"><text>短信通知</text><text>用于重要状态及安全验证</text></view><switch color="#16839b" :checked="preference.sms_enabled" :disabled="savingPreference" @change="changePreference('sms_enabled', $event)" /></view>
-      <view class="setting-row"><view class="setting-copy"><text>营销订阅</text><text>接收校园活动与优惠推荐</text></view><switch color="#16839b" :checked="preference.marketing_subscribed" :disabled="savingPreference" @change="changePreference('marketing_subscribed', $event)" /></view>
+      <view class="setting-row"><view class="setting-copy"><text>短信通知</text><text>用于重要状态及安全验证</text></view><switch color="#0BBF63" :checked="preference.sms_enabled" :disabled="savingPreference" @change="changePreference('sms_enabled', $event)" /></view>
+      <view class="setting-row"><view class="setting-copy"><text>营销订阅</text><text>接收校园活动与优惠推荐</text></view><switch color="#0BBF63" :checked="preference.marketing_subscribed" :disabled="savingPreference" @change="changePreference('marketing_subscribed', $event)" /></view>
       <view class="quiet-row">
         <view class="setting-copy"><text>免打扰时间</text><text>非关键消息将在此时段静默</text></view>
         <view class="quiet-pickers">
@@ -41,6 +33,29 @@
         </view>
       </view>
       <text class="settings-note">支付、退款、提现和安全类关键消息不受免打扰限制。</text>
+    </view>
+
+    <view class="msg-grid">
+      <view class="m" @click="selectCategory('system')">
+        <view class="mi" style="background:#EAF2FF;color:#3B82F6"><text>🔔</text><text v-if="unreadFor('system')" class="msg-badge">{{ unreadFor('system') }}</text></view>
+        <text>系统通知</text>
+      </view>
+      <view class="m" @click="selectCategory('task')">
+        <view class="mi" style="background:#E7F9EF;color:#0BBF63"><text>📋</text><text v-if="unreadFor('task')" class="msg-badge">{{ unreadFor('task') }}</text></view>
+        <text>任务消息</text>
+      </view>
+      <view class="m" @click="selectCategory('order')">
+        <view class="mi" style="background:#FFF2E5;color:#F2620A"><text>📦</text><text v-if="unreadFor('order')" class="msg-badge">{{ unreadFor('order') }}</text></view>
+        <text>订单物流</text>
+      </view>
+      <view class="m" @click="selectCategory('community')">
+        <view class="mi" style="background:#FFEAF1;color:#F43F7F"><text>❤️</text><text v-if="unreadFor('community')" class="msg-badge">{{ unreadFor('community') }}</text></view>
+        <text>互动消息</text>
+      </view>
+      <view class="m" @click="selectCategory('after_sale')">
+        <view class="mi" style="background:#F1EAFF;color:#8B5CF6"><text>🏷️</text><text v-if="unreadFor('after_sale')" class="msg-badge">{{ unreadFor('after_sale') }}</text></view>
+        <text>闲置订单</text>
+      </view>
     </view>
 
     <scroll-view class="category-scroll" scroll-x :show-scrollbar="false">
@@ -65,7 +80,7 @@
     </view>
 
     <view class="list-toolbar">
-      <text>{{ listTitle }}</text>
+      <text class="list-title">{{ listTitle }}</text>
       <view :class="['unread-filter', { active: unreadOnly }]" @click="toggleUnreadOnly"><view class="filter-dot" /><text>仅看未读</text></view>
     </view>
 
@@ -74,17 +89,19 @@
     </view>
     <view v-else-if="loading && !items.length" class="skeleton-list"><view v-for="index in 3" :key="index" class="skeleton-card tm-skeleton" /></view>
 
-    <view v-for="item in visibleItems" :key="item.id" class="notice-card" :class="{ unread: !item.read_at }" @click="openNotification(item)">
-      <view :class="['category-mark', `tone-${item.category}`]">{{ categoryMark(item.category) }}</view>
-      <view class="notice-main">
-        <view class="notice-head"><text class="notice-title">{{ item.title }}</text><text class="category-tag">{{ categoryText(item.category) }}</text></view>
-        <text class="body">{{ item.body }}</text>
-        <view class="notice-foot"><text>{{ formatTime(item.created_at) }}</text><text v-if="notificationTarget(item)" class="detail-link">查看详情 ›</text></view>
+    <view v-if="visibleItems.length" class="msg-list">
+      <view v-for="item in visibleItems" :key="item.id" class="msg-row" :class="{ unread: !item.read_at }" @click="openNotification(item)">
+        <view :class="['msg-icon', `tone-${item.category}`]">{{ categoryMark(item.category) }}</view>
+        <view class="msg-main">
+          <view class="l1"><b>{{ item.title }}</b><text>{{ formatTime(item.created_at) }}</text></view>
+          <view class="l2">{{ item.body }}</view>
+        </view>
+        <text v-if="!item.read_at" class="msg-dot" />
       </view>
     </view>
 
     <view v-if="!loading && !visibleItems.length && !errorMessage" class="state-card">
-      <view class="state-icon">信</view><text class="state-title">{{ unreadOnly ? '当前没有未读消息' : '暂无消息' }}</text><text class="state-copy">{{ activeCategory ? `有新的${categoryText(activeCategory)}消息时会在这里提醒你` : '有新的任务、订单或资产变化时会在这里提醒你' }}</text>
+      <view class="state-icon">📭</view><text class="state-title">{{ unreadOnly ? '当前没有未读消息' : '暂无消息' }}</text><text class="state-copy">{{ activeCategory ? `有新的${categoryText(activeCategory)}消息时会在这里提醒你` : '有新的任务、订单或资产变化时会在这里提醒你' }}</text>
     </view>
 
     <button v-if="items.length && hasMore" class="load-more" :loading="loadingMore" :disabled="loadingMore" @click="loadMore">加载更多</button>
@@ -502,19 +519,95 @@ function firstString(data: Record<string, unknown>, keys: string[]) {
 }
 
 function toast(error: unknown, fallback: string) { uni.showToast({ title: error instanceof Error ? error.message : fallback, icon: 'none' }) }
+
+function goBack() {
+  const pages = getCurrentPages()
+  if (pages.length > 1) {
+    uni.navigateBack()
+    return
+  }
+  uni.reLaunch({ url: '/pages/account/index' })
+}
 </script>
 
 <style scoped>
-.page{min-height:100vh;padding:32rpx 28rpx 90rpx;background:var(--tm-canvas);box-sizing:border-box}.heading{padding:22rpx 8rpx 16rpx}.eyebrow,.title,.sub,.summary-title,.summary-copy,.settings-head text,.settings-note,.body,.state-title,.state-copy,.list-end{display:block}.eyebrow{color:var(--tm-brand-600);font-size:13px;font-weight:800;letter-spacing:2.5rpx}.title{margin-top:10rpx;font-size:24px;font-weight:850}.sub{margin-top:10rpx;color:var(--tm-ink-500);font-size:14px;line-height:1.6}.summary-card{margin-top:18rpx;padding:28rpx;border:1rpx solid #d6e9e7;border-radius:26rpx;background:#f2f9f8;box-shadow:var(--tm-shadow-sm)}.summary-main{display:flex;align-items:center;gap:18rpx}.summary-count{display:flex;align-items:center;justify-content:center;width:76rpx;height:76rpx;flex:none;border-radius:22rpx;background:var(--tm-brand-600);color:#fff;font-size:21px;font-weight:900}.summary-title{font-size:17px;font-weight:850}.summary-copy{margin-top:4rpx;color:var(--tm-ink-500);font-size:13px}.summary-actions{display:grid;grid-template-columns:1fr 1fr;gap:14rpx;margin-top:22rpx}.summary-button{height:68rpx;margin:0;border:1rpx solid var(--tm-line);border-radius:16rpx;background:#fff;color:var(--tm-ink-700);font-size:14px;line-height:66rpx}.summary-button::after,.load-more::after,.retry-button::after{border:0}.summary-button.primary{border-color:var(--tm-brand-600);background:var(--tm-brand-600);color:#fff}.summary-button[disabled]{opacity:.45}.settings-card{margin-top:18rpx;padding:26rpx;border:1rpx solid var(--tm-line);border-radius:24rpx;background:#fff}.settings-head{display:flex;align-items:center;gap:16rpx;margin-bottom:10rpx}.settings-icon,.category-mark,.state-icon{display:flex;align-items:center;justify-content:center;flex:none;font-weight:850}.settings-icon{width:58rpx;height:58rpx;border-radius:18rpx;background:var(--tm-brand-100);color:var(--tm-brand-700)}.settings-head text:first-child{font-size:15px;font-weight:850}.settings-head text:last-child{margin-top:4rpx;color:var(--tm-ink-500);font-size:13px}.setting-row,.quiet-row{display:flex;align-items:center;justify-content:space-between;gap:16rpx;padding:16rpx 0;border-top:1rpx solid var(--tm-line);font-size:14px}.quiet-row{align-items:flex-start}.quiet-pickers{display:flex;align-items:center;gap:10rpx}.time-value{padding:10rpx 15rpx;border:1rpx solid var(--tm-line);border-radius:12rpx;background:#f8fafa;color:var(--tm-brand-700);font-size:13px}.settings-note{padding-top:13rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.5}.category-scroll{width:100%;margin-top:26rpx;white-space:nowrap}.category-list{display:inline-flex;gap:12rpx;padding:2rpx}.category-chip{display:flex;align-items:center;gap:8rpx;padding:14rpx 21rpx;border:1rpx solid var(--tm-line);border-radius:999rpx;background:#fff;color:var(--tm-ink-500);font-size:14px}.category-chip.active{border-color:var(--tm-brand-600);background:var(--tm-brand-600);color:#fff}.chip-count{display:flex;align-items:center;justify-content:center;min-width:28rpx;height:28rpx;padding:0 6rpx;border-radius:999rpx;background:#e9efef;color:var(--tm-ink-700);font-size:12px}.category-chip.active .chip-count{background:rgba(255,255,255,.2);color:#fff}.list-toolbar{display:flex;align-items:center;justify-content:space-between;margin:30rpx 4rpx 2rpx;font-size:17px;font-weight:850}.unread-filter{display:flex;align-items:center;gap:8rpx;color:var(--tm-ink-500);font-size:13px;font-weight:500}.filter-dot{width:24rpx;height:24rpx;border:2rpx solid #aebcbc;border-radius:50%;box-sizing:border-box}.unread-filter.active{color:var(--tm-brand-700)}.unread-filter.active .filter-dot{border:7rpx solid var(--tm-brand-600)}.notice-card{position:relative;display:flex;gap:18rpx;margin-top:18rpx;padding:26rpx;border:1rpx solid var(--tm-line);border-radius:24rpx;background:#fff;box-shadow:var(--tm-shadow-sm)}.notice-card.unread{border-left:6rpx solid var(--tm-brand-600)}.notice-card.unread::after{content:'';position:absolute;right:17rpx;top:17rpx;width:11rpx;height:11rpx;border-radius:50%;background:var(--tm-brand-600)}.category-mark{width:60rpx;height:60rpx;border-radius:18rpx;background:var(--tm-brand-100);color:var(--tm-brand-700)}.tone-asset{background:#fff1e5;color:#c85b16}.tone-order{background:#edf4f4;color:#214b52}.tone-after_sale{background:#fff0f1;color:#c84455}.tone-community{background:#e8f8f3;color:#16866c}.tone-system{background:#eef1f2;color:#53656b}.notice-main{min-width:0;flex:1}.notice-head{display:flex;align-items:center;justify-content:space-between;gap:14rpx;padding-right:12rpx}.notice-title{overflow:hidden;color:var(--tm-ink-900);font-size:15px;font-weight:850;text-overflow:ellipsis;white-space:nowrap}.category-tag{padding:4rpx 10rpx;flex:none;border-radius:9rpx;background:#f2f4f4;color:var(--tm-ink-500);font-size:12px}.body{margin:12rpx 0;color:var(--tm-ink-700);font-size:14px;line-height:1.6}.notice-foot{display:flex;align-items:center;justify-content:space-between;gap:14rpx;color:var(--tm-ink-500);font-size:13px}.detail-link{color:var(--tm-brand-700);font-weight:750}.state-card{margin-top:20rpx;padding:64rpx 30rpx;text-align:center;border:1rpx solid var(--tm-line);border-radius:26rpx;background:#fff}.state-icon{width:82rpx;height:82rpx;margin:0 auto;border-radius:25rpx;background:var(--tm-brand-100);color:var(--tm-brand-700);font-size:17px}.state-title{margin-top:18rpx;font-size:17px;font-weight:850}.state-copy{margin-top:8rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.55}.error-card .state-icon{background:#fff0f1;color:#c84455}.retry-button{width:230rpx;height:66rpx;margin-top:22rpx;border-radius:16rpx;background:var(--tm-brand-600);color:#fff;font-size:14px;line-height:66rpx}.skeleton-card{height:190rpx;margin-top:18rpx;border-radius:24rpx}.load-more{width:260rpx;height:68rpx;margin:28rpx auto 0;border:1rpx solid var(--tm-line);border-radius:16rpx;background:#fff;color:var(--tm-brand-700);font-size:14px;line-height:66rpx}.list-end{padding:30rpx 0 4rpx;text-align:center;color:var(--tm-ink-500);font-size:13px}
-/* V09 消息中心：公告板色块保持轻盈，消息卡片使用细边框与柔和阴影。 */
-.page{background:radial-gradient(circle at 92% 2%,rgba(63,203,211,.16),transparent 27%),linear-gradient(180deg,#eefbfb 0,var(--tm-canvas) 430rpx)}
-.heading{padding:28rpx 26rpx;border:1rpx solid #cfe8e7;border-radius:28rpx;background:linear-gradient(135deg,#e3f7f7,#f2fae9);box-shadow:0 12rpx 30rpx rgba(34,107,113,.08)}
-.eyebrow{color:#177f84;font-weight:850}.title{color:#183b4c;font-weight:900}.sub{color:#60767c;font-weight:550}
-.summary-card{border:1rpx solid #d4e8e8;background:#f5fbfa;box-shadow:0 12rpx 28rpx rgba(25,72,89,.07)}.summary-count{background:#2a9e98;box-shadow:0 8rpx 16rpx rgba(42,158,152,.18)}.summary-button{border:1rpx solid #d4e3e5;background:#fff;color:#27515b}.summary-button.primary{border-color:#2a9e98;background:#2a9e98;box-shadow:0 7rpx 14rpx rgba(42,158,152,.18);color:#fff}
-.settings-card,.notice-card,.state-card{border:1rpx solid #d7e5e8;box-shadow:0 12rpx 28rpx rgba(25,72,89,.07)}.settings-icon{background:#e9e4ff;color:#694cc8}.time-value{border:1rpx solid #bed2d7;background:#fff;color:#176f82;font-weight:750}.category-chip{border:1rpx solid #d5e3e5;background:#fff;color:#547079;box-shadow:none}.category-chip.active{border-color:#2a9e98;background:#2a9e98;color:#fff}.chip-count{background:#e7f4f1;color:#26756f;font-weight:750}
-.community-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12rpx;margin-top:22rpx}.community-shortcut{min-width:0;padding:18rpx 14rpx;border:1rpx solid #d4e6e7;border-radius:22rpx;background:#fff;box-shadow:0 10rpx 22rpx rgba(25,72,89,.06);box-sizing:border-box;transition:transform .16s ease}.community-shortcut.active{transform:translateY(-3rpx);box-shadow:0 14rpx 26rpx rgba(25,72,89,.10)}.shortcut-comments{background:#eefbf2}.shortcut-likes{background:#fff4ef}.shortcut-reviews{background:#fff9e4}.shortcut-top{display:flex;align-items:center;justify-content:space-between;gap:8rpx}.shortcut-icon{display:flex;align-items:center;justify-content:center;width:46rpx;height:46rpx;border-radius:14rpx;background:#fff;color:#26756f;font-size:13px;font-weight:900}.shortcut-count{color:#1d4e5a;font-size:19px;font-weight:900}.shortcut-label,.shortcut-hint{display:block}.shortcut-label{margin-top:13rpx;color:#264a54;font-size:14px;font-weight:850}.shortcut-hint{margin-top:5rpx;overflow:hidden;color:#71838a;font-size:12px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
-.notice-card{background:#fff}.notice-card.unread{border-left:6rpx solid #ef9587}.notice-card.unread::after{background:#ef9587}.category-mark{border:0;background:#e5f6f3;color:#167d76}.tone-asset{background:#fff3df;color:#b46600}.tone-order{background:#eeeaff;color:#694cc8}.tone-after_sale{background:#fff0ef;color:#ce4d55}.tone-community{background:#e9f8ec;color:#33823e}.notice-title{color:#1d4150;font-weight:850}.category-tag{background:#f2f6f5;color:#61747b;font-weight:700}.detail-link{color:#177f84;font-weight:850}.retry-button{border:0;background:#2a9e98;box-shadow:0 8rpx 16rpx rgba(42,158,152,.18);color:#fff;font-weight:850}
-.settings-card{padding:22rpx;border-radius:27rpx}.settings-head{margin-bottom:16rpx}.setting-row,.quiet-row{min-height:74rpx;margin-top:10rpx;padding:12rpx 15rpx;border:0;border-radius:17rpx;background:#f5f9fa;box-sizing:border-box}.setting-copy{min-width:0;flex:1}.setting-copy>text{display:block}.setting-copy>text:first-child{color:#183246;font-size:14px;font-weight:850}.setting-copy>text:last-child{margin-top:4rpx;color:#7a8992;font-size:10px;line-height:1.35}.setting-row switch{flex:none;transform:scale(.82);transform-origin:right center}.quiet-row{align-items:center}.quiet-pickers{flex:none;gap:7rpx}.settings-note{padding:14rpx 4rpx 2rpx;font-size:12px}
-.subscription-section{margin-top:10rpx;padding:16rpx 15rpx;border-radius:17rpx;background:#f2f9f8}.subscription-heading>text{display:block}.subscription-heading>text:first-child{color:#183246;font-size:14px;font-weight:850}.subscription-heading>text:last-child{margin-top:4rpx;color:#71838a;font-size:10px}.subscription-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10rpx;margin-top:14rpx}.subscription-button{min-width:0;height:92rpx;margin:0;padding:12rpx 8rpx;border:1rpx solid #cfe3e2;border-radius:14rpx;background:#fff;color:#1f5f61;font-size:12px;line-height:1.3}.subscription-button::after{border:0}.subscription-button>text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.subscription-button>text:first-child{font-weight:850}.subscription-button>text:last-child{margin-top:5rpx;color:#6f8588;font-size:10px}
+.page{--green:#0BBF63;--green-deep:#08A152;--green-soft:#E7F9EF;--orange-soft:#FFF2E5;--orange-deep:#F2620A;--t1:#191B1F;--t2:#767C85;--t3:#AEB3BB;min-height:100vh;padding:0 24rpx 90rpx;background:#F4F6F4;box-sizing:border-box;color:var(--t1)}
+.subnav{position:sticky;top:0;z-index:50;display:flex;align-items:center;height:88rpx;padding:calc(var(--status-bar-height) + 4rpx) 0 0;background:#F4F6F4}
+.back{display:flex;align-items:center;justify-content:center;width:68rpx;height:68rpx;color:var(--t1);font-size:36rpx;font-weight:350}
+.subnav-title{position:absolute;left:120rpx;right:120rpx;text-align:center;font-size:32rpx;font-weight:700}
+.subnav-right{display:flex;align-items:center;margin-left:auto;gap:16rpx}
+.right-action{color:var(--t2);font-size:24rpx}
+.msg-grid{display:flex;margin-top:10rpx;padding:24rpx 0;border-radius:32rpx;background:#fff}
+.msg-grid .m{display:flex;flex:1;align-items:center;flex-direction:column;gap:14rpx;font-size:22rpx;position:relative}
+.msg-grid .mi{position:relative;display:flex;align-items:center;justify-content:center;width:92rpx;height:92rpx;border-radius:30rpx;font-size:40rpx}
+.msg-badge{position:absolute;top:-10rpx;left:calc(50% + 16rpx);min-width:34rpx;height:34rpx;padding:0 8rpx;border-radius:17rpx;background:#FF3B30;color:#fff;font-size:20rpx;font-weight:700;display:flex;align-items:center;justify-content:center;border:4rpx solid #fff}
+.category-scroll{width:100%;margin-top:20rpx;white-space:nowrap}
+.category-list{display:inline-flex;gap:12rpx;padding:2rpx}
+.category-chip{display:flex;align-items:center;gap:8rpx;padding:14rpx 21rpx;border:1rpx solid #EDEFEF;border-radius:999rpx;background:#fff;color:var(--t3);font-size:26rpx}
+.category-chip.active{border-color:var(--green);background:var(--green);color:#fff}
+.chip-count{display:flex;align-items:center;justify-content:center;min-width:28rpx;height:28rpx;padding:0 6rpx;border-radius:999rpx;background:#EDEFEF;color:var(--t2);font-size:24rpx}
+.category-chip.active .chip-count{background:rgba(255,255,255,.2);color:#fff}
+.settings-card{margin-top:18rpx;padding:22rpx;border-radius:24rpx;background:#fff}
+.settings-head{display:flex;align-items:center;gap:16rpx;margin-bottom:16rpx}
+.settings-icon{display:flex;align-items:center;justify-content:center;width:58rpx;height:58rpx;flex:none;border-radius:18rpx;background:var(--green-soft);color:var(--green-deep);font-size:30rpx}
+.settings-head view text{display:block}
+.settings-head view text:first-child{font-size:30rpx;font-weight:850}
+.settings-head view text:last-child{margin-top:4rpx;color:var(--t2);font-size:22rpx}
+.setting-row,.quiet-row{display:flex;align-items:center;justify-content:space-between;gap:16rpx;padding:16rpx 0;border-top:1rpx solid #EDEFEF;font-size:28rpx}
+.quiet-row{align-items:flex-start}
+.quiet-pickers{display:flex;align-items:center;gap:10rpx}
+.time-value{padding:10rpx 15rpx;border:1rpx solid #EDEFEF;border-radius:12rpx;background:#f8fafa;color:var(--green-deep);font-size:22rpx}
+.settings-note{padding-top:13rpx;color:var(--t2);font-size:22rpx;line-height:1.5}
+.list-toolbar{display:flex;align-items:center;justify-content:space-between;margin:28rpx 4rpx 8rpx}
+.list-title{font-size:28rpx;font-weight:700}
+.unread-filter{display:flex;align-items:center;gap:8rpx;color:var(--t3);font-size:24rpx}
+.filter-dot{width:24rpx;height:24rpx;border:2rpx solid #aebcbc;border-radius:50%;box-sizing:border-box}
+.unread-filter.active{color:var(--green-deep)}
+.unread-filter.active .filter-dot{border:7rpx solid var(--green)}
+.msg-list{margin-top:8rpx;border-radius:32rpx;background:#fff;overflow:hidden}
+.msg-row{display:flex;align-items:center;gap:22rpx;padding:24rpx 24rpx}
+.msg-row+.msg-row{border-top:1rpx solid #F5F6F6}
+.msg-icon{display:flex;align-items:center;justify-content:center;width:60rpx;height:60rpx;flex:none;border-radius:18rpx;font-size:24rpx;font-weight:800}
+.msg-main{flex:1;min-width:0}
+.msg-main .l1{display:flex;align-items:baseline;justify-content:space-between}
+.msg-main .l1 b{font-size:28rpx;font-weight:700}
+.msg-main .l1 text{font-size:22rpx;color:var(--t3)}
+.msg-main .l2{font-size:24rpx;color:var(--t2);margin-top:6rpx;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-dot{width:20rpx;height:20rpx;flex:none;border-radius:50%;background:#FF3B30}
+.tone-asset{background:#FFF3DF;color:#B46600}
+.tone-order{background:#EDF4F4;color:#214B52}
+.tone-after_sale{background:#FFF0EF;color:#CE4D55}
+.tone-community{background:#E8F8F3;color:#16866C}
+.tone-system{background:#EEF1F2;color:#53656B}
+.state-card{margin-top:20rpx;padding:64rpx 30rpx;text-align:center;border-radius:24rpx;background:#fff}
+.state-icon{width:82rpx;height:82rpx;margin:0 auto;border-radius:25rpx;background:var(--green-soft);color:var(--green-deep);font-size:40rpx;display:flex;align-items:center;justify-content:center}
+.state-title{display:block;margin-top:18rpx;font-size:30rpx;font-weight:700}
+.state-copy{display:block;margin-top:8rpx;color:var(--t2);font-size:24rpx;line-height:1.55}
+.error-card .state-icon{background:#FFF0F1;color:#C84455}
+.retry-button{width:230rpx;height:66rpx;margin-top:22rpx;border-radius:16rpx;background:var(--green);color:#fff;font-size:28rpx;line-height:66rpx}
+.retry-button::after{border:0}
+.skeleton-card{height:190rpx;margin-top:18rpx;border-radius:24rpx}
+.load-more{width:260rpx;height:68rpx;margin:28rpx auto 0;border:1rpx solid #EDEFEF;border-radius:16rpx;background:#fff;color:var(--green-deep);font-size:28rpx;line-height:66rpx}
+.load-more::after{border:0}
+.list-end{padding:30rpx 0 4rpx;text-align:center;color:var(--t3);font-size:24rpx}
+.community-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12rpx;margin-top:18rpx}
+.community-shortcut{min-width:0;padding:18rpx 14rpx;border-radius:22rpx;background:#fff;box-sizing:border-box}
+.community-shortcut.active{background:#E7F9EF}
+.shortcut-top{display:flex;align-items:center;justify-content:space-between;gap:8rpx}
+.shortcut-icon{display:flex;align-items:center;justify-content:center;width:46rpx;height:46rpx;border-radius:14rpx;background:#fff;color:var(--green-deep);font-size:22rpx;font-weight:800}
+.shortcut-count{color:var(--t1);font-size:28rpx;font-weight:800}
+.shortcut-label,.shortcut-hint{display:block}
+.shortcut-label{margin-top:13rpx;color:var(--t1);font-size:26rpx;font-weight:700}
+.shortcut-hint{margin-top:5rpx;overflow:hidden;color:var(--t2);font-size:22rpx;text-overflow:ellipsis;white-space:nowrap}
+.subscription-section{margin-top:10rpx;padding:16rpx 15rpx;border-radius:17rpx;background:#F7F9F8}
+.subscription-heading text{display:block}
+.subscription-heading text:first-child{color:var(--t1);font-size:28rpx;font-weight:700}
+.subscription-heading text:last-child{margin-top:4rpx;color:var(--t2);font-size:22rpx}
+.subscription-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10rpx;margin-top:14rpx}
+.subscription-button{min-width:0;height:92rpx;margin:0;padding:12rpx 8rpx;border:1rpx solid #EDEFEF;border-radius:14rpx;background:#fff;color:var(--t1);font-size:22rpx;line-height:1.3}
+.subscription-button::after{border:0}
+.subscription-button text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subscription-button text:first-child{font-weight:700}
+.subscription-button text:last-child{margin-top:5rpx;color:var(--t2);font-size:20rpx}
 @media screen and (max-width:360px){.quiet-row{align-items:flex-start;flex-direction:column}.quiet-pickers{align-self:stretch;justify-content:flex-end}}
 </style>

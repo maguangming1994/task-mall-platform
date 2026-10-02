@@ -23,6 +23,7 @@ class AdminNavigationService
             ['code' => 'orders', 'label' => '订单与售后', 'icon' => 'FileDoneOutlined', 'path' => '/orders', 'permissions' => ['fulfillment.manage', 'after_sale.review']],
             ['code' => 'finance', 'label' => '资产与财务', 'icon' => 'WalletOutlined', 'path' => '/finance', 'permissions' => ['finance.manage']],
             ['code' => 'community', 'label' => '社区内容', 'icon' => 'MessageOutlined', 'path' => '/community', 'permissions' => ['community.review']],
+            ['code' => 'second_hand', 'label' => '闲置审核', 'icon' => 'SwapOutlined', 'path' => '/second-hand', 'permissions' => ['community.review', 'after_sale.review']],
             ['code' => 'support', 'label' => '客服工单', 'icon' => 'CustomerServiceOutlined', 'path' => '/support', 'permissions' => ['after_sale.review', 'privacy.manage']],
             ['code' => 'operations', 'label' => '运营与消息', 'icon' => 'NotificationOutlined', 'path' => '/operations', 'permissions' => ['operations.manage']],
             ['code' => 'settings', 'label' => '配置中心', 'icon' => 'SettingOutlined', 'path' => '/settings', 'permissions' => ['settings.manage']],

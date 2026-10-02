@@ -6,8 +6,10 @@ use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Assets\Services\AssetLedgerService;
+use App\Modules\Payment\Services\PaymentService;
 use App\Modules\SecondHand\Models\SecondHandItem;
 use App\Modules\SecondHand\Models\SecondHandOrder;
+use App\Modules\SecondHand\Services\SecondHandNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +17,11 @@ use Illuminate\Validation\Rule;
 
 class SecondHandOrderController extends Controller
 {
-    public function __construct(private readonly AssetLedgerService $ledger) {}
+    public function __construct(
+        private readonly AssetLedgerService $ledger,
+        private readonly SecondHandNotificationService $notify,
+        private readonly PaymentService $payment,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -87,6 +93,7 @@ class SecondHandOrderController extends Controller
             return $order;
         });
         $order->loadMissing(['item', 'buyer', 'seller']);
+        $this->notify->orderCreated($order);
 
         return ApiResponse::success($this->present($order, $buyer->id, true), 201);
     }
@@ -98,8 +105,24 @@ class SecondHandOrderController extends Controller
         abort_unless($order->status === 'pending_payment', 409, '订单状态不允许支付');
 
         $data = $request->validate([
-            'payment_method' => ['nullable', Rule::in(['wallet'])],
+            'payment_method' => ['nullable', Rule::in(['wallet', 'wechat'])],
         ]);
+
+        $method = $data['payment_method'] ?? 'wallet';
+
+        if ($method === 'wechat') {
+            // 微信支付：创建支付单，返回调起参数，等回调确认后更新订单状态
+            $scene = $request->header('X-Client-Platform', 'wechat-mini');
+            abort_unless(in_array($scene, ['wechat-mini', 'h5-wechat', 'h5-browser'], true), 422, '不支持的平台场景');
+            $key = (string) $request->header('Idempotency-Key', '');
+            abort_unless(strlen($key) >= 12 && strlen($key) <= 128, 422, 'Idempotency-Key is required.');
+            $payment = $this->payment->createSecondHandPayment($order, $user, $scene, $key);
+
+            return ApiResponse::success([
+                'payment' => $this->payment->present($payment),
+                'order' => $this->present($order->fresh(), $user->id, true),
+            ]);
+        }
 
         DB::transaction(function () use ($order, $user, $data) {
             $locked = SecondHandOrder::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
@@ -124,6 +147,7 @@ class SecondHandOrderController extends Controller
             $locked->item()->update(['status' => 'reserved']);
         });
         $order->refresh();
+        $this->notify->orderPaid($order);
 
         return ApiResponse::success($this->present($order, $user->id, true));
     }
@@ -135,6 +159,7 @@ class SecondHandOrderController extends Controller
         abort_unless($order->status === 'paid', 409, '订单状态不允许发货');
 
         $order->update(['status' => 'shipped', 'shipped_at' => now()]);
+        $this->notify->orderShipped($order);
 
         return ApiResponse::success($this->present($order, $user->id, true));
     }
@@ -146,10 +171,27 @@ class SecondHandOrderController extends Controller
         abort_unless(in_array($order->status, ['paid', 'shipped'], true), 409, '订单状态不允许确认收货');
 
         DB::transaction(function () use ($order) {
-            $order->update(['status' => 'completed', 'completed_at' => now()]);
-            $order->item()->update(['status' => 'sold']);
+            $locked = SecondHandOrder::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+            abort_unless(in_array($locked->status, ['paid', 'shipped'], true), 409, '订单状态不允许确认收货');
+
+            // 托管货款结算给卖家钱包
+            if ($locked->paid_amount > 0) {
+                $seller = User::query()->findOrFail($locked->seller_user_id);
+                $this->ledger->changeWallet(
+                    $seller,
+                    $locked->paid_amount,
+                    '二手闲置订单结算',
+                    'second-hand-order-settle:'.$locked->public_id,
+                    null,
+                    'second_hand_settlement',
+                );
+            }
+
+            $locked->update(['status' => 'completed', 'completed_at' => now()]);
+            $locked->item()->update(['status' => 'sold']);
         });
         $order->refresh();
+        $this->notify->orderCompleted($order);
 
         return ApiResponse::success($this->present($order, $user->id, true));
     }
@@ -183,6 +225,9 @@ class SecondHandOrderController extends Controller
             }
         });
         $order->refresh();
+        if ($order->paid_amount > 0) {
+            $this->notify->orderCancelled($order);
+        }
 
         return ApiResponse::success($this->present($order, $user->id, true));
     }
@@ -210,6 +255,8 @@ class SecondHandOrderController extends Controller
             $base['address'] = $order->address_snapshot;
             $base['buyer'] = $this->presentUser($order->buyer);
             $base['seller'] = $this->presentUser($order->seller);
+            $base['has_refund'] = $order->refund()->exists();
+            $base['has_rated'] = $order->ratings()->where('rater_user_id', $viewerId)->exists();
         }
 
         return $base;

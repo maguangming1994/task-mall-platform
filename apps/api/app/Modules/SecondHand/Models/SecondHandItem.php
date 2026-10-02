@@ -16,7 +16,8 @@ class SecondHandItem extends Model
     protected $fillable = [
         'public_id', 'campus_id', 'seller_user_id', 'category_id',
         'title', 'description', 'price', 'condition', 'cover_file_public_id',
-        'images', 'trade_type', 'location', 'status', 'view_count', 'favorite_count',
+        'images', 'trade_type', 'location', 'status', 'audit_status', 'rejected_reason',
+        'view_count', 'favorite_count',
         'idempotency_key_hash',
     ];
 

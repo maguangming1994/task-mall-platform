@@ -6,19 +6,19 @@
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view v-if="accessChecking" class="publisher-gate list-state">
+    <view v-if="accessChecking" class="gate-card list-state">
       <view class="loading-line" /><view class="loading-line short" /><view class="loading-line" />
       <text class="state-copy">正在确认任务发布权限</text>
     </view>
-    <view v-else-if="!accessGranted" class="publisher-gate list-state error-state">
+    <view v-else-if="!accessGranted" class="gate-card list-state error-state">
       <text class="state-icon">限</text><text class="state-title">无法进入任务发布中心</text><text class="state-copy">{{ accessDeniedReason }}</text>
       <button class="refresh-button" @click="leavePublisher">返回我的</button>
     </view>
     <template v-else>
-    <view class="hero">
-      <text class="eyebrow">BOUNTY PUBLISHER</text>
-      <text class="title">发布悬赏</text>
-      <text class="hero-copy">把任务要求、奖励预算和验收材料一次说明清楚，发布后按步骤审核与结算。</text>
+    <view class="subnav">
+      <view class="subnav-back" @click="leavePublisher">‹</view>
+      <text class="subnav-title">{{ editingTaskId ? '编辑任务' : '发布任务' }}</text>
+      <view class="subnav-right" />
     </view>
 
     <view v-if="sessionWorking" class="login-card list-state">
@@ -35,37 +35,53 @@
       <view v-if="editingTaskId" class="edit-strip"><text>正在编辑：{{ editingTaskTitle }}</text><text>保存后生成新的任务版本快照，线上已发布版本不被覆盖。</text></view>
       <scroll-view class="stepper" scroll-x :show-scrollbar="false"><view class="stepper-inner"><view v-for="(item,index) in stages" :key="item" :class="['stage', {active:index===stage, done:index<stage}]" @click="jumpStage(index)"><text class="stage-index">{{ index < stage ? '✓' : index + 1 }}</text><text>{{ item }}</text></view></view></scroll-view>
 
-      <view v-if="stage===0" class="form-card">
-        <text class="section-title">1. 基础信息与业务场景</text><text class="section-copy">悬赏任务必须有明确对象、说明和适用设备，不能只写推广口号。</text>
-        <text class="field-label">发布场景</text><view class="choice-row"><view v-for="item in scenarioOptions" :key="item.value" :class="['choice-chip',{active:scenario===item.value}]" @click="scenario=item.value"><text>{{ item.label }}</text><small>{{ item.tip }}</small></view></view>
-        <text class="field-label">任务分类</text><picker :range="categoryOptions" range-key="label" @change="category=categoryOptions[Number($event.detail.value)].value"><view class="picker-field">{{ optionLabel(categoryOptions,category) }}<text>›</text></view></picker>
-        <text class="field-label">支持设备</text><view class="inline-choices"><text v-for="item in deviceOptions" :key="item.value" :class="['inline-choice',{active:device===item.value}]" @click="device=item.value">{{ item.label }}</text></view>
-        <input v-model="title" class="input" maxlength="80" placeholder="任务标题，例如：完成商品价格对比并提交截图" />
-        <input v-model="projectName" class="input" maxlength="80" placeholder="项目名称（选填，用于后台归档）" />
-        <text class="field-label">任务封面（选填）</text>
-        <view v-if="coverImageUrl" class="cover-preview">
-          <image :src="coverImageUrl" mode="aspectFill" />
-          <text class="cover-remove" @click="coverWorking || (coverImageUrl='')">移除</text>
+      <view v-if="stage===0">
+        <view class="card">
+          <text class="card-title">选择任务类型</text>
+          <view class="type-grid">
+            <view v-for="item in scenarioOptions" :key="item.value" :class="['type-cell',{active:scenario===item.value}]" @click="scenario=item.value">
+              <text class="type-icon">{{ item.label.charAt(0) }}</text>
+              <text class="type-name">{{ item.label }}</text>
+            </view>
+          </view>
         </view>
-        <input v-model="coverImageUrl" class="input" :disabled="coverWorking" placeholder="也可以直接填写 HTTPS 图片链接" />
-        <view class="media-actions">
-          <button class="media-button primary" :disabled="coverWorking" :loading="coverAction==='upload'" @click="uploadCover">本地上传</button>
-          <button class="media-button" :disabled="coverWorking || !validCoverUrl(coverImageUrl)" :loading="coverAction==='import'" @click="rehostCover">链接转存</button>
+
+        <view class="card">
+          <text class="card-title">基础信息</text>
+          <text class="field-label">任务标题</text>
+          <input v-model="title" class="input" maxlength="80" placeholder="一句话说清需求，如：西门取 2 个快递送到 3 舍" />
+          <text class="char-count">{{ title.length }}/80</text>
+          <text class="field-label">任务说明</text>
+          <textarea v-model="description" class="textarea" maxlength="2000" placeholder="详细描述任务要求、取件码、送达位置、注意事项…" />
+          <text class="field-label">添加图片</text>
+          <view v-if="coverImageUrl" class="cover-preview">
+            <image :src="coverImageUrl" mode="aspectFill" />
+            <text class="cover-remove" @click="coverWorking || (coverImageUrl='')">移除</text>
+          </view>
+          <input v-model="coverImageUrl" class="input" :disabled="coverWorking" placeholder="也可以直接填写 HTTPS 图片链接" />
+          <view class="media-actions">
+            <button class="media-button primary" :disabled="coverWorking" :loading="coverAction==='upload'" @click="uploadCover">本地上传</button>
+            <button class="media-button" :disabled="coverWorking || !validCoverUrl(coverImageUrl)" :loading="coverAction==='import'" @click="rehostCover">链接转存</button>
+          </view>
+          <text class="media-hint">本地上传和链接转存会保存到后台当前启用的本地、腾讯云 COS 或七牛云 Kodo；直接链接依赖原网站可用性。</text>
+          <text class="field-label">项目名称（选填）</text>
+          <input v-model="projectName" class="input" maxlength="80" placeholder="用于后台归档" />
+          <text class="field-label">标签</text>
+          <input v-model="tagsText" class="input" placeholder="多个用逗号分隔，例如：电商,截图" />
         </view>
-        <text class="media-hint">本地上传和链接转存会保存到后台当前启用的本地、腾讯云 COS 或七牛云 Kodo；直接链接依赖原网站可用性。</text>
-        <textarea v-model="description" class="textarea" maxlength="2000" placeholder="任务说明：目标、适用人群、禁止事项和最终交付结果" />
-        <input v-model="tagsText" class="input" placeholder="标签，多个用逗号分隔，例如：电商,截图" />
       </view>
 
-      <view v-else-if="stage===1" class="form-card">
-        <text class="section-title">2. 领取、完成与审核时限</text><text class="section-copy">三个时间分别控制“还能否领取”“领取后多久完成”“提交后多久必须审核”。</text>
+      <view v-else-if="stage===1" class="card">
+        <text class="card-title">领取、完成与审核时限</text>
+        <text class="section-copy">三个时间分别控制“还能否领取”“领取后多久完成”“提交后多久必须审核”。</text>
         <view class="field-grid"><view><text class="field-label">可领取天数</text><input v-model.number="claimDays" class="input compact" type="number" /></view><view><text class="field-label">领取后完成</text><input v-model.number="completionHours" class="input compact" type="number" /></view><view><text class="field-label">审核期限</text><input v-model.number="reviewHours" class="input compact" type="number" /></view><view><text class="field-label">最多提交次数</text><input v-model.number="submissionLimit" class="input compact" type="number" /></view></view>
         <text class="field-label">每人可领取频率</text><view class="choice-row"><view v-for="item in taskTypeOptions" :key="item.value" :class="['choice-chip small',{active:taskType===item.value}]" @click="taskType=item.value"><text>{{ item.label }}</text><small>{{ item.tip }}</small></view></view>
         <view class="rule-note"><text>规则说明</text><text>未领取：不占奖励；领取成功：立即预留对应奖励；超时未提交：释放奖励名额；审核通过：奖励发放；审核驳回：可在剩余次数内重交。</text></view>
       </view>
 
-      <view v-else-if="stage===2" class="form-card">
-        <text class="section-title">3. 奖励与预算预留</text><text class="section-copy">不是向用户收押金。发布方必须从平台预算池足额预留奖励，避免任务完成后无法结算。</text>
+      <view v-else-if="stage===2" class="card">
+        <text class="card-title">奖励与预算预留</text>
+        <text class="section-copy">不是向用户收押金。发布方必须从平台预算池足额预留奖励，避免任务完成后无法结算。</text>
         <text class="field-label">奖励类型</text><view class="inline-choices"><text :class="['inline-choice',{active:rewardType==='points'}]" @click="changeRewardType('points')">积分奖励</text><text :class="['inline-choice',{active:rewardType==='wallet_balance'}]" @click="changeRewardType('wallet_balance')">余额奖励</text></view>
         <view class="field-grid two"><view><text class="field-label">每人奖励{{ rewardType==='points'?'积分':'金额（元）' }}</text><input v-model.number="rewardUnit" class="input compact" type="digit" /></view><view><text class="field-label">奖励名额</text><input v-model.number="quota" class="input compact" type="number" /></view></view>
         <view class="budget-summary"><view><text class="budget-label">预计锁定预算</text><text class="budget-value">{{ budgetText }}</text></view><view><text class="budget-label">平台发布服务费</text><text class="budget-free">¥0.00</text></view></view>
@@ -73,30 +89,42 @@
         <view class="risk-note">余额单人奖励或总预算超过后台阈值时，会自动进入财务二次复核；提交人不能审核自己的高风险发布。</view>
       </view>
 
-      <view v-else-if="stage===3" class="form-card">
-        <text class="section-title">4. 做单步骤与验收材料</text><text class="section-copy">每一步明确动作和证据类型。网址、二维码或复制内容建议放在第一步。</text>
+      <view v-else-if="stage===3" class="card">
+        <text class="card-title">做单步骤与验收材料</text>
+        <text class="section-copy">每一步明确动作和证据类型。网址、二维码或复制内容建议放在第一步。</text>
         <view v-for="(item,index) in steps" :key="item.id" class="step-editor"><view class="step-editor-head"><text>第 {{ index+1 }} 步</text><text v-if="steps.length>1" class="delete-link" @click="removeStep(index)">删除</text></view><input v-model="item.title" class="input" maxlength="100" placeholder="步骤标题" /><textarea v-model="item.description" class="textarea short" maxlength="1000" placeholder="操作说明和审核标准" /><picker :range="inputTypeOptions" range-key="label" @change="item.input_type=inputTypeOptions[Number($event.detail.value)].value"><view class="picker-field">提交材料：{{ optionLabel(inputTypeOptions,item.input_type) }}<text>›</text></view></picker><input v-if="item.input_type==='link'" v-model="item.link_url" class="input" placeholder="HTTPS 访问链接" /><input v-if="item.input_type==='link'" v-model="item.copy_text" class="input" placeholder="需要复制的内容（选填）" /><view class="required-row" @click="item.required=!item.required"><text :class="['check',{checked:item.required}]">✓</text><text>设为必做步骤</text></view></view>
         <button class="add-step" @click="addStep">＋ 添加步骤</button>
       </view>
 
-      <view v-else class="form-card">
-        <text class="section-title">5. 发布前确认</text><text class="section-copy">保存后生成不可变任务版本；发布时再次锁定预算并执行风险复核。</text>
+      <view v-else class="card">
+        <text class="card-title">发布前确认</text>
+        <text class="section-copy">保存后生成不可变任务版本；发布时再次锁定预算并执行风险复核。</text>
         <view class="review-card"><text class="review-title">{{ title || '未填写任务标题' }}</text><text class="review-copy">{{ optionLabel(scenarioOptions,scenario) }} · {{ optionLabel(categoryOptions,category) }} · {{ optionLabel(taskTypeOptions,taskType) }}</text><view class="review-metrics"><view><strong>{{ rewardDisplay }}</strong><small>单人奖励</small></view><view><strong>{{ quota }}</strong><small>奖励名额</small></view><view><strong>{{ completionHours }}小时</strong><small>完成期限</small></view><view><strong>{{ steps.length }}</strong><small>验收步骤</small></view></view></view>
         <view class="checklist"><text>✓ 发布者身份为任务发布管理员，发布会话与普通用户隔离</text><text>✓ 奖励预算足额后才允许发布，不向接单用户收取押金</text><text>✓ 任务步骤、截图/文字材料和审核期限形成完整快照</text><text>✓ 余额奖励、高额预算和敏感内容按规则进入复核</text><text>✓ 关闭任务时，未发放预算按实际占用情况释放</text></view>
         <textarea v-model="rulesText" class="textarea" placeholder="补充发布规则，每行一条（选填）" />
         <view class="agreement-row" @click="agreed=!agreed"><text :class="['check',{checked:agreed}]">✓</text><text>已阅读并同意《悬赏发布规则》，确认信息真实、预算来源合规且验收标准明确。</text></view>
-        <view class="publish-actions"><button class="draft-button" :disabled="working" :loading="working" @click="saveTask(false)">{{ editingTaskId ? '保存新版本' : '仅保存草稿' }}</button><button v-if="!editingTaskId" class="primary-button no-margin" :disabled="working || !agreed || !matchingPool" :loading="working" @click="saveTask(true)">校验预算并申请发布</button></view>
       </view>
 
-      <view class="nav-actions"><button v-if="stage>0" class="back-button" :disabled="working || coverWorking" @click="stage--">上一步</button><button v-if="stage<4" class="next-button" :disabled="working || coverWorking" @click="nextStage">下一步</button></view>
+      <view class="tip-note">💡 发布即托管积分到平台，任务完成并确认后支付给接单同学；超时未确认系统将自动结算。</view>
 
-      <view v-if="listLoading" class="published-card list-state"><view class="loading-line" /><view class="loading-line short" /><view class="loading-line" /></view>
-      <view v-else-if="listError" class="published-card list-state error-state"><text class="state-icon">!</text><text class="state-title">发布列表加载失败</text><text class="state-copy">{{ listError }}</text><button class="refresh-button" @click="load">重试</button></view>
-      <view v-else-if="!tasks.length" class="published-card list-state empty-state"><text class="state-icon">稿</text><text class="state-title">还没有发布任务</text><text class="state-copy">先保存草稿，再按预算、步骤和发布规则提交审核。</text></view>
-      <view v-else class="published-card"><view class="published-head"><text class="section-title">我的发布</text><text class="section-copy">{{ tasks.length }} 个任务</text></view><view v-for="task in tasks" :key="task.id" class="published-row" @click="openTask(task.id)"><view><text class="published-title">{{ task.title }}</text><text class="published-status">{{ statusText(task.status) }} · 查看进度与管理</text></view><button v-if="task.status==='draft'" class="mini-publish" :disabled="working" @click.stop="publishExisting(task.id)">申请发布</button><text v-else class="row-arrow">›</text></view></view>
+      <view v-if="listLoading" class="card list-state"><view class="loading-line" /><view class="loading-line short" /><view class="loading-line" /></view>
+      <view v-else-if="listError" class="card list-state error-state"><text class="state-icon">!</text><text class="state-title">发布列表加载失败</text><text class="state-copy">{{ listError }}</text><button class="refresh-button" @click="load">重试</button></view>
+      <view v-else-if="!tasks.length" class="card list-state empty-state"><text class="state-icon">稿</text><text class="state-title">还没有发布任务</text><text class="state-copy">先保存草稿，再按预算、步骤和发布规则提交审核。</text></view>
+      <view v-else class="card"><view class="published-head"><text class="card-title">我的发布</text><text class="section-copy">{{ tasks.length }} 个任务</text></view><view v-for="task in tasks" :key="task.id" class="published-row" @click="openTask(task.id)"><view><text class="published-title">{{ task.title }}</text><text class="published-status">{{ statusText(task.status) }} · 查看进度与管理</text></view><button v-if="task.status==='draft'" class="mini-publish" :disabled="working" @click.stop="publishExisting(task.id)">申请发布</button><text v-else class="row-arrow">›</text></view></view>
+
+      <view class="bottom-space" />
     </template>
     </template>
     </template>
+
+    <view v-if="accessGranted && publisherToken && !sessionWorking && !sessionError" class="action-bar">
+      <button v-if="stage>0" class="ab-duo ghost" :disabled="working || coverWorking" @click="stage--">上一步</button>
+      <button v-if="stage<4" class="ab-duo primary" :disabled="working || coverWorking" @click="nextStage">下一步</button>
+      <template v-else>
+        <button class="ab-duo ghost" :disabled="working" :loading="working" @click="saveTask(false)">{{ editingTaskId ? '保存新版本' : '存草稿' }}</button>
+        <button v-if="!editingTaskId" class="ab-duo primary" :disabled="working || !agreed || !matchingPool" :loading="working" @click="saveTask(true)">发布任务</button>
+      </template>
+    </view>
   </view>
 </template>
 
@@ -210,31 +238,156 @@ function toastError(error:unknown,fallback:string){if(handlePublisherAccessError
 </script>
 
 <style scoped>
-.publisher-gate{min-height:300rpx;margin-top:20rpx;padding:36rpx 28rpx;box-sizing:border-box;border:1rpx solid #dce9ef;border-radius:28rpx;background:rgba(255,255,255,.97);box-shadow:0 12rpx 30rpx rgba(34,78,103,.075)}
-.page{min-height:100vh;padding:28rpx 28rpx 100rpx;box-sizing:border-box;background:#f4f6fa}.hero{position:relative;overflow:hidden;padding:36rpx 34rpx;border-radius:32rpx;background:linear-gradient(135deg,#173b87,#326be3);color:#fff}.hero::after{content:'';position:absolute;right:-70rpx;top:-90rpx;width:250rpx;height:250rpx;border-radius:50%;background:rgba(255,255,255,.1)}.eyebrow,.title,.hero-copy,.section-title,.section-copy,.field-label,.identity-label,.identity-name,.budget-label,.budget-value,.budget-free,.pool-title,.pool-ok,.pool-error,.review-title,.review-copy,.published-title,.published-status{display:block}.eyebrow{color:#cbdcff;font-size:13px;letter-spacing:3rpx}.title{margin-top:10rpx;font-size:26px;font-weight:850}.hero-copy{max-width:590rpx;margin-top:12rpx;color:rgba(255,255,255,.78);font-size:14px;line-height:1.6}.login-card,.form-card,.published-card{margin-top:20rpx;padding:28rpx;border:1rpx solid #e5e9f0;border-radius:28rpx;background:#fff;box-shadow:0 10rpx 30rpx rgba(30,45,80,.045)}.security-head{display:flex;gap:18rpx}.security-icon{display:flex;align-items:center;justify-content:center;width:72rpx;height:72rpx;flex:none;border-radius:20rpx;background:#eaf1ff;color:#245ccc;font-size:14px;font-weight:800}.section-title{font-size:17px;font-weight:850}.section-copy{margin-top:6rpx;color:#7b8495;font-size:13px;line-height:1.55}.input,.textarea,.picker-field{width:100%;margin-top:16rpx;padding:0 20rpx;box-sizing:border-box;border:1rpx solid #dce1e9;border-radius:16rpx;background:#fff;font-size:14px}.input{height:78rpx}.textarea{height:180rpx;padding-top:18rpx;line-height:1.55}.textarea.short{height:130rpx}.primary-button,.next-button{height:78rpx;margin-top:20rpx;border:0;border-radius:18rpx;background:#326be3;color:#fff;font-size:15px;font-weight:800;line-height:78rpx}.primary-button::after,.next-button::after,.back-button::after,.draft-button::after,.add-step::after,.refresh-button::after,.mini-publish::after{border:0}.identity-strip{display:flex;align-items:center;justify-content:space-between;margin-top:18rpx;padding:20rpx 24rpx;border-radius:20rpx;background:#eef4ff}.identity-label{color:#7890bf;font-size:13px}.identity-name{margin-top:3rpx;color:#1f3f80;font-size:14px;font-weight:800}.verified{padding:7rpx 14rpx;border-radius:12rpx;background:#d9f7e8;color:#087a4d;font-size:13px}.stepper{margin:22rpx -28rpx 0;padding:0 28rpx;box-sizing:border-box;white-space:nowrap}.stepper-inner{display:inline-flex;gap:12rpx}.stage{display:flex;align-items:center;gap:8rpx;padding:14rpx 18rpx;border-radius:16rpx;background:#e9edf4;color:#7b8495;font-size:14px}.stage.active{background:#326be3;color:#fff}.stage.done{background:#e8f7f0;color:#087a4d}.stage-index{display:flex;align-items:center;justify-content:center;width:32rpx;height:32rpx;border-radius:50%;background:rgba(255,255,255,.7);color:inherit;font-size:12px;font-weight:850}.field-label{margin-top:24rpx;color:#344054;font-size:14px;font-weight:750}.choice-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;margin-top:12rpx}.choice-chip{padding:18rpx 14rpx;border:1rpx solid #e0e5ed;border-radius:18rpx;background:#fafbfc}.choice-chip.active{border-color:#326be3;background:#eef4ff;color:#245ccc}.choice-chip text,.choice-chip small{display:block}.choice-chip text{font-size:14px;font-weight:800}.choice-chip small{margin-top:6rpx;color:#8b94a5;font-size:12px;line-height:1.35}.choice-chip.small{min-height:88rpx}.inline-choices{display:flex;gap:14rpx;margin-top:12rpx}.inline-choice{padding:14rpx 28rpx;border:1rpx solid #e0e5ed;border-radius:14rpx;color:#667085;font-size:14px}.inline-choice.active{border-color:#326be3;background:#eef4ff;color:#245ccc;font-weight:800}.picker-field{display:flex;align-items:center;justify-content:space-between;height:78rpx;color:#344054}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16rpx}.field-grid.two{margin-top:4rpx}.input.compact{margin-top:10rpx}.rule-note,.risk-note{margin-top:22rpx;padding:20rpx;border-radius:16rpx;background:#fff8e8;color:#8b651e;font-size:13px;line-height:1.6}.rule-note text{display:block}.rule-note text:first-child{font-weight:850}.budget-summary{display:grid;grid-template-columns:1fr 1fr;gap:14rpx;margin-top:22rpx}.budget-summary>view{padding:22rpx;border-radius:18rpx;background:#f6f8fc}.budget-label{color:#8b94a5;font-size:13px}.budget-value,.budget-free{margin-top:7rpx;font-size:19px;font-weight:850}.budget-value{color:#f05f22}.budget-free{color:#087a4d}.pool-card{margin-top:16rpx;padding:22rpx;border:1rpx dashed #b8c8e8;border-radius:18rpx;background:#f8faff}.pool-title{font-size:14px;font-weight:850}.pool-ok,.pool-error{margin-top:9rpx;font-size:13px}.pool-ok{color:#087a4d}.pool-error{color:#d92d20}.refresh-button{height:56rpx;margin:14rpx 0 0;padding:0 20rpx;border-radius:14rpx;background:#fff;color:#245ccc;font-size:13px;line-height:56rpx}.step-editor{margin-top:18rpx;padding:22rpx;border:1rpx solid #e4e8ef;border-radius:20rpx;background:#fafbfc}.step-editor-head{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:850}.delete-link{color:#d92d20;font-size:13px;font-weight:500}.required-row,.agreement-row{display:flex;align-items:flex-start;gap:12rpx;margin-top:18rpx;color:#475467;font-size:14px;line-height:1.55}.check{display:flex;align-items:center;justify-content:center;width:34rpx;height:34rpx;flex:none;border:1rpx solid #c8cfdb;border-radius:9rpx;color:transparent}.check.checked{border-color:#326be3;background:#326be3;color:#fff}.add-step{height:66rpx;margin-top:18rpx;border:1rpx dashed #326be3;border-radius:16rpx;background:#f5f8ff;color:#245ccc;font-size:14px;line-height:66rpx}.review-card{margin-top:20rpx;padding:24rpx;border-radius:22rpx;background:linear-gradient(135deg,#173b87,#326be3);color:#fff}.review-title{font-size:19px;font-weight:850}.review-copy{margin-top:7rpx;color:rgba(255,255,255,.72);font-size:13px}.review-metrics{display:grid;grid-template-columns:repeat(4,1fr);margin-top:24rpx}.review-metrics view{text-align:center;border-right:1rpx solid rgba(255,255,255,.2)}.review-metrics view:last-child{border-right:0}.review-metrics strong,.review-metrics small{display:block}.review-metrics strong{font-size:15px}.review-metrics small{margin-top:5rpx;color:rgba(255,255,255,.65);font-size:12px}.checklist{margin-top:18rpx;padding:20rpx;border-radius:18rpx;background:#effaf5}.checklist text{display:block;margin:8rpx 0;color:#176b4c;font-size:13px;line-height:1.5}.publish-actions{display:grid;grid-template-columns:.8fr 1.2fr;gap:14rpx;margin-top:20rpx}.draft-button{height:78rpx;margin:0;border:1rpx solid #d0d5dd;border-radius:18rpx;background:#fff;color:#475467;line-height:78rpx}.no-margin{margin:0}.nav-actions{display:flex;gap:14rpx;margin-top:20rpx}.back-button,.next-button{height:72rpx;flex:1;margin:0;border-radius:18rpx;line-height:72rpx}.back-button{border:1rpx solid #d0d5dd;background:#fff;color:#475467}.published-head,.published-row{display:flex;align-items:center;justify-content:space-between}.published-row{padding:20rpx 0;border-bottom:1rpx solid #edf0f4}.published-row:last-child{border-bottom:0}.published-title{font-size:14px;font-weight:800}.published-status{margin-top:4rpx;color:#8b94a5;font-size:13px}.mini-publish{height:54rpx;margin:0;padding:0 20rpx;border-radius:14rpx;background:#326be3;color:#fff;font-size:13px;line-height:54rpx}@media screen and (min-width:768px){.page{width:750rpx;margin:0 auto}}
-.page{background:var(--tm-canvas)}.hero{background:#071a33}.hero::after{content:'赏';right:26rpx;top:0;width:auto;height:auto;background:none;color:rgba(255,255,255,.08);font-size:95px;font-weight:900}.primary-button,.next-button,.mini-publish{background:var(--tm-brand-600)}.identity-strip{border:1rpx solid #d6e9e7;background:#f2f9f8}.identity-label{color:var(--tm-ink-500)}.identity-name{color:var(--tm-ink-900)}.stage.active{background:var(--tm-brand-600)}.choice-chip.active,.inline-choice.active{border-color:var(--tm-brand-600);background:var(--tm-brand-100);color:var(--tm-brand-700)}.check.checked{border-color:var(--tm-brand-600);background:var(--tm-brand-600)}.add-step{border-color:var(--tm-brand-600);background:#f2f9f8;color:var(--tm-brand-700)}.review-card{background:#071a33}
-.edit-strip{display:flex;flex-direction:column;gap:5rpx;margin-top:16rpx;padding:16rpx 20rpx;border:2rpx solid var(--tm-ink-900);border-radius:18rpx;background:var(--tm-campus-cyan-soft);color:var(--tm-ink-900);font-size:13px;line-height:1.45;box-shadow:0 4rpx 0 rgba(22,22,22,.12)}.edit-strip text:first-child{font-weight:850}
-/* Campus V3 */
-.page{background:linear-gradient(180deg,var(--tm-campus-yellow-soft) 0,var(--tm-canvas) 720rpx)}
-.hero{border:2rpx solid var(--tm-ink-900);background:linear-gradient(135deg,var(--tm-campus-yellow),#ff8f62);box-shadow:0 9rpx 0 var(--tm-ink-900);color:var(--tm-ink-900)}
-.eyebrow,.hero-copy{color:var(--tm-ink-700)}
-.login-card,.identity-strip,.form-card,.published-card{border:2rpx solid var(--tm-ink-900);box-shadow:0 7rpx 0 rgba(22,22,22,.14)}
-.login-card{background:var(--tm-campus-cyan-soft)}.security-icon{border:2rpx solid var(--tm-ink-900);background:var(--tm-campus-cyan);color:var(--tm-ink-900)}
-.input,.textarea,.picker-field,.step-editor{border:2rpx solid var(--tm-ink-900);background:#fff}
-.identity-strip{background:var(--tm-campus-lime-soft)}.verified{border:1rpx solid var(--tm-ink-900);background:var(--tm-campus-lime);color:var(--tm-ink-900)}
-.stage{border:2rpx solid var(--tm-ink-900);background:#fff;box-shadow:0 4rpx 0 rgba(22,22,22,.1)}.stage.active{border-color:var(--tm-ink-900);background:var(--tm-brand-600);box-shadow:0 4rpx 0 var(--tm-ink-900)}.stage.done{background:var(--tm-campus-lime-soft);color:var(--tm-ink-900)}
-.choice-chip,.inline-choice{border:2rpx solid var(--tm-ink-900);background:#fff;box-shadow:0 4rpx 0 rgba(22,22,22,.1)}
-.choice-chip.active,.inline-choice.active{border-color:var(--tm-ink-900);background:var(--tm-campus-yellow);color:var(--tm-ink-900);box-shadow:0 4rpx 0 var(--tm-ink-900)}
-.form-card:nth-of-type(odd){background:#fffef6}.rule-note,.risk-note{border:2rpx solid var(--tm-ink-900);background:var(--tm-campus-coral-soft)}
-.budget-summary,.pool-card{border:2rpx solid var(--tm-ink-900)}.budget-summary{background:var(--tm-campus-yellow-soft)}.pool-card{background:var(--tm-campus-lime-soft)}
-.add-step,.primary-button,.next-button,.mini-publish{border:2rpx solid var(--tm-ink-900);box-shadow:0 5rpx 0 var(--tm-ink-900)}.draft-button,.back-button{border:2rpx solid var(--tm-ink-900);box-shadow:0 4rpx 0 var(--tm-ink-900)}
-.review-card{border:2rpx solid var(--tm-ink-900);background:linear-gradient(135deg,var(--tm-campus-purple),var(--tm-brand-600));box-shadow:0 7rpx 0 var(--tm-ink-900)}
-.page{background:radial-gradient(circle at 92% 0,rgba(61,206,212,.17),transparent 28%),linear-gradient(180deg,#eefaff 0,#f7fbfd 45%,#f4f8fa 100%)!important}.hero{border:1rpx solid #d7e8ef!important;background:linear-gradient(135deg,#1268c9,#18a7c8)!important;box-shadow:0 16rpx 34rpx rgba(29,104,145,.16)!important;color:#fff!important}.hero::after{color:rgba(255,255,255,.12)!important}.login-card,.identity-strip,.form-card,.published-card,.edit-strip{border:1rpx solid #dce9ef!important;box-shadow:0 12rpx 30rpx rgba(34,78,103,.075)!important}.login-card,.form-card,.published-card{background:rgba(255,255,255,.97)!important}.security-icon{border:0!important;background:#e7f7ff!important;color:#1475c5!important}.input,.textarea,.picker-field,.step-editor{border:1rpx solid #cfe1e9!important;background:#fbfdfe!important}.identity-strip{background:#effaf7!important}.verified{border:0!important;background:#dcf8e9!important;color:#087a4d!important}.edit-strip{background:#eefaff!important;color:#25627b!important}.stage{border:1rpx solid #d7e6ed!important;background:#f5fafc!important;box-shadow:none!important}.stage.active{border-color:#1778ce!important;background:#1778ce!important;box-shadow:0 7rpx 16rpx rgba(23,120,206,.16)!important}.stage.done{background:#e7f8f0!important;color:#087a4d!important}.choice-chip,.inline-choice{border:1rpx solid #d7e6ed!important;background:#fbfdfe!important;box-shadow:none!important}.choice-chip.active,.inline-choice.active{border-color:#4db9c3!important;background:#e7f8fb!important;color:#146f88!important;box-shadow:none!important}.rule-note,.risk-note{border:1rpx solid #f0dfb2!important;background:#fff8e8!important}.budget-summary,.pool-card{border:1rpx solid #dce9ef!important;background:#f5fbfd!important}.add-step,.primary-button,.next-button,.mini-publish{border:0!important;box-shadow:0 8rpx 18rpx rgba(18,104,201,.16)!important}.add-step{border:1rpx dashed #7bc6d5!important;background:#effbfc!important;color:#1475c5!important;box-shadow:none!important}.draft-button,.back-button{border:1rpx solid #d6e4ea!important;box-shadow:none!important;background:#fff!important}.review-card{border:1rpx solid rgba(255,255,255,.3)!important;background:linear-gradient(135deg,#1268c9,#1db2c0)!important;box-shadow:0 14rpx 30rpx rgba(25,101,145,.18)!important}.check.checked{border-color:#08a967!important;background:#08a967!important}.primary-button[disabled],.next-button[disabled],.mini-publish[disabled],.draft-button[disabled]{opacity:.52;box-shadow:none!important}.auth-error{display:block;margin-top:14rpx;padding:13rpx 16rpx;border-radius:14rpx;background:#fff2ef;color:#b9382d;font-size:13px;line-height:1.5}.list-state{display:flex;align-items:center;flex-direction:column;text-align:center}.state-icon{display:flex;align-items:center;justify-content:center;width:62rpx;height:62rpx;border-radius:20rpx;background:#e8f7fb;color:#1477c7;font-size:15px;font-weight:900}.state-title{margin-top:14rpx;color:#173b53;font-size:15px;font-weight:850}.state-copy{margin-top:7rpx;color:#7a909e;font-size:13px;line-height:1.55}.loading-line{width:100%;height:24rpx;margin:10rpx 0;border-radius:999rpx;background:linear-gradient(100deg,#e6f1f5 30%,#f8fcfd 45%,#e6f1f5 60%);background-size:220% 100%;animation:publisher-shimmer 1.2s ease-in-out infinite}.loading-line.short{width:62%}.list-state .refresh-button{margin-top:18rpx}@keyframes publisher-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
-.normal-login-button{height:64rpx;margin-top:14rpx;border:1rpx solid #cfe1e9;border-radius:16rpx;background:#fff;color:#1475c5;font-size:14px;line-height:62rpx}.normal-login-button::after{border:0}
-.hero{border-color:#f2d477!important;background:linear-gradient(135deg,#fff5c9 0%,#ffd967 58%,#ffc24b 100%)!important;box-shadow:0 16rpx 34rpx rgba(174,118,16,.16)!important;color:#102a43!important;isolation:isolate}
-.hero::after{color:rgba(145,92,0,.1)!important}
-.hero .eyebrow{color:#8b6509!important}
-.hero .title{color:#102a43!important}
-.hero .hero-copy{color:#354b5f!important}
-.cover-preview{position:relative;overflow:hidden;width:100%;height:260rpx;margin-top:14rpx;border:1rpx solid #cfe1e9;border-radius:18rpx;background:#eef5f8}.cover-preview image{width:100%;height:100%}.cover-remove{position:absolute;right:14rpx;top:14rpx;padding:9rpx 16rpx;border-radius:12rpx;background:rgba(8,30,48,.78);color:#fff;font-size:13px}.media-actions{display:grid;grid-template-columns:1fr 1fr;gap:14rpx;margin-top:14rpx}.media-button{height:64rpx;margin:0;border:1rpx solid #cfe1e9;border-radius:16rpx;background:#fff;color:#1475c5;font-size:14px;line-height:62rpx}.media-button.primary{border-color:#1475c5;background:#1475c5;color:#fff}.media-button::after{border:0}.media-button[disabled]{opacity:.52}.media-hint{display:block;margin-top:12rpx;color:#728894;font-size:13px;line-height:1.55}
+.page{min-height:100vh;padding:28rpx 28rpx 180rpx;box-sizing:border-box;background:#F4F6F4}
+
+/* 顶部白色导航 */
+.subnav{display:flex;align-items:center;justify-content:space-between;height:88rpx;padding:0 28rpx;background:#fff}
+.subnav-back{display:flex;align-items:center;justify-content:center;width:64rpx;height:64rpx;border-radius:50%;background:#F4F6F4;color:#191B1F;font-size:22px;font-weight:800}
+.subnav-title{flex:1;text-align:center;color:#191B1F;font-size:17px;font-weight:800}
+.subnav-right{width:64rpx}
+
+/* 状态卡片 */
+.gate-card,.login-card,.list-state{margin-top:20rpx;padding:36rpx 28rpx;border-radius:32rpx;background:#fff;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.list-state{display:flex;align-items:center;flex-direction:column;text-align:center}
+.state-icon{display:flex;align-items:center;justify-content:center;width:62rpx;height:62rpx;border-radius:20rpx;background:#E7F9EF;color:#08A152;font-size:15px;font-weight:900}
+.state-title{margin-top:14rpx;color:#191B1F;font-size:15px;font-weight:850}
+.state-copy{margin-top:7rpx;color:#767C85;font-size:13px;line-height:1.55}
+.loading-line{width:100%;height:24rpx;margin:10rpx 0;border-radius:999rpx;background:linear-gradient(100deg,#EDEFEF 30%,#F4F6F4 45%,#EDEFEF 60%);background-size:220% 100%;animation:publisher-shimmer 1.2s ease-in-out infinite}
+.loading-line.short{width:62%}
+.error-state .state-icon{background:#FFF0EE;color:#FF3B30}
+.error-state .state-title{color:#FF3B30}
+.list-state .refresh-button{margin-top:18rpx}
+@keyframes publisher-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+/* 身份条 */
+.identity-strip{display:flex;align-items:center;justify-content:space-between;margin-top:18rpx;padding:20rpx 24rpx;border-radius:24rpx;background:#E7F9EF}
+.identity-label{display:block;color:#08A152;font-size:13px}
+.identity-name{display:block;margin-top:3rpx;color:#191B1F;font-size:14px;font-weight:800}
+.verified{padding:7rpx 14rpx;border-radius:12rpx;background:#D1F7E1;color:#08A152;font-size:13px}
+.edit-strip{display:flex;flex-direction:column;gap:5rpx;margin-top:16rpx;padding:16rpx 20rpx;border-radius:20rpx;background:#FFF7E6;color:#F2620A;font-size:13px;line-height:1.45}
+.edit-strip text:first-child{font-weight:850}
+
+/* 步骤导航 */
+.stepper{margin:22rpx -28rpx 0;padding:0 28rpx;box-sizing:border-box;white-space:nowrap}
+.stepper-inner{display:inline-flex;gap:12rpx}
+.stage{display:flex;align-items:center;gap:8rpx;padding:14rpx 18rpx;border-radius:16rpx;background:#EDEFEF;color:#767C85;font-size:14px}
+.stage.active{background:linear-gradient(135deg,#12D978,#08A152);color:#fff}
+.stage.done{background:#E7F9EF;color:#08A152}
+.stage-index{display:flex;align-items:center;justify-content:center;width:32rpx;height:32rpx;border-radius:50%;background:rgba(255,255,255,.7);color:inherit;font-size:12px;font-weight:850}
+
+/* 通用卡片 */
+.card{margin-top:20rpx;padding:26rpx;border-radius:32rpx;background:#fff;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.card-title{display:block;margin-bottom:18rpx;color:#191B1F;font-size:17px;font-weight:800}
+.section-copy{display:block;margin-top:6rpx;color:#767C85;font-size:13px;line-height:1.55}
+
+/* 任务类型宫格 */
+.type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14rpx;margin-top:12rpx}
+.type-cell{display:flex;flex-direction:column;align-items:center;padding:26rpx 14rpx;border:1rpx solid #EDEFEF;border-radius:24rpx;background:#fff}
+.type-cell.active{border-color:#0BBF63;background:#E7F9EF}
+.type-icon{display:flex;align-items:center;justify-content:center;width:64rpx;height:64rpx;border-radius:50%;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:22px;font-weight:800}
+.type-name{margin-top:14rpx;color:#191B1F;font-size:14px}
+
+/* 表单字段 */
+.field-label{display:block;margin-top:24rpx;color:#767C85;font-size:14px;font-weight:750}
+.input,.textarea,.picker-field{width:100%;margin-top:16rpx;padding:0 24rpx;box-sizing:border-box;border:0;border-radius:20rpx;background:#F4F6F4;font-size:14px;color:#191B1F}
+.input{height:84rpx}
+.textarea{height:200rpx;padding-top:18rpx;padding-bottom:18rpx;line-height:1.55}
+.textarea.short{height:130rpx}
+.picker-field{display:flex;align-items:center;justify-content:space-between;height:84rpx;color:#191B1F}
+.char-count{display:block;margin-top:6rpx;color:#AEB3BB;font-size:12px;text-align:right}
+
+/* 选择芯片 */
+.choice-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;margin-top:12rpx}
+.choice-chip{padding:18rpx 14rpx;border:1rpx solid #EDEFEF;border-radius:18rpx;background:#fff}
+.choice-chip.active{border-color:#0BBF63;background:#E7F9EF;color:#08A152}
+.choice-chip text,.choice-chip small{display:block}
+.choice-chip text{font-size:14px;font-weight:800}
+.choice-chip small{margin-top:6rpx;color:#AEB3BB;font-size:12px;line-height:1.35}
+.choice-chip.small{min-height:88rpx}
+.inline-choices{display:flex;gap:14rpx;margin-top:12rpx}
+.inline-choice{padding:14rpx 28rpx;border:1rpx solid #EDEFEF;border-radius:14rpx;color:#767C85;font-size:14px}
+.inline-choice.active{border-color:#0BBF63;background:#E7F9EF;color:#08A152;font-weight:800}
+
+/* 字段网格 */
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16rpx}
+.field-grid.two{margin-top:4rpx}
+.input.compact{margin-top:10rpx}
+
+/* 提示 */
+.rule-note,.risk-note{margin-top:22rpx;padding:20rpx;border-radius:16rpx;background:#FFF7E6;color:#F2620A;font-size:13px;line-height:1.6}
+.rule-note text{display:block}
+.rule-note text:first-child{font-weight:850}
+.tip-note{display:block;margin-top:20rpx;padding:20rpx;border-radius:16rpx;background:#E7F9EF;color:#08A152;font-size:13px;line-height:1.55}
+
+/* 预算 */
+.budget-summary{display:grid;grid-template-columns:1fr 1fr;gap:14rpx;margin-top:22rpx}
+.budget-summary>view{padding:22rpx;border-radius:18rpx;background:#F4F6F4}
+.budget-label{display:block;color:#767C85;font-size:13px}
+.budget-value,.budget-free{display:block;margin-top:7rpx;font-size:19px;font-weight:850}
+.budget-value{color:#FF3B30}
+.budget-free{color:#08A152}
+.pool-card{margin-top:16rpx;padding:22rpx;border:1rpx dashed #0BBF63;border-radius:18rpx;background:#F4F6F4}
+.pool-title{display:block;font-size:14px;font-weight:850;color:#191B1F}
+.pool-ok,.pool-error{display:block;margin-top:9rpx;font-size:13px}
+.pool-ok{color:#08A152}
+.pool-error{color:#FF3B30}
+.refresh-button{height:56rpx;margin:14rpx 0 0;padding:0 20rpx;border:0;border-radius:14rpx;background:#fff;color:#08A152;font-size:13px;line-height:56rpx}
+.refresh-button::after{border:0}
+
+/* 步骤编辑器 */
+.step-editor{margin-top:18rpx;padding:22rpx;border:1rpx solid #EDEFEF;border-radius:20rpx;background:#FAFAFA}
+.step-editor-head{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:850;color:#191B1F}
+.delete-link{color:#FF3B30;font-size:13px;font-weight:500}
+.required-row,.agreement-row{display:flex;align-items:flex-start;gap:12rpx;margin-top:18rpx;color:#767C85;font-size:14px;line-height:1.55}
+.check{display:flex;align-items:center;justify-content:center;width:34rpx;height:34rpx;flex:none;border:1rpx solid #EDEFEF;border-radius:9rpx;color:transparent}
+.check.checked{border-color:#0BBF63;background:#0BBF63;color:#fff}
+.add-step{height:66rpx;margin-top:18rpx;border:1rpx dashed #0BBF63;border-radius:16rpx;background:#E7F9EF;color:#08A152;font-size:14px;line-height:66rpx}
+.add-step::after{border:0}
+
+/* 发布确认卡片 */
+.review-card{margin-top:20rpx;padding:24rpx;border-radius:24rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff}
+.review-title{display:block;font-size:19px;font-weight:850}
+.review-copy{display:block;margin-top:7rpx;color:rgba(255,255,255,.72);font-size:13px}
+.review-metrics{display:grid;grid-template-columns:repeat(4,1fr);margin-top:24rpx}
+.review-metrics view{text-align:center;border-right:1rpx solid rgba(255,255,255,.2)}
+.review-metrics view:last-child{border-right:0}
+.review-metrics strong,.review-metrics small{display:block}
+.review-metrics strong{font-size:15px}
+.review-metrics small{margin-top:5rpx;color:rgba(255,255,255,.65);font-size:12px}
+.checklist{margin-top:18rpx;padding:20rpx;border-radius:18rpx;background:#E7F9EF}
+.checklist text{display:block;margin:8rpx 0;color:#08A152;font-size:13px;line-height:1.5}
+
+/* 我的发布列表 */
+.published-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12rpx}
+.published-row{display:flex;align-items:center;justify-content:space-between;padding:20rpx 0;border-bottom:1rpx solid #EDEFEF}
+.published-row:last-child{border-bottom:0}
+.published-title{display:block;font-size:14px;font-weight:800;color:#191B1F}
+.published-status{display:block;margin-top:4rpx;color:#767C85;font-size:13px}
+.mini-publish{height:54rpx;margin:0;padding:0 20rpx;border:0;border-radius:14rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:13px;line-height:54rpx}
+.mini-publish::after{border:0}
+.row-arrow{color:#AEB3BB;font-size:18px}
+
+/* 封面与媒体 */
+.cover-preview{position:relative;overflow:hidden;width:100%;height:260rpx;margin-top:14rpx;border-radius:18rpx;background:#F4F6F4}
+.cover-preview image{width:100%;height:100%}
+.cover-remove{position:absolute;right:14rpx;top:14rpx;padding:9rpx 16rpx;border-radius:12rpx;background:rgba(25,27,31,.78);color:#fff;font-size:13px}
+.media-actions{display:grid;grid-template-columns:1fr 1fr;gap:14rpx;margin-top:14rpx}
+.media-button{height:64rpx;margin:0;border:1rpx solid #EDEFEF;border-radius:16rpx;background:#fff;color:#08A152;font-size:14px;line-height:62rpx}
+.media-button.primary{border:0;background:linear-gradient(135deg,#12D978,#08A152);color:#fff}
+.media-button::after{border:0}
+.media-button[disabled]{opacity:.52}
+.media-hint{display:block;margin-top:12rpx;color:#AEB3BB;font-size:13px;line-height:1.55}
+
+/* 底部操作栏 */
+.action-bar{position:fixed;right:0;bottom:0;left:0;display:grid;grid-template-columns:repeat(2,1fr);gap:14rpx;padding:24rpx 28rpx;padding-bottom:calc(24rpx + env(safe-area-inset-bottom));background:#fff;border-top:1rpx solid #EDEFEF}
+.ab-duo{height:88rpx;margin:0;border:0;border-radius:24rpx;font-size:15px;font-weight:800;line-height:88rpx}
+.ab-duo::after{border:0}
+.ab-duo.ghost{background:#fff;border:1rpx solid #EDEFEF;color:#191B1F}
+.ab-duo.primary{background:linear-gradient(135deg,#12D978,#08A152);color:#fff}
+.ab-duo[disabled]{opacity:.52}
+
+.bottom-space{height:40rpx}
+
+/* 响应式 */
+@media screen and (min-width:768px){.page{width:750rpx;margin:0 auto}}
 </style>

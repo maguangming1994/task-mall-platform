@@ -6,77 +6,141 @@
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="mall-head">
-      <view class="brand-lockup">
-        <image v-if="mallAppearance.brand.logo_url" class="brand-logo" :src="mallAppearance.brand.logo_url" mode="aspectFit" />
-        <view v-else class="brand-logo brand-logo-fallback">{{ mallAppearance.brand.logo_text || 'L' }}</view>
-        <view><text class="brand-name">{{ mallAppearance.brand.name || '任务商城' }}</text><text class="brand-sub">{{ mallAppearance.brand.caption || 'TASK · REWARD · LIFE' }}</text></view>
+      <view class="page-head">
+        <text class="page-title">积分商城</text>
+        <button class="cart-btn" @click="openCart">
+          <text class="cart-icon">🛒</text>
+          <text v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</text>
+        </button>
       </view>
-      <button class="cart-button" @click="openCart"><text class="cart-glyph">⌑</text>购物车 <text class="cart-count">{{ cartItemCount }}</text></button>
-    </view>
 
-    <view class="search-box">
-      <text class="search-mark">⌕</text>
-      <input v-model="keyword" confirm-type="search" placeholder="搜索商品、课程或数字权益" />
-    </view>
-
-    <view class="hero">
-      <image class="hero-image" src="/static/home/hero-campus-reward.jpg" mode="aspectFill" />
-      <view class="hero-shade" />
-      <view class="hero-content">
-        <text class="hero-title">把努力兑换成\n更好的日常</text>
-        <text class="hero-copy">现金、积分或组合购买，价格清晰一致</text>
-        <view class="hero-action" @click="scrollToProducts">查看本周好物 <text>›</text></view>
+      <view class="search-full">
+        <text class="search-icon">⌕</text>
+        <input v-model="keyword" confirm-type="search" placeholder="搜索商品，如「柠檬茶」「键盘」" />
       </view>
-    </view>
 
-    <view class="mall-assurance">
-      <view class="assurance-head"><view><text class="tm-section-kicker">CAMPUS SELECT</text><strong>校园严选服务</strong></view><text>{{ products.length }} 件好物</text></view>
-      <view class="assurance-grid">
-        <view v-for="item in mallAppearance.assurances" :key="item.id" :class="['assurance-card', `tone-${item.tone || 'cyan'}`]">
-          <view class="assurance-card-bg">
-            <view class="assurance-card-dot dot-1" />
-            <view class="assurance-card-dot dot-2" />
-            <view class="assurance-card-dot dot-3" />
+      <view class="coupons">
+        <view class="coupon">
+          <view class="c-val"><text class="c-symbol">¥</text>5</view>
+          <view class="c-txt">
+            <text>满 50 积分可用</text>
+            <text>全品类通用券</text>
           </view>
-          <view class="assurance-card-content">
-            <view class="assurance-icon-wrap">
-              <svg v-if="item.id === 'same_price'" class="assurance-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              <svg v-else-if="item.id === 'payments'" class="assurance-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-              <svg v-else-if="item.id === 'after_sales'" class="assurance-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="14" x2="15" y2="14"/><path d="M12 11v6"/></svg>
-              <text v-else class="assurance-icon-fallback">{{ item.mark }}</text>
+        </view>
+        <view class="coupon c2">
+          <view class="c-val"><text class="c-symbol">¥</text>12</view>
+          <view class="c-txt">
+            <text>满 100 积分可用</text>
+            <text>限时领取中</text>
+          </view>
+        </view>
+        <view class="coupon-more">
+          <text class="coupon-more-icon">🎫</text>
+          <text>领券中心</text>
+        </view>
+      </view>
+
+      <view class="king king5">
+        <view v-for="(item, idx) in kingCategories" :key="item.id" class="k">
+          <view class="k-icon" :style="kingIconStyle(idx)">
+            <text class="k-icon-text">{{ categoryEmoji(item.name) }}</text>
+          </view>
+          <text class="k-label">{{ item.name }}</text>
+        </view>
+      </view>
+
+      <view class="flash">
+        <view class="sec-title">
+          <text class="sec-h2">限时秒杀</text>
+          <view class="count">
+            <text>距结束</text>
+            <text class="cd-num">02</text>
+            <text>:</text>
+            <text class="cd-num">14</text>
+            <text>:</text>
+            <text class="cd-num">33</text>
+          </view>
+        </view>
+        <scroll-view class="flash-scroll" scroll-x :show-scrollbar="false">
+          <view v-for="(product, idx) in flashProducts" :key="product.id" class="f-item" @click="openProduct(product.id)">
+            <image v-if="cover(product)" class="f-img" :src="cover(product)" mode="aspectFill" />
+            <view v-else class="f-img placeholder"><text>{{ product.name.slice(0, 1) }}</text></view>
+            <text class="f-name">{{ product.name }}</text>
+            <view class="f-price">
+              <text class="now">{{ lowestPrice(product) }}</text>
+              <text class="old">{{ highestPrice(product) }}</text>
             </view>
-            <strong class="assurance-label">{{ item.label }}</strong>
-            <small class="assurance-desc">{{ item.description }}</small>
+            <view class="f-bar">
+              <view class="f-bar-inner" :style="{ width: flashProgress(idx) }" />
+              <text class="f-bar-text">已抢 {{ flashProgress(idx) }}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view class="rank">
+        <view class="sec-title">
+          <text class="sec-h2">积分热卖榜</text>
+          <view class="more">
+            <text>完整榜单</text>
+            <text class="arrow">›</text>
+          </view>
+        </view>
+        <view v-for="(product, idx) in rankProducts" :key="product.id" class="r-row" @click="openProduct(product.id)">
+          <view class="r-no" :class="'r-no-' + (idx + 1)">{{ idx + 1 }}</view>
+          <image v-if="cover(product)" class="r-img" :src="cover(product)" mode="aspectFill" />
+          <view v-else class="r-img placeholder"><text>{{ product.name.slice(0, 1) }}</text></view>
+          <view class="r-main">
+            <text class="r-name">{{ product.name }}</text>
+            <text class="r-meta">本月已兑 {{ rankSold(product) }} 件</text>
+          </view>
+          <view class="r-pts">{{ lowestPrice(product) }}</view>
+        </view>
+      </view>
+
+      <view class="sec-title sec-title-goods" id="product-list">
+        <text class="sec-h2">为你推荐</text>
+        <view class="more" @click="load">
+          <text>换一批</text>
+        </view>
+      </view>
+
+      <view v-if="loading" class="goods">
+        <view v-for="index in 4" :key="index" class="g-card">
+          <view class="g-cover tm-skeleton" />
+          <view class="g-body">
+            <view class="tm-skeleton" style="height: 28rpx; margin-bottom: 10rpx; border-radius: 6rpx;" />
+            <view class="tm-skeleton" style="height: 28rpx; width: 60%; border-radius: 6rpx;" />
           </view>
         </view>
       </view>
-    </view>
-
-    <scroll-view class="category-scroll" scroll-x :show-scrollbar="false">
-      <view class="categories">
-        <view class="category" :class="{ active: categoryId === '' }" @click="selectCategory('')">推荐</view>
-        <view v-for="item in categories" :key="item.id" class="category" :class="{ active: categoryId === item.id }" @click="selectCategory(item.id)">{{ item.name }}</view>
+      <view v-else-if="loadError" class="load-error tm-panel">
+        <text class="empty-title">商品列表加载失败</text>
+        <text>{{ loadError }}</text>
+        <button @click="load">重新加载</button>
       </view>
-    </scroll-view>
-
-    <view id="product-list" class="section-head"><text>本周精选</text><text>{{ filteredProducts.length }} 件在售</text></view>
-    <view v-if="loading" class="product-grid">
-      <view v-for="index in 4" :key="index" class="product-card tm-panel"><view class="cover tm-skeleton" /><view class="skeleton-line tm-skeleton" /><view class="skeleton-line short tm-skeleton" /></view>
-    </view>
-    <view v-else-if="loadError" class="load-error tm-panel"><text class="empty-title">商品列表加载失败</text><text>{{ loadError }}</text><button @click="load">重新加载</button></view>
-    <view v-else-if="filteredProducts.length" class="product-grid">
-      <view v-for="product in filteredProducts" :key="product.id" class="product-card tm-panel" @click="openProduct(product.id)">
-        <image v-if="cover(product)" class="cover" :src="cover(product)" mode="aspectFill" />
-        <view v-else class="cover placeholder"><text>{{ product.name.slice(0, 1) }}</text><small>精选好物</small></view>
-        <view class="product-body">
-          <text class="product-name">{{ product.name }}</text>
-          <text class="product-sub">{{ product.subtitle || product.description_text || plainTextFromRich(product.description) }}</text>
-          <text class="product-modes">{{ purchaseModesText(product) }} · 运费仅现金</text><view class="product-foot"><text class="price">{{ lowestPrice(product) }}</text><text class="arrow">→</text></view>
+      <view v-else-if="filteredProducts.length" class="goods">
+        <view v-for="(product, idx) in filteredProducts" :key="product.id" class="g-card" @click="openProduct(product.id)">
+          <image v-if="cover(product)" class="g-cover" :src="cover(product)" mode="aspectFill" />
+          <view v-else class="g-cover placeholder"><text>{{ product.name.slice(0, 1) }}</text></view>
+          <view class="g-body">
+            <text class="g-name">{{ product.name }}</text>
+            <view class="g-tags">
+              <text v-if="idx % 3 === 0" class="tag tag-orange">包邮</text>
+              <text v-else-if="idx % 3 === 1" class="tag tag-green">新品</text>
+              <text v-else class="tag tag-red">HOT</text>
+            </view>
+            <view class="g-foot">
+              <text class="g-price">{{ lowestPrice(product) }}</text>
+              <text v-if="productSold(product)" class="g-sold">{{ productSold(product) }}</text>
+            </view>
+          </view>
         </view>
       </view>
-    </view>
-    <view v-else class="empty tm-panel"><text class="empty-title">没有找到匹配商品</text><text>换个关键词或分类试试</text></view>
+      <view v-else class="empty tm-panel">
+        <text class="empty-title">没有找到匹配商品</text>
+        <text>换个关键词或分类试试</text>
+      </view>
     </template>
     <AppTabBar current-target="products" />
   </view>
@@ -89,7 +153,6 @@ import AppTabBar from '@/components/AppTabBar.vue'
 import { loadAppearanceContent, type MallAppearance } from '@/api/appearance'
 import { getCart } from '@/api/cart'
 import { listProductCategories, listProducts, type MallProduct, type ProductCategory, type PurchaseOption } from '@/api/products'
-import { plainTextFromRich } from '@/utils/richText'
 import { useAuthStore } from '@/stores/auth'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
@@ -122,6 +185,16 @@ const filteredProducts = computed(() => {
     if (query && !`${product.name} ${product.subtitle || ''} ${product.description_text || ''}`.toLowerCase().includes(query)) return false
     return true
   })
+})
+
+const flashProducts = computed(() => products.value.slice(0, 3))
+const rankProducts = computed(() => products.value.slice(0, 3))
+const kingCategories = computed(() => {
+  const list = categories.value.slice(0, 5)
+  while (list.length < 5) {
+    list.push({ id: `fill-${list.length}`, name: '分类' } as ProductCategory)
+  }
+  return list
 })
 
 onShow(async () => {
@@ -164,6 +237,12 @@ function lowestPrice(product: MallProduct) {
   const cash = options.filter((option) => option.purchase_mode === 'cash').sort((a, b) => a.cash_amount - b.cash_amount)[0]
   return optionPrice(cash || options[0])
 }
+function highestPrice(product: MallProduct) {
+  const options = allOptions(product)
+  if (!options.length) return ''
+  const cash = options.filter((option) => option.purchase_mode === 'cash').sort((a, b) => b.cash_amount - a.cash_amount)[0]
+  return optionPrice(cash || options[options.length - 1])
+}
 function purchaseModesText(product: MallProduct) {
   const labels: Record<string, string> = { cash: '现金', points: '积分', cash_points: '现金 + 积分' }
   const modes = [...new Set(allOptions(product).map((option) => labels[option.purchase_mode] || option.purchase_mode))]
@@ -172,8 +251,122 @@ function purchaseModesText(product: MallProduct) {
 function openProduct(id: string) { uni.navigateTo({ url: `/pages/product-detail/index?id=${encodeURIComponent(id)}` }) }
 function openCart() { uni.navigateTo({ url: '/pages/cart/index' }) }
 function scrollToProducts() { uni.pageScrollTo({ selector: '#product-list', duration: 260 }) }
+
+function flashProgress(index: number) {
+  const defaults = ['82%', '64%', '45%']
+  return defaults[index % defaults.length]
+}
+function rankSold(product: MallProduct) {
+  const count = (product as any).sales_count || (product as any).exchanged_count || (product as any).sold_count || 0
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`
+  return String(count)
+}
+function productSold(product: MallProduct) {
+  const count = (product as any).sales_count || (product as any).exchanged_count || (product as any).sold_count || 0
+  return count > 0 ? `已兑 ${count}` : ''
+}
+function categoryEmoji(name: string) {
+  const map: Record<string, string> = {
+    '零食饮料': '🍿', '数码配件': '🔌', '学习用品': '📚', '生活日用': '🧴', '卡券中心': '🎫',
+    '食品': '🍔', '饮料': '🥤', '电子': '💻', '图书': '📖', '美妆': '💄', '运动': '⚽',
+  }
+  for (const key in map) {
+    if (name.includes(key)) return map[key]
+  }
+  return name.slice(0, 1)
+}
+function kingIconStyle(index: number) {
+  const palettes = [
+    { bg: '#FFF2E5', color: '#F2620A' },
+    { bg: '#EAF2FF', color: '#3B82F6' },
+    { bg: '#E7F9EF', color: '#0BBF63' },
+    { bg: '#F1EAFF', color: '#8B5CF6' },
+    { bg: '#FFEAF1', color: '#F43F7F' },
+  ]
+  const p = palettes[index % palettes.length]
+  return { backgroundColor: p.bg, color: p.color }
+}
 </script>
 
 <style scoped>
-.page{min-height:100vh;padding:calc(var(--tm-custom-header-top,calc(env(safe-area-inset-top) + 8px)) + 18rpx) 28rpx calc(124rpx + env(safe-area-inset-bottom));background:linear-gradient(180deg,#fff 0,#f5fbff 430rpx,#f5faff 100%);color:#10264a}.mall-head,.brand-lockup,.product-foot{display:flex;align-items:center}.mall-head{justify-content:space-between;padding:18rpx 8rpx 4rpx}.brand-lockup{gap:16rpx}.brand-logo{width:60rpx;height:60rpx;border-radius:18rpx;box-shadow:0 10rpx 24rpx rgba(17,177,119,.14)}.brand-logo-fallback{display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#20c77f,#00a864);color:#fff;font-size:17px;font-weight:950}.brand-name,.brand-sub,.hero-title,.hero-copy,.product-name,.product-sub,.empty text{display:block}.brand-name{color:#10264a;font-size:19px;font-weight:900}.brand-sub{margin-top:3rpx;color:#7988a5;font-size:10px;letter-spacing:1.2rpx}.cart-button{display:flex;align-items:center;gap:8rpx;height:64rpx;margin:0;padding:0 22rpx;border:1rpx solid #dce8f2;border-radius:999rpx;background:#fff;color:#173354;font-size:14px;line-height:62rpx;box-shadow:0 10rpx 26rpx rgba(35,72,110,.08)}.cart-button::after{border:0}.cart-glyph{font-size:17px;transform:rotate(-8deg)}.cart-count{min-width:22rpx;text-align:center;color:#0aa76f;font-size:13px;font-weight:900}.search-box{display:flex;align-items:center;gap:12rpx;height:76rpx;margin-top:20rpx;padding:0 24rpx;border:1rpx solid #dce8f2;border-radius:999rpx;background:#fff;box-shadow:0 12rpx 30rpx rgba(36,75,112,.07)}.search-box input{height:76rpx;flex:1;color:#173354;font-size:14px}.search-mark{color:#71819e;font-size:21px}.hero{position:relative;height:380rpx;overflow:hidden;margin-top:22rpx;border-radius:30rpx;background:#21c7c3;box-shadow:0 18rpx 40rpx rgba(25,119,154,.15)}.hero-image,.hero-shade{position:absolute;inset:0;width:100%;height:100%}.hero-shade{background:linear-gradient(90deg,rgba(4,139,155,.95) 0,rgba(15,179,178,.8) 46%,rgba(40,193,194,.06) 73%)}.hero-content{position:relative;z-index:1;width:61%;padding:44rpx 0 0 34rpx;color:#fff}.hero-title{white-space:pre-line;font-size:24px;font-weight:950;line-height:1.22;text-shadow:0 2rpx 8rpx rgba(8,79,100,.12)}.hero-copy{margin-top:12rpx;color:rgba(255,255,255,.94);font-size:14px;line-height:1.5}.hero-action{display:inline-flex;align-items:center;gap:12rpx;margin-top:18rpx;padding:14rpx 25rpx;border-radius:999rpx;background:#fff;color:#143254;font-size:14px;font-weight:850;box-shadow:0 8rpx 18rpx rgba(4,94,113,.12)}.hero-action text{font-size:17px}.mall-assurance{margin-top:24rpx;padding:24rpx;border:1rpx solid #dce8f2;border-radius:28rpx;background:rgba(255,255,255,.96);box-shadow:0 14rpx 36rpx rgba(39,74,108,.07)}.assurance-head{display:flex;align-items:flex-start;justify-content:space-between}.assurance-head>view strong{display:block;margin-top:9rpx;color:#10264a;font-size:17px;font-weight:950}.assurance-head>text{padding-top:7rpx;color:#7d8ba3;font-size:13px}.assurance-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;margin-top:20rpx}.assurance-card{position:relative;min-width:0;overflow:hidden;border-radius:20rpx}.assurance-card-bg{position:absolute;inset:0;overflow:hidden;border-radius:20rpx}.assurance-card-dot{position:absolute;border-radius:50%;opacity:.15}.dot-1{width:120rpx;height:120rpx;top:-30rpx;right:-30rpx}.dot-2{width:80rpx;height:80rpx;bottom:20rpx;left:-20rpx}.dot-3{width:60rpx;height:60rpx;top:50%;left:50%;transform:translate(-50%,-50%)}.tone-yellow .assurance-card-bg{background:linear-gradient(135deg,#fff9e6 0%,#fff0d4 100%)}.tone-yellow .assurance-card-dot{background:#ffca3d}.tone-yellow .assurance-icon-wrap{background:linear-gradient(145deg,#ffca3d,#ffad1f)}.tone-cyan .assurance-card-bg{background:linear-gradient(135deg,#e6fbf7 0%,#d4f7f0 100%)}.tone-cyan .assurance-card-dot{background:#15c9d0}.tone-cyan .assurance-icon-wrap{background:linear-gradient(145deg,#15c9d0,#0ea5b2)}.tone-green .assurance-card-bg{background:linear-gradient(135deg,#f0fce8 0%,#e2f8d5 100%)}.tone-green .assurance-card-dot{background:#61d84c}.tone-green .assurance-icon-wrap{background:linear-gradient(145deg,#61d84c,#24b948)}.assurance-card-content{position:relative;z-index:1;padding:24rpx 16rpx;text-align:center}.assurance-icon-wrap{display:flex;width:56rpx;height:56rpx;align-items:center;justify-content:center;margin:0 auto 16rpx;border-radius:16rpx;color:#fff;box-shadow:0 8rpx 20rpx rgba(0,0,0,.12)}.assurance-icon-svg{width:28rpx;height:28rpx}.assurance-icon-fallback{font-size:20rpx;font-weight:900}.assurance-label{display:block;color:#10264a;font-size:14px;font-weight:900;margin-bottom:6rpx}.assurance-desc{display:block;color:#7b8aa2;font-size:11px;line-height:1.4}.category-scroll{margin-top:22rpx;white-space:nowrap}.categories{display:inline-flex;gap:12rpx}.category{padding:13rpx 24rpx;border:1rpx solid #d9e6ef;border-radius:999rpx;background:#fff;color:#53657f;font-size:14px}.category.active{border-color:#0bb478;background:#0bb478;color:#fff;font-weight:850;box-shadow:0 8rpx 18rpx rgba(11,180,120,.18)}.section-head{display:flex;justify-content:space-between;align-items:flex-end;margin:34rpx 2rpx 18rpx}.section-head text:first-child{color:#10264a;font-size:19px;font-weight:950}.section-head text:last-child{color:#7b8aa3;font-size:13px}.product-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16rpx}.product-card{overflow:hidden;border:1rpx solid #dce8f2;border-radius:24rpx;background:#fff;box-shadow:0 12rpx 30rpx rgba(36,75,112,.07)}.cover{display:block;width:100%;height:224rpx;background:#edf5f7}.cover.placeholder{display:flex;align-items:center;justify-content:center;flex-direction:column;background:linear-gradient(145deg,#e4f8ee,#eef8ff);color:#0a936a}.cover.placeholder text{font-size:28px;font-weight:900}.cover.placeholder small{margin-top:8rpx;font-size:13px}.product-body{padding:20rpx}.product-name{overflow:hidden;color:#10264a;font-size:15px;font-weight:900;text-overflow:ellipsis;white-space:nowrap}.product-sub{height:58rpx;margin-top:7rpx;overflow:hidden;color:#7b8aa3;font-size:13px;line-height:1.45}.product-modes{display:block;margin-top:8rpx;color:#60728c;font-size:12px;line-height:1.4}.product-foot{justify-content:space-between;margin-top:14rpx}.price{color:#ff6a31;font-size:15px;font-weight:950}.arrow{display:flex;align-items:center;justify-content:center;width:42rpx;height:42rpx;border-radius:50%;background:#e8fbf3;color:#08a971;font-weight:950}.empty{padding:78rpx 30rpx;text-align:center;border:1rpx solid #dce8f2;border-radius:28rpx;background:rgba(255,255,255,.9);color:#7b8aa3;box-shadow:0 12rpx 30rpx rgba(36,75,112,.06)}.empty::before{content:'⌕';display:flex;align-items:center;justify-content:center;width:90rpx;height:90rpx;margin:0 auto 22rpx;border-radius:28rpx;background:linear-gradient(145deg,#e6f8ef,#e8f5ff);color:#20b87e;font-size:28px}.empty-title{margin-bottom:10rpx;color:#10264a;font-size:17px;font-weight:900}.skeleton-line{height:22rpx;margin:20rpx 18rpx 0;border-radius:8rpx}.skeleton-line.short{width:54%;margin-bottom:22rpx}.load-error{margin-top:25rpx;padding:50rpx 30rpx;text-align:center;border:1rpx solid #ffc9c1;border-radius:24rpx;background:#fff7f5;color:#b42318}.load-error button{height:68rpx;margin:22rpx auto 0;padding:0 28rpx;border:1rpx solid #e7a79f;border-radius:16rpx;background:#fff;color:#b42318;line-height:66rpx}.load-error button::after{border:0}@media screen and (min-width:768px){.page{max-width:750rpx;margin:0 auto}.hero{height:400rpx}}
+.page { min-height: 100vh; padding-top: calc(var(--tm-custom-header-top, calc(env(safe-area-inset-top) + 8px)) + 18rpx); padding-bottom: calc(152rpx + env(safe-area-inset-bottom)); background: #F4F6F4; color: #191B1F; }
+.page-head { display: flex; align-items: center; justify-content: space-between; padding: 4rpx 32rpx 0; }
+.page-title { font-size: 40rpx; font-weight: 800; }
+.cart-btn { position: relative; width: 68rpx; height: 68rpx; border-radius: 50%; background: #fff; border: 1rpx solid #EDEFEF; display: flex; align-items: center; justify-content: center; color: #191B1F; font-size: 28rpx; }
+.cart-btn::after { border: 0; }
+.cart-icon { font-size: 28rpx; }
+.cart-badge { position: absolute; top: -6rpx; right: -6rpx; min-width: 30rpx; height: 30rpx; border-radius: 16rpx; background: #FF3B30; color: #fff; font-size: 18rpx; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 6rpx; }
+.search-full { display: flex; align-items: center; gap: 12rpx; height: 72rpx; margin: 20rpx 24rpx 0; padding: 0 28rpx; border-radius: 36rpx; background: #fff; border: 1rpx solid #EDEFEF; color: #AEB3BB; font-size: 24rpx; }
+.search-full input { flex: 1; height: 72rpx; color: #191B1F; font-size: 24rpx; }
+.search-icon { color: #AEB3BB; font-size: 30rpx; }
+.coupons { display: flex; gap: 16rpx; margin: 20rpx 24rpx 0; }
+.coupon { flex: 1; height: 124rpx; border-radius: 24rpx; background: linear-gradient(135deg, #FF9A3D, #F2620A); color: #fff; display: flex; align-items: center; padding: 0 24rpx; gap: 16rpx; position: relative; overflow: hidden; }
+.coupon.c2 { background: linear-gradient(135deg, #FF5C6C, #E8384F); }
+.coupon::before { content: ''; position: absolute; left: 104rpx; top: -12rpx; width: 24rpx; height: 24rpx; border-radius: 50%; background: #F4F6F4; }
+.coupon::after { content: ''; position: absolute; left: 104rpx; bottom: -12rpx; width: 24rpx; height: 24rpx; border-radius: 50%; background: #F4F6F4; }
+.c-val { font-size: 40rpx; font-weight: 800; line-height: 1; }
+.c-symbol { font-size: 20rpx; font-weight: 500; }
+.c-txt { font-size: 20rpx; opacity: 0.92; border-left: 1rpx dashed rgba(255,255,255,0.5); padding-left: 16rpx; margin-left: 4rpx; line-height: 1.5; display: flex; flex-direction: column; }
+.coupon-more { flex: 0 0 112rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border-radius: 24rpx; font-size: 20rpx; color: #767C85; gap: 6rpx; }
+.coupon-more-icon { font-size: 36rpx; }
+.king { background: #fff; border-radius: 32rpx; margin: 20rpx 24rpx 0; padding: 32rpx 20rpx 24rpx; display: grid; grid-template-columns: repeat(5, 1fr); row-gap: 28rpx; box-shadow: 0 1rpx 2rpx rgba(23,26,23,0.03), 0 12rpx 40rpx rgba(23,26,23,0.05); }
+.k { display: flex; flex-direction: column; align-items: center; gap: 12rpx; font-size: 22rpx; color: #3A3D43; }
+.k-icon { width: 84rpx; height: 84rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.k-icon-text { font-size: 36rpx; }
+.k-label { font-size: 22rpx; }
+.flash { background: #fff; border-radius: 32rpx; margin: 20rpx 24rpx 0; padding-bottom: 24rpx; box-shadow: 0 1rpx 2rpx rgba(23,26,23,0.03), 0 12rpx 40rpx rgba(23,26,23,0.05); }
+.sec-title { display: flex; align-items: center; justify-content: space-between; padding: 28rpx 28rpx 20rpx; }
+.sec-title.sec-title-goods { padding-left: 32rpx; padding-right: 24rpx; }
+.sec-h2 { font-size: 32rpx; font-weight: 700; display: flex; align-items: center; gap: 14rpx; }
+.sec-h2::before { content: ''; width: 8rpx; height: 28rpx; border-radius: 4rpx; background: #0BBF63; }
+.flash .sec-title .sec-h2 { color: #F2620A; }
+.flash .sec-title .sec-h2::before { background: #FF7A1A; }
+.rank .sec-title .sec-h2::before { background: #FFB020; }
+.count { display: flex; align-items: center; gap: 6rpx; font-size: 22rpx; color: #767C85; }
+.cd-num { min-width: 40rpx; height: 40rpx; border-radius: 10rpx; background: #2B2E33; color: #fff; font-size: 22rpx; display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; padding: 0 4rpx; }
+.flash-scroll { white-space: nowrap; padding: 4rpx 28rpx 0; }
+.f-item { display: inline-block; width: 232rpx; margin-right: 18rpx; vertical-align: top; }
+.f-img { width: 232rpx; height: 232rpx; border-radius: 20rpx; display: block; }
+.f-name { font-size: 24rpx; font-weight: 600; margin-top: 14rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.f-price { display: flex; align-items: baseline; gap: 10rpx; margin-top: 6rpx; }
+.f-price .now { font-size: 30rpx; font-weight: 800; color: #FF3B30; }
+.f-price .old { font-size: 20rpx; color: #AEB3BB; text-decoration: line-through; }
+.f-bar { height: 24rpx; border-radius: 12rpx; background: #FFE9D9; margin-top: 12rpx; position: relative; overflow: hidden; }
+.f-bar-inner { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 12rpx; background: linear-gradient(135deg, #FF9A3D, #F2620A); }
+.f-bar-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 16rpx; color: #fff; font-weight: 700; letter-spacing: 1rpx; text-shadow: 0 1rpx 2rpx rgba(150,60,0,0.45); }
+.rank { background: #fff; border-radius: 32rpx; margin: 20rpx 24rpx 0; padding-bottom: 16rpx; box-shadow: 0 1rpx 2rpx rgba(23,26,23,0.03), 0 12rpx 40rpx rgba(23,26,23,0.05); }
+.r-row { display: flex; align-items: center; gap: 20rpx; padding: 16rpx 28rpx; }
+.r-no { width: 44rpx; height: 44rpx; border-radius: 14rpx; display: flex; align-items: center; justify-content: center; font-size: 24rpx; font-weight: 800; color: #AEB3BB; background: #F2F4F3; flex: none; }
+.r-no-1 { background: linear-gradient(135deg, #FFD666, #F5A623); color: #7A4A00; }
+.r-no-2 { background: linear-gradient(135deg, #E8ECF1, #B9C2CC); color: #4A5568; }
+.r-no-3 { background: linear-gradient(135deg, #F5C09A, #D98E5F); color: #6B3A1A; }
+.r-img { width: 104rpx; height: 104rpx; border-radius: 18rpx; flex: none; display: block; }
+.r-main { flex: 1; min-width: 0; }
+.r-name { font-size: 26rpx; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.r-meta { font-size: 22rpx; color: #AEB3BB; margin-top: 6rpx; display: block; }
+.r-pts { font-size: 30rpx; font-weight: 800; color: #FF3B30; flex: none; }
+.goods { display: grid; grid-template-columns: 1fr 1fr; gap: 18rpx; padding: 20rpx 24rpx 0; }
+.g-card { background: #fff; border-radius: 24rpx; overflow: hidden; box-shadow: 0 1rpx 2rpx rgba(23,26,23,0.03), 0 12rpx 40rpx rgba(23,26,23,0.05); }
+.g-cover { width: 100%; aspect-ratio: 1; display: block; }
+.g-body { padding: 18rpx 20rpx 22rpx; }
+.g-name { font-size: 26rpx; font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 70rpx; }
+.g-tags { margin-top: 10rpx; }
+.g-foot { display: flex; align-items: baseline; justify-content: space-between; margin-top: 12rpx; }
+.g-price { font-size: 32rpx; font-weight: 800; color: #FF3B30; }
+.g-price small { font-size: 20rpx; font-weight: 500; }
+.g-sold { font-size: 20rpx; color: #AEB3BB; }
+.tag { display: inline-flex; align-items: center; height: 36rpx; padding: 0 12rpx; border-radius: 10rpx; font-size: 20rpx; font-weight: 500; background: #F2F4F3; color: #767C85; margin-right: 8rpx; }
+.tag-red { background: #FFEEEA; color: #FF3B30; }
+.tag-orange { background: #FFF2E5; color: #F2620A; }
+.tag-green { background: #E7F9EF; color: #08A152; }
+.more { font-size: 24rpx; color: #AEB3BB; display: flex; align-items: center; gap: 4rpx; }
+.arrow { font-size: 28rpx; }
+.placeholder { display: flex; align-items: center; justify-content: center; background: linear-gradient(145deg, #E7F9EF, #EAF2FF); color: #0BBF63; font-size: 56rpx; font-weight: 900; }
+.load-error { margin: 25rpx 24rpx; padding: 50rpx 30rpx; text-align: center; border: 1rpx solid #ffc9c1; border-radius: 24rpx; background: #fff7f5; color: #b42318; }
+.load-error text { display: block; }
+.load-error button { height: 68rpx; margin: 22rpx auto 0; padding: 0 28rpx; border: 1rpx solid #e7a79f; border-radius: 16rpx; background: #fff; color: #b42318; line-height: 66rpx; }
+.load-error button::after { border: 0; }
+.empty { margin: 24rpx; padding: 78rpx 30rpx; text-align: center; border: 1rpx solid #EDEFEF; border-radius: 28rpx; background: rgba(255,255,255,0.9); color: #AEB3BB; }
+.empty-title { margin-bottom: 10rpx; color: #191B1F; font-size: 28rpx; font-weight: 900; display: block; }
+.empty text { display: block; }
 </style>

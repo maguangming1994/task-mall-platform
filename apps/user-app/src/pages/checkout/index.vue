@@ -1,72 +1,112 @@
 <template>
-  <view class="page tm-page-shell">
+  <view class="page">
     <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_mall_trade" />
     <view v-else-if="!modules.resolved" class="mp-skeleton">
       <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="commerce-hero" aria-label="结算预览">
-      <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
-      <view class="commerce-hero-copy">
-        <text class="commerce-hero-kicker">CHECKOUT PREVIEW</text>
-        <text class="commerce-hero-title">结算预览</text>
-        <text class="commerce-hero-sub">确认商品、优惠与现金运费后，再选择一种全额支付方式</text>
+    <view class="subnav">
+      <button class="nav-back" aria-label="返回" @click="goBack">‹</button>
+      <text class="nav-title">确认订单</text>
+    </view>
+
+    <view v-if="loading && !selectedItems.length" class="state-card"><view class="state-spinner" /><text class="state-title">正在准备结算</text><text class="state-copy">正在校验商品、库存和运费，请稍候。</text></view>
+    <view v-else-if="loadError" class="state-card"><text class="state-title">结算信息加载失败</text><text class="state-copy">{{ loadError }}</text><button class="btn-main" @click="load">重新加载</button></view>
+    <view v-else-if="!cart.items.length || !selectedItems.length" class="state-card">
+      <text class="state-title">{{ cart.items.length ? '没有可结算的商品' : '购物车还是空的' }}</text>
+      <text class="state-copy">{{ cart.items.length ? '请返回购物车选择有效商品，或调整已下架/库存不足的商品。' : '去商城挑选支持现金、积分和组合购买的校园好物。' }}</text>
+      <button class="btn-main" @click="openCart">返回购物车</button>
+    </view>
+
+    <template v-else>
+    <picker :range="addressLabels" @change="selectAddress">
+      <view class="addr-card">
+        <view class="addr-ic">址</view>
+        <view class="addr-main">
+          <text class="addr-name">{{ selectedAddress ? `${selectedAddress.recipient_name} · ${selectedAddress.phone}` : (hasLogistics ? '请选择收货地址' : '无需收货地址') }}</text>
+          <text class="addr-sub">{{ selectedAddress ? `${selectedAddress.province}${selectedAddress.city}${selectedAddress.district}${selectedAddress.detail}` : (hasLogistics ? '点击选择地址' : '该订单无需物流配送') }}</text>
+        </view>
+        <text class="addr-arrow">›</text>
+      </view>
+    </picker>
+
+    <view class="card goods-card">
+      <view v-for="item in selectedItems" :key="item.id" class="goods-row">
+        <view class="goods-mark">{{ item.product_name.slice(0, 1) }}</view>
+        <view class="goods-main">
+          <text class="goods-name">{{ item.product_name }}</text>
+          <text class="goods-meta">{{ item.sku_name }} · {{ modeText(item.purchase_mode) }}</text>
+          <view class="goods-foot"><text class="goods-price">{{ priceText(item) }}</text><text class="goods-qty">×{{ item.quantity }}</text></view>
+        </view>
       </view>
     </view>
 
-    <view class="flow-strip tm-panel">
-      <view class="flow done"><text>✓</text><small>确认商品</small></view><view class="line" />
-      <view class="flow active"><text>2</text><small>结算预览</small></view><view class="line" />
-      <view class="flow"><text>3</text><small>完成支付</small></view>
+    <view class="form-card">
+      <view class="frow"><text class="f-label">配送方式</text><text class="spacer" /><text class="f-val">{{ hasLogistics ? '物流配送' : '无需物流' }}{{ hasLogistics && !quoteError ? ` · 运费 ¥${money(preview?.shipping_amount || quote?.shipping_cash_amount || 0)}` : '' }}</text></view>
+      <view v-if="quoteError" class="frow"><text class="f-label">运费试算</text><text class="spacer" /><text class="f-val error" @click="loadQuote">试算失败，点击重试</text></view>
+      <view class="frow"><text class="f-label">优惠说明</text><text class="f-val dim">每张券只能用于一个交付拆单，运费不参与抵扣</text></view>
     </view>
 
-    <view v-if="loading && !selectedItems.length" class="empty-state tm-panel"><view class="empty-mark">…</view><text class="empty-title">正在准备结算</text><text class="empty-copy">正在校验商品、库存和运费，请稍候。</text></view>
-    <view v-else-if="loadError" class="empty-state error-state tm-panel"><view class="empty-mark">!</view><text class="empty-title">结算信息加载失败</text><text class="empty-copy">{{ loadError }}</text><button class="empty-button" @click="load">重新加载</button></view>
-    <view v-else-if="!cart.items.length || !selectedItems.length" class="empty-state tm-panel">
-      <view class="empty-mark">袋</view>
-      <text class="empty-title">{{ cart.items.length ? '没有可结算的商品' : '购物车还是空的' }}</text>
-      <text class="empty-copy">{{ cart.items.length ? '请返回购物车选择有效商品，或调整已下架/库存不足的商品。' : '去商城挑选支持现金、积分和组合购买的校园好物。' }}</text>
-      <button class="empty-button" @click="openCart">返回购物车</button>
+    <view v-if="paymentLabels.length" class="form-card">
+      <view class="frow head-row"><text class="f-label">支付方式</text><text class="spacer" /><text class="f-val dim">请选择一种全额支付</text></view>
+      <view v-for="(option, index) in paymentOptions" :key="option.code" class="pay-choice" :class="{ selected: paymentIndex === index, insufficient: option.code === 'wallet' && walletInsufficient }" @click="choosePayment(index)">
+        <view class="pay-mark">{{ option.code === 'wallet' ? '余' : '微' }}</view>
+        <view class="pay-copy">
+          <text class="pay-name">{{ option.label }}</text>
+          <text v-if="option.code === 'wallet'" class="pay-sub">可用 ¥{{ wallet ? money(wallet.available_amount) : '—' }}{{ walletInsufficient ? ' · 余额不足' : '' }}</text>
+          <text v-else class="pay-sub">使用微信支付现金与运费</text>
+        </view>
+        <view class="pay-check" :class="{ on: paymentIndex === index }">{{ paymentIndex === index ? '✓' : '' }}</view>
+      </view>
+      <view v-if="selectedPaymentMethod === 'wallet' && walletInsufficient" class="recharge-link" @click="openRecharge">当前余额不足，先去充值 ›</view>
     </view>
+    <view v-else-if="requiresCashPayment" class="payment-unavailable"><text>暂无可用现金支付方式</text><small>{{ paymentUnavailableText }}</small></view>
 
-    <view v-for="item in selectedItems" :key="item.id" class="item-card tm-panel">
-      <view class="item-mark">{{ item.product_name.slice(0, 1) }}</view>
-      <view class="item-main"><text class="item-name">{{ item.product_name }}</text><text class="item-meta">{{ item.sku_name }} · {{ modeText(item.purchase_mode) }}</text><view class="item-foot"><text class="tm-money">{{ priceText(item) }}</text><text>× {{ item.quantity }}</text></view></view>
-    </view>
-
-    <view class="checkout-card tm-panel">
-      <picker :range="addressLabels" @change="selectAddress"><view class="setting-row"><text>收货地址</text><text>{{ addressText }} ›</text></view></picker>
-      <view v-if="paymentLabels.length" class="payment-section"><view class="payment-heading"><text>现金支付方式</text><text>请选择一种全额支付</text></view><view v-for="(option, index) in paymentOptions" :key="option.code" class="payment-choice" :class="{ selected: paymentIndex === index, insufficient: option.code === 'wallet' && walletInsufficient }" @click="choosePayment(index)"><view class="payment-mark">{{ option.code === 'wallet' ? '余' : '微' }}</view><view class="payment-copy"><text>{{ option.label }}</text><small v-if="option.code === 'wallet'">可用 ¥{{ wallet ? money(wallet.available_amount) : '—' }}{{ walletInsufficient ? ' · 余额不足' : '' }}</small><small v-else>使用微信支付现金与运费</small></view><text class="payment-check">{{ paymentIndex === index ? '✓' : '' }}</text></view><view v-if="selectedPaymentMethod === 'wallet' && walletInsufficient" class="recharge-link" @click="openRecharge">当前余额不足，先去充值 ›</view></view>
-      <view v-else-if="requiresCashPayment" class="payment-unavailable"><text>暂无可用现金支付方式</text><small>{{ paymentUnavailableText }}</small></view>
-      <view class="divider" />
-      <view class="amount-row"><text>商品现金</text><text>¥{{ money(itemsCashAmount) }}</text></view>
-      <view class="amount-row"><text>商品积分</text><text>{{ itemsPoints.toLocaleString() }} 积分</text></view>
-      <view v-if="preview?.cash_discount_amount" class="amount-row discount"><text>优惠券抵扣现金</text><text>-¥{{ money(preview.cash_discount_amount) }}</text></view>
-      <view v-if="preview?.points_discount" class="amount-row discount"><text>优惠券抵扣积分</text><text>-{{ preview.points_discount.toLocaleString() }} 积分</text></view>
-      <view class="amount-row"><text>现金运费</text><text>{{ quoteError ? '试算失败' : `¥${money(preview?.shipping_amount || quote?.shipping_cash_amount || 0)}` }}</text></view>
-      <view class="amount-row total"><text>应付合计</text><text class="tm-money">{{ preview ? amountText(preview.payable_cash_amount, preview.payable_points) : amountText(itemsCashAmount + (quote?.shipping_cash_amount || 0), itemsPoints) }}</text></view>
-    </view>
-
-    <view v-if="preview" class="coupon-section tm-panel">
-      <view class="coupon-heading"><view><text class="coupon-title">按拆单选择优惠券</text><text class="coupon-tip">每张券只能用于一个交付拆单，运费不参与抵扣</text></view><text v-if="couponSelectionDirty" class="dirty-tag">待重新预览</text></view>
+    <view v-if="preview" class="coupon-section">
+      <view class="coupon-heading">
+        <view><text class="coupon-title">优惠券</text><text class="coupon-tip">按拆单选择优惠券</text></view>
+        <text v-if="couponSelectionDirty" class="dirty-tag">待重新预览</text>
+      </view>
       <view v-for="group in preview.groups" :key="group.group_key" class="coupon-group">
         <view class="group-heading"><text>{{ fulfillmentText(group.fulfillment_type) }}</text><text>{{ groupCouponSummary(group) }}</text></view>
         <view class="coupon-choice" :class="{ selected: !selectedCoupons[group.fulfillment_type] }" @click="chooseCoupon(group.fulfillment_type, null)">
-          <view><text class="coupon-name">不使用优惠券</text><text class="coupon-detail">按原价结算该拆单</text></view><text class="select-mark">{{ !selectedCoupons[group.fulfillment_type] ? '✓' : '' }}</text>
+          <view><text class="coupon-name">不使用优惠券</text><text class="coupon-detail">按原价结算该拆单</text></view>
+          <view class="pay-check" :class="{ on: !selectedCoupons[group.fulfillment_type] }">{{ !selectedCoupons[group.fulfillment_type] ? '✓' : '' }}</view>
         </view>
         <view v-for="coupon in group.coupon_options" :key="coupon.id" class="coupon-choice" :class="{ selected: selectedCoupons[group.fulfillment_type] === coupon.id, disabled: !coupon.eligible || usedByOtherGroup(coupon.id, group.fulfillment_type) }" @click="chooseCoupon(group.fulfillment_type, coupon)">
-          <view class="coupon-copy"><text class="coupon-name">{{ coupon.name }}</text><text class="coupon-detail">{{ couponValueText(coupon) }} · {{ couponThresholdText(coupon) }}</text><text v-if="coupon.eligible && !usedByOtherGroup(coupon.id, group.fulfillment_type)" class="coupon-saving">预计抵扣 {{ couponEstimatedText(coupon) }}</text><text v-else class="coupon-reason">{{ usedByOtherGroup(coupon.id, group.fulfillment_type) ? '已用于其他拆单' : coupon.unavailable_reason }}</text></view>
-          <text class="select-mark">{{ selectedCoupons[group.fulfillment_type] === coupon.id ? '✓' : '' }}</text>
+          <view class="coupon-copy">
+            <text class="coupon-name">{{ coupon.name }}</text>
+            <text class="coupon-detail">{{ couponValueText(coupon) }} · {{ couponThresholdText(coupon) }}</text>
+            <text v-if="coupon.eligible && !usedByOtherGroup(coupon.id, group.fulfillment_type)" class="coupon-saving">预计抵扣 {{ couponEstimatedText(coupon) }}</text>
+            <text v-else class="coupon-reason">{{ usedByOtherGroup(coupon.id, group.fulfillment_type) ? '已用于其他拆单' : coupon.unavailable_reason }}</text>
+          </view>
+          <view class="pay-check" :class="{ on: selectedCoupons[group.fulfillment_type] === coupon.id }">{{ selectedCoupons[group.fulfillment_type] === coupon.id ? '✓' : '' }}</view>
         </view>
         <view v-if="!group.coupon_options.length" class="empty-coupons">账户暂无可用于结算的优惠券</view>
       </view>
     </view>
 
+    <view class="card amount-card">
+      <view class="amount-row"><text>商品现金</text><text>¥{{ money(itemsCashAmount) }}</text></view>
+      <view class="amount-row"><text>商品积分</text><text>{{ itemsPoints.toLocaleString() }} 积分</text></view>
+      <view v-if="preview?.cash_discount_amount" class="amount-row discount"><text>优惠券抵扣现金</text><text>-¥{{ money(preview.cash_discount_amount) }}</text></view>
+      <view v-if="preview?.points_discount" class="amount-row discount"><text>优惠券抵扣积分</text><text>-{{ preview.points_discount.toLocaleString() }} 积分</text></view>
+      <view class="amount-row"><text>现金运费</text><text>{{ quoteError ? '试算失败' : `¥${money(preview?.shipping_amount || quote?.shipping_cash_amount || 0)}` }}</text></view>
+      <view class="amount-row total"><text>应付合计</text><text class="total-val">{{ preview ? amountText(preview.payable_cash_amount, preview.payable_points) : amountText(itemsCashAmount + (quote?.shipping_cash_amount || 0), itemsPoints) }}</text></view>
+    </view>
+
     <view class="rule-note">本单现金部分仅可选择微信或余额全额支付，两者不可组合；运费始终使用现金。</view>
-    <view v-if="quoteError" class="quote-error"><text>运费试算失败，暂不可提交订单</text><button @click="loadQuote">重新试算</button></view>
-    <button class="tm-primary-button submit" :loading="submitting" :disabled="submitting || !canCheckout" @click="submit">{{ submitText }}</button>
+
+    <view class="action-bar">
+      <view class="total-box">
+        <text class="total-label">合计</text>
+        <text class="total-amount">{{ preview ? amountText(preview.payable_cash_amount, preview.payable_points) : amountText(itemsCashAmount + (quote?.shipping_cash_amount || 0), itemsPoints) }}</text>
+      </view>
+      <button class="ab-main" :loading="submitting" :disabled="submitting || !canCheckout" @click="submit">{{ submitText }}</button>
+    </view>
     <button class="cancel-checkout" :disabled="submitting" @click="openCart">取消结算并返回购物车</button>
+    </template>
     </template>
   </view>
 </template>
@@ -224,6 +264,7 @@ function selectPayment(event: { detail: { value: number } }) { paymentIndex.valu
 function choosePayment(index: number) { paymentIndex.value = index; invalidate(); persistDraft() }
 function openRecharge() { persistDraft(); refreshAfterRecharge.value = true; uni.navigateTo({ url: '/pages/wallet-recharge/index?returnTo=checkout' }) }
 function openCart() { clearCheckoutDraft(auth.user?.id, checkoutSource()); uni.redirectTo({ url: '/pages/cart/index' }) }
+function goBack() { uni.navigateBack({ fail: () => openCart() }) }
 async function loadQuote() {
   quote.value = null
   quoteError.value = ''
@@ -299,29 +340,90 @@ function amountText(cash: number, points: number) { return [cash ? `¥${money(ca
 </script>
 
 <style scoped>
-.commerce-hero{position:relative;min-height:250rpx;overflow:hidden;margin-bottom:18rpx;border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-lg);background:linear-gradient(135deg,#e7fff1 0,#dff8fb 58%,#eef6ff 100%);box-shadow:var(--tm-shadow-sm)}
-.commerce-hero-art{position:absolute;right:-16rpx;top:0;width:68%;height:100%;opacity:.88;object-position:right center}.commerce-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(231,255,241,.98) 0,rgba(231,255,241,.9) 34%,rgba(231,255,241,.12) 78%,rgba(231,255,241,0) 100%)}
-.commerce-hero-copy{position:relative;z-index:1;width:57%;padding:28rpx 24rpx}.commerce-hero-kicker,.commerce-hero-title,.commerce-hero-sub{display:block}.commerce-hero-kicker{color:var(--tm-brand-700);font-size:13px;font-weight:850;letter-spacing:2.4rpx}.commerce-hero-title{margin-top:10rpx;color:var(--tm-ink-900);font-size:22px;font-weight:950;line-height:1.2}.commerce-hero-sub{margin-top:10rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.55}
-
-  .page{padding-bottom:80rpx}.flow-strip{display:flex;align-items:center;padding:24rpx 28rpx}.flow{display:flex;align-items:center;flex-direction:column;gap:8rpx;color:var(--tm-ink-500)}.flow text{display:flex;align-items:center;justify-content:center;width:38rpx;height:38rpx;border-radius:50%;background:#e8eeee;font-size:13px}.flow small{font-size:13px;white-space:nowrap}.flow.active{color:var(--tm-brand-700);font-weight:850}.flow.active text{background:var(--tm-brand-600);color:#fff}.flow.done text{background:var(--tm-brand-100);color:var(--tm-brand-700)}.line{height:1rpx;flex:1;margin:0 14rpx;background:var(--tm-line)}.item-card{display:flex;gap:20rpx;margin-top:20rpx;padding:24rpx}.item-mark{display:flex;align-items:center;justify-content:center;width:104rpx;height:104rpx;flex:none;border-radius:18rpx;background:linear-gradient(145deg,#dff3f1,#fff0dc);color:var(--tm-brand-700);font-size:22px;font-weight:950}.item-main{min-width:0;flex:1}.item-name,.item-meta{display:block}.item-name{overflow:hidden;font-size:15px;font-weight:900;text-overflow:ellipsis;white-space:nowrap}.item-meta{margin-top:8rpx;color:var(--tm-ink-500);font-size:13px}.item-foot{display:flex;justify-content:space-between;margin-top:16rpx;font-size:14px}.checkout-card{margin-top:20rpx;padding:12rpx 24rpx 24rpx}.setting-row,.amount-row{display:flex;justify-content:space-between;gap:24rpx;padding:22rpx 0;border-bottom:1rpx solid var(--tm-line);font-size:14px}.setting-row text:last-child{max-width:66%;overflow:hidden;color:var(--tm-ink-500);text-align:right;text-overflow:ellipsis;white-space:nowrap}.divider{height:16rpx}.amount-row{padding:12rpx 0;border:0;color:var(--tm-ink-700)}.amount-row.total{margin-top:8rpx;padding-top:20rpx;border-top:1rpx solid var(--tm-line);color:var(--tm-ink-900);font-size:17px;font-weight:900}.rule-note{margin-top:20rpx;padding:20rpx;border-radius:16rpx;background:var(--tm-reward-100);color:#89500c;font-size:13px;line-height:1.55}.quote-error{display:flex;align-items:center;justify-content:space-between;gap:14rpx;margin-top:18rpx;padding:16rpx 18rpx;border-radius:14rpx;background:#fff4f2;color:#b42318;font-size:13px}.quote-error button{flex:none;height:52rpx;margin:0;padding:0 14rpx;border:1rpx solid #e9a99e;border-radius:12rpx;background:#fff;color:#b42318;font-size:13px;line-height:50rpx}.quote-error button::after{border:0}.error-state{border-color:#f3b1a5;background:#fff7f5}.submit{margin-top:26rpx}.cancel-checkout{height:62rpx;margin-top:14rpx;border:2rpx solid var(--tm-ink-900);border-radius:999rpx;background:#fff;color:var(--tm-ink-900);font-size:13px;line-height:58rpx}
-.empty-state{margin-top:20rpx;padding:52rpx 28rpx;text-align:center;background:var(--tm-campus-coral-soft)}.empty-mark{display:flex;align-items:center;justify-content:center;width:84rpx;height:84rpx;margin:0 auto;border:2rpx solid var(--tm-ink-900);border-radius:26rpx;background:var(--tm-campus-yellow);font-size:17px;font-weight:950}.empty-title,.empty-copy{display:block}.empty-title{margin-top:18rpx;font-size:17px;font-weight:950}.empty-copy{margin:8rpx auto 0;max-width:560rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.55}.empty-button{height:66rpx;margin-top:22rpx;border:2rpx solid var(--tm-ink-900);border-radius:999rpx;background:var(--tm-brand-600);color:#fff;font-weight:900;line-height:62rpx}.empty-button::after{border:0}
-.item-mark{background:var(--tm-brand-100)}
-.amount-row.discount{color:#c56518}.coupon-section{margin-top:20rpx;padding:26rpx}.coupon-heading,.group-heading,.coupon-choice{display:flex;align-items:center;justify-content:space-between;gap:20rpx}.coupon-title,.coupon-tip{display:block}.coupon-title{font-size:17px;font-weight:950}.coupon-tip{margin-top:6rpx;color:var(--tm-ink-500);font-size:13px}.dirty-tag{padding:7rpx 12rpx;border-radius:999rpx;background:#fff0d9;color:#9b5c08;font-size:13px;font-weight:800}.coupon-group{margin-top:24rpx;padding-top:22rpx;border-top:1rpx solid var(--tm-line)}.group-heading{margin-bottom:14rpx;font-size:14px;font-weight:850}.group-heading text:last-child{color:var(--tm-brand-700);font-size:13px}.coupon-choice{margin-top:12rpx;padding:18rpx;border:2rpx solid transparent;border-radius:16rpx;background:#f6f8f8}.coupon-choice.selected{border-color:var(--tm-brand-500);background:var(--tm-brand-100)}.coupon-choice.disabled{opacity:.55}.coupon-copy{min-width:0;flex:1}.coupon-name,.coupon-detail,.coupon-saving,.coupon-reason{display:block}.coupon-name{font-size:14px;font-weight:900}.coupon-detail{margin-top:5rpx;color:var(--tm-ink-500);font-size:13px}.coupon-saving{margin-top:7rpx;color:#c56518;font-size:13px;font-weight:800}.coupon-reason{margin-top:7rpx;color:#9a4d43;font-size:13px}.select-mark{width:34rpx;color:var(--tm-brand-700);font-size:15px;font-weight:950;text-align:center}.empty-coupons{padding:22rpx 0;color:var(--tm-ink-500);font-size:13px;text-align:center}.payment-unavailable{margin:10rpx 0;padding:20rpx;border:1rpx solid #f2b8ae;border-radius:16rpx;background:#fff4f2;color:#b42318}.payment-unavailable text,.payment-unavailable small{display:block}.payment-unavailable text{font-size:14px;font-weight:850}.payment-unavailable small{margin-top:7rpx;font-size:13px;line-height:1.5}
-/* V09 campus commerce surface */
-.page{background:linear-gradient(180deg,var(--tm-campus-cyan-soft) 0,var(--tm-canvas) 520rpx);color:var(--tm-ink-900)}
-.flow-strip,.item-card,.checkout-card,.coupon-section{border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-lg);box-shadow:var(--tm-shadow-sm);background:var(--tm-surface)}
-.flow-strip{background:var(--tm-surface)}
-.flow.active text{border:0;background:var(--tm-brand-600);color:#fff}.flow.done text{border:0;background:var(--tm-brand-100);color:var(--tm-brand-700)}
-.item-mark{border:0;background:var(--tm-brand-100);color:var(--tm-brand-700)}
-.checkout-card{background:var(--tm-surface)}.coupon-section{background:var(--tm-surface-soft)}
-.coupon-choice{border:1rpx solid transparent;background:var(--tm-surface);box-shadow:none}
-.coupon-choice.selected{border-color:var(--tm-brand-500);background:var(--tm-brand-50)}
-.coupon-choice.disabled{opacity:.48}
-.rule-note{border:1rpx solid rgba(183,123,18,.18);background:var(--tm-reward-100);color:#89500c}
-.submit{border:1rpx solid transparent;box-shadow:none}
-.cancel-checkout{border:1rpx solid var(--tm-line);color:var(--tm-ink-700)}
-.payment-section{padding:14rpx 0}.payment-heading{display:flex;align-items:center;justify-content:space-between;padding:10rpx 0 14rpx}.payment-heading text:first-child{font-size:14px;font-weight:900}.payment-heading text:last-child{color:var(--tm-ink-500);font-size:13px}.payment-choice{display:flex;align-items:center;gap:14rpx;margin-top:12rpx;padding:17rpx;border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-md);background:var(--tm-surface);box-shadow:none}.payment-choice.selected{border-color:var(--tm-brand-500);background:var(--tm-brand-50)}.payment-choice.insufficient{opacity:.62}.payment-mark{display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;border-radius:14rpx;background:var(--tm-brand-600);color:#fff;font-size:13px;font-weight:900}.payment-copy{min-width:0;flex:1}.payment-copy text,.payment-copy small{display:block}.payment-copy text{font-size:14px;font-weight:850}.payment-copy small{margin-top:4rpx;color:var(--tm-ink-500);font-size:12px}.payment-check{width:30rpx;color:var(--tm-brand-700);font-size:15px;font-weight:950}.recharge-link{margin-top:12rpx;padding:15rpx;border-radius:14rpx;background:var(--tm-reward-100);color:#995900;font-size:13px;font-weight:800;text-align:center}
-.empty-state,.error-state,.payment-unavailable,.quote-error{border-color:var(--tm-line);box-shadow:var(--tm-shadow-sm)}
-.error-state,.payment-unavailable,.quote-error{background:var(--tm-campus-coral-soft)}
-.submit[disabled],.payment-choice[disabled]{opacity:.46;filter:saturate(.55)}
+.page{min-height:100vh;padding-bottom:260rpx;background:#F4F6F4;color:#191B1F}
+.subnav{display:flex;align-items:center;justify-content:center;height:88rpx;position:relative;background:linear-gradient(135deg,#12D978,#08A152)}
+.nav-back{position:absolute;left:16rpx;top:14rpx;display:flex;align-items:center;justify-content:center;width:60rpx;height:60rpx;margin:0;padding:0;border-radius:50%;color:#fff;font-size:40rpx;line-height:56rpx}
+.nav-back::after{border:0}
+.nav-title{color:#fff;font-size:32rpx;font-weight:700}
+.card,.form-card{margin:20rpx 24rpx 0;border-radius:32rpx;background:#fff}
+.addr-card{display:flex;align-items:center;gap:22rpx;margin:20rpx 24rpx 0;padding:28rpx;border-radius:32rpx;background:#fff}
+.addr-ic{display:flex;align-items:center;justify-content:center;width:76rpx;height:76rpx;flex:none;border-radius:22rpx;background:#E7F9EF;color:#08A152;font-size:30rpx;font-weight:800}
+.addr-main{min-width:0;flex:1}
+.addr-name{display:block;font-size:28rpx;font-weight:700}
+.addr-sub{display:block;margin-top:8rpx;color:#767C85;font-size:24rpx;line-height:1.5}
+.addr-arrow{color:#AEB3BB;font-size:30rpx}
+.goods-card{padding:28rpx}
+.goods-row{display:flex;gap:22rpx}
+.goods-row+.goods-row{margin-top:24rpx;padding-top:24rpx;border-top:1rpx solid #F5F6F6}
+.goods-mark{display:flex;align-items:center;justify-content:center;width:152rpx;height:152rpx;flex:none;border-radius:20rpx;background:#E7F9EF;color:#08A152;font-size:44rpx;font-weight:900}
+.goods-main{min-width:0;flex:1}
+.goods-name{display:block;font-size:26rpx;font-weight:600;line-height:1.4}
+.goods-meta{display:block;margin-top:10rpx;color:#AEB3BB;font-size:22rpx}
+.goods-foot{display:flex;align-items:center;margin-top:14rpx}
+.goods-price{color:#FF3B30;font-size:32rpx;font-weight:800}
+.goods-qty{margin-left:auto;color:#767C85;font-size:24rpx}
+.form-card{padding:4rpx 28rpx}
+.frow{display:flex;align-items:center;gap:20rpx;min-height:104rpx;padding:24rpx 0;border-bottom:1rpx solid #F5F6F6}
+.frow:last-child{border-bottom:0}
+.f-label{width:128rpx;flex:none;font-size:28rpx;font-weight:600}
+.spacer{flex:1}
+.f-val{font-size:26rpx;color:#08A152;font-weight:600;text-align:right}
+.f-val.dim{color:#767C85;font-weight:400}
+.f-val.error{color:#FF3B30}
+.head-row{min-height:88rpx;padding-bottom:8rpx}
+.pay-choice{display:flex;align-items:center;gap:20rpx;margin:0 0 20rpx;padding:22rpx;border:2rpx solid #EDEFEF;border-radius:24rpx;background:#fff}
+.pay-choice.selected{border-color:#0BBF63;background:#E7F9EF}
+.pay-choice.insufficient{opacity:.62}
+.pay-mark{display:flex;align-items:center;justify-content:center;width:72rpx;height:72rpx;flex:none;border-radius:20rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:26rpx;font-weight:800}
+.pay-copy{min-width:0;flex:1}
+.pay-name{display:block;font-size:28rpx;font-weight:600}
+.pay-sub{display:block;margin-top:6rpx;color:#767C85;font-size:24rpx}
+.pay-check{display:flex;align-items:center;justify-content:center;width:36rpx;height:36rpx;flex:none;border:2rpx solid #EDEFEF;border-radius:50%;color:#fff;font-size:22rpx}
+.pay-check.on{border-color:#0BBF63;background:#0BBF63}
+.recharge-link{margin:4rpx 0 24rpx;padding:22rpx;border-radius:20rpx;background:#FFF2E5;color:#F2620A;font-size:26rpx;font-weight:700;text-align:center}
+.payment-unavailable{margin:20rpx 24rpx 0;padding:28rpx;border-radius:32rpx;background:#FFEEEA;color:#FF3B30}
+.payment-unavailable text,.payment-unavailable small{display:block}
+.payment-unavailable text{font-size:28rpx;font-weight:600}
+.payment-unavailable small{margin-top:8rpx;color:#767C85;font-size:24rpx;line-height:1.5}
+.coupon-section{margin:20rpx 24rpx 0;padding:28rpx;border-radius:32rpx;background:#fff}
+.coupon-heading,.group-heading,.coupon-choice{display:flex;align-items:center;justify-content:space-between;gap:20rpx}
+.coupon-title,.coupon-tip{display:block}
+.coupon-title{font-size:30rpx;font-weight:700}
+.coupon-tip{margin-top:8rpx;color:#767C85;font-size:24rpx}
+.dirty-tag{padding:8rpx 16rpx;border-radius:999rpx;background:#FFF2E5;color:#F2620A;font-size:22rpx;font-weight:700}
+.coupon-group{margin-top:24rpx;padding-top:22rpx;border-top:1rpx solid #F5F6F6}
+.group-heading{margin-bottom:16rpx;font-size:26rpx;font-weight:600}
+.group-heading text:last-child{color:#08A152;font-size:24rpx}
+.coupon-choice{margin-top:14rpx;padding:22rpx;border:2rpx solid #EDEFEF;border-radius:24rpx;background:#fff}
+.coupon-choice.selected{border-color:#0BBF63;background:#E7F9EF}
+.coupon-choice.disabled{opacity:.5}
+.coupon-copy{min-width:0;flex:1}
+.coupon-name,.coupon-detail,.coupon-saving,.coupon-reason{display:block}
+.coupon-name{font-size:26rpx;font-weight:600}
+.coupon-detail{margin-top:6rpx;color:#767C85;font-size:24rpx}
+.coupon-saving{margin-top:8rpx;color:#F2620A;font-size:24rpx;font-weight:700}
+.coupon-reason{margin-top:8rpx;color:#FF3B30;font-size:24rpx}
+.empty-coupons{padding:28rpx 0;color:#AEB3BB;font-size:24rpx;text-align:center}
+.amount-card{padding:8rpx 28rpx 24rpx}
+.amount-row{display:flex;justify-content:space-between;gap:24rpx;padding:18rpx 0;color:#767C85;font-size:26rpx}
+.amount-row.discount{color:#F2620A}
+.amount-row.total{margin-top:10rpx;padding-top:24rpx;border-top:1rpx solid #F5F6F6;color:#191B1F;font-size:30rpx;font-weight:800}
+.total-val{color:#FF3B30}
+.rule-note{margin:20rpx 24rpx 0;padding:24rpx;border-radius:24rpx;background:#FFF2E5;color:#F2620A;font-size:24rpx;line-height:1.55}
+.action-bar{position:fixed;z-index:50;right:0;bottom:0;left:0;display:flex;align-items:center;gap:20rpx;padding:16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));border-top:1rpx solid #EDEFEF;background:#fff}
+.total-box{display:flex;flex:1;align-items:baseline;gap:12rpx;padding-left:8rpx}
+.total-label{color:#767C85;font-size:24rpx}
+.total-amount{color:#FF3B30;font-size:34rpx;font-weight:800}
+.ab-main{flex:none;width:340rpx;height:84rpx;margin:0;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:84rpx;box-shadow:0 12rpx 28rpx rgba(11,191,99,.3)}
+.ab-main::after{border:0}
+.ab-main[disabled]{opacity:.5}
+.cancel-checkout{position:fixed;z-index:49;right:0;bottom:150rpx;left:0;margin:0;color:#AEB3BB;font-size:22rpx;text-align:center;background:transparent}
+.cancel-checkout::after{border:0}
+.state-card{margin:20rpx 24rpx 0;padding:80rpx 40rpx;border-radius:32rpx;background:#fff;text-align:center}
+.state-spinner{width:56rpx;height:56rpx;margin:0 auto;border:6rpx solid #E7F9EF;border-top-color:#0BBF63;border-radius:50%;animation:ck-spin .8s linear infinite}
+.state-title{display:block;margin-top:24rpx;font-size:30rpx;font-weight:700}
+.state-copy{display:block;margin:12rpx auto 0;max-width:560rpx;color:#767C85;font-size:24rpx;line-height:1.6}
+.btn-main{height:80rpx;margin:32rpx auto 0;padding:0 48rpx;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:80rpx}
+.btn-main::after{border:0}
+@keyframes ck-spin{to{transform:rotate(360deg)}}
 </style>

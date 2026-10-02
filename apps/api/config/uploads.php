@@ -15,6 +15,7 @@ return [
         'task_submission' => ['categories' => ['image', 'video', 'document'], 'max_bytes' => 100 * 1024 * 1024],
         'task_report' => ['categories' => ['image', 'document'], 'max_bytes' => 20 * 1024 * 1024],
         'community' => ['categories' => ['image', 'video'], 'max_bytes' => 100 * 1024 * 1024],
+        'second_hand' => ['categories' => ['image'], 'max_bytes' => 20 * 1024 * 1024],
         'refund_evidence' => ['categories' => ['image', 'document'], 'max_bytes' => 20 * 1024 * 1024],
         'return_shipping' => ['categories' => ['image', 'document'], 'max_bytes' => 20 * 1024 * 1024],
         'offline_recharge' => ['categories' => ['image'], 'max_bytes' => 20 * 1024 * 1024],

@@ -74,6 +74,8 @@ use App\Modules\Refund\Http\Controllers\ReturnShippingCompensationController;
 use App\Modules\Refund\Http\Controllers\WechatRefundNotificationController;
 use App\Modules\SecondHand\Http\Controllers\SecondHandItemController;
 use App\Modules\SecondHand\Http\Controllers\SecondHandOrderController;
+use App\Modules\SecondHand\Http\Controllers\SecondHandRatingController;
+use App\Modules\SecondHand\Http\Controllers\SecondHandRefundController;
 use App\Modules\Settings\Http\Controllers\AdminSystemSettingController;
 use App\Modules\Settings\Http\Controllers\AppearanceContentController;
 use App\Modules\Settings\Http\Controllers\AppNavigationController;
@@ -95,6 +97,8 @@ use App\Modules\Task\Http\Controllers\TaskPublisherTaskController;
 use App\Modules\Task\Http\Controllers\TaskRiskController;
 use App\Modules\Task\Http\Controllers\UserTaskSubmissionController;
 use App\Modules\Upload\Http\Controllers\UploadController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [HealthController::class, 'live'])->name('api.health');
@@ -117,7 +121,7 @@ Route::get('/product-categories', [ProductController::class, 'categories']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::get('/second-hand/categories', [SecondHandItemController::class, 'categories']);
 Route::get('/second-hand/items', [SecondHandItemController::class, 'index']);
-Route::get('/second-hand/items/{item}', [SecondHandItemController::class, 'show']);
+Route::get('/second-hand/items/{item}', [SecondHandItemController::class, 'show'])->middleware('auth.optional');
 Route::get('/media/assets/{mediaAsset}', [MediaAssetController::class, 'show']);
 Route::get('/avatars/{file}', [UserAvatarController::class, 'show'])
     ->middleware('throttle:120,1')
@@ -286,6 +290,19 @@ Route::middleware('auth.access')->group(function () {
     Route::post('/second-hand/orders/{order}/ship', [SecondHandOrderController::class, 'ship'])->middleware('legal.consent:account');
     Route::post('/second-hand/orders/{order}/complete', [SecondHandOrderController::class, 'complete'])->middleware('legal.consent:account');
     Route::post('/second-hand/orders/{order}/cancel', [SecondHandOrderController::class, 'cancel'])->middleware('legal.consent:account');
+    Route::post('/second-hand/orders/{order}/rate', [SecondHandRatingController::class, 'store'])->middleware('legal.consent:account');
+    Route::get('/second-hand/orders/{order}/ratings', [SecondHandRatingController::class, 'index'])->middleware('legal.consent:account');
+    Route::put('/second-hand/ratings/{rating}/reply', [SecondHandRatingController::class, 'reply'])->middleware('legal.consent:account');
+    Route::get('/users/{user}/second-hand-ratings', [SecondHandRatingController::class, 'userRatings']);
+    Route::post('/second-hand/orders/{order}/refund', [SecondHandRefundController::class, 'request'])->middleware('legal.consent:account');
+    Route::post('/second-hand/orders/{order}/refund/respond', [SecondHandRefundController::class, 'respond'])->middleware('legal.consent:account');
+    Route::get('/second-hand/orders/{order}/refund', [SecondHandRefundController::class, 'show'])->middleware('legal.consent:account');
+    Route::post('/second-hand/orders/{order}/refund/escalate', [SecondHandRefundController::class, 'escalate'])->middleware('legal.consent:account');
+
+    // 广播鉴权（WebSocket 私有频道）
+    Route::post('/broadcasting/auth', function (Request $request) {
+        return Broadcast::auth($request);
+    });
 
     // IM 聊天
     Route::get('/chat/conversations', [ChatController::class, 'conversations'])->middleware('legal.consent:account');
@@ -489,6 +506,10 @@ Route::prefix('admin')->group(function () {
         Route::post('/community/activities/{activity}/close', [CommunityActivityController::class, 'close'])->middleware('admin.permission:community.review');
         Route::post('/community/activities/{activity}/participants/{participant}/remove', [CommunityActivityController::class, 'removeParticipant'])->middleware('admin.permission:community.review');
         Route::get('/community/config', [CommunityHomepageController::class, 'adminShow'])->middleware('admin.permission:community.review');
+        Route::get('/second-hand/items', [SecondHandItemController::class, 'adminIndex'])->middleware('admin.permission:community.review');
+        Route::post('/second-hand/items/{item}/review', [SecondHandItemController::class, 'adminReview'])->middleware('admin.permission:community.review');
+        Route::get('/second-hand/refunds', [SecondHandRefundController::class, 'adminIndex'])->middleware('admin.permission:after_sale.review');
+        Route::post('/second-hand/refunds/{refund}/arbitrate', [SecondHandRefundController::class, 'arbitrate'])->middleware('admin.permission:after_sale.review');
         Route::get('/support-tickets', [AdminSupportTicketController::class, 'index'])->middleware('admin.permission:after_sale.review|privacy.manage');
         Route::get('/support-tickets/{supportTicket}', [AdminSupportTicketController::class, 'show'])->middleware('admin.permission:after_sale.review|privacy.manage');
         Route::post('/support-tickets/{supportTicket}/messages', [AdminSupportTicketController::class, 'reply'])->middleware('admin.permission:after_sale.review|privacy.manage');
