@@ -48,6 +48,7 @@ import {
 } from '@/api/second-hand'
 import { ensureChatConversation } from '@/api/chat'
 import { resolveApiAssetUrl } from '@/api/http'
+import { formatDateTime } from '@/utils/dateTime'
 
 const auth = useAuthStore()
 const order = ref<SecondHandOrder | null>(null)
@@ -71,7 +72,7 @@ const canComplete = computed(() => order.value?.role === 'buyer' && ['paid', 'sh
 const canCancel = computed(() => ['pending_payment', 'paid'].includes(order.value?.status || ''))
 
 function resolveCover(id: string | null) { return resolveApiAssetUrl(id) }
-function formatTime(s: string | null) { return s ? new Date(s).toLocaleString('zh-CN') : '' }
+function formatTime(s: string | null) { return formatDateTime(s, '') }
 
 onLoad((q) => { orderId.value = q?.id || ''; load() })
 

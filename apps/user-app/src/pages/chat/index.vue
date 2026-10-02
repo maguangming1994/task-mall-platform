@@ -37,6 +37,7 @@ import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { listChatConversations, type ChatConversation } from '@/api/chat'
 import { resolveApiAssetUrl } from '@/api/http'
+import { formatDate, formatDateTime } from '@/utils/dateTime'
 
 const auth = useAuthStore()
 const items = ref<ChatConversation[]>([])
@@ -45,10 +46,9 @@ const loading = ref(false)
 function resolveCover(id: string | null) { return resolveApiAssetUrl(id) }
 function formatTime(s: string | null) {
   if (!s) return ''
-  const d = new Date(s)
-  const now = new Date()
-  if (d.toDateString() === now.toDateString()) return d.toTimeString().slice(0, 5)
-  return d.toLocaleDateString('zh-CN')
+  const today = formatDate(new Date().toISOString())
+  const day = formatDate(s)
+  return day === today ? formatDateTime(s).slice(11) : day
 }
 
 async function load() {

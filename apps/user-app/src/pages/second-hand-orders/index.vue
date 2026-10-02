@@ -36,6 +36,7 @@ import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { listSecondHandOrders, type SecondHandOrder } from '@/api/second-hand'
 import { resolveApiAssetUrl } from '@/api/http'
+import { formatDate } from '@/utils/dateTime'
 
 const auth = useAuthStore()
 const role = ref<'buyer' | 'seller'>('buyer')
@@ -43,7 +44,7 @@ const orders = ref<SecondHandOrder[]>([])
 const loading = ref(false)
 
 function resolveCover(id: string | null) { return resolveApiAssetUrl(id) }
-function formatTime(s: string | null) { return s ? new Date(s).toLocaleDateString('zh-CN') : '' }
+function formatTime(s: string | null) { return formatDate(s, '') }
 
 function statusText(s: string) {
   return ({ pending_payment: '待付款', paid: '待发货', shipped: '待收货', completed: '已完成', cancelled: '已取消' } as Record<string, string>)[s] || s
