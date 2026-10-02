@@ -173,6 +173,34 @@
     },
     {
       "path": "pages/support/index",
+      "style": { "navigationBarTitleText": "帮助与反馈", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/second-hand/index",
+      "style": { "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/second-hand-detail/index",
+      "style": { "navigationBarTitleText": "闲置详情" }
+    },
+    {
+      "path": "pages/second-hand-publish/index",
+      "style": { "navigationBarTitleText": "发布闲置" }
+    },
+    {
+      "path": "pages/second-hand-orders/index",
+      "style": { "navigationBarTitleText": "闲置订单" }
+    },
+    {
+      "path": "pages/second-hand-order-detail/index",
+      "style": { "navigationBarTitleText": "订单详情" }
+    },
+    {
+      "path": "pages/chat/index",
+      "style": { "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/chat-detail/index",
       "style": { "navigationStyle": "custom" }
     }
 	],

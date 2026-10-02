@@ -29,6 +29,7 @@ use App\Modules\Auth\Http\Controllers\WechatAuthController;
 use App\Modules\Campus\Http\Controllers\AdminCampusController;
 use App\Modules\Campus\Http\Controllers\CampusController;
 use App\Modules\Cart\Http\Controllers\CartController;
+use App\Modules\Chat\Http\Controllers\ChatController;
 use App\Modules\Community\Http\Controllers\CommunityActivityController;
 use App\Modules\Community\Http\Controllers\CommunityCommentController;
 use App\Modules\Community\Http\Controllers\CommunityEngagementController;
@@ -71,6 +72,8 @@ use App\Modules\Refund\Http\Controllers\ExchangeController;
 use App\Modules\Refund\Http\Controllers\RefundController;
 use App\Modules\Refund\Http\Controllers\ReturnShippingCompensationController;
 use App\Modules\Refund\Http\Controllers\WechatRefundNotificationController;
+use App\Modules\SecondHand\Http\Controllers\SecondHandItemController;
+use App\Modules\SecondHand\Http\Controllers\SecondHandOrderController;
 use App\Modules\Settings\Http\Controllers\AdminSystemSettingController;
 use App\Modules\Settings\Http\Controllers\AppearanceContentController;
 use App\Modules\Settings\Http\Controllers\AppNavigationController;
@@ -112,6 +115,9 @@ Route::get('/tasks/{task}', [TaskHallController::class, 'show']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/product-categories', [ProductController::class, 'categories']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
+Route::get('/second-hand/categories', [SecondHandItemController::class, 'categories']);
+Route::get('/second-hand/items', [SecondHandItemController::class, 'index']);
+Route::get('/second-hand/items/{item}', [SecondHandItemController::class, 'show']);
 Route::get('/media/assets/{mediaAsset}', [MediaAssetController::class, 'show']);
 Route::get('/avatars/{file}', [UserAvatarController::class, 'show'])
     ->middleware('throttle:120,1')
@@ -267,6 +273,26 @@ Route::middleware('auth.access')->group(function () {
     Route::post('/files/{file}/complete', [UploadController::class, 'complete'])->middleware('throttle:30,1');
     Route::get('/files/{file}', [UploadController::class, 'show']);
     Route::get('/files/{file}/content', [UploadController::class, 'download'])->middleware('throttle:60,1');
+
+    // 二手闲置
+    Route::post('/second-hand/items', [SecondHandItemController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
+    Route::put('/second-hand/items/{item}', [SecondHandItemController::class, 'update'])->middleware('legal.consent:account');
+    Route::delete('/second-hand/items/{item}', [SecondHandItemController::class, 'destroy'])->middleware('legal.consent:account');
+    Route::get('/second-hand/my-items', [SecondHandItemController::class, 'mine'])->middleware('legal.consent:account');
+    Route::get('/second-hand/orders', [SecondHandOrderController::class, 'index'])->middleware('legal.consent:account');
+    Route::post('/second-hand/orders', [SecondHandOrderController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
+    Route::get('/second-hand/orders/{order}', [SecondHandOrderController::class, 'show'])->middleware('legal.consent:account');
+    Route::post('/second-hand/orders/{order}/pay', [SecondHandOrderController::class, 'pay'])->middleware(['legal.consent:account', 'throttle:10,1']);
+    Route::post('/second-hand/orders/{order}/ship', [SecondHandOrderController::class, 'ship'])->middleware('legal.consent:account');
+    Route::post('/second-hand/orders/{order}/complete', [SecondHandOrderController::class, 'complete'])->middleware('legal.consent:account');
+    Route::post('/second-hand/orders/{order}/cancel', [SecondHandOrderController::class, 'cancel'])->middleware('legal.consent:account');
+
+    // IM 聊天
+    Route::get('/chat/conversations', [ChatController::class, 'conversations'])->middleware('legal.consent:account');
+    Route::post('/chat/conversations', [ChatController::class, 'store'])->middleware('legal.consent:account');
+    Route::get('/chat/conversations/{conversation}/messages', [ChatController::class, 'messages'])->middleware('legal.consent:account');
+    Route::post('/chat/conversations/{conversation}/messages', [ChatController::class, 'send'])->middleware(['legal.consent:account', 'throttle:30,1']);
+    Route::post('/chat/conversations/{conversation}/read', [ChatController::class, 'read'])->middleware('legal.consent:account');
 });
 
 Route::prefix('admin')->group(function () {

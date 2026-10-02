@@ -172,6 +172,9 @@ const baseServices = [
   { id: 'tasks', mark: '任', label: '我的任务', note: '提交与进度', tone: 'blue', action: openTasks, icon: '/static/icons/service-tasks.svg' },
   { id: 'publisher', mark: '发', label: '发布任务', note: '创建与管理', tone: 'violet', action: openPublisher, icon: '/static/icons/module-task-publish.svg' },
   { id: 'orders', mark: '单', label: '我的订单', note: '支付与履约', tone: 'orange', action: () => openOrders(), icon: '/static/icons/service-orders.svg' },
+  { id: 'second_hand', mark: '闲', label: '校园闲置', note: '买卖二手好物', tone: 'green', action: openSecondHand, icon: '/static/icons/service-tasks.svg' },
+  { id: 'second_hand_orders', mark: '订', label: '闲置订单', note: '买卖交易记录', tone: 'orange', action: openSecondHandOrders, icon: '/static/icons/service-orders.svg' },
+  { id: 'chat', mark: '聊', label: '消息聊天', note: '与同学沟通', tone: 'blue', action: openChat, icon: '/static/icons/service-messages.svg' },
   { id: 'after_sales', mark: '售', label: '售后服务', note: '退款与换货', tone: 'red', action: openAfterSales, icon: '/static/icons/service-aftersale.svg' },
   { id: 'referrals', mark: '邀', label: '邀请好友', note: '奖励与记录', tone: 'green', action: openReferrals, icon: '/static/icons/service-invite.svg' },
   { id: 'check_in', mark: '签', label: '每日签到', note: '连续签到领积分', tone: 'orange', action: openCheckIn, icon: '/static/icons/service-checkin.svg' },
@@ -376,6 +379,9 @@ function openAfterSales() { uni.navigateTo({ url: '/pages/after-sales/index' }) 
 function openReferrals() { uni.navigateTo({ url: '/pages/referrals/index' }) }
 function openCheckIn() { uni.navigateTo({ url: '/pages/check-in/index' }) }
 function openNotifications() { uni.navigateTo({ url: '/pages/notifications/index' }) }
+function openSecondHand() { uni.navigateTo({ url: '/pages/second-hand/index' }) }
+function openSecondHandOrders() { uni.navigateTo({ url: '/pages/second-hand-orders/index' }) }
+function openChat() { uni.navigateTo({ url: '/pages/chat/index' }) }
 function openPrivacy() { uni.navigateTo({ url: '/pages/privacy/index' }) }
 function openIdentityVerification() { uni.navigateTo({ url: '/pages/identity-verification/index' }) }
 function openAddresses() { uni.navigateTo({ url: '/pages/addresses/index' }) }

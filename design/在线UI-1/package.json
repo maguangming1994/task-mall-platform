@@ -1,0 +1,8 @@
+{
+  "name": "zaiXian-ui-1-design-screenshots",
+  "private": true,
+  "description": "Design screenshot renderer for 在线UI-1 portal",
+  "dependencies": {
+    "playwright-core": "^1.58.0"
+  }
+}

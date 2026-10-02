@@ -108,7 +108,7 @@ export async function chooseAndUploadTaskImage(token: string): Promise<string> {
   return ticket.file_id
 }
 
-export type PrivateImagePurpose = 'task_submission' | 'task_report' | 'refund_evidence' | 'return_shipping' | 'community' | 'offline_recharge'
+export type PrivateImagePurpose = 'task_submission' | 'task_report' | 'refund_evidence' | 'return_shipping' | 'community' | 'second_hand' | 'offline_recharge'
 
 export async function chooseAndUploadPrivateImage(token: string, purpose: PrivateImagePurpose): Promise<{ fileId: string; previewUrl: string }> {
   const selected = await chooseImage()

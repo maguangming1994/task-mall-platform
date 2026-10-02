@@ -1,6 +1,6 @@
 import { apiRequest } from '@/api/http'
 
-export type HomeLinkType = 'none' | 'tasks' | 'products' | 'community' | 'notifications' | 'orders' | 'assets'
+export type HomeLinkType = 'none' | 'tasks' | 'products' | 'community' | 'notifications' | 'orders' | 'assets' | 'second_hand'
 
 export interface HomeBrand {
   logo_url: string

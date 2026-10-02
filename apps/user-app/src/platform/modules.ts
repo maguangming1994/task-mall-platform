@@ -13,6 +13,7 @@ export type ModuleCode =
   | 'module_withdraw'
   | 'module_referrals'
   | 'module_checkin'
+  | 'module_second_hand'
 
 export interface ModuleDefinition {
   code: ModuleCode
@@ -37,6 +38,7 @@ export const MODULE_REGISTRY: Record<ModuleCode, ModuleDefinition> = {
   module_withdraw: { code: 'module_withdraw', name: '提现', parent: 'module_wallet', icon: '/static/icons/module-withdraw.svg' },
   module_referrals: { code: 'module_referrals', name: '邀请推荐', parent: null, icon: '/static/icons/module-referrals.svg' },
   module_checkin: { code: 'module_checkin', name: '每日签到', parent: null, icon: '/static/icons/module-check-in.svg' },
+  module_second_hand: { code: 'module_second_hand', name: '校园闲置', parent: null, icon: '/static/icons/module-mall-trade.svg' },
 }
 
 export const MODULE_CODES = Object.keys(MODULE_REGISTRY) as ModuleCode[]
@@ -48,4 +50,5 @@ export const HOME_LINK_MODULE: Partial<Record<HomeLinkType, ModuleCode>> = {
   community: 'module_community',
   orders: 'module_mall_trade',
   assets: 'module_wallet',
+  second_hand: 'module_second_hand',
 }

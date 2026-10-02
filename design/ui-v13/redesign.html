@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校圈 · UI v13</title>
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --green:#0BBF63;
+  --green-deep:#08A152;
+  --green-grad:linear-gradient(135deg,#12D978,#08A152);
+  --green-soft:#E7F9EF;
+  --orange:#FF7A1A;
+  --orange-deep:#F2620A;
+  --orange-grad:linear-gradient(135deg,#FF9A3D,#F2620A);
+  --orange-soft:#FFF2E5;
+  --amber:#FFB020;
+  --price:#FF3B30;
+  --bg:#F4F6F4;
+  --card:#FFFFFF;
+  --t1:#191B1F;
+  --t2:#767C85;
+  --t3:#AEB3BB;
+  --line:#EDEFEF;
+  --r-lg:16px;
+  --r-md:12px;
+  --shadow:0 1px 2px rgba(23,26,23,.03),0 6px 20px rgba(23,26,23,.05);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#E7EAE7;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased}
+img{display:block;object-fit:cover}
+button{border:0;background:none;font-family:inherit;cursor:pointer}
+::-webkit-scrollbar{display:none}
+
+.phone{width:390px;margin:0 auto;position:relative;background:var(--bg);min-height:844px;box-shadow:0 0 60px rgba(0,0,0,.10)}
+.screen{display:none;min-height:844px;padding-bottom:106px}
+body[data-screen="home"] .screen[data-screen="home"],
+body[data-screen="tasks"] .screen[data-screen="tasks"],
+body[data-screen="mall"] .screen[data-screen="mall"],
+body[data-screen="community"] .screen[data-screen="community"],
+body[data-screen="account"] .screen[data-screen="account"]{display:block}
+body.shot .switcher{display:none}
+
+svg.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ============ STATUS BAR ============ */
+.status{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 26px;font-size:13px;font-weight:600;letter-spacing:.2px}
+.status .s-ic{display:flex;align-items:center;gap:5px;color:var(--t1)}
+.status.on-dark,.status.on-dark .s-ic{color:#fff}
+
+/* ============ TABBAR ============ */
+.tabbar{position:fixed;left:50%;margin-left:-195px;bottom:0;width:390px;height:76px;background:#fff;border-top:1px solid var(--line);display:flex;align-items:flex-start;padding:8px 4px 0;z-index:60}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--t3);font-size:10px;padding-top:4px}
+.tab svg{width:23px;height:23px}
+.tab.on{color:var(--green);font-weight:600}
+.tab-mid{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--t3);font-size:10px}
+.tab-mid .mid-btn{width:48px;height:48px;border-radius:50%;background:var(--green-grad);display:flex;align-items:center;justify-content:center;color:#fff;margin-top:-24px;border:4px solid #fff;box-shadow:0 6px 16px rgba(11,191,99,.35)}
+.tab-mid .mid-btn svg{width:24px;height:24px}
+body[data-screen="home"] .tab[data-t="home"],
+body[data-screen="tasks"] .tab[data-t="tasks"],
+body[data-screen="community"] .tab[data-t="community"],
+body[data-screen="account"] .tab[data-t="account"]{color:var(--green);font-weight:600}
+body[data-screen="mall"] .tab-mid{color:var(--green);font-weight:600}
+
+/* ============ COMMON ============ */
+.card{background:var(--card);border-radius:var(--r-lg);margin:10px 12px 0;overflow:hidden}
+.sec-title{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px}
+.sec-title h2{font-size:16px;font-weight:700;display:flex;align-items:center;gap:7px}
+.sec-title h2::before{content:"";width:4px;height:14px;border-radius:2px;background:var(--green)}
+.sec-title .more{font-size:12px;color:var(--t3);display:flex;align-items:center;gap:2px}
+.av{border-radius:50%;object-fit:cover;flex:none}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;font-size:10px;font-weight:500;background:#F2F4F3;color:var(--t2);margin-right:4px}
+.tag-red{background:#FFEEEA;color:var(--price)}
+.tag-orange{background:var(--orange-soft);color:var(--orange-deep)}
+.tag-green{background:var(--green-soft);color:var(--green-deep)}
+.tag-blue{background:#EAF2FF;color:#3B82F6}
+
+.btn-follow{height:26px;padding:0 12px;border-radius:14px;border:1px solid var(--green);color:var(--green);font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:2px;flex:none}
+.btn-go{height:30px;padding:0 16px;border-radius:15px;background:var(--green-grad);color:#fff;font-size:12px;font-weight:600;box-shadow:0 4px 10px rgba(11,191,99,.28);flex:none}
+
+/* feed 卡片 */
+.feed-card{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;padding:14px 14px 12px;box-shadow:var(--shadow)}
+.fc-head{display:flex;align-items:center;gap:9px}
+.fc-head .av{width:38px;height:38px}
+.fc-id{flex:1;min-width:0}
+.fc-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:5px}
+.fc-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.fc-text{font-size:14px;line-height:1.55;margin:10px 0 8px;color:#26282D}
+.fc-text .topic{color:var(--green-deep);font-weight:500}
+.imgs3{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.imgs3 img{width:100%;aspect-ratio:1;border-radius:8px}
+.img1{position:relative}
+.img1 img{width:100%;aspect-ratio:16/10;border-radius:10px}
+.img1 .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.img1 .play i{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;color:#fff}
+.img1 .play i svg{width:18px;height:18px;fill:#fff;stroke:none;margin-left:2px}
+.img1 .dur{position:absolute;right:8px;bottom:8px;height:18px;padding:0 6px;border-radius:5px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;display:flex;align-items:center}
+.loc-row{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap}
+.loc{display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:6px;background:#F4F6F5;color:var(--t2);font-size:11px}
+.loc svg{width:12px;height:12px;color:var(--t3)}
+.fc-foot{display:flex;align-items:center;gap:22px;margin-top:11px;padding-top:10px;border-top:1px solid #F4F5F5;color:var(--t2);font-size:12px}
+.fc-foot span{display:inline-flex;align-items:center;gap:5px}
+.fc-foot svg{width:17px;height:17px;color:var(--t3)}
+.fc-foot .sp{flex:1}
+.pts-chip{font-size:13px;font-weight:800;color:var(--green-deep)}
+.pts-chip small{font-size:10px;font-weight:500;color:var(--green)}
+
+/* 任务横卡 */
+.tcard{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;padding:12px;display:flex;gap:11px;align-items:center;box-shadow:var(--shadow)}
+.tcard>img{width:92px;height:92px;border-radius:10px;flex:none}
+.t-main{flex:1;min-width:0}
+.t-title{font-size:14px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.t-meta{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px}
+.t-meta .dot{width:2px;height:2px;border-radius:50%;background:var(--t3)}
+.t-pts{font-size:19px;font-weight:800;color:var(--green-deep);line-height:1}
+.t-pts small{font-size:10px;font-weight:500;color:var(--green);margin-left:1px}
+
+/* 金刚区 */
+.king{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;padding:16px 10px 12px;display:grid;grid-template-columns:repeat(4,1fr);row-gap:14px;box-shadow:var(--shadow)}
+.king .k{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#3A3D43}
+.king .k i{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center}
+.king .k i svg{width:22px;height:22px}
+
+/* ============ HOME ============ */
+.home-head{padding:2px 16px 0;display:flex;align-items:center;gap:10px}
+.campus{display:flex;align-items:center;gap:4px;font-size:16px;font-weight:700;flex:none}
+.campus svg{width:18px;height:18px;color:var(--green)}
+.campus .arr{width:14px;height:14px;color:var(--t3)}
+.search{flex:1;height:34px;border-radius:17px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 12px;color:var(--t3);font-size:12px}
+.search svg{width:15px;height:15px}
+.bell{position:relative;width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none;color:var(--t1)}
+.bell i{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--price);border:1.5px solid #fff}
+
+.point-card{margin:12px 12px 0;border-radius:18px;background:var(--green-grad);color:#fff;padding:16px 16px 14px;position:relative;overflow:hidden;box-shadow:0 10px 24px rgba(11,191,99,.28)}
+.point-card::before{content:"";position:absolute;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.10);top:-90px;right:-50px}
+.point-card::after{content:"";position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);bottom:-70px;right:70px}
+.pc-top{position:relative;display:flex;align-items:flex-end;justify-content:space-between}
+.pc-label{font-size:12px;opacity:.85;display:flex;align-items:center;gap:5px}
+.pc-num{font-size:34px;font-weight:800;line-height:1.15;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+.pc-num small{font-size:12px;font-weight:500;opacity:.85;margin-left:4px}
+.pc-sign{height:32px;padding:0 14px;border-radius:16px;background:#fff;color:var(--green-deep);font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;box-shadow:0 4px 10px rgba(0,0,0,.12)}
+.pc-sign svg{width:14px;height:14px}
+.sign-strip{position:relative;display:flex;margin-top:14px;background:rgba(255,255,255,.14);border-radius:12px;padding:9px 6px}
+.sign-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:rgba(255,255,255,.85)}
+.sign-day b{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center}
+.sign-day b svg{width:12px;height:12px;stroke-width:2.4}
+.sign-day.done b{background:#fff;color:var(--green-deep)}
+.sign-day.today b{background:var(--amber);color:#7A4A00;box-shadow:0 0 0 3px rgba(255,176,32,.35)}
+.sign-day.today{color:#fff;font-weight:700}
+
+.promo{margin:10px 12px 0;border-radius:var(--r-lg);background:var(--orange-grad);height:84px;display:flex;align-items:center;overflow:hidden;position:relative;color:#fff;box-shadow:0 8px 18px rgba(242,98,10,.22)}
+.promo .p-txt{flex:1;padding:0 16px;position:relative;z-index:2}
+.promo h3{font-size:17px;font-weight:800;display:flex;align-items:center;gap:6px}
+.promo p{font-size:11px;opacity:.92;margin-top:4px}
+.promo .p-btn{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:12px;background:#fff;color:var(--orange-deep);font-size:11px;font-weight:700;margin-top:8px}
+.promo img{width:150px;height:100%;object-fit:cover;flex:none;mask-image:linear-gradient(to right,transparent,#000 38%);-webkit-mask-image:linear-gradient(to right,transparent,#000 38%)}
+
+.feed-tabs{display:flex;gap:18px;padding:14px 16px 2px;font-size:13px;color:var(--t2)}
+.feed-tabs b{color:var(--t1);font-size:15px;position:relative;padding-bottom:4px}
+.feed-tabs b::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:18px;height:3px;border-radius:2px;background:var(--green)}
+
+/* ============ TASKS ============ */
+.page-head{padding:2px 16px 0;display:flex;align-items:center;justify-content:space-between}
+.page-head h1{font-size:20px;font-weight:800}
+.search-full{margin:10px 12px 0;height:36px;border-radius:18px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 14px;color:var(--t3);font-size:12px}
+.search-full svg{width:15px;height:15px}
+.cats{display:flex;gap:8px;padding:12px 12px 0;overflow-x:auto}
+.cats span{flex:none;height:30px;padding:0 14px;border-radius:15px;background:#fff;border:1px solid var(--line);color:var(--t2);font-size:12px;display:flex;align-items:center}
+.cats span.on{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+.filter-row{display:flex;align-items:center;gap:16px;padding:11px 16px 0;font-size:12px;color:var(--t2)}
+.filter-row b{color:var(--t1);display:flex;align-items:center;gap:3px}
+.filter-row b svg{width:12px;height:12px}
+.filter-row .sp{flex:1}
+.notice{margin:10px 12px 0;height:32px;border-radius:9px;background:var(--green-soft);display:flex;align-items:center;gap:7px;padding:0 11px;font-size:11px;color:var(--green-deep)}
+.notice svg{width:14px;height:14px;flex:none}
+.notice .n-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.notice b{font-weight:700}
+
+/* ============ MALL ============ */
+.cart-btn{position:relative;width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--t1)}
+.cart-btn i{position:absolute;top:-3px;right:-3px;min-width:15px;height:15px;border-radius:8px;background:var(--price);color:#fff;font-size:9px;font-style:normal;display:flex;align-items:center;justify-content:center;padding:0 3px;font-weight:700}
+.coupons{display:flex;gap:8px;margin:10px 12px 0}
+.coupon{flex:1;height:62px;border-radius:12px;background:var(--orange-grad);color:#fff;display:flex;align-items:center;padding:0 12px;gap:8px;position:relative;overflow:hidden}
+.coupon.c2{background:linear-gradient(135deg,#FF5C6C,#E8384F)}
+.coupon::before{content:"";position:absolute;left:52px;top:-6px;width:12px;height:12px;border-radius:50%;background:var(--bg)}
+.coupon::after{content:"";position:absolute;left:52px;bottom:-6px;width:12px;height:12px;border-radius:50%;background:var(--bg)}
+.coupon .c-val{font-size:20px;font-weight:800;line-height:1}
+.coupon .c-val small{font-size:10px;font-weight:500}
+.coupon .c-txt{font-size:10px;opacity:.92;border-left:1px dashed rgba(255,255,255,.5);padding-left:8px;margin-left:2px;line-height:1.5}
+.king5{grid-template-columns:repeat(5,1fr)}
+.king5 .k i{width:42px;height:42px;border-radius:50%}
+
+.flash{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;padding-bottom:12px;box-shadow:var(--shadow)}
+.flash .sec-title h2{color:var(--orange-deep)}
+.flash .sec-title h2::before{background:var(--orange)}
+.count{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--t2)}
+.count b{min-width:20px;height:20px;border-radius:5px;background:#2B2E33;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;padding:0 2px}
+.flash-scroll{display:flex;gap:9px;padding:2px 14px 0;overflow-x:auto}
+.f-item{width:116px;flex:none}
+.f-item img{width:116px;height:116px;border-radius:10px}
+.f-item h4{font-size:12px;font-weight:600;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.f-price{display:flex;align-items:baseline;gap:5px;margin-top:3px}
+.f-price .now{font-size:15px;font-weight:800;color:var(--price)}
+.f-price .now small{font-size:9px}
+.f-price .old{font-size:10px;color:var(--t3);text-decoration:line-through}
+.f-bar{height:12px;border-radius:6px;background:#FFE9D9;margin-top:6px;position:relative;overflow:hidden}
+.f-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--orange-grad)}
+.f-bar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;letter-spacing:.5px;text-shadow:0 1px 2px rgba(150,60,0,.45)}
+
+.rank{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;padding-bottom:8px;box-shadow:var(--shadow)}
+.rank .sec-title h2::before{background:var(--amber)}
+.r-row{display:flex;align-items:center;gap:10px;padding:8px 14px}
+.r-no{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--t3);background:#F2F4F3;flex:none;font-style:italic}
+.r-row:nth-of-type(1) .r-no{background:linear-gradient(135deg,#FFD666,#F5A623);color:#7A4A00}
+.r-row:nth-of-type(2) .r-no{background:linear-gradient(135deg,#E8ECF1,#B9C2CC);color:#4A5568}
+.r-row:nth-of-type(3) .r-no{background:linear-gradient(135deg,#F5C09A,#D98E5F);color:#6B3A1A}
+.r-row img{width:52px;height:52px;border-radius:9px;flex:none}
+.r-main{flex:1;min-width:0}
+.r-main h4{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-main p{font-size:11px;color:var(--t3);margin-top:3px}
+.r-pts{font-size:15px;font-weight:800;color:var(--price);flex:none}
+.r-pts small{font-size:9px;font-weight:500}
+
+.goods{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:10px 12px 0}
+.g-card{background:#fff;border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow)}
+.g-card img{width:100%;aspect-ratio:1}
+.g-body{padding:9px 10px 11px}
+.g-body h4{font-size:13px;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:35px}
+.g-tags{margin-top:5px}
+.g-foot{display:flex;align-items:baseline;justify-content:space-between;margin-top:6px}
+.g-price{font-size:16px;font-weight:800;color:var(--price)}
+.g-price small{font-size:10px;font-weight:500}
+.g-sold{font-size:10px;color:var(--t3)}
+
+/* ============ COMMUNITY ============ */
+.comm-tabs{display:flex;gap:20px;padding:12px 16px 2px;font-size:14px;color:var(--t2);align-items:baseline}
+.comm-tabs b{color:var(--t1);font-size:16px;position:relative;padding-bottom:4px}
+.comm-tabs b::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:18px;height:3px;border-radius:2px;background:var(--green)}
+.btn-post{height:30px;padding:0 13px;border-radius:15px;background:var(--green-grad);color:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px;box-shadow:0 4px 10px rgba(11,191,99,.3)}
+.btn-post svg{width:14px;height:14px;stroke-width:2.4}
+.create-strip{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;padding:14px 8px;display:grid;grid-template-columns:repeat(4,1fr);box-shadow:var(--shadow)}
+.create-strip .c{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#3A3D43}
+.create-strip .c i{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center}
+.create-strip .c i svg{width:20px;height:20px}
+
+/* ============ ACCOUNT ============ */
+.acc-head{background:var(--green-grad);padding:0 16px 64px;position:relative;overflow:hidden}
+.acc-head::before{content:"";position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.09);top:-110px;right:-60px}
+.acc-top{position:relative;display:flex;justify-content:flex-end;gap:10px;padding-top:2px;color:#fff}
+.acc-top button{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;color:#fff}
+.acc-user{position:relative;display:flex;align-items:center;gap:13px;margin-top:10px}
+.acc-user .av{width:62px;height:62px;border:2.5px solid rgba(255,255,255,.7)}
+.acc-name{font-size:19px;font-weight:800;color:#fff;display:flex;align-items:center;gap:7px}
+.acc-name .badge{height:18px;padding:0 7px;border-radius:9px;background:rgba(255,255,255,.22);color:#fff;font-size:10px;font-weight:500;display:inline-flex;align-items:center}
+.acc-id{font-size:11px;color:rgba(255,255,255,.8);margin-top:5px}
+.acc-stats{position:relative;display:flex;margin-top:14px;color:#fff}
+.acc-stats .st{flex:1}
+.acc-stats b{font-size:17px;font-weight:800;display:block;font-variant-numeric:tabular-nums}
+.acc-stats span{font-size:11px;opacity:.85}
+.vip-card{margin:-46px 12px 0;border-radius:var(--r-lg);background:linear-gradient(120deg,#2B2E33,#454A52 60%,#2B2E33);padding:15px 16px;position:relative;display:flex;align-items:center;color:#F5C76A;box-shadow:0 10px 24px rgba(30,33,38,.25);z-index:5}
+.vip-card::after{content:"";position:absolute;width:150px;height:150px;border-radius:50%;background:rgba(245,199,106,.08);top:-80px;right:-30px}
+.vip-main{flex:1;position:relative}
+.vip-main h3{font-size:15px;font-weight:800;display:flex;align-items:center;gap:6px}
+.vip-main p{font-size:10px;color:rgba(245,199,106,.75);margin-top:5px}
+.vip-btn{position:relative;height:28px;padding:0 14px;border-radius:14px;background:linear-gradient(135deg,#F8D98A,#E8B84B);color:#5A3D00;font-size:11px;font-weight:800;display:inline-flex;align-items:center}
+.data-row{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;display:flex;padding:15px 0;box-shadow:var(--shadow)}
+.data-row .d{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+.data-row .d+.d::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:1px;background:var(--line)}
+.data-row b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+.data-row b em{font-style:normal;font-size:10px;color:var(--price);font-weight:600}
+.data-row span{font-size:11px;color:var(--t2)}
+.my-task{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;padding-bottom:6px;box-shadow:var(--shadow)}
+.mt-row{display:flex;padding:2px 10px 10px}
+.mt-chip{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-radius:11px;background:#F7F9F8;margin:0 4px}
+.mt-chip b{font-size:16px;font-weight:800}
+.mt-chip span{font-size:10px;color:var(--t2)}
+.mt-chip.hot b{color:var(--orange-deep)}
+.fn-list{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;padding:4px 0;box-shadow:var(--shadow)}
+.fn{display:flex;align-items:center;gap:11px;padding:13px 15px;font-size:13px;font-weight:500}
+.fn+.fn{border-top:1px solid #F5F6F6}
+.fn i{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+.fn i svg{width:17px;height:17px}
+.fn .sp{flex:1}
+.fn .val{font-size:11px;color:var(--t3)}
+.fn>svg{width:15px;height:15px;color:var(--t3)}
+
+/* switcher */
+.switcher{position:fixed;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:99}
+.switcher button{width:56px;height:30px;border-radius:8px;border:0;background:#191B1F;color:#fff;font-size:11px;opacity:.85}
+.switcher button.on{background:var(--green);opacity:1}
+</style>
+</head>
+<body data-screen="home">
+<div class="phone">
+
+<!-- ================= HOME ================= -->
+<section class="screen" data-screen="home">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+
+  <header class="home-head">
+    <div class="campus">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+      滨江校区
+      <svg class="ic arr" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div class="search">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      搜任务 / 搜商品
+    </div>
+    <button class="bell"><svg class="ic" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><i></i></button>
+  </header>
+
+  <div class="point-card">
+    <div class="pc-top">
+      <div>
+        <div class="pc-label">我的积分
+          <svg class="ic" style="width:13px;height:13px" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="pc-num">1,280<small>今日已赚 +45</small></div>
+      </div>
+      <button class="pc-sign">
+        <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M9 15l2 2 4-4"/></svg>
+        每日签到
+      </button>
+    </div>
+    <div class="sign-strip">
+      <div class="sign-day done"><b><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></b>周一</div>
+      <div class="sign-day done"><b><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></b>周二</div>
+      <div class="sign-day done"><b><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></b>周三</div>
+      <div class="sign-day done"><b><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></b>周四</div>
+      <div class="sign-day done"><b><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></b>周五</div>
+      <div class="sign-day today"><b><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 10.5c0-1 1.2-2 3-2s3 1 3 2-1 1.8-3 2.2-3 1.2-3 2.3 1.2 2 3 2 3-1 3-2"/></svg></b>今天</div>
+      <div class="sign-day"><b><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 10.5c0-1 1.2-2 3-2s3 1 3 2-1 1.8-3 2.2-3 1.2-3 2.3 1.2 2 3 2 3-1 3-2"/></svg></b>周日</div>
+    </div>
+  </div>
+
+  <div class="king">
+    <div class="k"><i style="background:#E7F9EF;color:#0BBF63"><svg class="ic" viewBox="0 0 24 24"><path d="M5 8h11v9H5zM16 11h3l2 2v4h-5"/><circle cx="8" cy="18.5" r="1.8"/><circle cx="18" cy="18.5" r="1.8"/></svg></i>跑腿代办</div>
+    <div class="k"><i style="background:#EAF2FF;color:#3B82F6"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/><path d="M9 7h6"/></svg></i>学习助力</div>
+    <div class="k"><i style="background:#FFF2E5;color:#F2620A"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg></i>二手闲置</div>
+    <div class="k"><i style="background:#F1EAFF;color:#8B5CF6"><svg class="ic" viewBox="0 0 24 24"><path d="M14.7 6.3a4.5 4.5 0 0 0-6 6L3 18l3 3 5.7-5.7a4.5 4.5 0 0 0 6-6L14 13l-3-3z"/></svg></i>技能服务</div>
+    <div class="k"><i style="background:#FFEAF1;color:#F43F7F"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/><path d="M11 8v3l2 2"/></svg></i>失物招领</div>
+    <div class="k"><i style="background:#E4F8F6;color:#14B8A6"><svg class="ic" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3.5"/><circle cx="16.5" cy="9.5" r="2.5"/><path d="M2.5 19a5.5 5.5 0 0 1 11 0M13.5 18.5a4 4 0 0 1 7.5-2"/></svg></i>组队拼单</div>
+    <div class="k"><i style="background:#FFF6DE;color:#D99400"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></i>问卷调研</div>
+    <div class="k"><i style="background:#EEF1F5;color:#64748B"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></i>全部服务</div>
+  </div>
+
+  <div class="promo">
+    <div class="p-txt">
+      <h3>周末拼单节</h3>
+      <p>3人成团 · 拼单积分翻倍 · 仅限本周</p>
+      <span class="p-btn">立即拼单</span>
+    </div>
+    <img src="https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=300&h=170&fit=crop&crop=entropy&auto=format&q=70" alt="">
+  </div>
+
+  <div class="feed-tabs"><b>推荐</b><span>最新</span><span>高价</span><span>附近</span></div>
+
+  <div class="feed-card">
+    <div class="fc-head">
+      <img class="av" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=96&h=96&fit=crop&crop=faces&auto=format&q=70" alt="">
+      <div class="fc-id">
+        <div class="fc-name">林小满 <span class="tag tag-orange" style="margin:0">校园认证</span></div>
+        <div class="fc-sub">12分钟前 · 信用分 720</div>
+      </div>
+      <button class="btn-follow">+ 关注</button>
+    </div>
+    <p class="fc-text">求带饭！二食堂三楼的黄焖鸡米饭，加辣加蛋，送到 6 号楼 508，辛苦费好说～ <span class="topic">#跑腿代办</span></p>
+    <div class="imgs3">
+      <img src="https://images.unsplash.com/photo-1557872943-16a5ac26437e?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <img src="https://images.unsplash.com/photo-1581636625402-29b2a704ef13?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70" alt="">
+    </div>
+    <div class="loc-row">
+      <span class="loc"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>滨江校区 · 二食堂</span>
+    </div>
+    <div class="fc-foot">
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3.2A8 8 0 1 1 21 12z"/></svg>23</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>156</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1-5.4-2.9-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z"/></svg>12</span>
+      <span class="sp"></span>
+      <span class="pts-chip">+8<small> 积分</small></span>
+      <button class="btn-go">去接单</button>
+    </div>
+  </div>
+
+  <div class="feed-card">
+    <div class="fc-head">
+      <img class="av" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=faces&auto=format&q=70" alt="">
+      <div class="fc-id">
+        <div class="fc-name">阿凯</div>
+        <div class="fc-sub">38分钟前 · 信用分 690</div>
+      </div>
+      <button class="btn-follow">+ 关注</button>
+    </div>
+    <p class="fc-text">出一台自用机械键盘，87 键红轴，九成新，图书馆面交，可当场验货。<span class="topic">#二手闲置</span></p>
+    <div class="img1"><img src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=700&h=440&fit=crop&crop=entropy&auto=format&q=70" alt=""></div>
+    <div class="loc-row">
+      <span class="loc"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>图书馆北门</span>
+    </div>
+    <div class="fc-foot">
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3.2A8 8 0 1 1 21 12z"/></svg>41</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>203</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1-5.4-2.9-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z"/></svg>58</span>
+      <span class="sp"></span>
+      <span class="pts-chip">+35<small> 积分</small></span>
+      <button class="btn-go">去看看</button>
+    </div>
+  </div>
+
+  <div class="feed-card">
+    <div class="fc-head">
+      <img class="av" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=faces&auto=format&q=70" alt="">
+      <div class="fc-id">
+        <div class="fc-name">鹿鹿 <span class="tag tag-green" style="margin:0">信用极好</span></div>
+        <div class="fc-sub">1小时前 · 已组 12 次队</div>
+      </div>
+      <button class="btn-follow">+ 关注</button>
+    </div>
+    <p class="fc-text">明早 8 点操场晨跑组队，坚持 7 天打卡，一起分奖金池积分！<span class="topic">#组队拼单</span></p>
+    <div class="img1">
+      <img src="https://images.unsplash.com/photo-1519861531473-9200262188bf?w=700&h=440&fit=crop&crop=entropy&auto=format&q=70" alt="">
+    </div>
+    <div class="loc-row">
+      <span class="loc"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>东区操场</span>
+      <span class="tag tag-orange" style="height:22px">还差 2 人成团</span>
+    </div>
+    <div class="fc-foot">
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3.2A8 8 0 1 1 21 12z"/></svg>18</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>97</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1-5.4-2.9-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z"/></svg>21</span>
+      <span class="sp"></span>
+      <span class="pts-chip">+5<small> 积分</small></span>
+      <button class="btn-go">报名</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TASKS ================= -->
+<section class="screen" data-screen="tasks">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+
+  <header class="page-head">
+    <h1>任务大厅</h1>
+    <button class="bell"><svg class="ic" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><i></i></button>
+  </header>
+  <div class="search-full">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    搜索任务，如「取快递」「带饭」
+  </div>
+
+  <div class="cats">
+    <span class="on">全部</span><span>跑腿</span><span>学习</span><span>二手</span><span>技能</span><span>失物</span><span>组队</span>
+  </div>
+  <div class="filter-row">
+    <b>综合排序 <svg class="ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></b>
+    <span>最新发布</span><span>积分最高</span>
+    <span class="sp"></span>
+    <b>筛选 <svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg></b>
+  </div>
+
+  <div class="notice">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M3 10v4a1 1 0 0 0 1 1h2l4 4V5L6 9H4a1 1 0 0 0-1 1z"/><path d="M14 9a4 4 0 0 1 0 6M16.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+    <span class="n-txt"><b>陈同学</b> 2 分钟前完成「代取快递」，赚到 <b>12 积分</b>；<b>周同学</b> 发布的「打印资料」已被接单</span>
+  </div>
+
+  <div class="tcard">
+    <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70" alt="">
+    <div class="t-main">
+      <h3 class="t-title">西门菜鸟驿站取 2 个快递，送到 3 号宿舍楼</h3>
+      <div style="margin:6px 0 7px"><span class="tag tag-red">悬赏</span><span class="tag tag-orange">加急</span></div>
+      <div class="t-meta">张同学<span class="dot"></span>5分钟前<span class="dot"></span>西门</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+        <div class="t-pts">+15<small> 积分</small></div>
+        <button class="btn-go">接单</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tcard">
+    <img src="https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70" alt="">
+    <div class="t-main">
+      <h3 class="t-title">帮打印 20 页复习资料，送到图书馆北门</h3>
+      <div style="margin:6px 0 7px"><span class="tag">线下</span><span class="tag tag-green">长期可约</span></div>
+      <div class="t-meta">李同学<span class="dot"></span>12分钟前</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+        <div class="t-pts">+6<small> 积分</small></div>
+        <button class="btn-go">接单</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tcard">
+    <img src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70" alt="">
+    <div class="t-main">
+      <h3 class="t-title">高数期中复习搭子，每晚 7-9 点图书馆</h3>
+      <div style="margin:6px 0 7px"><span class="tag tag-blue">组队</span><span class="tag">学习</span></div>
+      <div class="t-meta">王同学<span class="dot"></span>26分钟前</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+        <div class="t-pts">+30<small> 积分</small></div>
+        <button class="btn-go">报名</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tcard">
+    <img src="https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70" alt="">
+    <div class="t-main">
+      <h3 class="t-title">出一辆九成新通勤自行车，可约试骑</h3>
+      <div style="margin:6px 0 7px"><span class="tag tag-orange">二手</span><span class="tag">面交</span></div>
+      <div class="t-meta">赵同学<span class="dot"></span>1小时前</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+        <div class="t-pts">+128<small> 积分</small></div>
+        <button class="btn-go">去看看</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tcard">
+    <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70" alt="">
+    <div class="t-main">
+      <h3 class="t-title">求借《计量经济学》一周，请你喝奶茶</h3>
+      <div style="margin:6px 0 7px"><span class="tag">学习</span><span class="tag tag-green">可商量</span></div>
+      <div class="t-meta">孙同学<span class="dot"></span>2小时前</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+        <div class="t-pts">+10<small> 积分</small></div>
+        <button class="btn-go">接单</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MALL ================= -->
+<section class="screen" data-screen="mall">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+
+  <header class="page-head">
+    <h1>积分商城</h1>
+    <button class="cart-btn"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/><path d="M3 3h2l2.5 12.5a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21 7H6"/></svg><i>2</i></button>
+  </header>
+  <div class="search-full">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    搜索商品，如「柠檬茶」「键盘」
+  </div>
+
+  <div class="coupons">
+    <div class="coupon">
+      <div class="c-val"><small>¥</small>5</div>
+      <div class="c-txt">满 50 积分可用<br>全品类通用券</div>
+    </div>
+    <div class="coupon c2">
+      <div class="c-val"><small>¥</small>12</div>
+      <div class="c-txt">满 100 积分可用<br>限时领取中</div>
+    </div>
+    <div style="flex:0 0 56px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;border-radius:12px;font-size:10px;color:var(--t2);gap:3px">
+      <svg class="ic" style="width:18px;height:18px;color:var(--orange-deep)" viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1a2 2 0 0 0 0 4v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1a2 2 0 0 0 0-4z"/><path d="M13 7v10" stroke-dasharray="2.5 3"/></svg>
+      领券中心
+    </div>
+  </div>
+
+  <div class="king king5">
+    <div class="k"><i style="background:#FFF2E5;color:#F2620A"><svg class="ic" viewBox="0 0 24 24"><path d="M7 3h8l2 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"/><path d="M5 8h12"/><path d="M10 3v5"/></svg></i>零食饮料</div>
+    <div class="k"><i style="background:#EAF2FF;color:#3B82F6"><svg class="ic" viewBox="0 0 24 24"><path d="M4 9a8 8 0 0 1 16 0"/><rect x="3" y="9" width="4" height="8" rx="2"/><rect x="17" y="9" width="4" height="8" rx="2"/></svg></i>数码配件</div>
+    <div class="k"><i style="background:#E7F9EF;color:#0BBF63"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></svg></i>学习用品</div>
+    <div class="k"><i style="background:#F1EAFF;color:#8B5CF6"><svg class="ic" viewBox="0 0 24 24"><path d="M8 3h8l1 7a5 5 0 0 1-10 0z"/><path d="M12 15v6M9 21h6"/></svg></i>生活日用</div>
+    <div class="k"><i style="background:#FFEAF1;color:#F43F7F"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1a2 2 0 0 0 0 4v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1a2 2 0 0 0 0-4z"/></svg></i>卡券中心</div>
+  </div>
+
+  <div class="flash">
+    <div class="sec-title">
+      <h2>限时秒杀</h2>
+      <div class="count">距结束 <b>02</b>:<b>14</b>:<b>33</b></div>
+    </div>
+    <div class="flash-scroll">
+      <div class="f-item">
+        <img src="https://images.unsplash.com/photo-1581636625402-29b2a704ef13?w=240&h=240&fit=crop&crop=entropy&auto=format&q=70" alt="">
+        <h4>手打柠檬茶</h4>
+        <div class="f-price"><span class="now"><small>¥</small>9.9</span><span class="old">¥19.9</span></div>
+        <div class="f-bar"><i style="width:82%"></i><span>已抢 82%</span></div>
+      </div>
+      <div class="f-item">
+        <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=240&h=240&fit=crop&crop=entropy&auto=format&q=70" alt="">
+        <h4>精品手冲咖啡</h4>
+        <div class="f-price"><span class="now"><small>¥</small>12.9</span><span class="old">¥25</span></div>
+        <div class="f-bar"><i style="width:64%"></i><span>已抢 64%</span></div>
+      </div>
+      <div class="f-item">
+        <img src="https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=240&h=240&fit=crop&crop=entropy&auto=format&q=70" alt="">
+        <h4>轻食能量碗</h4>
+        <div class="f-price"><span class="now"><small>¥</small>15.9</span><span class="old">¥28</span></div>
+        <div class="f-bar"><i style="width:45%"></i><span>已抢 45%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rank">
+    <div class="sec-title"><h2>积分热卖榜</h2><span class="more">完整榜单 <svg class="ic" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+    <div class="r-row">
+      <i class="r-no">1</i>
+      <img src="https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=140&h=140&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <div class="r-main"><h4>ins 风保温杯 500ml</h4><p>本月已兑 1.2k 件</p></div>
+      <div class="r-pts">320<small> 积分</small></div>
+    </div>
+    <div class="r-row">
+      <i class="r-no">2</i>
+      <img src="https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=140&h=140&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <div class="r-main"><h4>头戴式降噪耳机</h4><p>本月已兑 856 件</p></div>
+      <div class="r-pts">899<small> 积分</small></div>
+    </div>
+    <div class="r-row">
+      <i class="r-no">3</i>
+      <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=140&h=140&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <div class="r-main"><h4>考研英语词汇书</h4><p>本月已兑 623 件</p></div>
+      <div class="r-pts">150<small> 积分</small></div>
+    </div>
+  </div>
+
+  <div class="sec-title" style="padding-left:16px"><h2>为你推荐</h2><span class="more">换一批</span></div>
+  <div class="goods">
+    <div class="g-card">
+      <img src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=360&h=360&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <div class="g-body">
+        <h4>机械键盘 87 键红轴 办公游戏两用</h4>
+        <div class="g-tags"><span class="tag tag-orange">包邮</span></div>
+        <div class="g-foot"><span class="g-price">850<small> 积分</small></span><span class="g-sold">已兑 326</span></div>
+      </div>
+    </div>
+    <div class="g-card">
+      <img src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=360&h=360&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <div class="g-body">
+        <h4>复古公路车模型摆件 1:10 合金版</h4>
+        <div class="g-tags"><span class="tag tag-green">新品</span></div>
+        <div class="g-foot"><span class="g-price">560<small> 积分</small></span><span class="g-sold">已兑 98</span></div>
+      </div>
+    </div>
+    <div class="g-card">
+      <img src="https://images.unsplash.com/photo-1557872943-16a5ac26437e?w=360&h=360&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <div class="g-body">
+        <h4>二食堂招牌牛肉面兑换券</h4>
+        <div class="g-tags"><span class="tag tag-red">HOT</span></div>
+        <div class="g-foot"><span class="g-price">180<small> 积分</small></span><span class="g-sold">已兑 2.1k</span></div>
+      </div>
+    </div>
+    <div class="g-card">
+      <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=360&h=360&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <div class="g-body">
+        <h4>轻食沙拉周卡 每日一份送到宿舍</h4>
+        <div class="g-tags"><span class="tag tag-orange">周卡</span></div>
+        <div class="g-foot"><span class="g-price">420<small> 积分</small></span><span class="g-sold">已兑 154</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= COMMUNITY ================= -->
+<section class="screen" data-screen="community">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+
+  <header class="page-head">
+    <h1>校园墙</h1>
+    <div style="display:flex;gap:9px;align-items:center">
+      <button class="bell"><svg class="ic" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><i></i></button>
+      <button class="btn-post"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>发布</button>
+    </div>
+  </header>
+  <div class="comm-tabs"><span>关注</span><b>发现</b><span>附近</span><span>精选</span></div>
+
+  <div class="feed-card">
+    <div class="fc-head">
+      <img class="av" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=96&h=96&fit=crop&crop=faces&auto=format&q=70" alt="">
+      <div class="fc-id">
+        <div class="fc-name">一只橘座 <span class="tag tag-orange" style="margin:0">校园认证</span></div>
+        <div class="fc-sub">8分钟前 · 来自 8 号楼</div>
+      </div>
+      <button class="btn-follow">+ 关注</button>
+    </div>
+    <p class="fc-text">宿舍楼下的橘座又来巡逻了，今天心情好像不错，主动蹭了我三次 <span class="topic">#校园日常</span></p>
+    <div class="img1"><img src="https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=700&h=440&fit=crop&crop=faces&auto=format&q=70" alt=""></div>
+    <div class="loc-row">
+      <span class="loc"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>滨江校区 · 8 号楼</span>
+    </div>
+    <div class="fc-foot">
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3.2A8 8 0 1 1 21 12z"/></svg>45</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>328</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1-5.4-2.9-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z"/></svg>66</span>
+      <span class="sp"></span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M5 15v5h14v-5"/></svg>
+    </div>
+  </div>
+
+  <div class="feed-card">
+    <div class="fc-head">
+      <img class="av" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=faces&auto=format&q=70" alt="">
+      <div class="fc-id">
+        <div class="fc-name">阿澈</div>
+        <div class="fc-sub">32分钟前 · 摄影社</div>
+      </div>
+      <button class="btn-follow">+ 关注</button>
+    </div>
+    <p class="fc-text">出租屋下午四点的阳光真的绝了，周末宅家幸福感拉满 <span class="topic">#周末日常</span></p>
+    <div class="img1">
+      <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=700&h=440&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <div class="play"><i><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></i></div>
+      <span class="dur">02:36</span>
+    </div>
+    <div class="loc-row">
+      <span class="loc"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>学府路 · 青年公寓</span>
+    </div>
+    <div class="fc-foot">
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3.2A8 8 0 1 1 21 12z"/></svg>12</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>89</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1-5.4-2.9-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z"/></svg>9</span>
+      <span class="sp"></span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M5 15v5h14v-5"/></svg>
+    </div>
+  </div>
+
+  <div class="feed-card">
+    <div class="fc-head">
+      <img class="av" src="https://images.unsplash.com/photo-1548142813-c348350df52b?w=96&h=96&fit=crop&crop=faces&auto=format&q=70" alt="">
+      <div class="fc-id">
+        <div class="fc-name">桃子汽水 <span class="tag tag-blue" style="margin:0">学习委员</span></div>
+        <div class="fc-sub">1小时前 · 图书馆</div>
+      </div>
+      <button class="btn-follow">+ 关注</button>
+    </div>
+    <p class="fc-text">图书馆三楼新开的咖啡角，靠窗位 + 插座 + 手冲，学习效率翻倍的地方，按头安利 <span class="topic">#自习好去处</span></p>
+    <div class="imgs3">
+      <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <img src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70" alt="">
+    </div>
+    <div class="loc-row">
+      <span class="loc"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>图书馆 · 三楼咖啡角</span>
+    </div>
+    <div class="fc-foot">
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3.2A8 8 0 1 1 21 12z"/></svg>67</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>412</span>
+      <span><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1-5.4-2.9-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z"/></svg>103</span>
+      <span class="sp"></span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M5 15v5h14v-5"/></svg>
+    </div>
+  </div>
+
+  <div class="sec-title" style="padding-left:16px"><h2>创作中心</h2><span class="more">发布动态赚积分</span></div>
+  <div class="create-strip" style="margin-top:0">
+    <div class="c"><i style="background:#E7F9EF;color:#0BBF63"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></i>发布动态</div>
+    <div class="c"><i style="background:#FFF2E5;color:#F2620A"><svg class="ic" viewBox="0 0 24 24"><path d="M9 18V6l10-2v11"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="15" r="2.5"/></svg></i>话题广场</div>
+    <div class="c"><i style="background:#EAF2FF;color:#3B82F6"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M9 15l2 2 4-4"/></svg></i>打卡挑战</div>
+    <div class="c"><i style="background:#FFF6DE;color:#D99400"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 10.5c0-1 1.2-2 3-2s3 1 3 2-1 1.8-3 2.2-3 1.2-3 2.3 1.2 2 3 2 3-1 3-2"/></svg></i>创作收益</div>
+  </div>
+</section>
+
+<!-- ================= ACCOUNT ================= -->
+<section class="screen" data-screen="account">
+  <div class="acc-head">
+    <div class="status on-dark"><span>9:41</span><span class="s-ic">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+    </span></div>
+    <div class="acc-top">
+      <button><svg class="ic" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></button>
+      <button><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.3.8 1 1.3 1.9 1.3h.1a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"/></svg></button>
+    </div>
+    <div class="acc-user">
+      <img class="av" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=140&h=140&fit=crop&crop=faces&auto=format&q=70" alt="">
+      <div>
+        <div class="acc-name">林小满 <span class="badge">已认证 · 大三</span></div>
+        <div class="acc-id">学号 2023**0418 · 滨江校区</div>
+      </div>
+    </div>
+    <div class="acc-stats">
+      <div class="st"><b>128</b><span>关注</span></div>
+      <div class="st"><b>356</b><span>粉丝</span></div>
+      <div class="st"><b>750</b><span>信用分</span></div>
+      <div class="st"><b>1,280</b><span>总积分</span></div>
+    </div>
+  </div>
+
+  <div class="vip-card">
+    <div class="vip-main">
+      <h3><svg class="ic" style="width:17px;height:17px" viewBox="0 0 24 24"><path d="M3 8l4 4 5-6 5 6 4-4v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 8l2-3M21 8l-2-3"/></svg>校园 PLUS 会员</h3>
+      <p>兑换 9 折起 · 每月领 50 积分券包</p>
+    </div>
+    <button class="vip-btn">立即开通</button>
+  </div>
+
+  <div class="data-row">
+    <div class="d"><b>¥86.5</b><span>钱包</span></div>
+    <div class="d"><b>6<em> 张</em></b><span>优惠券</span></div>
+    <div class="d"><b>42</b><span>收藏</span></div>
+    <div class="d"><b>128</b><span>足迹</span></div>
+  </div>
+
+  <div class="my-task">
+    <div class="sec-title"><h2>我的闲置</h2><span class="more">闲置市场 <svg class="ic" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+    <div class="mt-row">
+      <div class="mt-chip"><b>12</b><span>我发布的</span></div>
+      <div class="mt-chip hot"><b>3</b><span>我卖出的</span></div>
+      <div class="mt-chip"><b>1</b><span>我买到的</span></div>
+    </div>
+  </div>
+
+  <div class="my-task">
+    <div class="sec-title"><h2>我的任务</h2><span class="more">全部记录 <svg class="ic" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+    <div class="mt-row">
+      <div class="mt-chip"><b>3</b><span>我发布的</span></div>
+      <div class="mt-chip"><b>5</b><span>我接的</span></div>
+      <div class="mt-chip hot"><b>2</b><span>进行中</span></div>
+      <div class="mt-chip"><b>1</b><span>待评价</span></div>
+    </div>
+  </div>
+
+  <div class="fn-list">
+    <div class="fn"><i style="background:#E7F9EF;color:#0BBF63"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></i>收货地址<span class="sp"></span><svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+    <div class="fn"><i style="background:#FFF2E5;color:#F2620A"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1a2 2 0 0 0 0 4v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1a2 2 0 0 0 0-4z"/><path d="M13 7v10" stroke-dasharray="2.5 3"/></svg></i>积分明细<span class="sp"></span><span class="val">今日 +45</span><svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+    <div class="fn"><i style="background:#EAF2FF;color:#3B82F6"><svg class="ic" viewBox="0 0 24 24"><path d="M4 9a8 8 0 0 1 16 0"/><rect x="3" y="9" width="4" height="8" rx="2"/><rect x="17" y="9" width="4" height="8" rx="2"/><path d="M19 17a3 3 0 0 1-3 3h-2"/></svg></i>客服中心<span class="sp"></span><svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+    <div class="fn"><i style="background:#F1EAFF;color:#8B5CF6"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3.2A8 8 0 1 1 21 12z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></svg></i>意见反馈<span class="sp"></span><svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+    <div class="fn"><i style="background:#EEF1F5;color:#64748B"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.3.8 1 1.3 1.9 1.3h.1a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"/></svg></i>设置<span class="sp"></span><svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+  </div>
+</section>
+
+<!-- ================= TABBAR ================= -->
+<nav class="tabbar">
+  <div class="tab" data-t="home">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
+    首页
+  </div>
+  <div class="tab" data-t="tasks">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4.5V3h6v1.5"/><path d="M9 11l2 2 4-4"/><path d="M9 16.5h6"/></svg>
+    任务
+  </div>
+  <div class="tab-mid" data-t="mall">
+    <div class="mid-btn">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M4 9l1.2-4h13.6L20 9"/><path d="M4 9v11h16V9"/><path d="M4 9h16"/><path d="M9.5 20v-6h5v6"/></svg>
+    </div>
+    商城
+  </div>
+  <div class="tab" data-t="community">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M21 11a7 7 0 0 1-7 7H5l1.7-2.8A7 7 0 1 1 21 11z"/><path d="M9 10.5h.01M13.5 10.5h.01M18 10.5h.01"/></svg>
+    社区
+  </div>
+  <div class="tab" data-t="account">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></svg>
+    我的
+  </div>
+</nav>
+
+</div>
+
+<div class="switcher">
+  <button data-s="home" class="on">首页</button>
+  <button data-s="tasks">任务</button>
+  <button data-s="mall">商城</button>
+  <button data-s="community">社区</button>
+  <button data-s="account">我的</button>
+</div>
+<script>
+var btns=document.querySelectorAll('.switcher button');
+function sync(s){btns.forEach(function(b){b.classList.toggle('on',b.dataset.s===s)})}
+btns.forEach(function(b){b.onclick=function(){document.body.setAttribute('data-screen',b.dataset.s);sync(b.dataset.s)}});
+</script>
+</body>
+</html>

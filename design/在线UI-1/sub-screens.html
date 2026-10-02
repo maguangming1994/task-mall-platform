@@ -1,0 +1,2473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校圈 · 二级页面设计图</title>
+<style>
+/* ============ TOKENS（与 v13 一致） ============ */
+:root{
+  --green:#0BBF63; --green-deep:#08A152;
+  --green-grad:linear-gradient(135deg,#12D978,#08A152);
+  --green-soft:#E7F9EF;
+  --orange:#FF7A1A; --orange-deep:#F2620A;
+  --orange-grad:linear-gradient(135deg,#FF9A3D,#F2620A);
+  --orange-soft:#FFF2E5;
+  --amber:#FFB020; --price:#FF3B30;
+  --bg:#F4F6F4; --card:#FFFFFF;
+  --t1:#191B1F; --t2:#767C85; --t3:#AEB3BB;
+  --line:#EDEFEF;
+  --r-lg:16px; --r-md:12px;
+  --shadow:0 1px 2px rgba(23,26,23,.03),0 6px 20px rgba(23,26,23,.05);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#E7EAE7;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased}
+img{display:block;object-fit:cover}
+button{border:0;background:none;font-family:inherit;cursor:pointer}
+::-webkit-scrollbar{display:none}
+.phone{width:390px;margin:0 auto;position:relative;background:var(--bg);min-height:844px;box-shadow:0 0 60px rgba(0,0,0,.10)}
+.screen{display:none;min-height:844px;padding-bottom:24px}
+body[data-screen="login"] .screen[data-screen="login"],
+body[data-screen="search"] .screen[data-screen="search"],
+body[data-screen="task-detail"] .screen[data-screen="task-detail"],
+body[data-screen="task-confirm"] .screen[data-screen="task-confirm"],
+body[data-screen="task-publish"] .screen[data-screen="task-publish"],
+body[data-screen="goods-detail"] .screen[data-screen="goods-detail"],
+body[data-screen="exchange"] .screen[data-screen="exchange"],
+body[data-screen="exchange-success"] .screen[data-screen="exchange-success"],
+body[data-screen="orders"] .screen[data-screen="orders"],
+body[data-screen="post-detail"] .screen[data-screen="post-detail"],
+body[data-screen="post-publish"] .screen[data-screen="post-publish"],
+body[data-screen="signin"] .screen[data-screen="signin"],
+body[data-screen="points"] .screen[data-screen="points"],
+body[data-screen="coupons"] .screen[data-screen="coupons"],
+body[data-screen="messages"] .screen[data-screen="messages"]{display:block}
+
+svg.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.status{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 26px;font-size:13px;font-weight:600;letter-spacing:.2px}
+.status .s-ic{display:flex;align-items:center;gap:5px;color:var(--t1)}
+.status.on-dark,.status.on-dark .s-ic{color:#fff}
+
+/* 子页导航栏 */
+.subnav{height:44px;display:flex;align-items:center;padding:0 8px;background:#fff;position:relative}
+.subnav .back{width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--t1)}
+.subnav h1{position:absolute;left:60px;right:60px;text-align:center;font-size:16px;font-weight:700}
+.subnav .right{margin-left:auto;height:34px;padding:0 8px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--t2)}
+.subnav .right svg{width:20px;height:20px}
+.subnav.on-dark{background:transparent}
+.subnav.on-dark h1,.subnav.on-dark .back{color:#fff}
+
+.card{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;overflow:hidden}
+.sec-title{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px}
+.sec-title h2{font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px}
+.sec-title h2::before{content:"";width:4px;height:14px;border-radius:2px;background:var(--green)}
+.sec-title .more{font-size:12px;color:var(--t3);display:flex;align-items:center;gap:2px}
+.av{border-radius:50%;object-fit:cover;flex:none}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;font-size:10px;font-weight:500;background:#F2F4F3;color:var(--t2);margin-right:4px}
+.tag-red{background:#FFEEEA;color:var(--price)}
+.tag-orange{background:var(--orange-soft);color:var(--orange-deep)}
+.tag-green{background:var(--green-soft);color:var(--green-deep)}
+.tag-blue{background:#EAF2FF;color:#3B82F6}
+
+/* 底部固定操作栏 */
+.action-bar{position:fixed;left:50%;margin-left:-195px;bottom:0;width:390px;height:64px;background:#fff;border-top:1px solid var(--line);display:flex;align-items:center;padding:0 12px;gap:6px;z-index:50}
+.action-bar .ab-ic{width:48px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:var(--t2)}
+.action-bar .ab-ic svg{width:21px;height:21px}
+.ab-main{flex:1;height:42px;border-radius:21px;background:var(--green-grad);color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(11,191,99,.3)}
+.ab-duo{flex:1;height:42px;border-radius:21px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.ab-duo.cart{background:#FFF2E5;color:var(--orange-deep)}
+.ab-duo.buy{background:var(--orange-grad);color:#fff;box-shadow:0 6px 14px rgba(242,98,10,.28)}
+.has-bar{padding-bottom:76px}
+
+/* 表单 */
+.form-card{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;padding:2px 14px}
+.frow{display:flex;align-items:center;gap:10px;padding:14px 0;border-bottom:1px solid #F5F6F6;min-height:52px}
+.frow:last-child{border-bottom:0}
+.frow label{font-size:14px;font-weight:600;width:64px;flex:none}
+.frow .v{flex:1;font-size:13px;color:var(--t2);display:flex;align-items:center;gap:5px}
+.frow .v.placeholder{color:var(--t3)}
+.frow .num{font-size:16px;font-weight:800;color:var(--green-deep)}
+.frow textarea{width:100%;border:0;outline:0;resize:none;font-family:inherit;font-size:14px;line-height:1.6;color:var(--t1)}
+.frow input{flex:1;border:0;outline:0;font-family:inherit;font-size:14px;color:var(--t1)}
+.frow>svg{width:15px;height:15px;color:var(--t3)}
+.upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 0}
+.upload-grid img,.upload-add{width:100%;aspect-ratio:1;border-radius:10px}
+.upload-add{border:1.5px dashed #D7DBD8;background:#F7F9F8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--t3);font-size:10px}
+.upload-add svg{width:26px;height:26px}
+
+/* ============ 06 LOGIN ============ */
+.login-wrap{min-height:844px;background:var(--green-grad);position:relative;overflow:hidden;display:flex;flex-direction:column}
+.login-wrap::before{content:"";position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.10);top:-120px;right:-90px}
+.login-wrap::after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.08);bottom:120px;left:-80px}
+.login-top{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;padding-top:130px}
+.login-logo{width:84px;height:84px;border-radius:24px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(0,0,0,.15);font-size:40px;font-weight:900;color:var(--green-deep)}
+.login-name{color:#fff;font-size:28px;font-weight:800;margin-top:18px;letter-spacing:2px}
+.login-slogan{color:rgba(255,255,255,.88);font-size:13px;margin-top:8px;letter-spacing:1px}
+.login-deco{position:absolute;top:70px;left:40px;width:54px;height:54px;border-radius:18px;background:rgba(255,255,255,.14)}
+.login-deco.d2{top:120px;right:54px;width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.10)}
+.login-card{position:relative;margin:0 20px 34px;background:#fff;border-radius:22px;padding:26px 20px 22px;box-shadow:0 -8px 40px rgba(0,0,0,.12)}
+.btn-wx{width:100%;height:48px;border-radius:24px;background:var(--green-grad);color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 8px 18px rgba(11,191,99,.35)}
+.btn-wx svg{width:22px;height:22px;fill:#fff;stroke:none}
+.btn-phone{width:100%;height:48px;border-radius:24px;background:#fff;border:1.5px solid var(--green);color:var(--green-deep);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px}
+.btn-phone svg{width:18px;height:18px}
+.login-agree{display:flex;align-items:flex-start;gap:6px;margin-top:16px;font-size:11px;color:var(--t3);line-height:1.5}
+.login-agree i{width:14px;height:14px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+.login-agree i svg{width:9px;height:9px;stroke-width:3}
+.login-agree a{color:var(--green-deep)}
+
+/* ============ 07 SEARCH ============ */
+.search-box{flex:1;height:34px;border-radius:17px;background:#F2F4F3;display:flex;align-items:center;gap:6px;padding:0 12px;color:var(--t3);font-size:13px;margin:0 8px}
+.search-box svg{width:15px;height:15px}
+.search-tags{display:flex;flex-wrap:wrap;gap:9px;padding:4px 14px 16px}
+.search-tags span{height:30px;padding:0 13px;border-radius:15px;background:#F2F4F3;color:#3A3D43;font-size:12px;display:flex;align-items:center}
+.hot-list{padding:2px 14px 10px}
+.hot-row{display:flex;align-items:center;gap:11px;padding:9px 0}
+.hot-no{width:20px;text-align:center;font-size:15px;font-weight:800;font-style:italic;color:var(--t3)}
+.hot-row:nth-child(-n+3) .hot-no{color:var(--orange-deep)}
+.hot-row .t{flex:1;font-size:14px}
+.hot-row .h{font-size:10px;color:var(--price);border:1px solid #FFD7D2;border-radius:4px;padding:0 4px;height:16px;display:flex;align-items:center}
+.hot-row .s{font-size:11px;color:var(--t3)}
+
+/* ============ 08 TASK DETAIL ============ */
+.detail-hero{position:relative;height:240px}
+.detail-hero img{width:100%;height:100%}
+.detail-hero .dots{position:absolute;bottom:10px;right:14px;height:20px;padding:0 8px;border-radius:10px;background:rgba(0,0,0,.4);color:#fff;font-size:10px;display:flex;align-items:center}
+.detail-title{background:#fff;margin:-16px 12px 0;border-radius:var(--r-lg);padding:16px 15px 14px;position:relative;z-index:3;box-shadow:var(--shadow)}
+.detail-title h1{font-size:18px;font-weight:800;line-height:1.45}
+.detail-title .tags{margin-top:9px}
+.price-row{display:flex;align-items:baseline;gap:8px;margin-top:12px}
+.price-row .big{font-size:32px;font-weight:800;color:var(--price);line-height:1}
+.price-row .big small{font-size:13px}
+.price-row .old{font-size:12px;color:var(--t3);text-decoration:line-through}
+.price-row .sp{flex:1}
+.price-row .people{font-size:11px;color:var(--t3)}
+.info-row{display:flex;align-items:center;gap:8px;padding:11px 0;font-size:13px;color:#3A3D43;border-bottom:1px solid #F5F6F6}
+.info-row:last-child{border-bottom:0}
+.info-row svg{width:17px;height:17px;color:var(--green)}
+.info-row .sp{flex:1}
+.info-row .v{color:var(--t2);font-size:12px}
+.desc{padding:4px 15px 14px;font-size:14px;line-height:1.75;color:#3A3D43}
+.desc img{width:100%;border-radius:10px;margin:10px 0}
+.publisher{display:flex;align-items:center;gap:10px;padding:13px 15px}
+.publisher .av{width:42px;height:42px}
+.publisher .nm{font-size:14px;font-weight:600}
+.publisher .sub{font-size:11px;color:var(--t3);margin-top:2px}
+.publisher .sp{flex:1}
+.map-block{margin:0 15px 14px;height:110px;border-radius:10px;overflow:hidden;position:relative;background:#E8F1E9}
+.map-block img{width:100%;height:100%;opacity:.92}
+.map-pin{position:absolute;left:50%;top:42%;transform:translate(-50%,-100%);color:var(--price)}
+.map-pin svg{width:30px;height:30px}
+.map-tip{position:absolute;left:10px;bottom:8px;background:rgba(255,255,255,.94);border-radius:8px;padding:5px 9px;font-size:11px;color:#3A3D43;display:flex;align-items:center;gap:4px}
+.map-tip svg{width:12px;height:12px;color:var(--green)}
+
+/* ============ 10 CONFIRM SHEET ============ */
+.sheet-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;display:none}
+.sheet{position:fixed;left:50%;margin-left:-195px;bottom:0;width:390px;background:#fff;border-radius:20px 20px 0 0;z-index:90;display:none;padding:6px 16px 22px}
+body[data-screen="task-confirm"] .sheet-mask,body[data-screen="task-confirm"] .sheet{display:block}
+.sheet-grip{width:36px;height:4px;border-radius:2px;background:#E1E4E2;margin:8px auto 14px}
+.sheet h3{font-size:17px;font-weight:800;text-align:center}
+.sheet .task-sum{display:flex;gap:11px;background:#F7F9F8;border-radius:12px;padding:11px;margin-top:14px}
+.sheet .task-sum img{width:58px;height:58px;border-radius:9px}
+.sheet .task-sum h4{font-size:13px;font-weight:600;line-height:1.4}
+.sheet .task-sum p{font-size:11px;color:var(--t3);margin-top:4px}
+.sheet .task-sum .pts{margin-left:auto;font-size:17px;font-weight:800;color:var(--price);white-space:nowrap}
+.notice-list{margin-top:13px}
+.notice-li{display:flex;gap:8px;font-size:12px;color:var(--t2);line-height:1.6;padding:4px 0}
+.notice-li svg{width:15px;height:15px;color:var(--green);margin-top:2px}
+.sheet-btns{display:flex;gap:10px;margin-top:16px}
+.sheet-btns button{flex:1;height:44px;border-radius:22px;font-size:15px;font-weight:700}
+.sheet-btns .cancel{background:#F2F4F3;color:var(--t2)}
+.sheet-btns .ok{background:var(--green-grad);color:#fff;box-shadow:0 6px 14px rgba(11,191,99,.3)}
+
+/* 分段选项 */
+.chip-pick{display:flex;gap:8px;flex-wrap:wrap}
+.chip-pick span{height:30px;padding:0 13px;border-radius:15px;border:1px solid var(--line);font-size:12px;color:var(--t2);display:flex;align-items:center;background:#fff}
+.chip-pick span.on{border-color:var(--green);color:var(--green-deep);background:var(--green-soft);font-weight:600}
+.stepper{display:flex;align-items:center;gap:14px}
+.stepper button{width:28px;height:28px;border-radius:50%;background:#F2F4F3;color:var(--t2);font-size:18px;display:flex;align-items:center;justify-content:center}
+.stepper button.plus{background:var(--green-grad);color:#fff}
+.stepper b{font-size:18px;min-width:34px;text-align:center}
+</style>
+</head>
+<body data-screen="login">
+<div class="phone">
+
+<!-- ================= 06 LOGIN ================= -->
+<section class="screen" data-screen="login">
+  <div class="login-wrap">
+    <div class="status on-dark"><span>9:41</span><span class="s-ic">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+    </span></div>
+    <i class="login-deco"></i><i class="login-deco d2"></i>
+    <div class="login-top">
+      <div class="login-logo">校</div>
+      <div class="login-name">校圈</div>
+      <div class="login-slogan">校园任务互助 · 积分换好物</div>
+    </div>
+    <div class="login-card">
+      <button class="btn-wx">
+        <svg viewBox="0 0 24 24"><path d="M9.5 4C5.4 4 2 6.8 2 10.2c0 2 1.1 3.7 2.9 4.9l-.7 2.2 2.5-1.3c.9.2 1.8.4 2.8.4h.5a4.7 4.7 0 0 1-.2-1.4c0-3.2 3.1-5.7 6.9-5.7h.6C16.6 6.3 13.4 4 9.5 4zm-2.6 4.3a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8zm5.2 0a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8zM16.7 10.5c-3.2 0-5.8 2.1-5.8 4.6 0 2.6 2.6 4.6 5.8 4.6.7 0 1.4-.1 2-.3l2 1.1-.5-1.8c1.4-1 2.3-2.3 2.3-3.8 0-2.5-2.6-4.4-5.8-4.4zm-2 2.9a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5zm4 0a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5z"/></svg>
+        微信一键登录
+      </button>
+      <button class="btn-phone">
+        <svg class="ic" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 18.5h3"/></svg>
+        手机号登录
+      </button>
+      <div class="login-agree">
+        <i><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></i>
+        <span>登录即代表同意 <a>《用户服务协议》</a> 和 <a>《隐私政策》</a>，未注册手机号将自动创建校圈账号</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 07 SEARCH ================= -->
+<section class="screen" data-screen="search">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="search-box">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      键盘
+    </div>
+    <span class="right" style="margin-left:0;padding-right:12px;color:var(--green-deep);font-weight:600">搜索</span>
+  </div>
+
+  <div class="cat-chips" style="padding-top:10px">
+    <span class="on">综合</span><span>任务</span><span>商品</span><span>闲置</span><span>用户</span>
+  </div>
+
+  <div class="card" style="padding-bottom:12px">
+    <div class="sec-title"><h2>搜索结果</h2><span class="more">共 36 条</span></div>
+    <div style="padding:0 14px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center">
+        <img src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=140&h=140&fit=crop&crop=entropy&auto=format&q=70" style="width:56px;height:56px;border-radius:10px">
+        <div style="flex:1;min-width:0">
+          <h4 style="font-size:13px;font-weight:600;line-height:1.4">IKBC C87 机械键盘 白色红轴 箱说全 <span class="tag tag-orange" style="margin-left:2px">闲置</span></h4>
+          <p style="font-size:11px;color:var(--t3);margin-top:4px">阿澈 · 滨江校区 · 1 小时前</p>
+        </div>
+        <b style="font-size:15px;font-weight:800;color:var(--price)">¥150</b>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=140&h=140&fit=crop&crop=entropy&auto=format&q=70" style="width:56px;height:56px;border-radius:10px">
+        <div style="flex:1;min-width:0">
+          <h4 style="font-size:13px;font-weight:600;line-height:1.4">求带一个有线键盘到图书馆用两天 <span class="tag tag-green" style="margin-left:2px">任务</span></h4>
+          <p style="font-size:11px;color:var(--t3);margin-top:4px">张同学 · 5 分钟前</p>
+        </div>
+        <b style="font-size:16px;font-weight:800;color:var(--green-deep)">+15</b>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <img src="https://images.unsplash.com/photo-1563453392212-326f5e854473?w=140&h=140&fit=crop&crop=entropy&auto=format&q=70" style="width:56px;height:56px;border-radius:10px">
+        <div style="flex:1;min-width:0">
+          <h4 style="font-size:13px;font-weight:600;line-height:1.4">键盘清洁套装 全新未拆 <span class="tag tag-blue" style="margin-left:2px">商城</span></h4>
+          <p style="font-size:11px;color:var(--t3);margin-top:4px">积分商城 · 月兑 86</p>
+        </div>
+        <b style="font-size:15px;font-weight:800;color:var(--green-deep)">200<small style="font-size:10px;font-weight:500"> 积分</small></b>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding-bottom:6px">
+    <div class="sec-title"><h2 style="--green:#FF7A1A">🔥 热门搜索</h2><span class="more">每小时更新</span></div>
+    <div class="hot-list">
+      <div class="hot-row"><span class="hot-no">1</span><span class="t">菜鸟驿站代取</span><span class="h">爆</span><span class="s">2.3k 搜</span></div>
+      <div class="hot-row"><span class="hot-no">2</span><span class="t">图书馆占座</span><span class="h">热</span><span class="s">1.8k 搜</span></div>
+      <div class="hot-row"><span class="hot-no">3</span><span class="t">二食堂带饭</span><span class="h">热</span><span class="s">1.5k 搜</span></div>
+      <div class="hot-row"><span class="hot-no">4</span><span class="t">考研英语真题</span><span class="s">986 搜</span></div>
+      <div class="hot-row"><span class="hot-no">5</span><span class="t">保温杯 兑换</span><span class="s">742 搜</span></div>
+      <div class="hot-row"><span class="hot-no">6</span><span class="t">自行车 二手</span><span class="s">658 搜</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="padding-bottom:10px">
+    <div class="sec-title"><h2>搜索历史</h2><span class="more">
+      <svg class="ic" style="width:13px;height:13px" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13h10l1-13"/></svg>清空</span></div>
+    <div class="search-tags">
+      <span>代取快递</span><span>黄焖鸡米饭</span><span>高数辅导</span><span>柠檬茶</span><span>二手键盘</span><span>晨跑组队</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 08 TASK DETAIL ================= -->
+<section class="screen has-bar" data-screen="task-detail">
+  <div class="detail-hero">
+    <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=780&h=480&fit=crop&crop=entropy&auto=format&q=70" alt="">
+    <div class="subnav on-dark" style="position:absolute;top:40px;left:0;right:0;background:linear-gradient(to bottom,rgba(0,0,0,.28),transparent)">
+      <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+      <div class="right">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M5 15v5h14v-5"/></svg>
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+      </div>
+    </div>
+    <span class="dots">1 / 3</span>
+  </div>
+
+  <div class="detail-title">
+    <h1>西门菜鸟驿站取 2 个快递，送到 3 号宿舍楼 508</h1>
+    <div class="tags"><span class="tag tag-red">悬赏</span><span class="tag tag-orange">加急</span><span class="tag">小件包裹</span></div>
+    <div class="price-row">
+      <span class="big"><small>+</small>15<small> 积分</small></span>
+      <span class="old">平台建议价 12 积分</span>
+      <span class="sp"></span>
+      <span class="people">26 人浏览 · 3 人想接</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="info-row" style="padding:13px 15px">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/></svg>
+      期望完成时间<span class="sp"></span><span class="v">今天 18:30 前</span>
+    </div>
+    <div class="info-row" style="padding:13px 15px">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+      取件地点<span class="sp"></span><span class="v">西门菜鸟驿站 2 号柜</span>
+    </div>
+    <div class="info-row" style="padding:13px 15px">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M3 10v4a1 1 0 0 0 1 1h2l4 4V5L6 9H4a1 1 0 0 0-1 1z"/></svg>
+      联系方式<span class="sp"></span><span class="v">接单后可见虚拟号</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title"><h2>任务描述</h2></div>
+    <div class="desc">
+      两个小件快递，都是衣服，不重，取件码已截图保存在订单里。送到 3 号宿舍楼 508 门口放地上就行，到了发消息给我，麻烦快递轻拿轻放，谢谢～
+      <img src="https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=700&h=420&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <span class="tag tag-green">取件码图片</span><span class="tag">快递外观</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="map-block" style="margin-bottom:0;border-radius:0 0 16px 16px;height:150px">
+      <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=780&h=300&fit=crop&crop=entropy&auto=format&q=70" alt="">
+      <span class="map-pin"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6" fill="#fff" stroke="none"/></svg></span>
+      <span class="map-tip"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>西门菜鸟驿站 · 距你 420m</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="publisher">
+      <img class="av" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=faces&auto=format&q=70" style="width:42px;height:42px">
+      <div>
+        <div class="nm">张同学 <span class="tag tag-orange" style="margin:0">校园认证</span></div>
+        <div class="sub">信用分 720 · 历史发布 23 单 · 好评率 98%</div>
+      </div>
+      <span class="sp"></span>
+      <button style="height:30px;padding:0 14px;border-radius:15px;border:1px solid var(--green);color:var(--green);font-size:12px;font-weight:600">主页</button>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <div class="ab-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M4 9a8 8 0 0 1 16 0"/><rect x="3" y="9" width="4" height="8" rx="2"/><rect x="17" y="9" width="4" height="8" rx="2"/></svg>客服</div>
+    <div class="ab-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>收藏</div>
+    <div class="ab-main">立即接单 · 赚 15 积分</div>
+  </div>
+</section>
+
+<!-- ================= 09 TASK PUBLISH ================= -->
+<section class="screen has-bar" data-screen="task-publish">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>发布任务</h1>
+    <div class="right"><span style="color:var(--t3)">草稿箱</span></div>
+  </div>
+
+  <div class="card" style="padding:10px 14px">
+    <div style="font-size:12px;color:var(--t2);margin-bottom:9px">选择任务类型</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--green-deep);font-weight:600">
+        <i style="width:46px;height:46px;border-radius:14px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--green) inset"><svg class="ic" style="width:22px;height:22px;color:var(--green)" viewBox="0 0 24 24"><path d="M5 8h11v9H5zM16 11h3l2 2v4h-5"/><circle cx="8" cy="18.5" r="1.8"/><circle cx="18" cy="18.5" r="1.8"/></svg></i>跑腿代办
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#3A3D43">
+        <i style="width:46px;height:46px;border-radius:14px;background:#EAF2FF;display:flex;align-items:center;justify-content:center"><svg class="ic" style="width:22px;height:22px;color:#3B82F6" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></svg></i>学习助力
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#3A3D43">
+        <i style="width:46px;height:46px;border-radius:14px;background:#FFF2E5;display:flex;align-items:center;justify-content:center"><svg class="ic" style="width:22px;height:22px;color:#F2620A" viewBox="0 0 24 24"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg></i>二手闲置
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#3A3D43">
+        <i style="width:46px;height:46px;border-radius:14px;background:#F1EAFF;display:flex;align-items:center;justify-content:center"><svg class="ic" style="width:22px;height:22px;color:#8B5CF6" viewBox="0 0 24 24"><path d="M14.7 6.3a4.5 4.5 0 0 0-6 6L3 18l3 3 5.7-5.7a4.5 4.5 0 0 0 6-6L14 13l-3-3z"/></svg></i>技能服务
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow" style="align-items:flex-start;flex-direction:column;padding-top:14px">
+      <label style="width:auto">任务标题</label>
+      <input placeholder="一句话说清需求，如：西门取 2 个快递送到 3 舍" value="西门菜鸟驿站取 2 个快递，送到 3 号宿舍楼">
+      <span style="font-size:10px;color:var(--t3);align-self:flex-end">23/30</span>
+    </div>
+    <div class="frow" style="align-items:flex-start">
+      <textarea rows="3" placeholder="详细描述任务要求、取件码、送达位置、注意事项…">两个小件快递，都是衣服不重，取件码已截图，送到 3 舍 508 门口放地上就行～</textarea>
+    </div>
+    <div class="frow" style="display:block">
+      <label style="display:block;margin-bottom:6px">添加图片</label>
+      <div class="upload-grid" style="padding:0">
+        <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+        <div class="upload-add"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>添加照片/截图</div>
+        <div class="upload-add" style="visibility:hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow">
+      <label>悬赏积分</label>
+      <span class="sp"></span>
+      <div class="stepper">
+        <button>−</button><b style="color:var(--price)">15</b><button class="plus">+</button>
+      </div>
+    </div>
+    <div class="frow">
+      <label>期望时间</label>
+      <span class="sp"></span>
+      <span class="v">今天 18:30 前</span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="frow">
+      <label>取件地点</label>
+      <span class="sp"></span>
+      <span class="v">西门菜鸟驿站</span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+    </div>
+    <div class="frow">
+      <label>联系电话</label>
+      <span class="v placeholder">选填，默认使用平台虚拟号</span>
+    </div>
+  </div>
+
+  <div style="margin:10px 14px 0;font-size:11px;color:var(--t3);line-height:1.6">
+    💡 发布即托管积分到平台，任务完成并确认后支付给接单同学；超时未确认系统将自动结算。
+  </div>
+
+  <div class="action-bar">
+    <div style="flex:1;display:flex;gap:10px">
+      <button class="ab-duo" style="background:#F2F4F3;color:var(--t2)">存草稿</button>
+      <button class="ab-duo" style="background:var(--green-grad);color:#fff;box-shadow:0 6px 14px rgba(11,191,99,.3)">确认发布</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 10 TASK CONFIRM（接单确认弹层） ================= -->
+<section class="screen has-bar" data-screen="task-confirm">
+  <div class="detail-hero" style="height:200px">
+    <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=780&h=400&fit=crop&crop=entropy&auto=format&q=70" alt="">
+  </div>
+  <div class="detail-title">
+    <h1 style="font-size:16px">西门菜鸟驿站取 2 个快递，送到 3 号宿舍楼 508</h1>
+    <div class="tags" style="margin-top:8px"><span class="tag tag-red">悬赏</span><span class="tag tag-orange">加急</span></div>
+    <div class="price-row"><span class="big" style="font-size:26px"><small>+</small>15<small> 积分</small></span><span class="sp"></span><span class="people">今天 18:30 前完成</span></div>
+  </div>
+  <div class="card">
+    <div class="info-row" style="padding:13px 15px">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+      取件地点<span class="sp"></span><span class="v">西门菜鸟驿站 · 420m</span>
+    </div>
+    <div class="info-row" style="padding:13px 15px">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/></svg>
+      距离送达<span class="sp"></span><span class="v">步行约 8 分钟</span>
+    </div>
+  </div>
+  <div class="action-bar"><div class="ab-main" style="opacity:.5">立即接单 · 赚 15 积分</div></div>
+
+  <div class="sheet-mask"></div>
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <h3>确认接单</h3>
+    <div class="task-sum">
+      <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=140&h=140&fit=crop&crop=entropy&auto=format&q=70">
+      <div>
+        <h4>西门菜鸟取 2 个快递</h4>
+        <p>张同学 · 信用 720</p>
+        <p>今天 18:30 前 · 送到 3 舍 508</p>
+      </div>
+      <span class="pts">+15</span>
+    </div>
+    <div class="notice-list">
+      <div class="notice-li"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg>接单后请在 15 分钟内与发布人确认，任务需在期望时间内完成</div>
+      <div class="notice-li"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg>完成后上传送达照片，发布人确认即可到账 15 积分</div>
+      <div class="notice-li"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg>爽单或超时将扣除信用分，信用分低于 600 将限制接单</div>
+    </div>
+    <div class="sheet-btns">
+      <button class="cancel">再想想</button>
+      <button class="ok">确认接单</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 11 GOODS DETAIL ================= -->
+<section class="screen has-bar" data-screen="goods-detail">
+  <div class="detail-hero">
+    <img src="https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=780&h=480&fit=crop&crop=entropy&auto=format&q=70" alt="">
+    <div class="subnav on-dark" style="position:absolute;top:40px;left:0;right:0;background:linear-gradient(to bottom,rgba(0,0,0,.28),transparent)">
+      <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+      <div class="right">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M5 15v5h14v-5"/></svg>
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+      </div>
+    </div>
+    <span class="dots">1 / 5</span>
+  </div>
+
+  <div class="detail-title">
+    <div class="price-row" style="margin-top:0">
+      <span class="big" style="color:var(--price)">320<small style="font-size:13px"> 积分</small></span>
+      <span class="old">原价 ¥59</span>
+      <span class="sp"></span>
+      <span class="people">已兑 1,236 件 · 库存 86</span>
+    </div>
+    <h1 style="font-size:17px;margin-top:10px">ins 风保温杯 500ml 316 不锈钢 通勤学生两用</h1>
+    <div class="tags" style="margin-top:9px"><span class="tag tag-red">HOT</span><span class="tag tag-green">包邮</span><span class="tag tag-orange">积分抵 100%</span></div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow">
+      <label>颜色</label>
+      <div class="chip-pick" style="flex:1">
+        <span class="on">薄荷绿</span><span>奶油白</span><span>曜石黑</span>
+      </div>
+    </div>
+    <div class="frow">
+      <label>容量</label>
+      <div class="chip-pick" style="flex:1">
+        <span>350ml</span><span class="on">500ml</span>
+      </div>
+    </div>
+    <div class="frow">
+      <label>配送</label>
+      <span class="v">校内在兑 · 免邮 · 预计 2-3 天到宿舍</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title"><h2>用户评价（1.2k）</h2><span class="more">查看全部 <svg class="ic" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+    <div style="padding:0 15px 14px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <img class="av" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=faces&auto=format&q=70" style="width:26px;height:26px">
+          <b style="font-size:12px">林同学</b>
+          <span style="margin-left:auto;color:#FFB020;font-size:11px">★★★★★</span>
+        </div>
+        <p style="font-size:13px;color:#3A3D43;line-height:1.6;margin-top:7px">保温效果绝了，早上装的冰水到下午还是冰的，薄荷绿超好看！</p>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <img class="av" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=faces&auto=format&q=70" style="width:26px;height:26px">
+          <b style="font-size:12px">阿凯</b>
+          <span style="margin-left:auto;color:#FFB020;font-size:11px">★★★★★</span>
+        </div>
+        <p style="font-size:13px;color:#3A3D43;line-height:1.6;margin-top:7px">第二天就送到宿舍楼下了，积分兑换很香，包装也完整。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="publisher">
+      <i style="width:40px;height:40px;border-radius:11px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;color:var(--green-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M4 9l1.2-4h13.6L20 9"/><path d="M4 9v11h16V9"/><path d="M9.5 20v-6h5v6"/></svg></i>
+      <div>
+        <div class="nm">校圈自营旗舰店</div>
+        <div class="sub">描述相符 4.9 · 物流 4.8 · 售后 4.9</div>
+      </div>
+      <span class="sp"></span>
+      <button style="height:30px;padding:0 14px;border-radius:15px;border:1px solid var(--line);color:var(--t2);font-size:12px">进店</button>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <div class="ab-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M4 9a8 8 0 0 1 16 0"/><rect x="3" y="9" width="4" height="8" rx="2"/><rect x="17" y="9" width="4" height="8" rx="2"/></svg>客服</div>
+    <div class="ab-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>收藏</div>
+    <button class="ab-duo cart">加入购物车</button>
+    <button class="ab-duo buy">立即兑换</button>
+  </div>
+</section>
+
+<!-- ================= 12 EXCHANGE 确认订单 ================= -->
+<section class="screen has-bar" data-screen="exchange">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav" style="background:var(--green)">
+    <div class="back" style="color:#fff"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1 style="color:#fff">确认订单</h1>
+  </div>
+
+  <div class="card" style="padding:14px;display:flex;gap:11px;align-items:center">
+    <i style="width:38px;height:38px;border-radius:11px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;color:var(--green-deep);flex:none"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></i>
+    <div style="flex:1">
+      <b style="font-size:14px">林小满 · 138****0418</b>
+      <p style="font-size:12px;color:var(--t2);margin-top:3px;line-height:1.5">滨江校区 3 号宿舍楼 508 室</p>
+    </div>
+    <svg class="ic" style="width:15px;height:15px;color:var(--t3)" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+  </div>
+
+  <div class="card" style="padding:14px">
+    <div style="display:flex;gap:11px">
+      <img src="https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=200&h=200&fit=crop&crop=entropy&auto=format&q=70" style="width:76px;height:76px;border-radius:10px">
+      <div style="flex:1;min-width:0">
+        <h4 style="font-size:13px;font-weight:600;line-height:1.4">ins 风保温杯 500ml 316 不锈钢</h4>
+        <p style="font-size:11px;color:var(--t3);margin-top:5px">薄荷绿 / 500ml</p>
+        <div style="display:flex;align-items:center;margin-top:8px">
+          <b style="font-size:16px;color:var(--price);font-weight:800">320 积分</b>
+          <span style="margin-left:auto;font-size:12px;color:var(--t2)">×1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow"><label>优惠券</label><span class="sp"></span><span class="v" style="color:var(--orange-deep)">2 张可用</span><svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+    <div class="frow"><label>订单备注</label><span class="v placeholder">选填，留言给商家（20 字以内）</span></div>
+    <div class="frow"><label>配送方式</label><span class="sp"></span><span class="v">校内配送 · 免邮</span></div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow"><label>支付方式</label><span class="sp"></span>
+      <span class="v" style="color:var(--green-deep);font-weight:600">积分余额 1,280</span>
+      <i style="width:18px;height:18px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center"><svg class="ic" style="width:11px;height:11px;stroke:#fff;stroke-width:3" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></i>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <div style="flex:1;display:flex;align-items:baseline;gap:6px;padding-left:4px">
+      <span style="font-size:12px;color:var(--t2)">合计</span>
+      <b style="font-size:22px;font-weight:800;color:var(--price)">320<small style="font-size:11px;font-weight:600"> 积分</small></b>
+    </div>
+    <button class="ab-main" style="flex:none;width:140px">提交订单</button>
+  </div>
+</section>
+
+<!-- ================= 13 EXCHANGE SUCCESS ================= -->
+<section class="screen" data-screen="exchange-success">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+
+  <div style="display:flex;flex-direction:column;align-items:center;padding-top:64px">
+    <i style="width:92px;height:92px;border-radius:50%;background:var(--green-grad);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(11,191,99,.32)">
+      <svg class="ic" style="width:46px;height:46px;stroke:#fff;stroke-width:2.6" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg>
+    </i>
+    <h1 style="font-size:22px;font-weight:800;margin-top:22px">兑换成功</h1>
+    <p style="font-size:13px;color:var(--t2);margin-top:8px">保温杯正在备货，2-3 天送到你的宿舍～</p>
+  </div>
+
+  <div class="card" style="padding:16px">
+    <div class="info-row"><span class="v">订单编号</span><span class="sp"></span><span style="font-size:12px;color:var(--t2)">XQ2026100209418</span></div>
+    <div class="info-row"><span class="v">消耗积分</span><span class="sp"></span><b style="font-size:15px;color:var(--price)">-320 积分</b></div>
+    <div class="info-row"><span class="v">积分余额</span><span class="sp"></span><b style="font-size:15px;color:var(--green-deep)">960 积分</b></div>
+    <div class="info-row" style="border-bottom:0"><span class="v">收货地址</span><span class="sp"></span><span style="font-size:12px;color:var(--t2)">3 号宿舍楼 508</span></div>
+  </div>
+
+  <div style="display:flex;gap:12px;margin:26px 16px 0">
+    <button style="flex:1;height:44px;border-radius:22px;background:#F2F4F3;color:var(--t2);font-size:15px;font-weight:600">继续逛逛</button>
+    <button style="flex:1;height:44px;border-radius:22px;background:var(--green-grad);color:#fff;font-size:15px;font-weight:700;box-shadow:0 8px 18px rgba(11,191,99,.3)">查看订单</button>
+  </div>
+
+  <div class="card" style="padding:14px;display:flex;align-items:center;gap:10px">
+    <i style="width:34px;height:34px;border-radius:10px;background:#FFF6DE;display:flex;align-items:center;justify-content:center;color:#D99400"><svg class="ic" style="width:17px;height:17px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/></svg></i>
+    <p style="font-size:12px;color:var(--t2);line-height:1.5">发货后可在「我的 - 订单记录」查看物流，到货记得来确认收货哦</p>
+  </div>
+</section>
+
+<!-- ================= 14 ORDERS 订单与任务记录 ================= -->
+<section class="screen" data-screen="orders">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>订单与任务</h1>
+    <div class="right"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+  </div>
+
+  <div style="display:flex;background:#fff;padding:0 8px;border-bottom:1px solid var(--line)">
+    <span style="flex:1;text-align:center;font-size:13px;color:var(--t2);padding:12px 0">兑换订单</span>
+    <b style="flex:1;text-align:center;font-size:15px;font-weight:800;position:relative;padding:12px 0">任务记录
+      <i style="position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:22px;height:3px;border-radius:2px;background:var(--green)"></i></b>
+  </div>
+  <div style="display:flex;gap:20px;padding:11px 18px 2px;font-size:12px;color:var(--t2)">
+    <b style="color:var(--green-deep);position:relative;padding-bottom:7px">全部<i style="position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--green);border-radius:1px"></i></b>
+    <span>进行中 2</span><span>待评价 1</span><span>已完成</span>
+  </div>
+
+  <!-- 进行中 -->
+  <div class="card" style="padding:13px">
+    <div style="display:flex;align-items:center;font-size:12px">
+      <img class="av" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=faces&auto=format&q=70" style="width:24px;height:24px">
+      <b style="margin-left:7px;font-size:13px">张同学的任务</b>
+      <span class="tag tag-green" style="margin:0 0 0 auto">进行中</span>
+    </div>
+    <div style="display:flex;gap:11px;margin-top:11px">
+      <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=180&h=180&fit=crop&crop=entropy&auto=format&q=70" style="width:66px;height:66px;border-radius:10px">
+      <div style="flex:1">
+        <h4 style="font-size:13px;line-height:1.45">西门菜鸟驿站取 2 个快递，送到 3 舍 508</h4>
+        <p style="font-size:11px;color:var(--t3);margin-top:5px">接单于 14:22 · 今天 18:30 截止</p>
+        <b style="font-size:15px;color:var(--green-deep);font-weight:800">+15 积分</b>
+      </div>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:11px">
+      <button style="flex:1;height:34px;border-radius:17px;border:1px solid var(--line);font-size:13px;color:var(--t2)">联系对方</button>
+      <button style="flex:1;height:34px;border-radius:17px;background:var(--green-grad);color:#fff;font-size:13px;font-weight:700">上传完成凭证</button>
+    </div>
+  </div>
+
+  <!-- 待评价 -->
+  <div class="card" style="padding:13px">
+    <div style="display:flex;align-items:center;font-size:12px">
+      <img class="av" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=faces&auto=format&q=70" style="width:24px;height:24px">
+      <b style="margin-left:7px;font-size:13px">林小满的任务</b>
+      <span class="tag tag-orange" style="margin:0 0 0 auto">待评价</span>
+    </div>
+    <div style="display:flex;gap:11px;margin-top:11px">
+      <img src="https://images.unsplash.com/photo-1557872943-16a5ac26437e?w=180&h=180&fit=crop&crop=entropy&auto=format&q=70" style="width:66px;height:66px;border-radius:10px">
+      <div style="flex:1">
+        <h4 style="font-size:13px;line-height:1.45">二食堂黄焖鸡米饭送到 6 号楼</h4>
+        <p style="font-size:11px;color:var(--t3);margin-top:5px">已完成 · 12 积分已到账</p>
+        <b style="font-size:15px;color:var(--green-deep);font-weight:800">+12 积分</b>
+      </div>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:11px">
+      <button style="flex:1;height:34px;border-radius:17px;border:1px solid var(--line);font-size:13px;color:var(--t2)">再次下单</button>
+      <button style="flex:1;height:34px;border-radius:17px;background:var(--orange-grad);color:#fff;font-size:13px;font-weight:700">立即评价</button>
+    </div>
+  </div>
+
+  <!-- 已完成 -->
+  <div class="card" style="padding:13px;opacity:.92">
+    <div style="display:flex;align-items:center;font-size:12px">
+      <img class="av" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=faces&auto=format&q=70" style="width:24px;height:24px">
+      <b style="margin-left:7px;font-size:13px">桃子汽水的任务</b>
+      <span class="tag" style="margin:0 0 0 auto">已完成</span>
+    </div>
+    <div style="display:flex;gap:11px;margin-top:11px">
+      <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=180&h=180&fit=crop&crop=entropy&auto=format&q=70" style="width:66px;height:66px;border-radius:10px">
+      <div style="flex:1">
+        <h4 style="font-size:13px;line-height:1.45">图书馆三楼帮带一杯手冲咖啡</h4>
+        <p style="font-size:11px;color:var(--t3);margin-top:5px">9 月 28 日完成 · 对方已好评</p>
+        <b style="font-size:15px;color:var(--green-deep);font-weight:800">+8 积分</b>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+/* 帖子详情 */
+.post-body{padding:14px 15px 4px;font-size:15px;line-height:1.75;color:#26282D}
+.post-body .topic{color:var(--green-deep);font-weight:500}
+.post-imgs{padding:6px 15px 0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.post-imgs img{width:100%;aspect-ratio:1;border-radius:10px}
+.post-imgs img:first-child{grid-column:1/3;aspect-ratio:16/10}
+.post-meta{padding:10px 15px 0;font-size:11px;color:var(--t3);display:flex;gap:10px;flex-wrap:wrap}
+.cmt{display:flex;gap:10px;padding:13px 15px;border-top:1px solid #F5F6F6}
+.cmt .av{width:36px;height:36px}
+.cmt .nm{font-size:12px;color:var(--t2);display:flex;align-items:center;gap:5px}
+.cmt .txt{font-size:14px;line-height:1.6;margin-top:3px;color:#26282D}
+.cmt .sub{font-size:11px;color:var(--t3);margin-top:5px;display:flex;gap:12px}
+.cmt .like{margin-left:auto;font-size:11px;color:var(--t3);display:flex;flex-direction:column;align-items:center;gap:2px}
+.cmt .like svg{width:16px;height:16px}
+.cmt-reply{background:#F7F9F8;border-radius:8px;padding:8px 10px;margin-top:7px;font-size:12px;color:#3A3D43;line-height:1.6}
+.cmt-reply b{color:var(--green-deep)}
+.cmt-bar{position:fixed;left:50%;margin-left:-195px;bottom:0;width:390px;height:60px;background:#fff;border-top:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 14px;z-index:50}
+.cmt-input{flex:1;height:36px;border-radius:18px;background:#F2F4F3;display:flex;align-items:center;padding:0 14px;font-size:13px;color:var(--t3)}
+.cmt-ic{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:var(--t2)}
+.cmt-ic svg{width:22px;height:22px}
+.cmt-ic.hot{color:var(--price)}
+/* 签到 */
+.sign-hero{background:var(--green-grad);margin:10px 12px 0;border-radius:18px;padding:20px 18px;color:#fff;position:relative;overflow:hidden;box-shadow:0 10px 24px rgba(11,191,99,.28)}
+.sign-hero::before{content:"";position:absolute;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.1);top:-90px;right:-40px}
+.sign-hero .row1{position:relative;display:flex;align-items:flex-end;justify-content:space-between}
+.sign-hero .num{font-size:36px;font-weight:800;line-height:1}
+.sign-hero .lab{font-size:12px;opacity:.85;margin-bottom:5px}
+.sign-streak{position:relative;margin-top:14px;font-size:12px;background:rgba(255,255,255,.16);border-radius:10px;padding:8px 11px;display:flex;align-items:center;gap:6px}
+.sign-btn{position:relative;margin-top:14px;width:100%;height:44px;border-radius:22px;background:#fff;color:var(--green-deep);font-size:16px;font-weight:800;box-shadow:0 6px 14px rgba(0,0,0,.12)}
+.cal{padding:6px 16px 14px}
+.cal-week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;color:var(--t3);padding:8px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px 0;text-align:center}
+.cal-d{height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;font-weight:600;position:relative;color:var(--t1)}
+.cal-d small{font-size:8px;height:9px;color:var(--green)}
+.cal-d.done{background:var(--green-soft);color:var(--green-deep);border-radius:11px}
+.cal-d.done small{color:var(--green)}
+.cal-d.today{background:var(--green-grad);color:#fff;border-radius:11px;box-shadow:0 4px 10px rgba(11,191,99,.35)}
+.cal-d.today small{color:rgba(255,255,255,.9)}
+.cal-d.mute{color:var(--t3);opacity:.5}
+.reward7{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:4px 14px 16px}
+.r7{background:#F7F9F8;border-radius:10px;padding:9px 0;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--t2)}
+.r7 b{font-size:12px;color:var(--green-deep);font-weight:800}
+.r7.done{background:var(--green-soft);color:var(--green-deep)}
+.r7.done b{color:var(--green-deep)}
+.r7.today{background:var(--orange-grad);color:#fff;box-shadow:0 4px 10px rgba(242,98,10,.3)}
+.r7.today b{color:#fff}
+/* 积分明细 */
+.pt-hero{background:var(--green-grad);margin:10px 12px 0;border-radius:18px;padding:18px;color:#fff;position:relative;overflow:hidden;box-shadow:0 10px 24px rgba(11,191,99,.28)}
+.pt-hero::before{content:"";position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.1);top:-100px;right:-50px}
+.pt-hero .lab{position:relative;font-size:12px;opacity:.85}
+.pt-hero .num{position:relative;font-size:38px;font-weight:800;margin-top:4px;line-height:1.1}
+.pt-hero .r3{position:relative;display:flex;margin-top:14px}
+.pt-hero .r3 div{flex:1;font-size:11px;opacity:.9}
+.pt-hero .r3 b{display:block;font-size:16px;font-weight:800;margin-bottom:2px}
+.pt-day{font-size:11px;color:var(--t3);padding:14px 16px 4px}
+.pt-row{display:flex;align-items:center;gap:11px;padding:12px 15px;background:#fff}
+.pt-row+.pt-row{border-top:1px solid #F5F6F6}
+.pt-ic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
+.pt-ic svg{width:19px;height:19px}
+.pt-row .t{flex:1}
+.pt-row .t b{font-size:13px;font-weight:600;display:block}
+.pt-row .t span{font-size:11px;color:var(--t3)}
+.pt-row .amt{font-size:16px;font-weight:800}
+.amt.in{color:var(--green-deep)}
+.amt.out{color:var(--t1)}
+/* 优惠券 */
+.cp{position:relative;margin:10px 12px 0;border-radius:14px;height:98px;display:flex;color:#fff;overflow:hidden;box-shadow:var(--shadow)}
+.cp.use{background:linear-gradient(120deg,#14C96E,#08A152)}
+.cp.use.c-orange{background:linear-gradient(120deg,#FF9A3D,#F2620A)}
+.cp.use.c-pink{background:linear-gradient(120deg,#FF5C6C,#E8384F)}
+.cp.gray{background:linear-gradient(120deg,#B9BEC6,#969DA6)}
+.cp-left{width:108px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.cp-left b{font-size:30px;font-weight:900;line-height:1}
+.cp-left b small{font-size:13px;font-weight:700}
+.cp-left span{font-size:10px;opacity:.9;margin-top:3px}
+.cp-sep{width:0;border-left:1.5px dashed rgba(255,255,255,.65);position:relative;margin:10px 0}
+.cp-sep::before{content:"";position:absolute;left:-6px;top:-7px;width:11px;height:11px;border-radius:50%;background:var(--bg)}
+.cp-sep::after{content:"";position:absolute;left:-6px;bottom:-7px;width:11px;height:11px;border-radius:50%;background:var(--bg)}
+.cp-mid{flex:1;padding:14px 8px 12px 14px}
+.cp-mid h4{font-size:14px;font-weight:800}
+.cp-mid p{font-size:11px;opacity:.9;margin-top:5px;line-height:1.5}
+.cp-mid .time{font-size:10px;opacity:.75;margin-top:7px}
+.cp-right{width:74px;flex:none;display:flex;align-items:center;justify-content:center}
+.cp-right button{width:52px;height:28px;border-radius:14px;background:#fff;font-size:12px;font-weight:700}
+.cp.use .cp-right button{color:var(--green-deep)}
+.cp.use.c-orange .cp-right button{color:var(--orange-deep)}
+.cp.use.c-pink .cp-right button{color:#E8384F}
+.cp.gray .cp-right button{background:rgba(255,255,255,.35);color:#fff}
+/* 消息 */
+.msg-grid{background:#fff;border-radius:var(--r-lg);margin:10px 12px 0;display:grid;grid-template-columns:repeat(5,1fr);padding:16px 0}
+.msg-grid .m{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11px;color:#3A3D43;position:relative}
+.msg-grid .m i{width:46px;height:46px;border-radius:15px;display:flex;align-items:center;justify-content:center}
+.msg-grid .m i svg{width:23px;height:23px}
+.msg-badge{position:absolute;top:-5px;left:calc(50% + 8px);min-width:17px;height:17px;border-radius:9px;background:var(--price);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff}
+.msg-row{display:flex;align-items:center;gap:11px;padding:13px 15px;background:#fff}
+.msg-row+.msg-row{border-top:1px solid #F5F6F6}
+.msg-row .av{width:46px;height:46px;position:relative}
+.msg-dot{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:var(--price);border:2px solid #fff}
+.msg-main{flex:1;min-width:0}
+.msg-main .l1{display:flex;align-items:baseline;justify-content:space-between}
+.msg-main .l1 b{font-size:14px}
+.msg-main .l1 span{font-size:11px;color:var(--t3)}
+.msg-main .l2{font-size:13px;color:var(--t2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+
+<!-- ================= 15 POST DETAIL 帖子详情 ================= -->
+<section class="screen has-bar" data-screen="post-detail" style="padding-bottom:70px">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <div class="right"><svg class="ic" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></div>
+  </div>
+
+  <div class="card" style="margin-top:10px;border-radius:var(--r-lg) var(--r-lg) 0 0">
+    <div class="publisher" style="padding:14px 15px 6px">
+      <img class="av" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=faces&auto=format&q=70" style="width:44px;height:44px">
+      <div>
+        <div class="nm">一只橘座 <span class="tag tag-orange" style="margin:0">校园认证</span></div>
+        <div class="sub">8 分钟前 · 来自 8 号楼 · 滨江校区</div>
+      </div>
+      <span class="sp"></span>
+      <button class="btn-follow" style="height:28px">+ 关注</button>
+    </div>
+    <p class="post-body">宿舍楼下的橘座又来巡逻了，今天心情好像不错，主动蹭了我三次 🐱 喂了根火腿肠之后直接躺平翻肚皮，谁懂啊！<span class="topic">#校园日常</span> <span class="topic">#猫咪</span></p>
+    <div class="post-imgs">
+      <img src="https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=760&h=480&fit=crop&crop=faces&auto=format&q=70">
+      <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=380&h=380&fit=crop&crop=entropy&auto=format&q=70">
+      <img src="https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=380&h=380&fit=crop&crop=entropy&auto=format&q=70">
+    </div>
+    <div class="post-meta">
+      <span class="loc" style="display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:6px;background:#F4F6F5;color:var(--t2)"><svg class="ic" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>滨江校区 · 8 号楼</span>
+      <span>浏览 328 · 浙江 杭州</span>
+    </div>
+    <div style="display:flex;gap:24px;padding:12px 15px;color:var(--t2);font-size:12px;border-top:1px solid #F5F6F6;margin-top:10px">
+      <span style="display:inline-flex;align-items:center;gap:5px"><svg class="ic" style="width:17px;height:17px;color:var(--price);fill:currentColor" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>328 赞</span>
+      <span style="display:inline-flex;align-items:center;gap:5px"><svg class="ic" style="width:17px;height:17px;color:var(--t3)" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3.2A8 8 0 1 1 21 12z"/></svg>45 评论</span>
+      <span style="display:inline-flex;align-items:center;gap:5px"><svg class="ic" style="width:17px;height:17px;color:var(--t3)" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1-5.4-2.9-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z"/></svg>66 收藏</span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:0;border-radius:0 0 var(--r-lg) var(--r-lg)">
+    <div class="cmt">
+      <img class="av" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=90&h=90&fit=crop&crop=faces&auto=format&q=70">
+      <div style="flex:1">
+        <div class="nm">林小满 <span class="tag tag-green" style="margin:0">博主好友</span></div>
+        <p class="txt">这只橘猫是 8 号楼的团宠！它叫年糕，超亲人的哈哈哈</p>
+        <div class="cmt-reply"><b>一只橘座：</b>对对对，今天它还带了小伙伴一起来巡逻 😂</div>
+        <div class="sub"><span>6 分钟前</span><span>回复</span></div>
+      </div>
+      <div class="like"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>12</div>
+    </div>
+    <div class="cmt">
+      <img class="av" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=90&h=90&fit=crop&crop=faces&auto=format&q=70">
+      <div style="flex:1">
+        <div class="nm">阿凯</div>
+        <p class="txt">翻肚皮也太信任了吧，猫德满分 100 分 🧡</p>
+        <div class="sub"><span>3 分钟前</span><span>回复</span></div>
+      </div>
+      <div class="like"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>8</div>
+    </div>
+    <div class="cmt">
+      <img class="av" src="https://images.unsplash.com/photo-1548142813-c348350df52b?w=90&h=90&fit=crop&crop=faces&auto=format&q=70">
+      <div style="flex:1">
+        <div class="nm">桃子汽水 <span class="tag tag-blue" style="margin:0">学习委员</span></div>
+        <p class="txt">明天我去蹲点！带两根火腿肠够不够收买它？</p>
+        <div class="sub"><span>1 分钟前</span><span>回复</span></div>
+      </div>
+      <div class="like"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>3</div>
+    </div>
+  </div>
+
+  <div class="cmt-bar">
+    <div class="cmt-input">说点什么…</div>
+    <div class="cmt-ic hot"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>328</div>
+    <div class="cmt-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1-5.4-2.9-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z"/></svg>66</div>
+    <div class="cmt-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M5 15v5h14v-5"/></svg></div>
+  </div>
+</section>
+
+<!-- ================= 16 POST PUBLISH 发布动态 ================= -->
+<section class="screen has-bar" data-screen="post-publish">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>发布动态</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t3)">存草稿</span></div>
+  </div>
+
+  <div class="card" style="padding:14px">
+    <textarea rows="5" style="width:100%;border:0;outline:0;resize:none;font-family:inherit;font-size:16px;line-height:1.7;color:var(--t1)" placeholder="分享校园新鲜事，让更多同学看到…">宿舍楼下的橘座又来巡逻了，今天心情好像不错，主动蹭了我三次 🐱</textarea>
+    <div class="upload-grid" style="grid-template-columns:repeat(4,1fr)">
+      <img src="https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=200&h=200&fit=crop&crop=faces&auto=format&q=70" style="border-radius:10px">
+      <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&h=200&fit=crop&crop=entropy&auto=format&q=70" style="border-radius:10px">
+      <div class="upload-add" style="aspect-ratio:1;border-radius:10px"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>2/9</span></div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow">
+      <i style="width:30px;color:var(--orange-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M4 9h16M4 15h10M10 3L4 9l6 6"/></svg></i>
+      <span class="v" style="color:var(--green-deep);font-weight:600">#校园日常</span>
+      <span class="v placeholder">添加话题</span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="frow">
+      <i style="width:30px;color:var(--green-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></i>
+      <span class="v">滨江校区 · 8 号楼</span>
+      <span class="sp"></span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="frow">
+      <i style="width:30px;color:#3B82F6"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></i>
+      <span class="v placeholder">所有人可见</span>
+      <span class="sp"></span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <div class="card" style="padding:14px;display:flex;gap:10px;align-items:center">
+    <i style="width:34px;height:34px;border-radius:10px;background:var(--orange-soft);display:flex;align-items:center;justify-content:center;color:var(--orange-deep)"><svg class="ic" style="width:17px;height:17px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 10.5c0-1 1.2-2 3-2s3 1 3 2-1 1.8-3 2.2-3 1.2-3 2.3 1.2 2 3 2 3-1 3-2"/></svg></i>
+    <p style="font-size:12px;color:var(--t2);line-height:1.5">带话题发布并通过审核后，可获得 <b style="color:var(--orange-deep)">+2 积分</b> 创作奖励</p>
+  </div>
+
+  <div class="action-bar">
+    <button class="ab-main">发布</button>
+  </div>
+</section>
+
+<!-- ================= 17 SIGNIN 每日签到 ================= -->
+<section class="screen" data-screen="signin">
+  <div class="status on-dark" style="color:#fff;background:var(--green)"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div style="background:var(--green-grad);padding:0 0 14px">
+    <div class="subnav on-dark" style="background:transparent">
+      <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+      <h1>每日签到</h1>
+      <div class="right"><span style="color:rgba(255,255,255,.9);font-size:12px">规则</span></div>
+    </div>
+    <div class="sign-hero" style="margin-top:0">
+      <div class="row1">
+        <div>
+          <div class="lab">我的积分</div>
+          <div class="num">1,280</div>
+        </div>
+        <div style="text-align:right">
+          <div class="lab">已连续签到</div>
+          <div class="num" style="font-size:28px">5<small style="font-size:13px;font-weight:600"> 天</small></div>
+        </div>
+      </div>
+      <div class="sign-streak">
+        <svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M13 2s4 4 4 8a5 5 0 0 1-10 0c0-2 1-3 1-3s0 2 2 2c0-3 3-7 3-7z"/></svg>
+        再签 2 天可领取第 7 日大宝箱（50 积分）
+      </div>
+      <button class="sign-btn">立即签到 · 领 5 积分</button>
+    </div>
+  </div>
+
+  <div class="card" style="padding-bottom:6px">
+    <div class="sec-title"><h2>10 月签到日历</h2><span class="more">2026.10</span></div>
+    <div class="cal">
+      <div class="cal-week"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+      <div class="cal-grid">
+        <div class="cal-d mute">28</div><div class="cal-d mute">29</div><div class="cal-d mute">30</div>
+        <div class="cal-d done">1<small>✓</small></div>
+        <div class="cal-d today">2<small>今日</small></div>
+        <div class="cal-d">3</div><div class="cal-d">4</div>
+        <div class="cal-d">5</div><div class="cal-d">6</div><div class="cal-d">7</div><div class="cal-d">8</div><div class="cal-d">9</div><div class="cal-d">10</div><div class="cal-d">11</div>
+        <div class="cal-d">12</div><div class="cal-d">13</div><div class="cal-d">14</div><div class="cal-d">15</div><div class="cal-d">16</div><div class="cal-d">17</div><div class="cal-d">18</div>
+        <div class="cal-d">19</div><div class="cal-d">20</div><div class="cal-d">21</div><div class="cal-d">22</div><div class="cal-d">23</div><div class="cal-d">24</div><div class="cal-d">25</div>
+        <div class="cal-d">26</div><div class="cal-d">27</div><div class="cal-d">28</div><div class="cal-d">29</div><div class="cal-d">30</div><div class="cal-d mute">31</div><div class="cal-d mute">1</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding-bottom:8px">
+    <div class="sec-title"><h2>连续签到奖励</h2><span class="more">每周一刷新</span></div>
+    <div class="reward7">
+      <div class="r7 done"><svg class="ic" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg><b>+5</b>第1天</div>
+      <div class="r7 done"><svg class="ic" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg><b>+5</b>第2天</div>
+      <div class="r7 done"><svg class="ic" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg><b>+10</b>第3天</div>
+      <div class="r7 done"><svg class="ic" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg><b>+10</b>第4天</div>
+      <div class="r7 today"><svg class="ic" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg><b>+15</b>今天</div>
+      <div class="r7"><b>+15</b>第6天</div>
+      <div class="r7"><svg class="ic" style="width:18px;height:18px;color:#D99400" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.3 7.2 16.9l.9-5.4L4.2 7.7l5.4-.8z"/></svg><b style="color:#D99400">+50</b>宝箱</div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:14px 15px;margin-bottom:14px">
+    <h4 style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px"><svg class="ic" style="width:15px;height:15px;color:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5-4 8.5-9 10-5-1.5-9-5-9-10V6z"/></svg>签到规则</h4>
+    <p style="font-size:12px;color:var(--t2);line-height:1.8;margin-top:8px">1. 每日签到可领取积分，连续签到奖励逐天递增；<br>2. 断签后连续天数清零重新计算，补签卡可补救前一天；<br>3. 积分可在积分商城兑换商品、优惠券，暂不支持提现。</p>
+  </div>
+</section>
+
+<!-- ================= 18 POINTS 积分明细 ================= -->
+<section class="screen" data-screen="points">
+  <div class="status on-dark" style="background:var(--green)"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div style="background:var(--green-grad);padding-bottom:12px">
+    <div class="subnav on-dark" style="background:transparent">
+      <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+      <h1>积分明细</h1>
+      <div class="right"><span style="color:rgba(255,255,255,.9);font-size:12px">积分规则</span></div>
+    </div>
+    <div class="pt-hero" style="margin-top:0">
+      <div class="lab">当前可用积分</div>
+      <div class="num">1,280</div>
+      <div class="r3">
+        <div><b>+3,560</b>累计赚取</div>
+        <div><b>-2,280</b>累计消耗</div>
+        <div style="text-align:right"><b>750</b>信用分</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;background:#fff;margin:10px 12px 0;border-radius:var(--r-lg);padding:3px;box-shadow:var(--shadow)">
+    <b style="flex:1;text-align:center;font-size:13px;padding:9px 0;border-radius:10px;background:var(--green-grad);color:#fff">全部</b>
+    <span style="flex:1;text-align:center;font-size:13px;color:var(--t2);padding:9px 0">收入</span>
+    <span style="flex:1;text-align:center;font-size:13px;color:var(--t2);padding:9px 0">支出</span>
+  </div>
+
+  <div class="pt-day">今天 · 10 月 2 日</div>
+  <div class="card" style="margin-top:0">
+    <div class="pt-row">
+      <i class="pt-ic" style="background:var(--green-soft);color:var(--green-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M5 8h11v9H5zM16 11h3l2 2v4h-5"/><circle cx="8" cy="18.5" r="1.8"/><circle cx="18" cy="18.5" r="1.8"/></svg></i>
+      <div class="t"><b>完成任务 · 代取快递</b><span>张同学已确认送达</span></div>
+      <span class="amt in">+15</span>
+    </div>
+    <div class="pt-row">
+      <i class="pt-ic" style="background:var(--orange-soft);color:var(--orange-deep)"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M9 15l2 2 4-4"/></svg></i>
+      <div class="t"><b>每日签到 · 第 5 天</b><span>连续签到奖励</span></div>
+      <span class="amt in">+15</span>
+    </div>
+    <div class="pt-row">
+      <i class="pt-ic" style="background:#EAF2FF;color:#3B82F6"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1-5.4-2.9-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z"/></svg></i>
+      <div class="t"><b>优质评价奖励</b><span>你的任务评价被采纳</span></div>
+      <span class="amt in">+15</span>
+    </div>
+    <div class="pt-row">
+      <i class="pt-ic" style="background:#FFEAF1;color:#F43F7F"><svg class="ic" viewBox="0 0 24 24"><path d="M4 9l1.2-4h13.6L20 9"/><path d="M4 9v11h16V9"/></svg></i>
+      <div class="t"><b>兑换 · ins 风保温杯</b><span>订单 XQ2026100209418</span></div>
+      <span class="amt out">-320</span>
+    </div>
+  </div>
+
+  <div class="pt-day">昨天 · 10 月 1 日</div>
+  <div class="card" style="margin-top:0">
+    <div class="pt-row">
+      <i class="pt-ic" style="background:var(--green-soft);color:var(--green-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M5 8h11v9H5zM16 11h3l2 2v4h-5"/><circle cx="8" cy="18.5" r="1.8"/><circle cx="18" cy="18.5" r="1.8"/></svg></i>
+      <div class="t"><b>完成任务 · 二食堂带饭</b><span>任务佣金到账</span></div>
+      <span class="amt in">+12</span>
+    </div>
+    <div class="pt-row">
+      <i class="pt-ic" style="background:#F1EAFF;color:#8B5CF6"><svg class="ic" viewBox="0 0 24 24"><path d="M21 11a7 7 0 0 1-7 7H5l1.7-2.8A7 7 0 1 1 21 11z"/></svg></i>
+      <div class="t"><b>邀请好友注册</b><span>好友 阿澈 完成认证</span></div>
+      <span class="amt in">+30</span>
+    </div>
+  </div>
+
+  <div class="pt-day">9 月 30 日</div>
+  <div class="card" style="margin-top:0;margin-bottom:14px">
+    <div class="pt-row">
+      <i class="pt-ic" style="background:#FFF6DE;color:#D99400"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 10.5c0-1 1.2-2 3-2s3 1 3 2-1 1.8-3 2.2-3 1.2-3 2.3 1.2 2 3 2 3-1 3-2"/></svg></i>
+      <div class="t"><b>周末拼单节奖励</b><span>3 人成团翻倍奖励</span></div>
+      <span class="amt in">+20</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 19 COUPONS 优惠券 ================= -->
+<section class="screen" data-screen="coupons">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>优惠券</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t2)">领券中心</span></div>
+  </div>
+
+  <div style="display:flex;background:#fff;margin:10px 12px 0;border-radius:var(--r-lg);padding:3px;box-shadow:var(--shadow)">
+    <b style="flex:1;text-align:center;font-size:13px;padding:9px 0;border-radius:10px;background:var(--green-grad);color:#fff">可用 6</b>
+    <span style="flex:1;text-align:center;font-size:13px;color:var(--t2);padding:9px 0">已使用 3</span>
+    <span style="flex:1;text-align:center;font-size:13px;color:var(--t2);padding:9px 0">已过期 2</span>
+  </div>
+
+  <div class="cp use c-orange">
+    <div class="cp-left"><b><small></small>50</b><span>积分券</span></div>
+    <i class="cp-sep"></i>
+    <div class="cp-mid"><h4>全品类通用积分券</h4><p>满 300 积分可用 · 兑换商品自动抵扣</p><div class="time">2026.09.25 - 2026.10.15</div></div>
+    <div class="cp-right"><button>去使用</button></div>
+  </div>
+
+  <div class="cp use">
+    <div class="cp-left"><b>免<small>邮</small></b><span>配送券</span></div>
+    <i class="cp-sep"></i>
+    <div class="cp-mid"><h4>校内免邮券</h4><p>实物商品兑换免配送费，不限金额</p><div class="time">2026.09.28 - 2026.10.31</div></div>
+    <div class="cp-right"><button>去使用</button></div>
+  </div>
+
+  <div class="cp use c-pink">
+    <div class="cp-left"><b>8<small>折</small></b><span>折扣券</span></div>
+    <i class="cp-sep"></i>
+    <div class="cp-mid"><h4>零食饮料专享 8 折</h4><p>最高抵扣 100 积分 · 秒杀商品不可用</p><div class="time">2026.10.01 - 2026.10.07</div></div>
+    <div class="cp-right"><button>去使用</button></div>
+  </div>
+
+  <div class="cp gray">
+    <div class="cp-left"><b>5<small>元</small></b><span>现金券</span></div>
+    <i class="cp-sep"></i>
+    <div class="cp-mid"><h4>PLUS 会员专享券</h4><p>满 20 元可用 · 开通会员即可领取</p><div class="time">2026.08.01 - 2026.08.31</div></div>
+    <div class="cp-right"><button>已过期</button></div>
+  </div>
+
+  <div style="margin:14px 14px 0;background:var(--green-soft);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--green-deep);display:flex;align-items:center;gap:8px;line-height:1.5">
+    <svg class="ic" style="width:18px;height:18px;flex:none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+    优惠券在下单时自动匹配最优方案，积分券与折扣券不可叠加使用
+  </div>
+</section>
+
+<!-- ================= 20 MESSAGES 消息中心 ================= -->
+<section class="screen" data-screen="messages">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>消息中心</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t3)">全部已读</span></div>
+  </div>
+
+  <div class="msg-grid">
+    <div class="m"><i style="background:#EAF2FF;color:#3B82F6;position:relative"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 3v18"/></svg><i class="msg-badge">1</i></i>系统通知</div>
+    <div class="m"><i style="background:var(--green-soft);color:var(--green-deep)"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 11l2 2 4-4"/></svg><i class="msg-badge">3</i></i>任务消息</div>
+    <div class="m"><i style="background:var(--orange-soft);color:var(--orange-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 7l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg><i class="msg-badge">2</i></i>订单物流</div>
+    <div class="m"><i style="background:#FFEAF1;color:#F43F7F"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg></i>互动消息</div>
+    <div class="m"><i style="background:#F1EAFF;color:#8B5CF6"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg><i class="msg-badge">2</i></i>闲置订单</div>
+  </div>
+
+  <div class="sec-title" style="padding-left:16px"><h2>互动消息</h2><span class="more">全部 <svg class="ic" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+
+  <div class="card" style="margin-top:0;padding:2px 0">
+    <div class="msg-row">
+      <img class="av" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=90&h=90&fit=crop&crop=faces&auto=format&q=70">
+      <div class="msg-main">
+        <div class="l1"><b>一只橘座</b><span>2 分钟前</span></div>
+        <div class="l2">回复了你的评论：「对对对，今天它还带了小伙伴一起来巡逻 😂」</div>
+      </div>
+      <i class="msg-dot"></i>
+    </div>
+    <div class="msg-row">
+      <img class="av" src="https://images.unsplash.com/photo-1548142813-c348350df52b?w=90&h=90&fit=crop&crop=faces&auto=format&q=70">
+      <div class="msg-main">
+        <div class="l1"><b>桃子汽水</b><span>12 分钟前</span></div>
+        <div class="l2">赞了你的评论 · 并关注了你</div>
+      </div>
+      <i class="msg-dot"></i>
+    </div>
+    <div class="msg-row">
+      <img class="av" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=90&h=90&fit=crop&crop=faces&auto=format&q=70">
+      <div class="msg-main">
+        <div class="l1"><b>阿澈</b><span>1 小时前</span></div>
+        <div class="l2">评论了你的动态：「这个机位也太出片了，求具体位置！」</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-title" style="padding-left:16px"><h2>通知</h2></div>
+  <div class="card" style="margin-top:0;padding:2px 0;margin-bottom:14px">
+    <div class="msg-row">
+      <i style="width:46px;height:46px;border-radius:50%;background:#F1EAFF;display:flex;align-items:center;justify-content:center;color:#8B5CF6;flex:none"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg></i>
+      <div class="msg-main">
+        <div class="l1"><b>闲置助手</b><span>10 分钟前</span></div>
+        <div class="l2">你出售的「索尼 WH-1000XM4」买家已付款，请在 24 小时内发货</div>
+      </div>
+      <i class="msg-dot"></i>
+    </div>
+    <div class="msg-row">
+      <i style="width:46px;height:46px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;color:var(--green-deep);flex:none"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 3v18"/></svg></i>
+      <div class="msg-main">
+        <div class="l1"><b>校圈官方</b><span>今天 09:00</span></div>
+        <div class="l2">你发布的任务「西门菜鸟取快递」已通过审核，已上架任务大厅</div>
+      </div>
+      <i class="msg-dot"></i>
+    </div>
+    <div class="msg-row">
+      <i style="width:46px;height:46px;border-radius:50%;background:var(--orange-soft);display:flex;align-items:center;justify-content:center;color:var(--orange-deep);flex:none"><svg class="ic" viewBox="0 0 24 24"><path d="M3 7l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg></i>
+      <div class="msg-main">
+        <div class="l1"><b>物流助手</b><span>昨天 16:20</span></div>
+        <div class="l2">你兑换的「ins 风保温杯」已到达 3 号宿舍楼驿站，请凭取件码领取</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+/* ============ 校园闲置 + IM 私信（新增模块） ============ */
+body[data-screen="sh-market"] .screen[data-screen="sh-market"],
+body[data-screen="sh-publish"] .screen[data-screen="sh-publish"],
+body[data-screen="sh-detail"] .screen[data-screen="sh-detail"],
+body[data-screen="sh-buy"] .screen[data-screen="sh-buy"],
+body[data-screen="sh-orders"] .screen[data-screen="sh-orders"],
+body[data-screen="chat-list"] .screen[data-screen="chat-list"],
+body[data-screen="chat"] .screen[data-screen="chat"],
+body[data-screen="sh-my-list"] .screen[data-screen="sh-my-list"],
+body[data-screen="sh-order-detail"] .screen[data-screen="sh-order-detail"],
+body[data-screen="sh-rate"] .screen[data-screen="sh-rate"]{display:block}
+
+/* 闲置市场 */
+.cat-chips{display:flex;gap:8px;overflow-x:auto;padding:10px 12px 2px}
+.cat-chips span{flex:none;height:31px;padding:0 14px;border-radius:16px;background:#fff;border:1px solid var(--line);font-size:12px;color:var(--t2);display:flex;align-items:center}
+.cat-chips span.on{background:var(--green-grad);color:#fff;font-weight:700;border:0;box-shadow:0 4px 10px rgba(11,191,99,.25)}
+.sh-item{padding:12px 13px;display:flex;gap:11px}
+.sh-item+.sh-item{border-top:1px solid #F5F6F6}
+.sh-item img{width:92px;height:92px;border-radius:10px;flex:none}
+.sh-item h4{font-size:13.5px;font-weight:600;line-height:1.4}
+.sh-item .meta{font-size:11px;color:var(--t3);margin-top:5px}
+.sh-item .prow{display:flex;align-items:center;margin-top:7px}
+.sh-item .prow b{font-size:16px;font-weight:800;color:var(--price)}
+.sh-item .prow span{margin-left:auto;font-size:11px;color:var(--t3);display:flex;align-items:center;gap:3px}
+.sh-item .prow svg{width:13px;height:13px}
+
+/* 聊天 */
+.chat-ctx{display:flex;align-items:center;gap:9px;background:#fff;margin:8px 12px 0;border-radius:12px;padding:8px 10px;box-shadow:var(--shadow)}
+.chat-ctx img{width:42px;height:42px;border-radius:8px}
+.chat-ctx .t{flex:1;min-width:0}
+.chat-ctx .t b{font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-ctx .t span{font-size:13px;color:var(--price);font-weight:800;margin-top:2px;display:inline-block}
+.chat-ctx button{height:27px;padding:0 12px;border-radius:14px;background:var(--green-soft);color:var(--green-deep);font-size:11px;font-weight:700;flex:none}
+.chat-wrap{padding:14px 12px 6px;display:flex;flex-direction:column;gap:11px}
+.bubble{max-width:72%;background:#fff;border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:13.5px;line-height:1.55;box-shadow:0 1px 2px rgba(23,26,23,.04);align-self:flex-start;width:fit-content}
+.bubble.me{background:var(--green-grad);color:#fff;border-radius:14px 4px 14px 14px;align-self:flex-end;box-shadow:0 5px 12px rgba(11,191,99,.25)}
+.bubble-time{align-self:center;font-size:10px;color:var(--t3);background:#E9ECE9;border-radius:9px;padding:3px 9px}
+.chat-tip{align-self:center;display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3);background:#F0F2F0;border-radius:9px;padding:5px 10px;margin-top:2px}
+.chat-tip svg{width:12px;height:12px;color:var(--green)}
+.quick-chips{display:flex;gap:8px;padding:6px 12px 8px;overflow-x:auto}
+.quick-chips span{flex:none;height:30px;padding:0 13px;border-radius:15px;background:#fff;border:1px solid var(--line);font-size:12px;color:var(--t2);display:flex;align-items:center}
+.chat-bar{position:fixed;left:50%;margin-left:-195px;bottom:0;width:390px;background:#fff;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px;padding:9px 12px 14px;z-index:50}
+.chat-bar .plus{width:34px;height:34px;border-radius:50%;background:#F2F4F3;display:flex;align-items:center;justify-content:center;color:var(--t2);flex:none}
+.chat-bar input{flex:1;height:36px;border-radius:18px;background:#F2F4F3;border:0;outline:0;padding:0 14px;font-size:13px;font-family:inherit;color:var(--t1)}
+.chat-bar .send{width:38px;height:38px;border-radius:50%;background:var(--green-grad);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 5px 12px rgba(11,191,99,.3);flex:none}
+.chat-bar .send svg{width:18px;height:18px}
+</style>
+
+<!-- ================= 21 SH MARKET 闲置市场 ================= -->
+<section class="screen" data-screen="sh-market">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>闲置市场</h1>
+    <div class="right">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <span style="color:var(--green-deep);font-weight:600">发布</span>
+    </div>
+  </div>
+
+  <div class="cat-chips">
+    <span class="on">全部</span><span>数码</span><span>图书教材</span><span>生活用品</span><span>美妆个护</span><span>运动器材</span><span>其他</span>
+  </div>
+
+  <div class="card" style="margin-top:10px;padding:11px 14px;display:flex;align-items:center;gap:9px;background:var(--green-soft)">
+    <i style="width:32px;height:32px;border-radius:10px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><svg class="ic" style="width:16px;height:16px;stroke:#fff" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></i>
+    <p style="font-size:11.5px;color:var(--green-deep);line-height:1.5">买卖沟通请使用平台私信，面交请选择校内人多场所</p>
+  </div>
+
+  <div class="card" style="padding:3px 0">
+    <div class="sh-item">
+      <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+      <div style="flex:1;min-width:0">
+        <h4>iPad Air 5 64G 天蓝色 95新 国行在保</h4>
+        <div style="margin-top:5px"><span class="tag tag-green">95新</span><span class="tag">数码</span></div>
+        <div class="meta">林小满 · 滨江校区 · 10 分钟前</div>
+        <div class="prow"><b>¥2,399</b><span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>12</span></div>
+      </div>
+    </div>
+    <div class="sh-item">
+      <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+      <div style="flex:1;min-width:0">
+        <h4>索尼 WH-1000XM4 头戴降噪耳机 98新</h4>
+        <div style="margin-top:5px"><span class="tag tag-green">98新</span><span class="tag">数码</span></div>
+        <div class="meta">阿凯 · 南苑校区 · 26 分钟前</div>
+        <div class="prow"><b>¥680</b><span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>5</span></div>
+      </div>
+    </div>
+    <div class="sh-item">
+      <img src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+      <div style="flex:1;min-width:0">
+        <h4>IKBC C87 机械键盘 白色红轴 箱说全</h4>
+        <div style="margin-top:5px"><span class="tag tag-green">99新</span><span class="tag">数码</span></div>
+        <div class="meta">阿澈 · 滨江校区 · 1 小时前</div>
+        <div class="prow"><b>¥150</b><span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>5</span></div>
+      </div>
+    </div>
+    <div class="sh-item">
+      <img src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+      <div style="flex:1;min-width:0">
+        <h4>捷安特 ATX 720 通勤单车 8 成新 刚保养</h4>
+        <div style="margin-top:5px"><span class="tag tag-orange">8成新</span><span class="tag">运动器材</span></div>
+        <div class="meta">张同学 · 滨江校区 · 2 小时前</div>
+        <div class="prow"><b>¥399</b><span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>9</span></div>
+      </div>
+    </div>
+    <div class="sh-item">
+      <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+      <div style="flex:1;min-width:0">
+        <h4>考研数学英语全套资料 带重点笔记</h4>
+        <div style="margin-top:5px"><span class="tag tag-orange">8成新</span><span class="tag">图书教材</span></div>
+        <div class="meta">桃子汽水 · 滨江校区 · 3 小时前</div>
+        <div class="prow"><b>¥88</b><span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>3</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 22 SH PUBLISH 发布闲置 ================= -->
+<section class="screen has-bar" data-screen="sh-publish">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>发布闲置</h1>
+    <div class="right"><span style="color:var(--t3)">规则</span></div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow" style="display:block">
+      <label style="display:block;margin-bottom:6px">宝贝照片 <span style="font-weight:400;color:var(--t3);font-size:11px">（第一张为封面，最多 9 张）</span></label>
+      <div class="upload-grid" style="padding:0">
+        <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+        <img src="https://images.unsplash.com/photo-1561154464-82e9adf32764?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+        <div class="upload-add"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>添加照片 2/9</div>
+      </div>
+    </div>
+    <div class="frow" style="align-items:flex-start;flex-direction:column">
+      <label style="width:auto">宝贝标题</label>
+      <input placeholder="品牌型号 + 成色 + 亮点，如：iPad Air 5 95新" value="iPad Air 5 64G 天蓝色 95新 国行在保">
+      <span style="font-size:10px;color:var(--t3);align-self:flex-end">22/30</span>
+    </div>
+    <div class="frow" style="align-items:flex-start">
+      <textarea rows="3" placeholder="购买渠道、使用时长、成色细节、配件清单、转手原因…">去年 10 月官网购入，国行在保到 2027 年 10 月，一直贴膜带壳使用，屏幕无划痕。配件：原装充电器 + 双面夹 Keyboard 一并送。</textarea>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow">
+      <label>分类</label>
+      <div class="chip-pick" style="flex:1">
+        <span class="on">数码</span><span>图书教材</span><span>生活用品</span><span>运动器材</span><span>其他</span>
+      </div>
+    </div>
+    <div class="frow">
+      <label>成色</label>
+      <div class="chip-pick" style="flex:1">
+        <span>全新未拆</span><span>99新</span><span class="on">95新</span><span>9成新</span><span>明显使用痕迹</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow">
+      <label>价格</label>
+      <span style="font-size:16px;font-weight:800;color:var(--price)">¥</span>
+      <input style="flex:1;font-size:16px;font-weight:800" value="2399">
+      <span class="tag tag-orange">可小刀</span>
+    </div>
+    <div class="frow">
+      <label>交易方式</label>
+      <div class="chip-pick" style="flex:1">
+        <span class="on">校内面交</span><span>驿站代发</span><span>快递包邮</span>
+      </div>
+    </div>
+    <div class="frow">
+      <label>交易地点</label>
+      <span class="v">滨江校区 · 3 号宿舍楼</span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <div style="margin:10px 14px 0;font-size:11px;color:var(--t3);line-height:1.6">
+    💡 发布后需平台审核，通过后上架闲置市场；请使用平台私信沟通，平台托管支付，确认收货后款项结算给卖家。
+  </div>
+
+  <div class="action-bar">
+    <div style="flex:1;display:flex;gap:10px">
+      <button class="ab-duo" style="background:#F2F4F3;color:var(--t2)">存草稿</button>
+      <button class="ab-duo" style="background:var(--green-grad);color:#fff;box-shadow:0 6px 14px rgba(11,191,99,.3)">确认发布</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 23 SH DETAIL 闲置详情 ================= -->
+<section class="screen has-bar" data-screen="sh-detail">
+  <div class="detail-hero">
+    <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=780&h=480&fit=crop&crop=entropy&auto=format&q=70" alt="">
+    <div class="subnav on-dark" style="position:absolute;top:40px;left:0;right:0;background:linear-gradient(to bottom,rgba(0,0,0,.28),transparent)">
+      <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+      <div class="right">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M5 15v5h14v-5"/></svg>
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+      </div>
+    </div>
+    <span class="dots">1 / 2</span>
+  </div>
+
+  <div class="detail-title">
+    <div class="price-row" style="margin-top:0">
+      <span class="big">¥2,399</span>
+      <span class="old">原价 ¥4,399</span>
+      <span class="sp"></span>
+      <span class="people">浏览 86 · 收藏 12</span>
+    </div>
+    <h1 style="font-size:17px;margin-top:10px">iPad Air 5 64G 天蓝色 95新 国行在保</h1>
+    <div class="tags" style="margin-top:9px"><span class="tag tag-green">95新</span><span class="tag tag-blue">国行在保</span><span class="tag tag-orange">可小刀</span><span class="tag">校内面交</span></div>
+  </div>
+
+  <div class="card">
+    <div class="info-row" style="padding:12px 15px">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/></svg>
+      成色<span class="sp"></span><span class="v">95新 · 屏幕无划痕 · 带壳贴膜使用</span>
+    </div>
+    <div class="info-row" style="padding:12px 15px">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+      交易方式<span class="sp"></span><span class="v">校内面交 · 滨江校区 3 号宿舍楼</span>
+    </div>
+    <div class="info-row" style="padding:12px 15px">
+      <svg class="ic" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+      宝贝描述<span class="sp"></span><span class="v">今天 10:24 发布</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title"><h2>描述</h2></div>
+    <div class="desc" style="padding-top:0">毕业清仓！去年 10 月官网购入，国行在保到 2027 年 10 月，一直贴膜带壳使用，屏幕无划痕、电池效率 91%。配件：原装充电器 + 双面夹 Keyboard 一并送。可当面验机，支持驿站代发～</div>
+  </div>
+
+  <div class="card">
+    <div class="publisher">
+      <img class="av" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=90&h=90&fit=crop&crop=faces&auto=format&q=70">
+      <div>
+        <div class="nm">林小满</div>
+        <div class="sub">信用 720 · 在卖 6 件 · 滨江校区</div>
+      </div>
+      <span class="sp"></span>
+      <button style="height:30px;padding:0 14px;border-radius:15px;border:1px solid var(--line);color:var(--t2);font-size:12px">ta的闲置</button>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <div class="ab-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>收藏</div>
+    <div class="ab-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 9h8M8 13h5"/></svg>聊一聊</div>
+    <button class="ab-main">立即购买 ¥2,399</button>
+  </div>
+</section>
+
+<!-- ================= 24 SH BUY 确认购买 ================= -->
+<section class="screen has-bar" data-screen="sh-buy">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav" style="background:var(--green)">
+    <div class="back" style="color:#fff"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1 style="color:#fff">确认购买</h1>
+  </div>
+
+  <div class="card" style="padding:14px">
+    <div style="display:flex;gap:11px">
+      <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=200&h=200&fit=crop&crop=entropy&auto=format&q=70" style="width:76px;height:76px;border-radius:10px">
+      <div style="flex:1;min-width:0">
+        <h4 style="font-size:13px;font-weight:600;line-height:1.4">iPad Air 5 64G 天蓝色 95新 国行在保</h4>
+        <div style="margin-top:5px"><span class="tag tag-green">95新</span><span class="tag">校内面交</span></div>
+        <div style="display:flex;align-items:center;margin-top:8px">
+          <b style="font-size:16px;color:var(--price);font-weight:800">¥2,399</b>
+          <span style="margin-left:auto;font-size:12px;color:var(--t2)">×1</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #F5F6F6">
+      <img class="av" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=faces&auto=format&q=70" style="width:26px;height:26px">
+      <span style="font-size:12px;color:var(--t2)">卖家 <b style="color:var(--t1)">林小满</b> · 信用 720</span>
+      <span style="margin-left:auto;font-size:12px;color:var(--green-deep);font-weight:600;display:flex;align-items:center;gap:3px"><svg class="ic" style="width:13px;height:13px" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 9h8M8 13h5"/></svg>聊一聊</span>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow">
+      <label>交易方式</label>
+      <div class="chip-pick" style="flex:1">
+        <span class="on">校内面交</span><span>驿站代发</span><span>快递包邮</span>
+      </div>
+    </div>
+    <div class="frow">
+      <label>面交地点</label>
+      <span class="v">滨江校区西门驿站旁</span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="frow">
+      <label>联系电话</label>
+      <span class="v placeholder">默认使用平台虚拟号保护隐私</span>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow"><label>支付方式</label><span class="sp"></span>
+      <span class="v" style="color:var(--green-deep);font-weight:600">钱包余额 ¥3,600</span>
+      <i style="width:18px;height:18px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center"><svg class="ic" style="width:11px;height:11px;stroke:#fff;stroke-width:3" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></i>
+    </div>
+    <div class="frow"><label>买家留言</label><span class="v placeholder">选填，留言给卖家（20 字以内）</span></div>
+  </div>
+
+  <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:9px;background:#FFF8F2">
+    <i style="width:30px;height:30px;border-radius:9px;background:var(--orange-soft);display:flex;align-items:center;justify-content:center;color:var(--orange-deep);flex:none"><svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg></i>
+    <p style="font-size:11px;color:var(--t2);line-height:1.5">支付后款项由平台托管，确认收货后结算给卖家；取消订单将全额退款。</p>
+  </div>
+
+  <div class="action-bar">
+    <div style="flex:1;display:flex;align-items:baseline;gap:6px;padding-left:4px">
+      <span style="font-size:12px;color:var(--t2)">合计</span>
+      <b style="font-size:22px;font-weight:800;color:var(--price)">¥2,399</b>
+    </div>
+    <button class="ab-main" style="flex:none;width:140px">确认支付</button>
+  </div>
+</section>
+
+<!-- ================= 25 SH ORDERS 闲置订单 ================= -->
+<section class="screen" data-screen="sh-orders">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>闲置订单</h1>
+    <div class="right"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+  </div>
+
+  <div style="display:flex;background:#fff;padding:0 8px;border-bottom:1px solid var(--line)">
+    <b style="flex:1;text-align:center;font-size:15px;font-weight:800;position:relative;padding:12px 0">我买到的
+      <i style="position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:22px;height:3px;border-radius:2px;background:var(--green)"></i></b>
+    <span style="flex:1;text-align:center;font-size:13px;color:var(--t2);padding:12px 0">我卖出的</span>
+  </div>
+  <div class="cat-chips" style="padding-bottom:0">
+    <span class="on">全部</span><span>待支付</span><span>待发货</span><span>待收货</span><span>已完成</span>
+  </div>
+
+  <!-- 待支付 -->
+  <div class="card" style="padding:13px">
+    <div style="display:flex;align-items:center;font-size:12px">
+      <span style="font-size:11px;color:var(--t3)">订单号 SH202610020941</span>
+      <span class="tag tag-red" style="margin:0 0 0 auto">待支付</span>
+    </div>
+    <div style="display:flex;gap:11px;margin-top:11px">
+      <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=180&h=180&fit=crop&crop=entropy&auto=format&q=70" style="width:66px;height:66px;border-radius:10px">
+      <div style="flex:1">
+        <h4 style="font-size:13px;line-height:1.45">iPad Air 5 64G 天蓝色 95新 国行在保</h4>
+        <p style="font-size:11px;color:var(--t3);margin-top:5px">卖家 林小满 · 校内面交</p>
+        <b style="font-size:15px;color:var(--price);font-weight:800">¥2,399</b>
+      </div>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:11px">
+      <button style="flex:1;height:34px;border-radius:17px;border:1px solid var(--line);font-size:13px;color:var(--t2)">联系卖家</button>
+      <button style="flex:1;height:34px;border-radius:17px;background:var(--green-grad);color:#fff;font-size:13px;font-weight:700">去支付</button>
+    </div>
+  </div>
+
+  <!-- 待收货 -->
+  <div class="card" style="padding:13px">
+    <div style="display:flex;align-items:center;font-size:12px">
+      <span style="font-size:11px;color:var(--t3)">订单号 SH202610010837</span>
+      <span class="tag tag-blue" style="margin:0 0 0 auto">待收货</span>
+    </div>
+    <div style="display:flex;gap:11px;margin-top:11px">
+      <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=180&h=180&fit=crop&crop=entropy&auto=format&q=70" style="width:66px;height:66px;border-radius:10px">
+      <div style="flex:1">
+        <h4 style="font-size:13px;line-height:1.45">索尼 WH-1000XM4 头戴降噪耳机 98新</h4>
+        <p style="font-size:11px;color:var(--t3);margin-top:5px">卖家 阿凯 · 已发货 · 驿站代发</p>
+        <b style="font-size:15px;color:var(--price);font-weight:800">¥680</b>
+      </div>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:11px">
+      <button style="flex:1;height:34px;border-radius:17px;border:1px solid var(--line);font-size:13px;color:var(--t2)">查看物流</button>
+      <button style="flex:1;height:34px;border-radius:17px;background:var(--green-grad);color:#fff;font-size:13px;font-weight:700">确认收货</button>
+    </div>
+  </div>
+
+  <!-- 已完成 -->
+  <div class="card" style="padding:13px;opacity:.92">
+    <div style="display:flex;align-items:center;font-size:12px">
+      <span style="font-size:11px;color:var(--t3)">订单号 SH202609281620</span>
+      <span class="tag" style="margin:0 0 0 auto">已完成</span>
+    </div>
+    <div style="display:flex;gap:11px;margin-top:11px">
+      <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=180&h=180&fit=crop&crop=entropy&auto=format&q=70" style="width:66px;height:66px;border-radius:10px">
+      <div style="flex:1">
+        <h4 style="font-size:13px;line-height:1.45">考研数学英语全套资料 带重点笔记</h4>
+        <p style="font-size:11px;color:var(--t3);margin-top:5px">9 月 28 日完成 · 面交验货</p>
+        <b style="font-size:15px;color:var(--price);font-weight:800">¥88</b>
+      </div>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:11px">
+      <button style="flex:1;height:34px;border-radius:17px;border:1px solid var(--line);font-size:13px;color:var(--t2)">删除订单</button>
+      <button style="flex:1;height:34px;border-radius:17px;background:var(--orange-grad);color:#fff;font-size:13px;font-weight:700">立即评价</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 26 CHAT LIST 私信会话 ================= -->
+<section class="screen" data-screen="chat-list">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>私信</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t3)">全部已读</span></div>
+  </div>
+
+  <div class="card" style="margin-top:10px;padding:11px 14px;display:flex;align-items:center;gap:9px;background:var(--green-soft)">
+    <i style="width:32px;height:32px;border-radius:10px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><svg class="ic" style="width:16px;height:16px;stroke:#fff" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></i>
+    <p style="font-size:11.5px;color:var(--green-deep);line-height:1.5">交易沟通请留在平台内，脱离平台支付不受保护</p>
+  </div>
+
+  <div class="card" style="margin-top:10px;padding:2px 0">
+    <div class="msg-row">
+      <img class="av" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=90&h=90&fit=crop&crop=faces&auto=format&q=70">
+      <div class="msg-main">
+        <div class="l1"><b>林小满</b><span>刚刚</span></div>
+        <div class="l2">可以，今天下午 5 点西门驿站旁面交～</div>
+      </div>
+      <i class="msg-dot"></i>
+    </div>
+    <div class="msg-row">
+      <img class="av" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=90&h=90&fit=crop&crop=faces&auto=format&q=70">
+      <div class="msg-main">
+        <div class="l1"><b>阿凯</b><span>5 分钟前</span></div>
+        <div class="l2">键盘 150 出吗？今晚就能去取</div>
+      </div>
+      <i class="msg-dot"></i>
+    </div>
+    <div class="msg-row">
+      <img class="av" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=90&h=90&fit=crop&crop=faces&auto=format&q=70">
+      <div class="msg-main">
+        <div class="l1"><b>张同学</b><span>1 小时前</span></div>
+        <div class="l2">考研资料给你留着，晚上送到你楼下</div>
+      </div>
+    </div>
+    <div class="msg-row">
+      <img class="av" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=90&h=90&fit=crop&crop=faces&auto=format&q=70">
+      <div class="msg-main">
+        <div class="l1"><b>桃子汽水</b><span>昨天</span></div>
+        <div class="l2">已确认收货啦，东西很满意，谢谢！</div>
+      </div>
+    </div>
+    <div class="msg-row" style="border-top:1px solid #F5F6F6">
+      <i style="width:46px;height:46px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;color:var(--green-deep);flex:none"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 3v18"/></svg></i>
+      <div class="msg-main">
+        <div class="l1"><b>校圈小助手</b><span>昨天 10:26</span></div>
+        <div class="l2">你的闲置「iPad Air 5」已通过审核，已上架闲置市场</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 27 CHAT 聊天详情 ================= -->
+<section class="screen" data-screen="chat" style="padding-bottom:70px">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>林小满</h1>
+    <div class="right"><svg class="ic" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></div>
+  </div>
+
+  <div class="chat-ctx">
+    <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=100&h=100&fit=crop&crop=entropy&auto=format&q=70">
+    <div class="t">
+      <b>iPad Air 5 64G 天蓝色 95新 国行在保</b>
+      <span>¥2,399</span>
+    </div>
+    <button>立即购买</button>
+  </div>
+
+  <div class="chat-wrap">
+    <span class="bubble-time">今天 14:02</span>
+    <div class="bubble">你好～iPad 还在的，95 新无划痕，配件都在 🙌</div>
+    <div class="bubble">你方便今天下午面交吗？可以当面验机</div>
+    <div class="bubble me">在的在的！下午 5 点可以吗？</div>
+    <div class="bubble me">西门驿站旁边行不行？人多方便验机</div>
+    <div class="bubble">没问题，5 点见～到了我给你发定位</div>
+  </div>
+
+  <div class="chat-tip">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
+    交易提醒：请勿脱离平台私下转账，托管支付更安心
+  </div>
+
+  <div class="quick-chips">
+    <span>还在吗？</span><span>能刀一点吗？</span><span>什么时候方便面交？</span><span>可以看看实物吗？</span>
+  </div>
+
+  <div class="chat-bar">
+    <div class="plus"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+    <input placeholder="说点什么…">
+    <div class="send"><svg class="ic" viewBox="0 0 24 24" style="stroke:#fff;fill:none"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg></div>
+  </div>
+</section>
+
+<!-- ================= 28 SH MY LIST 我发布的 ================= -->
+<section class="screen" data-screen="sh-my-list">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>我发布的</h1>
+    <div class="right"><span style="color:var(--green-deep);font-weight:600">发布闲置</span></div>
+  </div>
+
+  <div class="cat-chips">
+    <span class="on">在售 3</span><span>已售 12</span><span>已下架 2</span>
+  </div>
+
+  <div class="card" style="padding:3px 0;margin-top:8px">
+    <div class="sh-item">
+      <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+      <div style="flex:1;min-width:0">
+        <h4>iPad Air 5 64G 天蓝色 95新 国行在保</h4>
+        <div style="margin-top:5px"><span class="tag tag-green">95新</span><span class="tag tag-blue">审核通过</span></div>
+        <div class="meta">浏览 86 · 想要 12 · 今天 10:24 发布</div>
+        <div class="prow"><b>¥2,399</b><span style="margin-left:auto;display:flex;gap:14px;font-size:12px;color:var(--t2)"><span>编辑</span><span style="color:var(--price)">下架</span></span></div>
+      </div>
+    </div>
+    <div class="sh-item">
+      <img src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+      <div style="flex:1;min-width:0">
+        <h4>IKBC C87 机械键盘 白色红轴 箱说全</h4>
+        <div style="margin-top:5px"><span class="tag tag-green">99新</span><span class="tag tag-blue">审核通过</span></div>
+        <div class="meta">浏览 42 · 想要 5 · 昨天 20:15 发布</div>
+        <div class="prow"><b>¥150</b><span style="margin-left:auto;display:flex;gap:14px;font-size:12px;color:var(--t2)"><span>编辑</span><span style="color:var(--price)">下架</span></span></div>
+      </div>
+    </div>
+    <div class="sh-item" style="opacity:.55">
+      <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+      <div style="flex:1;min-width:0">
+        <h4>考研数学英语全套资料 带重点笔记</h4>
+        <div style="margin-top:5px"><span class="tag">8成新</span><span class="tag tag-red">审核中</span></div>
+        <div class="meta">预计 10 分钟内完成审核</div>
+        <div class="prow"><b>¥88</b><span style="margin-left:auto;font-size:12px;color:var(--t3)">审核中不可编辑</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:14px 14px 0;font-size:11px;color:var(--t3);line-height:1.7;text-align:center">下架后宝贝不再展示，可随时重新上架</div>
+</section>
+
+<!-- ================= 29 SH ORDER DETAIL 闲置订单详情 ================= -->
+<section class="screen has-bar" data-screen="sh-order-detail">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav" style="background:var(--green)">
+    <div class="back" style="color:#fff"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1 style="color:#fff">订单详情</h1>
+    <div class="right" style="color:rgba(255,255,255,.8)"><span>帮助</span></div>
+  </div>
+
+  <!-- 状态横幅 -->
+  <div style="background:var(--green-grad);padding:14px 18px 22px;color:#fff">
+    <div style="display:flex;align-items:center;gap:8px">
+      <svg class="ic" style="width:22px;height:22px;stroke:#fff" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      <b style="font-size:17px">等待买家收货</b>
+    </div>
+    <p style="font-size:12px;opacity:.85;margin-top:6px;line-height:1.6">卖家已于今天 15:20 发货，请在收到货后及时确认；如 7 天内未操作，系统将自动确认收货。</p>
+  </div>
+
+  <!-- 进度时间线 -->
+  <div class="card" style="margin-top:-12px;position:relative;z-index:2">
+    <div class="sec-title"><h2>订单进度</h2><span class="more">订单号 SH202610010837</span></div>
+    <div style="padding:4px 16px 16px">
+      <div style="display:flex;gap:12px">
+        <div style="display:flex;flex-direction:column;align-items:center"><i style="width:10px;height:10px;border-radius:50%;background:var(--green)"></i><i style="width:2px;flex:1;background:var(--green);opacity:.3"></i></div>
+        <div style="padding-bottom:16px"><b style="font-size:13px">卖家已发货</b><p style="font-size:11px;color:var(--t3);margin-top:3px">今天 15:20 · 驿站代发 · 取件码 8842</p></div>
+      </div>
+      <div style="display:flex;gap:12px">
+        <div style="display:flex;flex-direction:column;align-items:center"><i style="width:10px;height:10px;border-radius:50%;background:var(--green)"></i><i style="width:2px;flex:1;background:var(--green);opacity:.3"></i></div>
+        <div style="padding-bottom:16px"><b style="font-size:13px">买家已支付</b><p style="font-size:11px;color:var(--t3);margin-top:3px">今天 14:05 · 钱包托管 ¥680.00</p></div>
+      </div>
+      <div style="display:flex;gap:12px">
+        <div style="display:flex;flex-direction:column;align-items:center"><i style="width:10px;height:10px;border-radius:50%;background:var(--green)"></i></div>
+        <div><b style="font-size:13px">订单创建</b><p style="font-size:11px;color:var(--t3);margin-top:3px">今天 14:02 · 由聊天发起</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 商品信息 -->
+  <div class="card">
+    <div style="padding:13px 14px;display:flex;gap:11px;align-items:center">
+      <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=160&h=160&fit=crop&crop=entropy&auto=format&q=70" style="width:62px;height:62px;border-radius:10px">
+      <div style="flex:1;min-width:0">
+        <h4 style="font-size:13px;line-height:1.4">索尼 WH-1000XM4 头戴降噪耳机 98新</h4>
+        <p style="font-size:11px;color:var(--t3);margin-top:4px">卖家 阿凯 · 信用 712</p>
+      </div>
+      <b style="font-size:15px;color:var(--price);font-weight:800">¥680</b>
+    </div>
+    <div style="border-top:1px solid #F5F6F6;padding:11px 14px;display:flex;justify-content:space-between;font-size:12px;color:var(--t2)">
+      <span>交易方式</span><span style="color:var(--t1)">驿站代发</span>
+    </div>
+    <div style="border-top:1px solid #F5F6F6;padding:11px 14px;display:flex;justify-content:space-between;font-size:12px;color:var(--t2)">
+      <span>实付款</span><b style="color:var(--price);font-size:15px">¥680.00</b>
+    </div>
+  </div>
+
+  <!-- 托管提示 -->
+  <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:9px;background:#FFF8F2">
+    <i style="width:30px;height:30px;border-radius:9px;background:var(--orange-soft);display:flex;align-items:center;justify-content:center;color:var(--orange-deep);flex:none"><svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg></i>
+    <p style="font-size:11px;color:var(--t2);line-height:1.5">货款由平台托管，确认收货后结算给卖家；未收到货请勿提前确认。</p>
+  </div>
+
+  <div class="action-bar">
+    <button class="ab-duo" style="background:#F2F4F3;color:var(--t2)">取消订单</button>
+    <button class="ab-duo" style="background:#F2F4F3;color:var(--green-deep)">联系卖家</button>
+    <button class="ab-main" style="flex:1.4">确认收货</button>
+  </div>
+</section>
+
+<!-- ================= 30 SH RATE 评价订单 ================= -->
+<section class="screen has-bar" data-screen="sh-rate">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>评价订单</h1>
+    <div class="right"><span style="color:var(--t3)">规则</span></div>
+  </div>
+
+  <!-- 商品回顾 -->
+  <div class="card" style="padding:12px 14px;display:flex;gap:11px;align-items:center">
+    <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=160&h=160&fit=crop&crop=entropy&auto=format&q=70" style="width:54px;height:54px;border-radius:10px">
+    <div style="flex:1;min-width:0">
+      <h4 style="font-size:13px;line-height:1.4">考研数学英语全套资料 带重点笔记</h4>
+      <p style="font-size:11px;color:var(--t3);margin-top:4px">卖家 桃子汽水 · 9 月 28 日完成</p>
+    </div>
+  </div>
+
+  <!-- 评分 -->
+  <div class="form-card">
+    <div class="frow">
+      <label>总体评价</label>
+      <div style="display:flex;gap:6px;flex:1">
+        <svg class="ic" style="width:26px;height:26px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:26px;height:26px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:26px;height:26px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:26px;height:26px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:26px;height:26px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+      </div>
+    </div>
+    <div class="frow" style="align-items:flex-start">
+      <textarea rows="4" placeholder="宝贝成色如何？卖家服务怎么样？说说你的感受…">资料很全，笔记也清楚，学姐人很好还送了真题！</textarea>
+    </div>
+    <div class="frow">
+      <label>上传图片</label>
+      <div class="upload-grid" style="flex:1;padding:0;grid-template-columns:repeat(4,1fr)">
+        <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=120&h=120&fit=crop&crop=entropy&auto=format&q=70" style="border-radius:8px">
+        <div class="upload-add" style="aspect-ratio:1;font-size:9px"><svg class="ic" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M12 5v14M5 12h14"/></svg>添加</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分项评分 -->
+  <div class="form-card">
+    <div class="frow">
+      <label>宝贝描述相符</label>
+      <div style="display:flex;gap:4px;flex:1">
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+      </div>
+    </div>
+    <div class="frow">
+      <label>卖家服务态度</label>
+      <div style="display:flex;gap:4px;flex:1">
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+      </div>
+    </div>
+    <div class="frow">
+      <label>交易顺畅度</label>
+      <div style="display:flex;gap:4px;flex:1">
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg class="ic" style="width:20px;height:20px;color:var(--amber);fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="ab-main" style="width:100%">提交评价</button>
+  </div>
+</section>
+
+<style>
+/* ============ 补充屏：发货 / 退款 / TA的闲置 / 钱包 ============ */
+body[data-screen="sh-ship"] .screen[data-screen="sh-ship"],
+body[data-screen="sh-refund"] .screen[data-screen="sh-refund"],
+body[data-screen="sh-user"] .screen[data-screen="sh-user"],
+body[data-screen="wallet"] .screen[data-screen="wallet"],
+body[data-screen="recharge"] .screen[data-screen="recharge"],
+body[data-screen="withdraw"] .screen[data-screen="withdraw"],
+body[data-screen="address"] .screen[data-screen="address"],
+body[data-screen="admin-audit"] .screen[data-screen="admin-audit"]{display:block}
+
+/* 退款进度时间线 */
+.tl{padding:4px 14px 14px}
+.tl-row{display:flex;gap:11px;position:relative;padding-bottom:20px}
+.tl-row:last-child{padding-bottom:2px}
+.tl-row::before{content:"";position:absolute;left:7px;top:18px;bottom:0;width:2px;background:#ECF0EE}
+.tl-row:last-child::before{display:none}
+.tl-dot{width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #D6DAD8;flex:none;margin-top:2px;position:relative;z-index:1}
+.tl-row.done .tl-dot{border-color:var(--green);background:var(--green)}
+.tl-row.doing .tl-dot{border-color:var(--orange);background:#fff;box-shadow:0 0 0 4px var(--orange-soft)}
+.tl-main{flex:1;min-width:0}
+.tl-main b{font-size:13.5px;display:flex;align-items:center;gap:6px}
+.tl-main p{font-size:11px;color:var(--t3);margin-top:3px;line-height:1.5}
+.tl-row.doing b{color:var(--orange-deep)}
+
+/* 钱包 */
+.wallet-head{margin:10px 12px 0;border-radius:18px;background:var(--green-grad);color:#fff;padding:20px 18px 16px;position:relative;overflow:hidden;box-shadow:0 10px 24px rgba(11,191,99,.28)}
+.wallet-head::before{content:"";position:absolute;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.10);top:-80px;right:-40px}
+.w-row{display:flex;align-items:center;gap:11px;padding:13px 15px;background:#fff}
+.w-row+.w-row{border-top:1px solid #F5F6F6}
+.w-ic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
+.w-ic svg{width:19px;height:19px}
+.w-main{flex:1;min-width:0}
+.w-main b{font-size:13.5px;display:block}
+.w-main span{font-size:11px;color:var(--t3);margin-top:3px;display:block}
+.w-amt{font-size:15px;font-weight:800}
+</style>
+
+<!-- ================= 31 SH SHIP 卖家发货 ================= -->
+<section class="screen has-bar" data-screen="sh-ship">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>我要发货</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t3)">发货规则</span></div>
+  </div>
+
+  <!-- 订单与买家 -->
+  <div class="card" style="padding-bottom:4px">
+    <div style="padding:12px 14px 0;display:flex;align-items:center">
+      <span style="font-size:12px;color:var(--t3)">订单 SH20261002008</span>
+      <span class="tag tag-orange" style="margin-left:auto">待发货</span>
+    </div>
+    <div style="padding:11px 14px;display:flex;gap:11px;align-items:center">
+      <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=160&h=160&fit=crop&crop=entropy&auto=format&q=70" style="width:54px;height:54px;border-radius:10px">
+      <div style="flex:1;min-width:0">
+        <h4 style="font-size:13px;line-height:1.4">索尼 WH-1000XM4 头戴降噪耳机 98新</h4>
+        <p style="font-size:11px;color:var(--t3);margin-top:4px">买家 林小满 · 虚拟号 95013****</p>
+      </div>
+      <b style="font-size:15px;color:var(--price);font-weight:800">¥680</b>
+    </div>
+    <div style="border-top:1px solid #F5F6F6;padding:11px 14px;display:flex;justify-content:space-between;font-size:12px;color:var(--t2)">
+      <span>交易方式</span><span style="color:var(--t1)">校内面交</span>
+    </div>
+    <div style="border-top:1px solid #F5F6F6;padding:11px 14px;display:flex;justify-content:space-between;font-size:12px;color:var(--t2)">
+      <span>面交地点</span><span style="color:var(--t1)">滨江校区西门驿站旁</span>
+    </div>
+  </div>
+
+  <!-- 发货信息 -->
+  <div class="form-card">
+    <div class="frow">
+      <label>发货方式</label>
+      <div class="chip-pick" style="flex:1">
+        <span class="on">校内面交</span><span>驿站代发</span><span>快递</span>
+      </div>
+    </div>
+    <div class="frow">
+      <label>约定时间</label>
+      <span class="v">今天 14:00（已与买家约定）</span>
+    </div>
+    <div class="frow" style="align-items:flex-start">
+      <label style="padding-top:12px">发货凭证</label>
+      <div class="upload-grid" style="flex:1;padding:8px 0 12px;grid-template-columns:repeat(4,1fr)">
+        <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120&h=120&fit=crop&crop=entropy&auto=format&q=70" style="border-radius:8px">
+        <div class="upload-add" style="aspect-ratio:1;font-size:9px"><svg class="ic" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M12 5v14M5 12h14"/></svg>拍照</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:9px;background:var(--green-soft)">
+    <i style="width:30px;height:30px;border-radius:9px;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;flex:none"><svg class="ic" style="width:15px;height:15px;stroke:#fff" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></i>
+    <p style="font-size:11px;color:var(--green-deep);line-height:1.5">买家确认收货后，货款 ¥680.00 将立即结算到你的钱包余额。</p>
+  </div>
+
+  <div class="action-bar">
+    <button class="ab-duo" style="background:#F2F4F3;color:var(--green-deep)">联系买家</button>
+    <button class="ab-main" style="flex:1.6">确认发货</button>
+  </div>
+</section>
+
+<!-- ================= 32 SH REFUND 退款/售后 ================= -->
+<section class="screen has-bar" data-screen="sh-refund">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>退款 / 售后</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t3)">售后规则</span></div>
+  </div>
+
+  <!-- 状态卡 -->
+  <div class="card" style="padding:14px;background:var(--orange-soft)">
+    <div style="display:flex;align-items:center;gap:8px">
+      <b style="font-size:15px;color:var(--orange-deep)">退款处理中</b>
+      <span style="margin-left:auto;font-size:11px;color:var(--orange-deep)">剩 23:12:05</span>
+    </div>
+    <p style="font-size:11.5px;color:var(--t2);margin-top:6px;line-height:1.5">卖家将在 24 小时内处理，超时未处理将自动同意退款；卖家拒绝后可申请平台介入。</p>
+  </div>
+
+  <!-- 进度时间线 -->
+  <div class="card">
+    <div class="sec-title"><h2>退款进度</h2><span class="more">订单 SH20261002009</span></div>
+    <div class="tl">
+      <div class="tl-row done">
+        <i class="tl-dot"></i>
+        <div class="tl-main"><b>提交退款申请</b><p>今天 10:23 · 原因：与描述不符</p></div>
+      </div>
+      <div class="tl-row doing">
+        <i class="tl-dot"></i>
+        <div class="tl-main"><b>等待卖家处理</b><p>剩余 23:12:05，超时自动同意退款</p></div>
+      </div>
+      <div class="tl-row">
+        <i class="tl-dot"></i>
+        <div class="tl-main"><b style="color:var(--t3)">平台退款</b><p>卖家同意后 1-3 分钟内原路退回钱包</p></div>
+      </div>
+      <div class="tl-row">
+        <i class="tl-dot"></i>
+        <div class="tl-main"><b style="color:var(--t3)">退款完成</b><p>退款金额 ¥680.00</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 退款信息 -->
+  <div class="form-card">
+    <div class="frow"><label>退款金额</label><span class="v" style="color:var(--price);font-weight:700">¥680.00（退回钱包余额）</span></div>
+    <div class="frow"><label>退款原因</label><span class="v">与描述不符 · 耳机有划痕</span></div>
+    <div class="frow" style="align-items:flex-start">
+      <label style="padding-top:12px">凭证</label>
+      <div class="upload-grid" style="flex:1;padding:8px 0 12px;grid-template-columns:repeat(4,1fr)">
+        <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120&h=120&fit=crop&crop=entropy&auto=format&q=70" style="border-radius:8px">
+        <img src="https://images.unsplash.com/photo-1583394838336-acd977736f90?w=120&h=120&fit=crop&crop=entropy&auto=format&q=70" style="border-radius:8px">
+      </div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="ab-duo" style="background:#F2F4F3;color:var(--t2)">撤销申请</button>
+    <button class="ab-main" style="flex:1.6">联系卖家</button>
+  </div>
+</section>
+
+<!-- ================= 33 SH USER TA的闲置 ================= -->
+<section class="screen" data-screen="sh-user">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>TA 的闲置</h1>
+    <div class="right"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none"/></svg></div>
+  </div>
+
+  <!-- 卖家卡片 -->
+  <div class="card" style="padding:15px 14px 13px">
+    <div style="display:flex;align-items:center;gap:11px">
+      <img class="av" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop&crop=faces&auto=format&q=70" style="width:56px;height:56px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:800;display:flex;align-items:center;gap:6px">阿澈
+          <span style="font-size:10px;font-weight:600;color:var(--green-deep);background:var(--green-soft);border-radius:5px;padding:2px 6px">已认证 · 大四</span>
+        </div>
+        <p style="font-size:11px;color:var(--t3);margin-top:4px">滨江校区 · 发货快，平均 2 小时内响应</p>
+      </div>
+      <button class="btn-follow" style="height:30px;padding:0 15px">+ 关注</button>
+    </div>
+    <div style="display:flex;margin-top:14px;padding-top:12px;border-top:1px solid #F5F6F6">
+      <div style="flex:1;text-align:center"><b style="font-size:16px;font-weight:800">712</b><p style="font-size:10px;color:var(--t3);margin-top:3px">信用分</p></div>
+      <div style="flex:1;text-align:center"><b style="font-size:16px;font-weight:800">12</b><p style="font-size:10px;color:var(--t3);margin-top:3px">在售</p></div>
+      <div style="flex:1;text-align:center"><b style="font-size:16px;font-weight:800">38</b><p style="font-size:10px;color:var(--t3);margin-top:3px">已售</p></div>
+      <div style="flex:1;text-align:center"><b style="font-size:16px;font-weight:800;color:var(--green-deep)">98%</b><p style="font-size:10px;color:var(--t3);margin-top:3px">好评率</p></div>
+    </div>
+  </div>
+
+  <div class="cat-chips">
+    <span class="on">在售 12</span><span>已售 38</span><span>评价 36</span>
+  </div>
+
+  <div class="card" style="padding:3px 0;margin-bottom:14px">
+    <div class="sh-item">
+      <img src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+      <div style="flex:1;min-width:0">
+        <h4>IKBC C87 机械键盘 白色红轴 箱说全</h4>
+        <div style="margin-top:5px"><span class="tag tag-green">99新</span><span class="tag">数码</span></div>
+        <div class="meta">滨江校区 · 1 小时前</div>
+        <div class="prow"><b>¥150</b><span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>5</span></div>
+      </div>
+    </div>
+    <div class="sh-item">
+      <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+      <div style="flex:1;min-width:0">
+        <h4>考研英语真题黄皮书 2026 版 几乎全新</h4>
+        <div style="margin-top:5px"><span class="tag tag-green">95新</span><span class="tag">图书教材</span></div>
+        <div class="meta">滨江校区 · 3 小时前</div>
+        <div class="prow"><b>¥25</b><span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>9</span></div>
+      </div>
+    </div>
+    <div class="sh-item">
+      <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=220&h=220&fit=crop&crop=entropy&auto=format&q=70">
+      <div style="flex:1;min-width:0">
+        <h4>哑铃一对 10kg 可调节 宿舍健身神器</h4>
+        <div style="margin-top:5px"><span class="tag tag-green">9新</span><span class="tag">运动器材</span></div>
+        <div class="meta">滨江校区 · 昨天</div>
+        <div class="prow"><b>¥45</b><span><svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/></svg>3</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 34 WALLET 我的钱包 ================= -->
+<section class="screen" data-screen="wallet">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>我的钱包</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t3)">常见问题</span></div>
+  </div>
+
+  <!-- 余额卡 -->
+  <div class="wallet-head">
+    <div style="position:relative">
+      <p style="font-size:12px;opacity:.85">钱包余额（元）</p>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:8px">
+        <b style="font-size:36px;font-weight:800;line-height:1.1">86.50</b>
+        <div style="display:flex;gap:9px">
+          <span style="height:32px;padding:0 16px;border-radius:16px;border:1.2px solid rgba(255,255,255,.7);font-size:12px;font-weight:700;display:inline-flex;align-items:center">提现</span>
+          <span style="height:32px;padding:0 16px;border-radius:16px;background:#fff;color:var(--green-deep);font-size:12px;font-weight:700;display:inline-flex;align-items:center">充值</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.25);font-size:11px">
+        <span>托管中 <b style="font-size:13px">¥680.00</b></span>
+        <span>待结算 <b style="font-size:13px">1 笔</b></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 待结算 -->
+  <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+    <i class="w-ic" style="background:var(--orange-soft);color:var(--orange-deep)"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 3"/></svg></i>
+    <div class="w-main">
+      <b>索尼 WH-1000XM4 · 待买家确认收货</b>
+      <span>确认后自动入账余额</span>
+    </div>
+    <b class="w-amt" style="color:var(--orange-deep)">+680.00</b>
+  </div>
+
+  <!-- 收支明细 -->
+  <div class="sec-title" style="padding-left:16px"><h2>收支明细</h2><span class="more">全部 <svg class="ic" style="width:12px;height:12px" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+  <div class="card" style="margin-top:0;padding:2px 0;margin-bottom:14px">
+    <div class="w-row">
+      <i class="w-ic" style="background:var(--green-soft);color:var(--green-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg></i>
+      <div class="w-main"><b>闲置结算 · 考研资料全套</b><span>今天 09:12 · 买家已确认收货</span></div>
+      <b class="w-amt" style="color:var(--green-deep)">+35.00</b>
+    </div>
+    <div class="w-row">
+      <i class="w-ic" style="background:#F1EAFF;color:#8B5CF6"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h16l-1.3 12.1a2 2 0 0 1-2 1.9H7.3a2 2 0 0 1-2-1.9z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></svg></i>
+      <div class="w-main"><b>购买闲置 · iPad Air 5</b><span>昨天 18:40 · 平台托管中</span></div>
+      <b class="w-amt">-2,399.00</b>
+    </div>
+    <div class="w-row">
+      <i class="w-ic" style="background:var(--orange-soft);color:var(--orange-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></i>
+      <div class="w-main"><b>退款入账 · 机械键盘</b><span>昨天 15:02 · 卖家同意退款</span></div>
+      <b class="w-amt" style="color:var(--green-deep)">+150.00</b>
+    </div>
+    <div class="w-row">
+      <i class="w-ic" style="background:#EAF2FF;color:#3B82F6"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/></svg></i>
+      <div class="w-main"><b>余额充值 · 微信支付</b><span>09-30 12:20</span></div>
+      <b class="w-amt" style="color:var(--green-deep)">+100.00</b>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 35 RECHARGE 余额充值 ================= -->
+<section class="screen has-bar" data-screen="recharge">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>余额充值</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t3)">充值记录</span></div>
+  </div>
+
+  <div class="card" style="padding:16px 14px;display:flex;align-items:center;gap:10px">
+    <i class="w-ic" style="background:var(--green-soft);color:var(--green-deep)"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/></svg></i>
+    <div class="w-main"><b>当前余额</b><span>充值仅用于闲置交易担保支付</span></div>
+    <b style="font-size:20px;font-weight:800;color:var(--green-deep)">¥86.50</b>
+  </div>
+
+  <div class="form-card">
+    <div class="frow">
+      <label>充值金额</label>
+      <div class="chip-pick" style="flex:1">
+        <span>¥10</span><span class="on">¥50</span><span>¥100</span><span>¥200</span>
+      </div>
+    </div>
+    <div class="frow">
+      <label>自定义</label>
+      <input placeholder="输入金额，最低 1 元">
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow"><label>支付方式</label><span class="sp"></span>
+      <span class="v" style="font-weight:600;color:var(--t1)">微信支付</span>
+      <i style="width:18px;height:18px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center"><svg class="ic" style="width:11px;height:11px;stroke:#fff;stroke-width:3" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></i>
+    </div>
+  </div>
+
+  <div class="card" style="padding:12px 14px;background:#FFF8F2">
+    <p style="font-size:11px;color:var(--t2);line-height:1.6">充值即时到账；余额可用于校园闲置担保交易，确认收货后结算给卖家；支持随时提现回微信零钱。</p>
+  </div>
+
+  <div class="action-bar">
+    <button class="ab-main" style="width:100%">确认充值 ¥50.00</button>
+  </div>
+</section>
+
+<!-- ================= 36 WITHDRAW 余额提现 ================= -->
+<section class="screen has-bar" data-screen="withdraw">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>余额提现</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t3)">提现记录</span></div>
+  </div>
+
+  <div class="form-card" style="padding-top:6px">
+    <div class="frow" style="border-bottom:0;flex-direction:column;align-items:flex-start;gap:6px">
+      <label style="width:auto">提现金额</label>
+      <div style="display:flex;align-items:baseline;gap:6px;width:100%;padding-bottom:8px;border-bottom:1px solid var(--line)">
+        <b style="font-size:24px;font-weight:800">¥</b>
+        <input placeholder="0.00" style="font-size:30px;font-weight:800">
+      </div>
+    </div>
+    <div class="frow">
+      <span class="v">可提现余额 ¥86.50</span>
+      <span style="font-size:12px;color:var(--green-deep);font-weight:700">全部提现</span>
+    </div>
+    <div class="frow">
+      <label>到账账户</label>
+      <span class="v">微信零钱（当前登录微信）</span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <div class="card" style="padding:12px 14px;background:#FFF8F2">
+    <p style="font-size:11px;color:var(--t2);line-height:1.6">提现免手续费，1-3 个工作日内到账；平台托管中的货款暂不可提现，确认收货结算后可提。</p>
+  </div>
+
+  <div class="action-bar">
+    <button class="ab-main" style="width:100%">确认提现</button>
+  </div>
+</section>
+
+<!-- ================= 37 ADDRESS 收货地址 ================= -->
+<section class="screen has-bar" data-screen="address">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>收货地址</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t3)">管理</span></div>
+  </div>
+
+  <div class="card" style="padding:14px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <b style="font-size:15px">林小满</b>
+      <span style="font-size:13px;color:var(--t2)">138****8888</span>
+      <span class="tag tag-green" style="margin-left:auto">默认</span>
+    </div>
+    <p style="font-size:13px;color:var(--t2);margin-top:8px;line-height:1.5">滨江校区 3 号宿舍楼 502 室（菜鸟驿站代收）</p>
+    <div style="display:flex;gap:16px;margin-top:11px;padding-top:11px;border-top:1px solid #F5F6F6;font-size:12px;color:var(--t3)">
+      <span style="display:flex;align-items:center;gap:4px"><svg class="ic" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>编辑</span>
+      <span style="display:flex;align-items:center;gap:4px"><svg class="ic" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13h10l1-13"/></svg>删除</span>
+    </div>
+  </div>
+
+  <div class="card" style="padding:14px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <b style="font-size:15px">林小满</b>
+      <span style="font-size:13px;color:var(--t2)">138****8888</span>
+    </div>
+    <p style="font-size:13px;color:var(--t2);margin-top:8px;line-height:1.5">滨江校区西门驿站旁自提柜 A-12（闲置面交常用）</p>
+    <div style="display:flex;gap:16px;margin-top:11px;padding-top:11px;border-top:1px solid #F5F6F6;font-size:12px;color:var(--t3)">
+      <span style="display:flex;align-items:center;gap:4px;color:var(--green-deep)"><svg class="ic" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg>设为默认</span>
+      <span style="display:flex;align-items:center;gap:4px"><svg class="ic" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>编辑</span>
+      <span style="display:flex;align-items:center;gap:4px"><svg class="ic" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13h10l1-13"/></svg>删除</span>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="ab-main" style="width:100%">＋ 新增收货地址</button>
+  </div>
+</section>
+
+<!-- ================= 38 ADMIN AUDIT 闲置审核（管理端） ================= -->
+<section class="screen" data-screen="admin-audit">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>闲置审核</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t3)">已处理</span></div>
+  </div>
+
+  <div class="cat-chips">
+    <span class="on">待审核 5</span><span>已通过</span><span>已拒绝</span>
+  </div>
+
+  <div class="card" style="padding:13px 14px">
+    <div style="display:flex;gap:11px">
+      <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=200&h=200&fit=crop&crop=entropy&auto=format&q=70" style="width:76px;height:76px;border-radius:10px">
+      <div style="flex:1;min-width:0">
+        <h4 style="font-size:13px;font-weight:600;line-height:1.4">iPad Air 5 64G 天蓝色 95新 国行在保</h4>
+        <div style="margin-top:5px"><span class="tag">数码</span><span class="tag tag-orange">待审核</span></div>
+        <p style="font-size:11px;color:var(--t3);margin-top:6px">林小满 · 信用 720 · 10 分钟前提交</p>
+      </div>
+      <b style="font-size:15px;color:var(--price);font-weight:800">¥2,399</b>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #F5F6F6">
+      <button class="ab-duo" style="height:34px;border-radius:17px;background:#F2F4F3;color:var(--t2);font-size:13px">拒绝</button>
+      <button class="ab-main" style="height:34px;border-radius:17px;font-size:13px">通过上架</button>
+    </div>
+  </div>
+
+  <div class="card" style="padding:13px 14px;margin-bottom:14px">
+    <div style="display:flex;gap:11px">
+      <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&h=200&fit=crop&crop=entropy&auto=format&q=70" style="width:76px;height:76px;border-radius:10px">
+      <div style="flex:1;min-width:0">
+        <h4 style="font-size:13px;font-weight:600;line-height:1.4">考研英语真题黄皮书 2026 版 几乎全新</h4>
+        <div style="margin-top:5px"><span class="tag">图书教材</span><span class="tag tag-orange">待审核</span></div>
+        <p style="font-size:11px;color:var(--t3);margin-top:6px">阿澈 · 信用 712 · 32 分钟前提交</p>
+      </div>
+      <b style="font-size:15px;color:var(--price);font-weight:800">¥25</b>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #F5F6F6">
+      <button class="ab-duo" style="height:34px;border-radius:17px;background:#F2F4F3;color:var(--t2);font-size:13px">拒绝</button>
+      <button class="ab-main" style="height:34px;border-radius:17px;font-size:13px">通过上架</button>
+    </div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

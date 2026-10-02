@@ -18,7 +18,7 @@ class ClientCapabilitiesController extends Controller
         'module_mall', 'module_mall_trade', 'module_after_sale',
         'module_community', 'module_community_post',
         'module_wallet', 'module_wallet_recharge', 'module_withdraw',
-        'module_referrals', 'module_checkin',
+        'module_referrals', 'module_checkin', 'module_second_hand',
     ];
 
     public function show(

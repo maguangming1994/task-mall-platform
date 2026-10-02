@@ -744,8 +744,9 @@ function createDefaultHome(): HomeContent {
       quick_entries: [
         { id: 'tasks', label: '任务大厅', note: '领取奖励', mark: '任', tone: 'green', icon_url: '/static/icons/module-tasks.svg', link_type: 'tasks' },
         { id: 'products', label: '积分商城', note: '兑换好物', mark: '兑', tone: 'blue', icon_url: '/static/icons/module-mall.svg', link_type: 'products' },
-        { id: 'community', label: '社区成长', note: '分享交流', mark: '聊', tone: 'orange', icon_url: '/static/icons/module-community.svg', link_type: 'community' },
-        { id: 'orders', label: '我的订单', note: '查看进度', mark: '单', tone: 'violet', icon_url: '/static/icons/service-orders.svg', link_type: 'orders' },
+        { id: 'second_hand', label: '校园闲置', note: '二手交易', mark: '闲', tone: 'orange', icon_url: '/static/icons/module-mall-trade.svg', link_type: 'second_hand' },
+        { id: 'community', label: '社区成长', note: '分享交流', mark: '聊', tone: 'violet', icon_url: '/static/icons/module-community.svg', link_type: 'community' },
+        { id: 'orders', label: '我的订单', note: '查看进度', mark: '单', tone: 'pink', icon_url: '/static/icons/service-orders.svg', link_type: 'orders' },
       ],
       priority_entries: [
         { id: 'assets', mark: '资', icon_url: '/static/icons/module-wallet.svg' },
@@ -792,7 +793,7 @@ const quickEntries = computed(() => home.value.modules.quick_entries
     const code = HOME_LINK_MODULE[item.link_type]
     return !code || modules.isEnabled(code)
   })
-  .slice(0, 4)
+  .slice(0, 5)
   .map((item) => ({
     ...item,
     action: () => navigateHomeLink(item.link_type),
@@ -998,6 +999,7 @@ function quickArtType(id: string, linkType: HomeLinkType) {
   if (value === 'products') return 'products'
   if (value === 'community') return 'community'
   if (value === 'orders') return 'orders'
+  if (value === 'second_hand') return 'second_hand'
   return 'tasks'
 }
 
@@ -1006,6 +1008,7 @@ function quickArtSymbol(id: string, linkType: HomeLinkType) {
   if (type === 'products') return '★'
   if (type === 'community') return '•••'
   if (type === 'orders') return '≡'
+  if (type === 'second_hand') return '↻'
   return '✓'
 }
 
@@ -1014,6 +1017,7 @@ function quickArtIcon(id: string, linkType: HomeLinkType) {
   if (type === 'products') return icons.resolve('/static/icons/module-mall.svg')
   if (type === 'community') return icons.resolve('/static/icons/module-community.svg')
   if (type === 'orders') return icons.resolve('/static/icons/service-orders.svg')
+  if (type === 'second_hand') return icons.resolve('/static/icons/module-mall-trade.svg')
   return icons.resolve('/static/icons/module-tasks.svg')
 }
 
@@ -1079,6 +1083,7 @@ function openTasks() { openPrimaryNavigation('tasks') }
 function openProducts() { openPrimaryNavigation('products') }
 function openCommunity() { openPrimaryNavigation('community') }
 function openOrders() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/orders/index' }) : openLogin() }
+function openSecondHand() { uni.navigateTo({ url: '/pages/second-hand/index' }) }
 function openNotifications() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/notifications/index' }) : openLogin() }
 function openAssets() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/assets/index' }) : openLogin() }
 function openReferrals() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/referrals/index' }) : openLogin() }
@@ -1096,6 +1101,7 @@ function navigateHomeLink(link: HomeLinkType) {
   if (link === 'notifications') return openNotifications()
   if (link === 'orders') return openOrders()
   if (link === 'assets') return openAssets()
+  if (link === 'second_hand') return openSecondHand()
 }
 
 function backgroundStyle(url: string) {

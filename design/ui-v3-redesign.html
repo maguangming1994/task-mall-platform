@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校园任务商城 · UI 3.0 设计提案（评审稿）</title>
+<style>
+:root{
+  --brand:#0E9F6E; --brand-deep:#0B7A5C; --brand-dark:#085C45; --brand-soft:#E7F6EF; --brand-mist:#F2FAF7;
+  --amber:#E8920C; --amber-soft:#FDF1DE;
+  --blue:#2F7DE1; --blue-soft:#EAF2FE;
+  --violet:#7656E8; --violet-soft:#F0EDFE;
+  --red:#E5484D; --red-soft:#FDECEC;
+  --cyan:#0FA3B1;
+  --ink:#102338; --ink-2:#46586C; --ink-3:#8B99AA; --ink-4:#B3BECB;
+  --line:#E6ECF1; --line-2:#F0F4F7;
+  --bg:#F2F6F8; --card:#FFFFFF;
+  --shadow-card:0 6px 22px rgba(16,52,44,.06);
+  --shadow-float:0 12px 34px rgba(16,52,44,.12);
+  --r-s:8px; --r-m:12px; --r-l:16px; --r-xl:22px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);background-image:radial-gradient(circle at 1px 1px,#dde5ea 1px,transparent 0);background-size:22px 22px;padding:0 0 80px}
+.num{font-family:"DIN Alternate","SF Pro Display","Helvetica Neue",sans-serif;font-feature-settings:"tnum"}
+.wrap{max-width:1240px;margin:0 auto;padding:0 32px}
+
+/* ---------- 封面 ---------- */
+.masthead{background:linear-gradient(135deg,#0B7A5C 0%,#0E9F6E 55%,#13B883 100%);color:#fff;padding:56px 0 64px;position:relative;overflow:hidden}
+.masthead::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.16),transparent 65%)}
+.masthead .wrap{position:relative;z-index:1}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.22em;opacity:.85}
+.masthead h1{font-size:40px;font-weight:800;letter-spacing:-.5px;margin:14px 0 12px}
+.masthead p{font-size:15px;opacity:.92;max-width:680px;line-height:1.8}
+.meta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.meta-chip{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);border-radius:999px;padding:7px 15px;font-size:12.5px;backdrop-filter:blur(4px)}
+
+.sec-head{display:flex;align-items:baseline;gap:16px;margin:64px 0 28px}
+.sec-no{font-family:"DIN Alternate";font-size:13px;font-weight:700;color:var(--brand);border:1.5px solid var(--brand);border-radius:999px;padding:3px 11px}
+.sec-head h2{font-size:24px;font-weight:800}
+.sec-head .sec-note{font-size:13px;color:var(--ink-3)}
+
+/* ---------- 设计令牌 ---------- */
+.token-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:18px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-card)}
+.panel h3{font-size:15px;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.panel h3::before{content:"";width:4px;height:15px;border-radius:2px;background:var(--brand)}
+.swatch-row{display:flex;flex-wrap:wrap;gap:10px}
+.swatch{width:84px}
+.swatch .c{height:52px;border-radius:12px;border:1px solid rgba(0,0,0,.05);position:relative}
+.swatch .c small{position:absolute;left:8px;bottom:6px;font-size:9px;opacity:.75;font-family:monospace}
+.swatch .t{font-size:11.5px;font-weight:700;margin-top:6px}
+.swatch .s{font-size:10.5px;color:var(--ink-3)}
+.type-item{display:flex;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px dashed var(--line-2)}
+.type-item:last-child{border:0}
+.type-item .sample{flex:none;width:108px;color:var(--ink)}
+.type-item .name{font-size:11.5px;color:var(--ink-3)}
+.t-display{font-size:26px;font-weight:800;line-height:1.1}
+.t-h1{font-size:20px;font-weight:800}
+.t-h2{font-size:17px;font-weight:700}
+.t-body{font-size:14px;font-weight:500}
+.t-sub{font-size:13px;color:var(--ink-2)}
+.t-cap{font-size:12px;color:var(--ink-3)}
+.t-mini{font-size:11px;color:var(--ink-3);letter-spacing:.04em}
+.t-en{font-size:10.5px;font-weight:700;letter-spacing:.14em;color:var(--brand)}
+.radius-demo{display:flex;gap:12px;align-items:flex-end;margin-bottom:18px}
+.radius-demo i{display:block;width:54px;height:54px;background:var(--brand-soft);border:2px solid #BDE7D6;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--brand-deep);font-weight:700}
+.spacing-bars{display:flex;align-items:flex-end;gap:9px;height:70px;margin-bottom:16px}
+.spacing-bars i{background:#BDE7D6;width:26px;border-radius:4px 4px 0 0;display:flex;align-items:flex-end;justify-content:center;font-size:9.5px;color:var(--brand-deep);padding-bottom:4px}
+.icon-demo{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.icon-demo i{height:46px;border:1px solid var(--line-2);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--brand-deep)}
+.icon-demo i svg{width:22px;height:22px}
+.principle{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.principle div{background:var(--brand-mist);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.6;color:var(--brand-dark)}
+.principle b{display:block;font-size:13px;margin-bottom:2px}
+
+/* ---------- 组件 ---------- */
+.comp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-size:13px;font-weight:700;padding:10px 20px;border:1px solid transparent}
+.btn-primary{background:linear-gradient(120deg,#12B77E,#0A8E60);color:#fff;box-shadow:0 8px 18px rgba(14,159,110,.28)}
+.btn-secondary{background:var(--brand-soft);color:var(--brand-deep)}
+.btn-outline{border-color:var(--line);color:var(--ink-2);background:#fff}
+.btn-ghost{color:var(--ink-3);padding:10px 12px}
+.btn-disabled{background:#EDF1F4;color:var(--ink-4);box-shadow:none}
+.btn-sm{padding:7px 14px;font-size:12px}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{font-size:12px;font-weight:600;color:var(--ink-2);background:#F2F5F8;border-radius:999px;padding:7px 14px}
+.chip.on{background:var(--ink);color:#fff}
+.chip.on-green{background:var(--brand);color:#fff}
+.seg{display:flex;background:#F2F5F8;border-radius:12px;padding:4px;gap:4px;margin-bottom:14px}
+.seg span{flex:1;text-align:center;font-size:13px;font-weight:700;color:var(--ink-3);padding:8px 0;border-radius:9px}
+.seg span.on{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(16,52,44,.08)}
+.mini-task{border:1px solid var(--line);border-radius:14px;padding:14px}
+.mini-task .row1{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.mini-ic{width:34px;height:34px;border-radius:10px;background:var(--blue-soft);color:var(--blue);display:flex;align-items:center;justify-content:center;flex:none}
+.mini-task .tt{font-size:13.5px;font-weight:800;flex:1}
+.mini-reward{font-size:13px;font-weight:800;color:var(--amber);font-family:"DIN Alternate"}
+.badge-live{font-size:10px;font-weight:800;color:var(--brand-deep);background:var(--brand-soft);border-radius:6px;padding:2px 6px}
+.metrics3{display:grid;grid-template-columns:repeat(3,1fr);background:#F8FAFB;border-radius:10px;padding:10px;margin-bottom:9px}
+.metrics3 div{text-align:center;border-right:1px solid var(--line-2)}
+.metrics3 div:last-child{border:0}
+.metrics3 strong{display:block;font-size:15px;font-family:"DIN Alternate"}
+.metrics3 span{font-size:10.5px;color:var(--ink-3)}
+.empty-demo{border:1px dashed #CFD9E1;border-radius:14px;padding:26px 16px;text-align:center;background:#FBFCFD}
+.empty-demo .ei{width:56px;height:56px;margin:0 auto 12px;border-radius:18px;background:var(--brand-soft);display:flex;align-items:center;justify-content:center;color:var(--brand)}
+.empty-demo p{font-size:13.5px;font-weight:700}
+.empty-demo small{display:block;color:var(--ink-3);font-size:12px;margin:5px 0 14px}
+.review-bar{display:flex;gap:9px;align-items:center;background:#FFF8EB;border:1px solid #F7E3BC;border-radius:12px;padding:11px 13px;font-size:12px;color:#92651B;margin-bottom:12px}
+.sheet-demo{border:1px solid var(--line);border-radius:16px 16px 0 0;overflow:hidden}
+.sheet-demo .sh-handle{width:38px;height:4px;border-radius:99px;background:#D3DCE3;margin:10px auto 4px}
+.sheet-demo .sh-title{text-align:center;font-size:14px;font-weight:800;padding:8px 0 12px;border-bottom:1px solid var(--line-2)}
+.sheet-demo label{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;font-size:13px;border-bottom:1px solid var(--line-2)}
+.sheet-demo label:last-child{border:0;color:var(--brand);font-weight:700}
+.field{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:13px;color:var(--ink-3)}
+.avatar-demo{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#9ADBC4,#4FB695);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px}
+
+/* ---------- 手机稿 ---------- */
+.phones{display:grid;grid-template-columns:repeat(3,1fr);gap:34px 28px;margin-top:8px}
+.phone-block{}
+.phone-cap{margin-bottom:14px}
+.phone-cap .pn{display:inline-flex;align-items:center;gap:8px;font-size:16px;font-weight:800}
+.phone-cap .pn i{width:7px;height:7px;border-radius:50%;background:var(--brand)}
+.phone-cap .pe{font-size:12px;color:var(--ink-3);margin-top:5px}
+.phone{width:100%;max-width:360px;margin:0 auto;background:#0C1420;border-radius:42px;padding:9px;box-shadow:0 30px 60px rgba(12,30,44,.22)}
+.screen{background:var(--bg);border-radius:34px;overflow:hidden;height:724px;position:relative;display:flex;flex-direction:column}
+.statusbar{height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 24px 0 26px;flex:none;font-size:13px;font-weight:700;color:var(--ink)}
+.statusbar .sb-r{display:flex;align-items:center;gap:6px;font-size:12px}
+.statusbar .capsule{display:flex;gap:7px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 9px;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.statusbar .capsule b{display:block;width:4px;height:4px;border-radius:50%;background:var(--ink-2)}
+.sb-time{position:relative;z-index:5}
+.screen-body{flex:1;overflow:hidden;position:relative}
+.inner{position:absolute;inset:0;overflow:hidden}
+
+/* 通用小程序 UI 原子 */
+.mt{padding:0 14px}
+.k-en{font-size:9.5px;font-weight:800;letter-spacing:.16em;color:var(--brand);margin-bottom:3px}
+.hd-title{font-size:19px;font-weight:800;letter-spacing:-.3px}
+.topline{display:flex;align-items:center;justify-content:space-between;padding:2px 14px 12px}
+.top-pill{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);border-radius:999px;height:38px;padding:0 12px;font-size:13px;font-weight:700;box-shadow:0 3px 10px rgba(16,52,44,.05)}
+.top-pill .emblem{width:23px;height:23px;border-radius:7px;background:linear-gradient(135deg,#CFE7FF,#A9CFF5);color:#2C5E9E;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.top-pill svg.chev{width:11px;height:11px;color:var(--ink-3)}
+.top-acts{display:flex;gap:7px}
+.mini-act{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 11px;border-radius:999px;background:rgba(255,255,255,.95);border:1px solid var(--line);color:var(--brand-deep);font-size:11.5px;font-weight:700;box-shadow:0 3px 9px rgba(16,52,44,.07)}
+.mini-act svg{width:14px;height:14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-card)}
+.pad{padding:13px}
+
+/* hero */
+.hero{margin:0 14px;border-radius:20px;overflow:hidden;position:relative;height:196px;background:linear-gradient(120deg,#E9F8F1 0%,#D9F3E7 45%,#CDEBE2 100%)}
+.hero::after{content:"";position:absolute;right:-40px;bottom:-50px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.7),transparent 68%)}
+.hero-copy{position:relative;z-index:2;padding:16px 16px}
+.hero-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(11,122,92,.1);color:var(--brand-deep);font-size:10px;font-weight:800;border-radius:999px;padding:4px 9px;margin-bottom:7px}
+.hero h3{font-size:23px;font-weight:850;letter-spacing:-.5px;line-height:1.15;color:#0C2A20}
+.hero p{font-size:11.5px;color:#3E6B58;margin-top:6px;line-height:1.5}
+.hero-cta{display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:linear-gradient(120deg,#12B77E,#0A8E60);color:#fff;font-size:12.5px;font-weight:800;border-radius:999px;padding:9px 17px;box-shadow:0 8px 18px rgba(14,159,110,.3)}
+.hero-art{position:absolute;right:6px;bottom:0;z-index:1;opacity:.95}
+
+/* quick grid */
+.quick4{margin:12px 14px 0;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-card);display:grid;grid-template-columns:repeat(4,1fr);padding:14px 6px;position:relative;margin-top:-16px;z-index:3}
+.qi{text-align:center;position:relative}
+.qi+.qi::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:1px;background:var(--line-2)}
+.qi-ic{width:44px;height:44px;border-radius:14px;margin:0 auto 7px;display:flex;align-items:center;justify-content:center;color:#fff}
+.qi-ic svg{width:23px;height:23px}
+.qi span{font-size:12px;font-weight:700}
+
+.notice{margin:12px 14px 0;background:#fff;border:1px solid var(--line);border-radius:13px;padding:10px 12px;display:flex;align-items:center;gap:9px;box-shadow:var(--shadow-card)}
+.notice .ni{width:26px;height:26px;border-radius:8px;background:var(--brand-soft);color:var(--brand-deep);display:flex;align-items:center;justify-content:center;flex:none}
+.notice b{font-size:12px;color:var(--brand-deep);flex:none}
+.notice span{font-size:11.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.notice svg{flex:none;color:var(--ink-4)}
+
+.sec-row{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 9px}
+.sec-row h4{font-size:16px;font-weight:850}
+.sec-row a{font-size:11.5px;color:var(--ink-3);font-weight:600}
+
+.taskcard{margin:0 14px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px;box-shadow:var(--shadow-card)}
+.tc-top{display:flex;gap:10px;align-items:flex-start}
+.tc-ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none}
+.tc-ic svg{width:20px;height:20px}
+.tc-main{flex:1;min-width:0}
+.tc-title{font-size:13.5px;font-weight:800;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tc-meta{font-size:10.5px;color:var(--ink-3);margin-top:3px}
+.tc-right{text-align:right;flex:none}
+.tc-reward{font-size:14px;font-weight:850;color:var(--amber);font-family:"DIN Alternate"}
+.tc-live{display:inline-block;margin-top:4px;font-size:9.5px;font-weight:800;color:var(--brand-deep);background:var(--brand-soft);border-radius:5px;padding:2px 6px}
+.m3{display:grid;grid-template-columns:repeat(3,1fr);background:#F8FAFB;border-radius:11px;padding:9px 4px;margin:11px 0}
+.m3>div{text-align:center;position:relative}
+.m3>div+div::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:1px;background:var(--line)}
+.m3 strong{display:block;font-size:14px;font-family:"DIN Alternate";font-weight:700}
+.m3 span{font-size:10px;color:var(--ink-3)}
+.tc-tags{display:flex;gap:6px;margin-bottom:9px}
+.tc-tags i{font-style:normal;font-size:10px;color:var(--ink-2);background:#F3F6F8;border-radius:6px;padding:3px 7px}
+.tc-foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line-2);padding-top:10px;font-size:11px;color:var(--ink-3)}
+.tc-foot b{color:var(--brand-deep);font-weight:700;display:flex;align-items:center;gap:4px}
+
+.goods2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 14px}
+.good{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-card)}
+.good-img{height:88px;display:flex;align-items:center;justify-content:center}
+.good-img svg{width:38px;height:38px;color:rgba(255,255,255,.92)}
+.good-body{padding:9px 10px 11px}
+.good-name{font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.good-sub{font-size:10px;color:var(--ink-3);margin:2px 0 7px}
+.good-price{font-size:13px;font-weight:850;color:var(--ink);font-family:"DIN Alternate"}
+.good-price small{font-size:9.5px;color:var(--ink-3);font-weight:500;margin-left:4px}
+
+/* tabbar */
+.tabbar{height:62px;background:#fff;border-top:1px solid var(--line);display:flex;flex:none;padding-bottom:4px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--ink-4);font-size:10px;font-weight:600}
+.tab.on{color:var(--brand)}
+.tab svg{width:22px;height:22px}
+
+/* 任务大厅页 */
+.searchbar{margin:0 14px 11px;background:#fff;border:1px solid var(--line);border-radius:12px;height:38px;display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--ink-3);font-size:12.5px}
+.chips{display:flex;gap:8px;padding:0 14px 12px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chips span{flex:none;white-space:nowrap;font-size:11.5px;font-weight:600;color:var(--ink-2);background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 13px}
+.chips span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.plan{margin:0 14px 12px;border-radius:16px;padding:14px;display:flex;align-items:center;gap:13px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(120deg,#10302A,#0C5C47)}
+.plan::after{content:"";position:absolute;right:-30px;top:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.06)}
+.plan-copy{flex:1}
+.plan-copy .k-en{color:#7CDDB8}
+.plan-copy h5{font-size:15px;font-weight:800}
+.plan-copy p{font-size:10.5px;opacity:.75;margin-top:4px;line-height:1.5}
+.ring{width:58px;height:58px;flex:none;border-radius:50%;background:conic-gradient(#2FD69C 0 68%,rgba(255,255,255,.16) 68% 100%);display:flex;align-items:center;justify-content:center;position:relative}
+.ring::before{content:"";position:absolute;inset:5px;border-radius:50%;background:#0C5C47}
+.ring b{position:relative;z-index:1;font-size:15px;font-family:"DIN Alternate"}
+.plan-stats{display:flex;gap:14px;margin-top:10px;position:relative;z-index:1}
+.plan-stats div strong{font-family:"DIN Alternate";font-size:14px}
+.plan-stats div span{display:block;font-size:9.5px;opacity:.7}
+.hall-tabs{display:flex;gap:20px;padding:0 18px;margin-bottom:11px;border-bottom:1px solid var(--line)}
+.hall-tabs span{white-space:nowrap;font-size:14px;font-weight:700;color:var(--ink-3);padding-bottom:9px;position:relative}
+.hall-tabs span.on{color:var(--ink)}
+.hall-tabs span.on::after{content:"";position:absolute;left:50%;transform:translateX(-50%);bottom:-1px;width:20px;height:3px;border-radius:2px;background:var(--brand)}
+.sort-row{display:flex;gap:7px;padding:0 14px 11px;align-items:center}
+.sort-row b{flex:none;white-space:nowrap;font-size:12px;font-weight:800;margin-right:2px}
+.sort-row span{flex:none;white-space:nowrap;font-size:11px;color:var(--ink-3);background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 10px}
+.sort-row span.on{color:var(--brand-deep);border-color:#BDE7D6;background:var(--brand-soft);font-weight:700}
+
+/* 商城页 */
+.mall-nav{display:flex;align-items:center;justify-content:space-between;padding:2px 14px 11px}
+.mall-brand{display:flex;align-items:center;gap:9px}
+.mall-logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#12B77E,#0A8E60);color:#fff;font-weight:850;font-size:15px;display:flex;align-items:center;justify-content:center;font-family:"DIN Alternate"}
+.mall-brand b{font-size:15px;font-weight:850;display:block;line-height:1.1}
+.mall-brand small{font-size:9px;color:var(--ink-3);letter-spacing:.08em}
+.cart-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink-2);background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px}
+.mall-hero{margin:0 14px 12px;border-radius:18px;height:132px;background:linear-gradient(120deg,#0E9F6E,#0A8E60 60%,#087850);color:#fff;padding:18px 17px;position:relative;overflow:hidden}
+.mall-hero::after{content:"";position:absolute;right:-34px;bottom:-44px;width:170px;height:170px;border:20px solid rgba(255,255,255,.08);border-radius:50%}
+.mall-hero h3{font-size:21px;font-weight:850;line-height:1.2}
+.mall-hero p{font-size:11.5px;opacity:.9;margin-top:7px}
+.mall-hero .hero-cta{background:#fff;color:var(--brand-deep);box-shadow:0 8px 18px rgba(0,0,0,.14)}
+.assure{margin:0 14px 4px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.assure div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 4px;text-align:center;font-size:10.5px;font-weight:700;color:var(--ink-2)}
+.assure i{display:block;width:20px;height:20px;margin:0 auto 4px;color:var(--brand-deep)}
+.assure i svg{width:100%;height:100%}
+
+/* 社区页 */
+.comm-intro{padding:4px 16px 13px;display:flex;justify-content:space-between;align-items:flex-end}
+.comm-intro h3{font-size:21px;font-weight:850;margin-top:3px}
+.comm-intro p{font-size:11.5px;color:var(--ink-3);margin-top:5px}
+.comm-stat{text-align:right}
+.comm-stat strong{font-size:20px;font-family:"DIN Alternate";color:var(--brand)}
+.comm-stat span{display:block;font-size:10px;color:var(--ink-3)}
+.guide{margin:0 14px 12px;background:var(--brand-mist);border:1px solid #D4EEE2;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--brand-dark)}
+.guide .gi{width:22px;height:22px;border-radius:7px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.hot{margin:0 14px 12px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:10px 12px;display:flex;align-items:center;gap:9px;box-shadow:var(--shadow-card)}
+.hot-badge{font-size:10px;font-weight:850;color:#fff;background:linear-gradient(120deg,#F0683A,#E5484D);border-radius:7px;padding:4px 7px;flex:none}
+.hot-rank{font-family:"DIN Alternate";font-weight:800;font-size:14px;color:var(--red);width:18px}
+.hot span.t{font-size:12px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.post{margin:0 14px 12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px;box-shadow:var(--shadow-card)}
+.post-head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.post-head .info{flex:1}
+.post-head .nm{font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:6px}
+.cert{font-size:9px;font-weight:700;color:var(--brand-deep);background:var(--brand-soft);border-radius:5px;padding:1.5px 6px}
+.post-head .tm{font-size:10px;color:var(--ink-3)}
+.post-title{font-size:14px;font-weight:850;line-height:1.4}
+.post-title em{font-style:normal;color:var(--brand-deep)}
+.post-body{font-size:12px;color:var(--ink-2);line-height:1.6;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.post-imgs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:10px}
+.post-imgs i{height:72px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.post-foot{display:flex;gap:16px;margin-top:10px;padding-top:9px;border-top:1px solid var(--line-2);font-size:11px;color:var(--ink-3)}
+.post-foot span{display:inline-flex;align-items:center;gap:4px}
+.post-foot svg{width:14px;height:14px}
+.fab{position:absolute;right:16px;bottom:84px;z-index:9;background:linear-gradient(120deg,#12B77E,#0A8E60);color:#fff;border-radius:999px;padding:12px 18px;font-size:13px;font-weight:800;display:flex;align-items:center;gap:6px;box-shadow:0 12px 26px rgba(14,159,110,.4)}
+
+/* 我的页 */
+.mine-head{margin:0 14px 12px;background:linear-gradient(135deg,#0E9F6E,#0A8259);border-radius:20px;padding:17px 16px;color:#fff;position:relative;overflow:hidden}
+.mine-head::after{content:"";position:absolute;right:-46px;top:-46px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.09)}
+.mine-row1{display:flex;align-items:center;gap:12px;position:relative;z-index:2}
+.mine-av{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#9ADBC4,#5DC7A4);border:2.5px solid rgba(255,255,255,.65);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:850;flex:none}
+.mine-info{flex:1}
+.mine-info b{font-size:17px;font-weight:850}
+.mine-info .mbadges{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.mine-info .mbadges i{white-space:nowrap;font-style:normal;font-size:9.5px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:2.5px 8px}
+.edit-btn{font-size:11px;font-weight:700;background:rgba(255,255,255,.17);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:7px 13px}
+.wallet{margin-top:15px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:12px;position:relative;z-index:2;display:flex}
+.wallet>div{flex:1;text-align:center;position:relative}
+.wallet>div+div::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:1px;background:rgba(255,255,255,.25)}
+.wallet strong{display:block;font-size:16px;font-family:"DIN Alternate"}
+.wallet span{font-size:10px;opacity:.85}
+.wallet-acts{display:flex;gap:8px;margin-top:10px;position:relative;z-index:2}
+.wallet-acts span{flex:1;text-align:center;background:rgba(255,255,255,.16);border-radius:9px;font-size:11.5px;font-weight:700;padding:8px 0}
+.week{margin:0 14px 12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:11px;box-shadow:var(--shadow-card)}
+.week .wi{width:34px;height:34px;border-radius:11px;background:var(--amber-soft);color:var(--amber);display:flex;align-items:center;justify-content:center;flex:none}
+.week .wc{flex:1}
+.week b{font-size:12.5px}
+.week p{font-size:11px;color:var(--ink-3);margin-top:2px}
+.week svg{color:var(--ink-4)}
+.order-card{margin:0 14px 12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 4px 12px;box-shadow:var(--shadow-card)}
+.order-grid{display:grid;grid-template-columns:repeat(4,1fr)}
+.og{text-align:center;position:relative}
+.og i{width:38px;height:38px;margin:0 auto 6px;border-radius:13px;display:flex;align-items:center;justify-content:center;position:relative}
+.og i svg{width:19px;height:19px}
+.og .dot{position:absolute;right:0;top:-2px;background:var(--red);color:#fff;font-size:9px;font-weight:800;border-radius:99px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff}
+.og span{font-size:11px;font-weight:600;color:var(--ink-2)}
+.svc-card{margin:0 14px 12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px 4px 8px;box-shadow:var(--shadow-card)}
+.svc-title{padding:0 12px 11px;font-size:13px;font-weight:850;display:flex;justify-content:space-between;align-items:center}
+.svc-title small{font-size:10.5px;font-weight:500;color:var(--ink-3)}
+.svc-grid{display:grid;grid-template-columns:repeat(4,1fr);row-gap:14px}
+.svc{text-align:center;font-size:10.5px;color:var(--ink-2)}
+.svc i{width:36px;height:36px;margin:0 auto 5px;border-radius:12px;background:#F5F8FA;display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
+.svc i svg{width:18px;height:18px}
+.logout{margin:8px 14px 0;text-align:center;font-size:13px;color:var(--red);background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;font-weight:700}
+
+/* 组件状态屏 */
+.state-wrap{padding:16px 14px}
+.state-block{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:13px;box-shadow:var(--shadow-card)}
+.state-block h6{font-size:12px;font-weight:850;margin-bottom:12px;color:var(--ink-2)}
+.color-dots{display:flex;gap:8px}
+.color-dots i{width:30px;height:30px;border-radius:9px}
+.stepper{display:flex;align-items:center;gap:7px;margin-top:8px}
+.stepper i{width:22px;height:22px;border-radius:50%;background:var(--brand-soft);color:var(--brand-deep);font-size:10px;font-style:normal;font-weight:800;display:flex;align-items:center;justify-content:center}
+.stepper b{flex:1;height:2px;background:var(--line-2)}
+/* 标注 */
+.notes{margin-top:18px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:12px;padding:14px 16px}
+.notes h5{font-size:13px;font-weight:850;margin-bottom:8px}
+.notes li{list-style:none;font-size:12px;color:var(--ink-2);line-height:1.55;padding-left:16px;position:relative;margin-bottom:4px}
+.notes li::before{content:"";position:absolute;left:2px;top:8px;width:5px;height:5px;border-radius:50%;background:var(--brand)}
+.footer-note{text-align:center;color:var(--ink-3);font-size:12.5px;margin-top:56px;line-height:1.8}
+@media(max-width:1080px){.phones{grid-template-columns:repeat(2,1fr)}.token-grid,.comp-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){.wrap{padding:0 16px}.phones,.token-grid,.comp-grid{grid-template-columns:1fr}.masthead h1{font-size:28px}}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="kicker">TASK MALL · UI REDESIGN v3.0</div>
+    <h1>校园任务商城 · 界面设计提案</h1>
+    <p>面向学生用户的校园任务 + 积分商城小程序。本稿统一配色、字号、间距、圆角与图标语言，重排五个主 Tab 的信息层级并润色全部文案，供评审使用。</p>
+    <div class="meta-row">
+      <span class="meta-chip">评审稿 · 2026-10-01</span>
+      <span class="meta-chip">仅设计图，未改动任何代码</span>
+      <span class="meta-chip">5 个主 Tab + 组件/状态规范</span>
+      <span class="meta-chip">风格：清爽学院 · 薄荷绿</span>
+    </div>
+  </div>
+</header>
+
+<!-- ========== 01 设计语言 ========== -->
+<div class="wrap">
+  <div class="sec-head"><span class="sec-no">01</span><h2>设计语言</h2><span class="sec-note">颜色 · 字体 · 圆角间距 · 图标</span></div>
+  <div class="token-grid">
+    <div class="panel">
+      <h3>品牌色板</h3>
+      <div class="swatch-row">
+        <div class="swatch"><div class="c" style="background:#0E9F6E"><small>#0E9F6E</small></div><div class="t">成长绿 600</div><div class="s">主按钮/选中/品牌</div></div>
+        <div class="swatch"><div class="c" style="background:#0B7A5C"><small>#0B7A5C</small></div><div class="t">成长绿 700</div><div class="s">深色文字/强调</div></div>
+        <div class="swatch"><div class="c" style="background:#E7F6EF"><small>#E7F6EF</small></div><div class="t">绿底</div><div class="s">徽章/浅底图标</div></div>
+        <div class="swatch"><div class="c" style="background:#E8920C"><small>#E8920C</small></div><div class="t">奖励琥珀</div><div class="s">仅用于钱/积分</div></div>
+        <div class="swatch"><div class="c" style="background:#2F7DE1"><small>#2F7DE1</small></div><div class="t">信息蓝</div><div class="s">学习/链接类</div></div>
+        <div class="swatch"><div class="c" style="background:#7656E8"><small>#7656E8</small></div><div class="t">活力紫</div><div class="s">社区/成果</div></div>
+        <div class="swatch"><div class="c" style="background:#E5484D"><small>#E5484D</small></div><div class="t">警示红</div><div class="s">售后/未读点</div></div>
+        <div class="swatch"><div class="c" style="background:#102338"><small>#102338</small></div><div class="t">墨蓝黑</div><div class="s">主文字</div></div>
+        <div class="swatch"><div class="c" style="background:#46586C"><small>#46586C</small></div><div class="t">次级文字</div><div class="s">正文说明</div></div>
+        <div class="swatch"><div class="c" style="background:#F2F6F8;border:1px solid #E6ECF1"><small>#F2F6F8</small></div><div class="t">页面底</div><div class="s">全局背景</div></div>
+      </div>
+      <div class="principle">
+        <div><b>色彩克制</b>绿色管品牌与成功，琥珀只用于"钱和积分"，红只用于售后/未读，避免满屏彩色。</div>
+        <div><b>浅底图标</b>功能入口用"10% 色底 + 同色线性图标"，不再使用汉字单字或 emoji。</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>字号阶梯</h3>
+      <div class="type-item"><span class="sample t-display">任务商城</span><span class="name">Display 26 / 800 · 主视觉标题</span></div>
+      <div class="type-item"><span class="sample t-h1">为你推荐</span><span class="name">H1 20 / 800 · 页面/分区标题</span></div>
+      <div class="type-item"><span class="sample t-h2">本周成长进度</span><span class="name">H2 17 / 700 · 卡片标题</span></div>
+      <div class="type-item"><span class="sample t-body">领取后 24 小时内完成</span><span class="name">Body 14 · 主要正文</span></div>
+      <div class="type-item"><span class="sample t-sub">剩余名额 · 同学完成 · 平均审核</span><span class="name">Sub 13 · 辅助说明</span></div>
+      <div class="type-item"><span class="sample t-cap">南昌职业大学</span><span class="name">Caption 12 · 标签/时间</span></div>
+      <div class="type-item"><span class="sample t-mini">到底啦 · 先去校园里逛逛吧</span><span class="name">Mini 11 · 列表末端/角标</span></div>
+      <div class="type-item"><span class="sample t-en num">CAMPUS TASKS</span><span class="name">Kicker 10.5 · 英文眉题</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>圆角 · 间距 · 图标</h3>
+      <div class="radius-demo">
+        <i style="border-radius:8px">8</i><i style="border-radius:12px">12</i><i style="border-radius:16px">16</i><i style="border-radius:22px">22</i><i style="border-radius:50%">◉</i>
+      </div>
+      <div class="spacing-bars">
+        <i style="height:20%">4</i><i style="height:32%">8</i><i style="height:48%">12</i><i style="height:64%">16</i><i style="height:82%">24</i>
+      </div>
+      <div class="icon-demo">
+        <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></i>
+        <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg></i>
+        <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></i>
+        <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12l-1 6H7zM4 6h16v4a8 8 0 0 1-16 0z"/><path d="M9 20h6"/></svg></i>
+        <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></i>
+        <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6 4.4 2.3 7.2-6.3-4.6-6.3 4.6L8 13.8 2 9.4h7.6z"/></svg></i>
+      </div>
+      <div class="principle" style="margin-top:14px">
+        <div><b>24 网格 / 2 描边</b>统一圆角线性图标，描边端点圆角，色块内图标占容器 54–58%。</div>
+        <div><b>卡片三级</b>8 标签 / 12 控件 / 16 卡片 / 22 浮层；页面左右留白固定 14px。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 02 组件 ========== -->
+  <div class="sec-head"><span class="sec-no">02</span><h2>核心组件与状态</h2><span class="sec-note">按钮 / 筛选 / 卡片 / 空态 / 弹层</span></div>
+  <div class="comp-grid">
+    <div class="panel">
+      <h3>按钮与筛选</h3>
+      <div class="btn-row"><span class="btn btn-primary">立即领取</span><span class="btn btn-secondary">查看详情</span><span class="btn btn-outline">放弃任务</span></div>
+      <div class="btn-row"><span class="btn btn-ghost">文字按钮</span><span class="btn btn-disabled">暂不可领</span><span class="btn btn-primary btn-sm">小尺寸</span></div>
+      <div class="chip-row"><span class="chip on">全部</span><span class="chip">学习辅导</span><span class="chip on-green">跑腿代办</span><span class="chip">问卷调研</span></div>
+      <div class="seg"><span class="on">可领取</span><span>我的任务</span></div>
+      <div class="field"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>搜索任务关键词</div>
+    </div>
+    <div class="panel">
+      <h3>任务卡（统一结构）</h3>
+      <div class="mini-task">
+        <div class="row1"><span class="mini-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+          <div class="tt">高数作业答疑整理（拍照即可）</div>
+          <div style="text-align:right"><div class="mini-reward num">¥12+80</div><div class="badge-live">可领取</div></div>
+        </div>
+        <div class="metrics3"><div><strong class="num">5</strong><span>剩余名额</span></div><div><strong class="num">128</strong><span>同学完成</span></div><div><strong class="num">2h</strong><span>平均审核</span></div></div>
+        <div class="tc-tags" style="display:flex;gap:6px;margin:0"><i>#线上完成</i><i>#当天结算</i></div>
+      </div>
+      <div class="review-bar" style="margin-top:13px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>正在审核 2 项任务，通过后奖励自动发放</div>
+      <div class="avatar-demo" style="margin-top:12px"><span class="av">林</span><div><div style="font-size:13px;font-weight:800">林小满 <span class="cert">已实名</span></div><div style="font-size:11px;color:var(--ink-3);margin-top:2px">南昌职业大学 · 10 分钟前</div></div></div>
+    </div>
+    <div class="panel">
+      <h3>空状态 / 弹层 / 进度</h3>
+      <div class="empty-demo">
+        <div class="ei"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/></svg></div>
+        <p>暂时没有符合条件的任务</p>
+        <small>换个分类看看，或刷新后获取最新任务</small>
+        <span class="btn btn-primary btn-sm">查看全部任务</span>
+      </div>
+      <div class="stepper" style="margin-bottom:14px"><i>1</i><b></b><i style="background:#EAF2FE;color:#2F7DE1">2</i><b></b><i style="background:#F2F5F8;color:#B3BECB">3</i></div>
+      <div class="sheet-demo">
+        <div class="sh-handle"></div>
+        <div class="sh-title">任务排序与筛选</div>
+        <label><span>综合推荐</span><span style="color:var(--brand)">✓</span></label>
+        <label><span>最新发布</span><span></span></label>
+        <label><span>奖励从高到低</span><span></span></label>
+        <label><span style="color:var(--red)">重置筛选</span><span></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 03 页面设计稿 ========== -->
+  <div class="sec-head"><span class="sec-no">03</span><h2>页面设计稿</h2><span class="sec-note">375 × 812 逻辑分辨率 · 以下为首屏，长页内容结构同规范向下延伸</span></div>
+
+  <div class="phones">
+
+  <!-- ===== 首页 ===== -->
+  <div class="phone-block">
+    <div class="phone-cap"><span class="pn"><i></i>① 首页 Home</span><div class="pe">品牌入口 + 任务/商城分发 + 推荐</div></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span class="sb-time num">9:41</span><div class="sb-r"><span class="capsule"><b></b><b></b><b></b></span><span>⊙</span></div></div>
+      <div class="screen-body"><div class="inner">
+        <div class="topline" style="padding-top:2px">
+          <span class="top-pill"><span class="emblem">校</span>南昌职业大学<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+          <span class="top-acts"><span class="mini-act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>消息</span><span class="mini-act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-3a9 9 0 0 1 18 0v3"/><rect x="2" y="14" width="5" height="6" rx="1.5"/><rect x="17" y="14" width="5" height="6" rx="1.5"/></svg>客服</span></span>
+        </div>
+        <div class="hero">
+          <svg class="hero-art" width="150" height="150" viewBox="0 0 150 150" fill="none">
+            <circle cx="105" cy="78" r="42" fill="#BFE6D6"/><circle cx="105" cy="60" r="15" fill="#FFE7B0"/><rect x="86" y="80" width="40" height="30" rx="8" fill="#F5C24E"/><path d="M96 95l7 7 14-15" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="60" cy="120" r="16" fill="#FFD98A"/>
+          </svg>
+          <div class="hero-copy">
+            <span class="hero-tag"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6 4.4 2.3 7.2-6.3-4.6-6.3 4.6L8 13.8 2 9.4h7.6z"/></svg>本周上新 12 个任务</span>
+            <h3>完成任务<br>兑换好生活</h3>
+            <p>校园任务 · 积分商城 · 同校伙伴<br>一个入口全搞定</p>
+            <span class="hero-cta">去任务大厅 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+          </div>
+        </div>
+        <div class="quick4">
+          <div class="qi"><span class="qi-ic" style="background:linear-gradient(145deg,#4E9BF0,#2F7DE1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M9 15l2 2 4-4"/></svg></span><span>任务大厅</span></div>
+          <div class="qi"><span class="qi-ic" style="background:linear-gradient(145deg,#FFBE4D,#F2951B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg></span><span>积分商城</span></div>
+          <div class="qi"><span class="qi-ic" style="background:linear-gradient(145deg,#2FD28E,#0E9F6E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span>社区成长</span></div>
+          <div class="qi"><span class="qi-ic" style="background:linear-gradient(145deg,#9A7CF5,#7656E8)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span><span>我的订单</span></div>
+        </div>
+        <div class="notice">
+          <span class="ni"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9z"/></svg></span>
+          <b>校园公告</b><span>欢迎来到任务商城，完成任务即可领取成长奖励…</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="sec-row"><h4>为你推荐</h4><a>查看全部任务 ›</a></div>
+        <div class="taskcard">
+          <div class="tc-top">
+            <span class="tc-ic" style="background:#EAF2FE;color:#2F7DE1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 2.4 7.4H22l-6 4.4 2.3 7.2-6.3-4.6-6.3 4.6L8 13.8 2 9.4h7.6z"/></svg></span>
+            <div class="tc-main"><div class="tc-title">校园书店探店体验，记录你的真实发现</div><div class="tc-meta">体验推广 · 到店完成</div></div>
+            <div class="tc-right"><div class="tc-reward num">¥15+20</div><span class="tc-live">可领取</span></div>
+          </div>
+          <div class="m3"><div><strong class="num">8</strong><span>剩余名额</span></div><div><strong class="num">64</strong><span>同学完成</span></div><div><strong class="num">2h</strong><span>平均审核</span></div></div>
+          <div class="tc-foot"><span>领取截止 今天 22:00 · 24 小时内完成</span><b>去参与<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></b></div>
+        </div>
+        <div class="sec-row"><h4>积分商城精选</h4><a>全部商品 ›</a></div>
+        <div class="goods2">
+          <div class="good"><div class="good-img" style="background:linear-gradient(145deg,#CFEFE3,#A7DFCB)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></div><div class="good-body"><div class="good-name">静音学习计时器</div><div class="good-sub">日常精选 · 已兑 320</div><div class="good-price num">2,800<small>积分 +¥9.9</small></div></div></div>
+          <div class="good"><div class="good-img" style="background:linear-gradient(145deg,#FBE4BF,#F3C987)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></div><div class="good-body"><div class="good-name">校园定制帆布袋</div><div class="good-sub">生活补给 · 已兑 512</div><div class="good-price num">1,200<small>积分兑换</small></div></div></div>
+        </div>
+      </div></div>
+      <div class="tabbar">
+        <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>首页</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M9 15l2 2 4-4"/></svg>任务</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>积分</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>社区</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 16 0v1"/></svg>我的</div>
+      </div>
+    </div></div>
+    <ul class="notes"><h5>优化点</h5>
+      <li>顶部一行：校徽胶囊在左、消息/客服在右，轮播区不再被按钮遮挡；搜索收纳进选校弹层</li>
+      <li>Hero 增加"本周上新"角标与一句价值主张，行动按钮只保留一个主入口</li>
+      <li>四宫格上浮压在 hero 下沿，形成明确分区；任务卡固定"标题—三指标—行动"结构</li>
+      <li>奖励金额统一琥珀色等宽数字；"积分+现金"写法全站统一为「2,800 积分 +¥9.9」</li>
+    </ul>
+  </div>
+
+  <!-- ===== 任务大厅 ===== -->
+  <div class="phone-block">
+    <div class="phone-cap"><span class="pn"><i></i>② 任务大厅 Tasks</span><div class="pe">成长进度 + 分类筛选 + 任务流</div></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span class="sb-time num">9:41</span><div class="sb-r"><span class="capsule"><b></b><b></b><b></b></span><span>⊙</span></div></div>
+      <div class="screen-body"><div class="inner" style="overflow-y:auto">
+        <div style="padding:4px 16px 11px;display:flex;justify-content:space-between;align-items:flex-end">
+          <div><div class="k-en">CAMPUS TASKS</div><div class="hd-title">任务大厅</div></div>
+          <span class="cart-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M9 15l2 2 4-4"/></svg>任务记录</span>
+        </div>
+        <div class="searchbar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>搜索任务关键词</div>
+        <div class="chips"><span class="on">全部</span><span>学习辅导</span><span>跑腿代办</span><span>体验推广</span><span>问卷调研</span><span>线上任务</span></div>
+        <div class="plan">
+          <div class="plan-copy">
+            <div class="k-en">MY CAMPUS PLAN</div>
+            <h5>本周成长进度</h5>
+            <p>完成记录会沉淀到你的校园成长档案</p>
+            <div class="plan-stats"><div><strong class="num">12</strong><span>可领取</span></div><div><strong class="num">86</strong><span>剩余名额</span></div><div><strong class="num">342</strong><span>同学完成</span></div></div>
+          </div>
+          <div class="ring"><b class="num">68%</b></div>
+        </div>
+        <div class="hall-tabs"><span class="on">可领取</span><span>我的任务</span></div>
+        <div class="sort-row"><b>任务列表</b><span class="on">综合推荐</span><span>最新</span><span>奖励最高</span><span>筛选</span></div>
+
+        <div class="taskcard" style="margin-bottom:11px">
+          <div class="tc-top">
+            <span class="tc-ic" style="background:#EAF2FE;color:#2F7DE1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+            <div class="tc-main"><div class="tc-title">高数作业答疑整理（拍照提交即可）</div><div class="tc-meta">学习辅导 · 线上提交</div></div>
+            <div class="tc-right"><div class="tc-reward num">¥12+80</div><span class="tc-live">可领取</span></div>
+          </div>
+          <div class="m3"><div><strong class="num">5</strong><span>剩余名额</span></div><div><strong class="num">128</strong><span>同学完成</span></div><div><strong class="num">2h</strong><span>平均审核</span></div></div>
+          <div class="tc-tags"><i>#线上完成</i><i>#当天结算</i><i>#有答案模板</i></div>
+          <div class="tc-foot"><span>领取截止 今天 22:00 · 24 小时内完成</span><b>查看详情 ›</b></div>
+        </div>
+
+        <div class="taskcard">
+          <div class="tc-top">
+            <span class="tc-ic" style="background:#FDF1DE;color:#E8920C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+            <div class="tc-main"><div class="tc-title">图书馆到宿舍资料代取（3 公里内）</div><div class="tc-meta">跑腿代办 · 到店/线下</div></div>
+            <div class="tc-right"><div class="tc-reward num">¥8.00</div><span class="tc-live">可领取</span></div>
+          </div>
+          <div class="m3"><div><strong class="num">3</strong><span>剩余名额</span></div><div><strong class="num">46</strong><span>同学完成</span></div><div><strong class="num">30m</strong><span>平均审核</span></div></div>
+          <div class="tc-tags"><i>#线下完成</i><i>#随接随做</i></div>
+          <div class="tc-foot"><span>领取截止 明天 12:00 · 6 小时内完成</span><b>查看详情 ›</b></div>
+        </div>
+      </div></div>
+      <div class="tabbar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>首页</div>
+        <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M9 15l2 2 4-4"/></svg>任务</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>积分</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>社区</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 16 0v1"/></svg>我的</div>
+      </div>
+    </div></div>
+    <ul class="notes"><h5>优化点</h5>
+      <li>顶部"本周成长进度"改为深色卡 + 进度环，聚合 3 个关键数字，信息密度更高</li>
+      <li>分类 chips（是什么）与排序 chips（怎么排）视觉分级：深色填充 vs 浅绿描边，避免两组混淆</li>
+      <li>任务卡统一三指标行，截止时间固定在卡底，行动文案统一为「查看详情 ›」</li>
+      <li>"任务记录"收为右上角文字按钮，空出首屏给任务本身</li>
+    </ul>
+  </div>
+
+  <!-- ===== 积分商城 ===== -->
+  <div class="phone-block">
+    <div class="phone-cap"><span class="pn"><i></i>③ 积分商城 Mall</span><div class="pe">品牌 + 保障 + 商品双列流</div></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span class="sb-time num">9:41</span><div class="sb-r"><span class="capsule"><b></b><b></b><b></b></span><span>⊙</span></div></div>
+      <div class="screen-body"><div class="inner" style="overflow-y:auto">
+        <div class="mall-nav">
+          <div class="mall-brand"><span class="mall-logo">L</span><div><b>精选商城</b><small>TASK · REWARD · LIFE</small></div></div>
+          <span class="cart-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>购物车 2</span>
+        </div>
+        <div class="searchbar" style="margin-bottom:12px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>搜索商品、课程或数字权益</div>
+        <div class="mall-hero">
+          <h3>把努力<br>兑换成更好的日常</h3>
+          <p>现金、积分或组合支付 · 本周好物已上新</p>
+          <span class="hero-cta">立即逛逛 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+        </div>
+        <div class="assure">
+          <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></i>同端同价</div>
+          <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg></i>三种支付</div>
+          <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></i>售后可查</div>
+        </div>
+        <div class="chips" style="padding-top:13px"><span class="on">全部</span><span>数码学习</span><span>生活补给</span><span>课程权益</span><span>数字权益</span></div>
+        <div class="sec-row" style="padding-top:4px"><h4>本周精选</h4><a>查看全部 86 件 ›</a></div>
+        <div class="goods2" style="margin-bottom:11px">
+          <div class="good"><div class="good-img" style="background:linear-gradient(145deg,#CFEFE3,#A7DFCB)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></div><div class="good-body"><div class="good-name">静音学习计时器</div><div class="good-sub">数码学习 · 已兑 320</div><div class="good-price num">2,800<small>积分 +¥9.9</small></div></div></div>
+          <div class="good"><div class="good-img" style="background:linear-gradient(145deg,#FBE4BF,#F3C987)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></div><div class="good-body"><div class="good-name">校园定制帆布袋</div><div class="good-sub">生活补给 · 已兑 512</div><div class="good-price num">1,200<small>积分兑换</small></div></div></div>
+        </div>
+        <div class="goods2">
+          <div class="good"><div class="good-img" style="background:linear-gradient(145deg,#D8E6FD,#AFC9F2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div class="good-body"><div class="good-name">四六级冲刺课</div><div class="good-sub">课程权益 · 已兑 176</div><div class="good-price num">5,600<small>积分 +¥29</small></div></div></div>
+          <div class="good"><div class="good-img" style="background:linear-gradient(145deg,#E6DEFC,#C6B6F4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div><div class="good-body"><div class="good-name">视频会员月卡</div><div class="good-sub">数字权益 · 已兑 904</div><div class="good-price num">3,000<small>积分 +¥15</small></div></div></div>
+        </div>
+      </div></div>
+      <div class="tabbar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>首页</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M9 15l2 2 4-4"/></svg>任务</div>
+        <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>积分</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>社区</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 16 0v1"/></svg>我的</div>
+      </div>
+    </div></div>
+    <ul class="notes"><h5>优化点</h5>
+      <li>品牌行与搜索合并为一行高，hero 压缩高度，首屏可露出分类与第一件商品</li>
+      <li>"同端同价/三种支付/售后可查"由大卡片缩为三枚轻量保障 chip，弱化装饰、强化浏览</li>
+      <li>商品卡统一：图 88px + 名称（单行）+ 分类/已兑 + 价格行；兑换量提供从众参考</li>
+      <li>购物车带数量角标；价格层级「积分数字大 + 现金补充小」</li>
+    </ul>
+  </div>
+
+  <!-- ===== 校园社区 ===== -->
+  <div class="phone-block">
+    <div class="phone-cap"><span class="pn"><i></i>④ 校园社区 Community</span><div class="pe">公约 + 热榜 + 信息流</div></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span class="sb-time num">9:41</span><div class="sb-r"><span class="capsule"><b></b><b></b><b></b></span><span>⊙</span></div></div>
+      <div class="screen-body"><div class="inner" style="overflow-y:auto">
+        <div class="comm-intro">
+          <div><div class="k-en">CAMPUS COMMUNITY</div><h3>校园社区</h3><p>分享校园生活，找到同路伙伴</p></div>
+          <div class="comm-stat"><strong class="num">24</strong><span>条新动态</span></div>
+        </div>
+        <div class="chips"><span class="on">全部</span><span>经验分享</span><span>学习攻略</span><span>互助提问</span><span>组团活动</span><span>我的发布</span></div>
+        <div class="guide"><span class="gi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><div style="flex:1">友善、真实、安全地交流<div style="color:#79A997;font-size:10px;margin-top:1px">发布前请阅读社区文明公约与隐私提醒</div></div><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9BC8B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
+        <div class="hot">
+          <span class="hot-badge">校园热榜 HOT</span><span class="hot-rank num">01</span><span class="t">期末复习搭子在哪里找？</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#B3BECB" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="post">
+          <div class="post-head">
+            <span class="av" style="width:38px;height:38px;font-size:14px">林</span>
+            <div class="info"><div class="nm">林小满 <span class="cert">校园伙伴 · 已实名</span></div><div class="tm">南昌职业大学 · 10 分钟前</div></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#B3BECB"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+          </div>
+          <div class="post-title"><em>#学习攻略</em> 图书馆三楼靠窗的位置真的太适合背书了</div>
+          <div class="post-body">整理了一份期末复习时间安排：早上背单词、下午刷真题、晚上复盘错题，需要的同学评论区扣 1，我发你文档～</div>
+          <div class="post-imgs">
+            <i style="background:linear-gradient(145deg,#CFEFE3,#9FD8C2)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5z"/></svg></i>
+            <i style="background:linear-gradient(145deg,#D8E6FD,#AFC9F2)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></i>
+            <i style="background:linear-gradient(145deg,#FBE4BF,#F3C987)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></i>
+          </div>
+          <div class="post-foot">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>128</span>
+            <span style="color:var(--red)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>32</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>5</span>
+          </div>
+        </div>
+        <div class="post">
+          <div class="post-head">
+            <span class="av" style="width:38px;height:38px;font-size:14px;background:linear-gradient(135deg,#F3C987,#E8920C)">周</span>
+            <div class="info"><div class="nm">周同学 <span class="cert">校园伙伴</span></div><div class="tm">1 小时前</div></div>
+          </div>
+          <div class="post-title"><em>#组团活动</em> 周末晨跑打卡小组，有没有一起的？</div>
+          <div class="post-body">每天 7:00 操场集合跑三圈，坚持一周请喝奶茶，想一起的同学评论区集合～</div>
+          <div class="post-foot"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>56</span><span style="color:var(--ink-3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>14</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>3</span></div>
+        </div>
+        <span class="fab"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>发布动态</span>
+      </div></div>
+      <div class="tabbar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>首页</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M9 15l2 2 4-4"/></svg>任务</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>积分</div>
+        <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>社区</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 16 0v1"/></svg>我的</div>
+      </div>
+    </div></div>
+    <ul class="notes"><h5>优化点</h5>
+      <li>介绍区右侧用"24 条新动态"替代装饰插画；分类横滑与全局 tab 语言一致</li>
+      <li>新增"校园热榜"一行入口，提升停留；文明公约常驻但弱化为浅绿条</li>
+      <li>帖子卡：实名徽章 + 学校/时间、话题用绿色 # 前缀、图片统一 3 格圆角</li>
+      <li>互动数据全部换 SVG 线性图标（浏览/点赞/评论），右下角悬浮"发布动态"主按钮</li>
+    </ul>
+  </div>
+
+  <!-- ===== 我的 ===== -->
+  <div class="phone-block">
+    <div class="phone-cap"><span class="pn"><i></i>⑤ 我的 Mine</span><div class="pe">资产聚合 + 订单 + 服务矩阵</div></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span class="sb-time num">9:41</span><div class="sb-r"><span class="capsule"><b></b><b></b><b></b></span><span>⊙</span></div></div>
+      <div class="screen-body"><div class="inner" style="overflow-y:auto;padding-top:8px">
+        <div class="mine-head">
+          <div class="mine-row1">
+            <span class="mine-av">林</span>
+            <div class="mine-info"><b>林小满</b><div class="mbadges"><i>已实名认证</i><i>南昌职业大学</i><i>成长 Lv.4</i></div></div>
+            <span class="edit-btn">编辑资料</span>
+          </div>
+          <div class="wallet">
+            <div><strong class="num">¥86.50</strong><span>钱包余额</span></div>
+            <div><strong class="num">2,840</strong><span>可用积分</span></div>
+            <div><strong class="num">¥120.0</strong><span>累计收益</span></div>
+          </div>
+          <div class="wallet-acts"><span>充值</span><span>提现</span><span>账单明细</span></div>
+        </div>
+
+        <div class="week">
+          <span class="wi"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg></span>
+          <div class="wc"><b>本周成长周报</b><p>已完成 3 个任务，超过 82% 的同校同学</p></div>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+
+        <div class="order-card">
+          <div class="svc-title" style="padding-bottom:12px">我的订单<small>全部订单 ›</small></div>
+          <div class="order-grid">
+            <div class="og"><i style="background:#FDF1DE;color:#E8920C"><span class="dot num">2</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4M12 17h.01"/></svg></i><span>待付款</span></div>
+            <div class="og"><i style="background:#EAF2FE;color:#2F7DE1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 22v-2M2 12h4M18 12h4"/><circle cx="12" cy="12" r="6"/></svg></i><span>待审核</span></div>
+            <div class="og"><i style="background:#E7F6EF;color:#0B7A5C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="M22 4 12 14l-3-3"/></svg></i><span>已完成</span></div>
+            <div class="og"><i style="background:#FDECEC;color:#E5484D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></i><span>售后退款</span></div>
+          </div>
+        </div>
+
+        <div class="svc-card">
+          <div class="svc-title">校园社区<small>发帖 · 组团 · 互助</small></div>
+          <div class="svc-grid">
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></i>发布帖子</div>
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg></i>校园组团</div>
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7"/><path d="M12 17h.01"/></svg></i>有偿求助</div>
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5z"/></svg></i>学习交流</div>
+            <div class="svc"><i style="color:#7656E8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 2.4 7.4H22l-6 4.4 2.3 7.2-6.3-4.6-6.3 4.6L8 13.8 2 9.4h7.6z"/></svg></i>成果展示</div>
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></i>互助问答</div>
+          </div>
+        </div>
+
+        <div class="svc-card">
+          <div class="svc-title">常用服务<small>资产 · 售后 · 设置</small></div>
+          <div class="svc-grid">
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M9 15l2 2 4-4"/></svg></i>我的任务</div>
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></i>我的订单</div>
+            <div class="svc"><i style="color:#E5484D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></i>售后退款</div>
+            <div class="svc"><i style="color:#7656E8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></i>邀请好友</div>
+            <div class="svc"><i style="color:#E8920C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></i>每日签到</div>
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.2z"/></svg></i>消息中心</div>
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></i>收货地址</div>
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6z"/></svg></i>账号安全</div>
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></i>实名认证</div>
+            <div class="svc"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="12" cy="10" r="1.5"/></svg></i>联系客服</div>
+          </div>
+        </div>
+        <div class="logout">退出账号</div>
+      </div></div>
+    </div></div>
+    <ul class="notes"><h5>优化点</h5>
+      <li>个人信息 + 钱包合并为一张绿色主卡：余额/积分/收益三等分，充值提现内聚，不再分散多张卡</li>
+      <li>新增"成长周报"条承接 Lv.4 徽章，让等级有出口；订单四态带未读红色角标</li>
+      <li>服务统一为「社区 6 格 + 常用 10 格」两张白卡，图标全部线性、语义着色（售后红/签到琥珀）</li>
+      <li>退出账号独立为浅危险态按钮，避免误触；所有图标占容器约 52%，视觉不再撑满</li>
+    </ul>
+  </div>
+
+  <!-- ===== 组件与状态规范 ===== -->
+  <div class="phone-block">
+    <div class="phone-cap"><span class="pn"><i></i>⑥ 组件与状态 Spec</span><div class="pe">评审用：所有页面共用</div></div>
+    <div class="phone"><div class="screen" style="background:#F2F6F8">
+      <div class="statusbar"><span class="sb-time num">9:41</span><div class="sb-r"><span class="capsule"><b></b><b></b><b></b></span><span>⊙</span></div></div>
+      <div class="screen-body"><div class="inner" style="overflow-y:auto">
+        <div class="state-wrap">
+          <div class="state-block">
+            <h6>文字与色彩</h6>
+            <div style="font-size:20px;font-weight:800;margin-bottom:4px">标题 20 · 墨蓝黑</div>
+            <div style="font-size:14px;color:#46586C;margin-bottom:4px">正文 14 · 次级灰，用于说明信息与辅助描述。</div>
+            <div style="font-size:12px;color:#8B99AA;margin-bottom:12px">注释 12 · 时间、标签、列表末端文案</div>
+            <div class="color-dots"><i style="background:#0E9F6E"></i><i style="background:#E8920C"></i><i style="background:#2F7DE1"></i><i style="background:#7656E8"></i><i style="background:#E5484D"></i><i style="background:#102338"></i></div>
+          </div>
+          <div class="state-block">
+            <h6>按钮层级</h6>
+            <div class="btn-row"><span class="btn btn-primary btn-sm">主要操作</span><span class="btn btn-secondary btn-sm">次要操作</span><span class="btn btn-outline btn-sm">描边</span><span class="btn btn-disabled btn-sm">禁用</span></div>
+          </div>
+          <div class="state-block">
+            <h6>状态反馈</h6>
+            <div class="review-bar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>审核中：自动轮询 + 明确预期，奖励通过后自动到账</div>
+            <div class="stepper"><i>1</i><b></b><i style="background:#EAF2FE;color:#2F7DE1">2</i><b></b><i style="background:#F2F5F8;color:#B3BECB">3</i></div>
+            <div style="font-size:11px;color:#8B99AA;margin-top:6px">领取 → 提交 → 审核：三步进度在任务卡与详情页保持一致</div>
+          </div>
+          <div class="state-block" style="padding:0;overflow:hidden">
+            <div class="sheet-demo" style="border:0">
+              <div class="sh-handle"></div>
+              <div class="sh-title">底部弹层</div>
+              <label><span>任务排序与筛选</span></label>
+              <label><span>选择学校（搜索自动聚焦）</span></label>
+              <label><span>放弃任务 / 取消订单二次确认</span></label>
+              <label><span style="color:var(--brand)">我知道了</span></label>
+            </div>
+          </div>
+          <div class="state-block">
+            <h6>空状态文案（统一句式）</h6>
+            <div style="font-size:12.5px;line-height:1.9;color:#46586C">
+              · 任务：暂时没有符合条件的任务 / 换个分类看看<br>
+              · 订单：这里还没有订单，去任务大厅看看吧<br>
+              · 社区：还没有同学发过这类内容，成为第一个发帖的人<br>
+              · 列表末端：到底啦 · 先去校园里逛逛吧
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div></div>
+    <ul class="notes"><h5>规范说明</h5>
+      <li>每个页面只允许一个"主要按钮"（绿色实心），其余操作降级为浅绿/描边/文字</li>
+      <li>空状态 = 线性图标 + 一句话现状 + 一句话引导 + 一个行动按钮，全站统一</li>
+      <li>所有金额/积分/计数使用 DIN 等宽数字，右对齐，保证列表纵向对齐</li>
+      <li>危险操作（退出/放弃/注销）统一红色文字或红色描边，绝不用红色实心按钮</li>
+    </ul>
+  </div>
+
+  </div>
+
+  <div class="footer-note">
+    校园任务商城 UI 3.0 设计提案 · 评审稿<br>
+    确认方向后，将按「设计令牌 → 公共组件 → 五个 Tab 页 → 二级页面」的顺序落地为代码，不改动现有业务数据与接口。
+  </div>
+</div>
+
+</body>
+</html>
