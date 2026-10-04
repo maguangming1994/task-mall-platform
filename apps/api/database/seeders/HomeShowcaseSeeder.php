@@ -17,7 +17,7 @@ use Illuminate\Database\Seeder;
  *
  * 数据口径全部为正式内容：
  * - 积分预算池、任务、首页装修均带固定幂等键/标记，可重复执行
- * - 不依赖 environment 守卫
+ * - 生产环境复用既有平台管理员，不创建带默认密码的账号
  */
 class HomeShowcaseSeeder extends Seeder
 {
@@ -101,6 +101,21 @@ class HomeShowcaseSeeder extends Seeder
 
     private function admin(): AdminUser
     {
+        // 生产环境只允许使用既有管理员发布内容，绝不创建带默认密码的账号。
+        if (app()->environment('production')) {
+            $admin = AdminUser::query()
+                ->whereHas('roles', fn ($query) => $query->whereIn('code', ['platform_admin', 'super_admin']))
+                ->where('status', 'active')
+                ->orderBy('id')
+                ->first();
+
+            if ($admin === null) {
+                throw new \RuntimeException('生产环境缺少可用的平台管理员，无法发布首页与任务大厅内容。');
+            }
+
+            return $admin;
+        }
+
         $admin = AdminUser::query()->firstOrCreate(
             ['account' => 'preview_admin'],
             ['display_name' => '预览管理员', 'password' => 'TaskMall2026!Preview', 'status' => 'active'],
