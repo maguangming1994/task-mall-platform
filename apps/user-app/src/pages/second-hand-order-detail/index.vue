@@ -5,6 +5,19 @@
       <text class="status-sub">{{ statusSub }}</text>
     </view>
 
+    <view class="timeline-card">
+      <view class="tl-head"><text class="tl-head-title">订单进度</text><text class="tl-head-sub">{{ order.order_no }}</text></view>
+      <view class="tl">
+        <view v-for="(row, idx) in steps" :key="idx" class="tl-row" :class="row.state">
+          <view class="tl-dot" />
+          <view class="tl-main">
+            <text class="tl-title">{{ row.title }}</text>
+            <text v-if="row.desc" class="tl-desc">{{ row.desc }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <view class="item-card" @click="openItem">
       <image v-if="order.cover" class="cover" :src="resolveCover(order.cover)" mode="aspectFill" />
       <view v-else class="cover placeholder"><text>{{ order.title.slice(0, 1) }}</text></view>
@@ -30,6 +43,7 @@
     </view>
 
     <view class="action-bar">
+      <button class="btn ghost support-btn" @click="contactSupport">客服</button>
       <button v-if="canCancel" class="btn ghost" @click="cancel">取消订单</button>
       <button v-if="canRefund" class="btn ghost" @click="goRefund">申请退款</button>
       <button v-else-if="showRefundEntry" class="btn ghost" @click="goRefund">退款/售后</button>
@@ -77,6 +91,47 @@ const canCancel = computed(() => ['pending_payment', 'paid'].includes(order.valu
 const canRefund = computed(() => order.value?.role === 'buyer' && ['paid', 'shipped'].includes(order.value?.status || '') && !order.value?.has_refund)
 const showRefundEntry = computed(() => order.value?.has_refund === true)
 const canRate = computed(() => order.value?.status === 'completed' && !order.value?.has_rated)
+
+type StepState = 'done' | 'doing' | 'cancel' | 'todo'
+interface OrderStep { title: string; desc: string; state: StepState }
+const steps = computed<OrderStep[]>(() => {
+  const o = order.value
+  if (!o) return []
+  const shipLabel = o.trade_type === 'meetup' ? '卖家确认交付' : '卖家已发货'
+  const rows: OrderStep[] = [{ title: '订单创建', desc: `${formatTime(o.created_at)} · 二手闲置交易`, state: 'done' }]
+  switch (o.status) {
+    case 'pending_payment':
+      rows.push({ title: '等待买家支付', desc: '请在 30 分钟内完成支付', state: 'doing' })
+      break
+    case 'paid':
+      rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 钱包托管 ¥${o.price}`, state: 'done' })
+      rows.push({ title: o.trade_type === 'meetup' ? '等待卖家确认交付' : '等待卖家发货', desc: '货款由平台托管，确认收货后结算给卖家', state: 'doing' })
+      break
+    case 'shipped':
+      rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 钱包托管 ¥${o.price}`, state: 'done' })
+      rows.push({ title: shipLabel, desc: formatTime(o.shipped_at), state: 'done' })
+      rows.push({ title: '等待买家确认收货', desc: '收到商品并确认无误后点击确认收货', state: 'doing' })
+      break
+    case 'completed':
+      rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 钱包托管 ¥${o.price}`, state: 'done' })
+      if (o.shipped_at) rows.push({ title: shipLabel, desc: formatTime(o.shipped_at), state: 'done' })
+      rows.push({ title: '交易完成', desc: `${formatTime(o.completed_at)} · 货款已结算给卖家`, state: 'done' })
+      break
+    case 'cancelled':
+      rows.push({ title: '订单已取消', desc: '交易关闭', state: 'cancel' })
+      break
+    case 'refunded':
+      if (o.paid_at) rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 钱包托管 ¥${o.price}`, state: 'done' })
+      if (o.shipped_at) rows.push({ title: shipLabel, desc: formatTime(o.shipped_at), state: 'done' })
+      rows.push({ title: '退款完成', desc: '款项已退回买家钱包余额', state: 'cancel' })
+      break
+    default:
+      rows.push({ title: '订单处理中', desc: o.status, state: 'doing' })
+  }
+  return rows.reverse()
+})
+
+function contactSupport() { uni.navigateTo({ url: '/pages/support/index' }) }
 
 function resolveCover(id: string | null) { return resolveApiAssetUrl(id) }
 function formatTime(s: string | null) { return formatDateTime(s, '') }
@@ -150,6 +205,24 @@ async function cancel() {
 .chat-btn { background: #07c160; color: #fff; padding: 12rpx 28rpx; border-radius: 28rpx; font-size: 24rpx; }
 .action-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 20rpx 28rpx; background: #fff; border-top: 1rpx solid #ececee; display: flex; gap: 20rpx; justify-content: flex-end; }
 .btn { height: 72rpx; line-height: 72rpx; border-radius: 36rpx; font-size: 28rpx; padding: 0 40rpx; }
+.support-btn { margin-right: auto; color: #07c160; background: #e9f9f0; }
+.timeline-card { background: #fff; margin-top: 16rpx; padding: 28rpx 28rpx 12rpx; }
+.tl-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12rpx; }
+.tl-head-title { font-size: 30rpx; font-weight: 700; color: #1a1a1b; }
+.tl-head-sub { font-size: 22rpx; color: #9aa0a6; }
+.tl-row { display: flex; gap: 22rpx; position: relative; padding-bottom: 32rpx; }
+.tl-row:last-child { padding-bottom: 8rpx; }
+.tl-row::before { content: ''; position: absolute; left: 13rpx; top: 32rpx; bottom: 0; width: 4rpx; background: #e8ebe9; }
+.tl-row:last-child::before { display: none; }
+.tl-dot { width: 28rpx; height: 28rpx; border-radius: 50%; background: #fff; border: 4rpx solid #d6dad8; flex: none; margin-top: 4rpx; position: relative; z-index: 1; }
+.tl-row.done .tl-dot { border-color: #07c160; background: #07c160; }
+.tl-row.doing .tl-dot { border-color: #ff7a1a; background: #fff; box-shadow: 0 0 0 8rpx #fff2e5; }
+.tl-row.cancel .tl-dot { border-color: #9aa0a6; background: #9aa0a6; }
+.tl-main { flex: 1; min-width: 0; }
+.tl-title { font-size: 27rpx; font-weight: 600; color: #1a1a1b; display: block; }
+.tl-row.doing .tl-title { color: #f2620a; }
+.tl-row.cancel .tl-title { color: #6e6e73; }
+.tl-desc { font-size: 22rpx; color: #9aa0a6; margin-top: 6rpx; line-height: 1.5; display: block; }
 .btn.ghost { background: #f5f5f7; color: #6e6e73; }
 .btn.primary { background: #ff2442; color: #fff; }
 </style>

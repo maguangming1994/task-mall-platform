@@ -247,6 +247,21 @@ class RefundService
         });
     }
 
+    public function cancel(User $user, Refund $refund): Refund
+    {
+        abort_unless($refund->user_id === $user->id, 404);
+
+        return DB::transaction(function () use ($refund) {
+            $locked = Refund::query()->lockForUpdate()->findOrFail($refund->id);
+            if (! in_array($locked->status, ['submitted', 'awaiting_return'], true)) {
+                throw ValidationException::withMessages(['refund' => '当前状态不可撤销，已寄回或已进入退款处理的售后请联系客服。']);
+            }
+            $locked->update(['status' => 'cancelled', 'review_note' => '用户主动撤销申请。']);
+
+            return $locked->fresh();
+        });
+    }
+
     public function receiveReturn(AdminUser $admin, Refund $refund, string $note): Refund
     {
         $shouldDispatchProvider = false;

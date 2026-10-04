@@ -58,6 +58,7 @@ class NotificationSceneRegistry
             'second_hand_refund_approved' => $this->scene('second_hand', '退款成功', '退款已到账', '“{{item_title}}”退款 ¥{{amount}} 已退回你的钱包。', ['in_app'], 100, true),
             'second_hand_refund_rejected' => $this->scene('second_hand', '退款被拒', '退款申请被拒绝', '“{{item_title}}”退款申请被卖家拒绝：{{review_note}}，可申请平台介入。', ['in_app'], 110),
             'second_hand_refund_arbitrated' => $this->scene('second_hand', '平台仲裁', '平台仲裁结果', '“{{item_title}}”平台仲裁结果：{{review_note}}', ['in_app'], 120, true),
+            'second_hand_refund_cancelled' => $this->scene('second_hand', '退款撤销', '买家已撤销退款申请', '“{{item_title}}”订单买家已撤销退款申请，订单继续履约。', ['in_app'], 130),
         ];
     }
 

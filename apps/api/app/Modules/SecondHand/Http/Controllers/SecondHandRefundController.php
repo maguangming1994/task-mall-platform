@@ -31,7 +31,7 @@ class SecondHandRefundController extends Controller
         abort_unless(in_array($order->status, ['paid', 'shipped'], true), 409, '当前订单状态不允许申请退款');
 
         $existing = SecondHandRefund::query()->where('order_id', $order->id)->first();
-        abort_if($existing !== null && ! in_array($existing->status, ['seller_rejected', 'arbitrated_rejected'], true), 409, '退款申请已存在');
+        abort_if($existing !== null && ! in_array($existing->status, ['seller_rejected', 'arbitrated_rejected', 'cancelled'], true), 409, '退款申请已存在');
 
         $data = $request->validate([
             'reason' => ['required', 'string', 'max:500'],
@@ -140,6 +140,29 @@ class SecondHandRefundController extends Controller
         abort_unless($order->buyer_user_id === $user->id || $order->seller_user_id === $user->id, 403);
 
         $refund = SecondHandRefund::query()->where('order_id', $order->id)->firstOrFail();
+
+        return ApiResponse::success($this->present($refund));
+    }
+
+    /**
+     * 买家撤销退款申请（仅卖家处理前可撤销）
+     */
+    public function cancel(Request $request, SecondHandOrder $order): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($order->buyer_user_id === $user->id, 403);
+
+        $refund = DB::transaction(function () use ($order) {
+            $locked = SecondHandRefund::query()->lockForUpdate()->where('order_id', $order->id)->firstOrFail();
+            abort_unless($locked->status === 'pending', 409, '卖家已处理，无法撤销退款申请；请联系卖家或平台客服。');
+            $locked->update([
+                'status' => 'cancelled',
+                'auto_approve_at' => null,
+            ]);
+
+            return $locked->loadMissing('order');
+        });
+        $this->notify->refundCancelled($refund);
 
         return ApiResponse::success($this->present($refund));
     }

@@ -85,6 +85,11 @@ class RefundController extends Controller
         return ApiResponse::success($this->data($service->submitReturn($request->user(), $refund, $data, $key)));
     }
 
+    public function cancel(Request $request, Refund $refund, RefundService $service): JsonResponse
+    {
+        return ApiResponse::success($this->data($service->cancel($request->user(), $refund)));
+    }
+
     public function receiveReturn(Request $request, Refund $refund, RefundService $service): JsonResponse
     {
         $data = $request->validate(['note' => ['required', 'string', 'max:500']]); /** @var AdminUser $admin */

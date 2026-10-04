@@ -210,6 +210,52 @@ class SecondHandAuditRatingRefundFlowTest extends TestCase
         $this->assertEquals(10000, $buyer->assetAccount?->wallet_available_cents);
     }
 
+    public function test_buyer_can_cancel_pending_refund_then_reapply_and_cannot_cancel_after_response(): void
+    {
+        [$seller, $sellerToken] = $this->loginAndConsent('13800138008');
+        [$buyer, $buyerToken] = $this->loginAndConsent('13800138009');
+        [$admin, $adminToken] = $this->loginAdmin();
+
+        $this->depositWallet($buyer, 10000);
+
+        $item = $this->withToken($sellerToken)->postJson('/api/v1/second-hand/items', [
+            'title' => '撤销退款测试商品',
+            'price' => 60,
+        ])->assertCreated();
+        $this->withToken($adminToken)->postJson('/api/v1/admin/second-hand/items/'.$item->json('data.id').'/review', ['decision' => 'approve'])->assertOk();
+
+        $order = $this->withToken($buyerToken)->postJson('/api/v1/second-hand/orders', [
+            'item_id' => $item->json('data.id'),
+        ])->assertCreated();
+        $this->withToken($buyerToken)->postJson('/api/v1/second-hand/orders/'.$order->json('data.id').'/pay')->assertOk();
+        $orderId = $order->json('data.id');
+
+        // 申请退款
+        $this->withToken($buyerToken)->postJson('/api/v1/second-hand/orders/'.$orderId.'/refund', [
+            'reason' => '不想要了',
+        ])->assertCreated()->assertJsonPath('data.status', 'pending');
+
+        // 卖家无权撤销
+        $this->withToken($sellerToken)->postJson('/api/v1/second-hand/orders/'.$orderId.'/refund/cancel')->assertForbidden();
+
+        // 买家撤销
+        $this->withToken($buyerToken)->postJson('/api/v1/second-hand/orders/'.$orderId.'/refund/cancel')
+            ->assertOk()->assertJsonPath('data.status', 'cancelled');
+
+        // 撤销后订单不再挂起退款，可重新申请
+        $this->withToken($buyerToken)->getJson('/api/v1/second-hand/orders/'.$orderId)
+            ->assertOk()->assertJsonPath('data.has_refund', false)->assertJsonPath('data.status', 'paid');
+        $this->withToken($buyerToken)->postJson('/api/v1/second-hand/orders/'.$orderId.'/refund', [
+            'reason' => '重新申请退款',
+        ])->assertCreated()->assertJsonPath('data.status', 'pending');
+
+        // 卖家同意后不可再撤销
+        $this->withToken($sellerToken)->postJson('/api/v1/second-hand/orders/'.$orderId.'/refund/respond', [
+            'action' => 'approve',
+        ])->assertOk()->assertJsonPath('data.status', 'seller_approved');
+        $this->withToken($buyerToken)->postJson('/api/v1/second-hand/orders/'.$orderId.'/refund/cancel')->assertConflict();
+    }
+
     private function loginAndConsent(string $phone): array
     {
         $headers = ['X-Client-Platform' => 'h5-browser', 'X-Device-Id' => 'sh-test-'.$phone];

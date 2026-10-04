@@ -119,6 +119,7 @@ export const afterSaleStatusLabels: Record<string, string> = {
   succeeded: '售后已完成',
   completed: '已完成',
   rejected: '已拒绝',
+  cancelled: '用户已撤销',
   closed: '已关闭',
   expired: '已超时关闭',
 }

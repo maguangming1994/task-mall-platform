@@ -129,6 +129,20 @@ class SecondHandNotificationService
         );
     }
 
+    public function refundCancelled(SecondHandRefund $refund): void
+    {
+        $order = $refund->order()->firstOrFail();
+        $item = $order->item()->firstOrFail();
+        $this->notifications->create(
+            $refund->seller()->firstOrFail(), 'second_hand', 'second_hand_refund_cancelled',
+            '买家已撤销退款申请',
+            '「'.$item->title.'」订单买家已撤销退款申请，订单继续履约。',
+            'sh-refund-cancelled:'.$refund->public_id,
+            false, ['in_app'],
+            ['order_id' => $order->public_id, 'refund_id' => $refund->public_id],
+        );
+    }
+
     public function refundResponded(SecondHandRefund $refund, bool $approved): void
     {
         $order = $refund->order()->firstOrFail();

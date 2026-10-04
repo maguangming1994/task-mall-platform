@@ -260,11 +260,13 @@ Route::middleware('auth.access')->group(function () {
     Route::get('/refunds', [RefundController::class, 'index'])->middleware('legal.consent:account');
     Route::post('/refunds', [RefundController::class, 'store'])->middleware('legal.consent:account');
     Route::post('/refunds/{refund}/return-shipment', [RefundController::class, 'submitReturn'])->middleware('legal.consent:account');
+    Route::post('/refunds/{refund}/cancel', [RefundController::class, 'cancel'])->middleware('legal.consent:account');
     Route::post('/exchanges', [ExchangeController::class, 'store'])->middleware('legal.consent:account');
     Route::get('/exchanges', [ExchangeController::class, 'index'])->middleware('legal.consent:account');
     Route::get('/exchanges/{exchange}', [ExchangeController::class, 'show'])->middleware('legal.consent:account');
     Route::post('/exchanges/{exchange}/return-shipment', [ExchangeController::class, 'submitReturn'])->middleware('legal.consent:account');
     Route::post('/exchanges/{exchange}/complete', [ExchangeController::class, 'complete'])->middleware('legal.consent:account');
+    Route::post('/exchanges/{exchange}/cancel', [ExchangeController::class, 'cancel'])->middleware('legal.consent:account');
     Route::get('/order-batches/{orderBatch}', [OrderController::class, 'batch'])->middleware('legal.consent:account');
     Route::get('/me/legal-consents', [UserLegalConsentController::class, 'index']);
     Route::get('/me/legal-consents/pending', [UserLegalConsentController::class, 'pending']);
@@ -304,6 +306,7 @@ Route::middleware('auth.access')->group(function () {
     Route::post('/second-hand/orders/{order}/refund', [SecondHandRefundController::class, 'request'])->middleware('legal.consent:account');
     Route::post('/second-hand/orders/{order}/refund/respond', [SecondHandRefundController::class, 'respond'])->middleware('legal.consent:account');
     Route::get('/second-hand/orders/{order}/refund', [SecondHandRefundController::class, 'show'])->middleware('legal.consent:account');
+    Route::post('/second-hand/orders/{order}/refund/cancel', [SecondHandRefundController::class, 'cancel'])->middleware('legal.consent:account');
     Route::post('/second-hand/orders/{order}/refund/escalate', [SecondHandRefundController::class, 'escalate'])->middleware('legal.consent:account');
 
     // 广播鉴权（WebSocket 私有频道）

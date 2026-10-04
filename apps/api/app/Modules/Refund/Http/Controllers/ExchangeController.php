@@ -104,6 +104,11 @@ class ExchangeController extends Controller
         return ApiResponse::success($this->data($service->confirmReplacement($request->user(), $exchange)));
     }
 
+    public function cancel(Request $request, Exchange $exchange, ExchangeService $service): JsonResponse
+    {
+        return ApiResponse::success($this->data($service->cancel($request->user(), $exchange)));
+    }
+
     private function key(Request $request): string
     {
         $key = (string) $request->header('Idempotency-Key');

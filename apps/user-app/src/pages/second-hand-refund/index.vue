@@ -41,9 +41,21 @@
           <button class="ab-ghost" :disabled="acting" @click="reject">拒绝</button>
           <button class="ab-main" :disabled="acting" @click="approve">同意退款</button>
         </template>
+        <template v-else-if="isBuyer && refund.status === 'pending'">
+          <button class="ab-ghost" :disabled="acting" @click="cancel">撤销申请</button>
+          <button class="ab-main" @click="contact">联系卖家</button>
+        </template>
         <template v-else-if="isBuyer && refund.status === 'seller_rejected'">
           <button class="ab-ghost" @click="contact">联系卖家</button>
           <button class="ab-main" :disabled="acting" @click="escalate">申请平台介入</button>
+        </template>
+        <template v-else-if="isBuyer && refund.status === 'cancelled'">
+          <button class="ab-ghost" @click="contact">联系卖家</button>
+          <button class="ab-main" @click="reapply">重新申请</button>
+        </template>
+        <template v-else-if="isBuyer && ['arbitrating', 'arbitrated_rejected'].includes(refund.status)">
+          <button class="ab-ghost" @click="contactSupport">联系客服</button>
+          <button class="ab-main" @click="contact">联系卖家</button>
         </template>
         <template v-else>
           <button class="ab-main full" @click="contact">{{ isBuyer ? '联系卖家' : '联系买家' }}</button>
@@ -103,7 +115,7 @@ import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import {
-  escalateSecondHandRefund, getSecondHandOrder, getSecondHandRefund,
+  cancelSecondHandRefund, escalateSecondHandRefund, getSecondHandOrder, getSecondHandRefund,
   requestSecondHandRefund, respondSecondHandRefund,
   type SecondHandOrder, type SecondHandRefund,
 } from '@/api/second-hand'
@@ -139,6 +151,7 @@ const statusTextMap: Record<string, string> = {
   arbitrating: '平台仲裁中',
   arbitrated_approved: '平台仲裁通过',
   arbitrated_rejected: '平台仲裁未通过',
+  cancelled: '退款申请已撤销',
 }
 
 const refundStatusText = computed(() => statusTextMap[refund.value?.status || ''] || refund.value?.status)
@@ -152,6 +165,7 @@ const refundStatusDesc = computed(() => {
     case 'arbitrating': return '平台正在核实双方凭证并作出仲裁，请耐心等待。'
     case 'arbitrated_approved': return `平台仲裁通过，退款 ¥${r.amount} 已退回钱包余额。`
     case 'arbitrated_rejected': return '平台仲裁后驳回了退款申请，如有疑问请联系平台客服。'
+    case 'cancelled': return '你已主动撤销退款申请，订单继续履约；如仍有问题可重新申请或联系客服。'
     default: return ''
   }
 })
@@ -159,6 +173,7 @@ const statusTone = computed(() => {
   const s = refund.value?.status
   if (s === 'seller_approved' || s === 'arbitrated_approved') return 'green'
   if (s === 'seller_rejected' || s === 'arbitrated_rejected') return 'red'
+  if (s === 'cancelled') return 'gray'
   return 'orange'
 })
 
@@ -207,6 +222,9 @@ const timeline = computed(() => {
     case 'arbitrated_rejected':
       rows.push({ title: '平台仲裁拒绝', desc: r.admin_note || '平台驳回了退款申请', state: 'done' })
       break
+    case 'cancelled':
+      rows.push({ title: '退款申请已撤销', desc: '买家主动撤销，订单继续履约；如有需要可重新申请', state: 'cancel' })
+      break
   }
   return rows
 })
@@ -246,6 +264,35 @@ async function contact() {
     const conv = await ensureChatConversation(auth.accessToken, { user_id: order.value.counterparty.id, item_id: order.value.item_id || undefined, order_id: order.value.id })
     uni.navigateTo({ url: `/pages/chat-detail/index?id=${conv.id}` })
   } catch { uni.showToast({ title: '发起聊天失败', icon: 'none' }) }
+}
+
+function contactSupport() { uni.navigateTo({ url: '/pages/support/index' }) }
+
+function reapply() {
+  refund.value = null
+  reason.value = ''
+  detail.value = ''
+  images.value = []
+}
+
+function cancel() {
+  if (!refund.value || acting.value) return
+  uni.showModal({
+    title: '撤销退款申请',
+    content: '撤销后本次退款关闭，订单继续履约；之后仍可重新发起申请。确定撤销吗？',
+    confirmText: '确定撤销',
+    confirmColor: '#d14343',
+    success: async (r) => {
+      if (!r.confirm || !order.value) return
+      acting.value = true
+      try {
+        await cancelSecondHandRefund(auth.accessToken, order.value.id)
+        uni.showToast({ title: '已撤销退款申请', icon: 'success' })
+        await load()
+      } catch (e: any) { uni.showToast({ title: e.message || '撤销失败', icon: 'none' }) }
+      finally { acting.value = false }
+    },
+  })
 }
 
 async function upload() {
@@ -347,11 +394,13 @@ function escalate() {
 .status.orange { background:var(--orange-soft); }
 .status.green { background:var(--green-soft); }
 .status.red { background:#FDECEC; }
+.status.gray { background:#F2F4F3; }
 .status-line { display:flex; align-items:center; }
 .status-title { font-size:30rpx; font-weight:700; }
 .status.orange .status-title, .status.orange .status-count { color:var(--orange-deep); }
 .status.green .status-title { color:var(--green-deep); }
 .status.red .status-title { color:#D4380D; }
+.status.gray .status-title { color:var(--t2); }
 .status-count { margin-left:auto; font-size:22rpx; }
 .status-desc { font-size:23rpx; color:var(--t2); margin-top:12rpx; line-height:1.5; display:block; }
 
@@ -368,6 +417,8 @@ function escalate() {
 .tl-title { font-size:27rpx; font-weight:600; color:var(--t1); display:block; }
 .tl-row.todo .tl-title { color:var(--t3); }
 .tl-row.doing .tl-title { color:var(--orange-deep); }
+.tl-row.cancel .tl-dot { border-color:#AEB3BB; background:#AEB3BB; }
+.tl-row.cancel .tl-title { color:var(--t2); }
 .tl-desc { font-size:22rpx; color:var(--t3); margin-top:6rpx; line-height:1.5; display:block; }
 
 /* 键值与凭证 */

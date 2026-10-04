@@ -78,7 +78,7 @@ export interface SecondHandRating {
   created_at: string
 }
 
-export type SecondHandRefundStatus = 'pending' | 'seller_approved' | 'seller_rejected' | 'arbitrating' | 'arbitrated_approved' | 'arbitrated_rejected'
+export type SecondHandRefundStatus = 'pending' | 'seller_approved' | 'seller_rejected' | 'arbitrating' | 'arbitrated_approved' | 'arbitrated_rejected' | 'cancelled'
 
 export interface SecondHandRefund {
   id: string
@@ -225,4 +225,9 @@ export function respondSecondHandRefund(token: string, orderId: string, data: { 
 // 买家申请平台介入
 export function escalateSecondHandRefund(token: string, orderId: string) {
   return apiRequest<SecondHandRefund>({ path: `/second-hand/orders/${orderId}/refund/escalate`, method: 'POST', accessToken: token })
+}
+
+// 买家撤销退款申请（卖家处理前）
+export function cancelSecondHandRefund(token: string, orderId: string) {
+  return apiRequest<SecondHandRefund>({ path: `/second-hand/orders/${orderId}/refund/cancel`, method: 'POST', accessToken: token })
 }

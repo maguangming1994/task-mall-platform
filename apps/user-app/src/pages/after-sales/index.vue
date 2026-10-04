@@ -37,7 +37,7 @@
 
     <view v-if="!loading && !loadError" class="section-head second"><text>退款 / 退货进度</text><text>{{ refunds.length }} 条</text></view>
     <view v-if="!loading && !loadError" v-for="item in refunds" :key="item.id" class="card" @click="openDetail(item.id, 'refund')">
-      <view class="row"><text>{{ item.refund_no }}</text><text class="status" :class="{ pending: !['succeeded', 'rejected', 'closed'].includes(item.status), success: item.status === 'succeeded', danger: ['rejected', 'closed'].includes(item.status) }">{{ statusText(item.status) }}</text></view>
+      <view class="row"><text>{{ item.refund_no }}</text><text class="status" :class="{ pending: !['succeeded', 'rejected', 'closed', 'cancelled'].includes(item.status), success: item.status === 'succeeded', danger: ['rejected', 'closed', 'cancelled'].includes(item.status) }">{{ statusText(item.status) }}</text></view>
       <text class="meta">{{ item.reason_name }} · {{ partyText(item.responsibility_party) }}承担责任</text>
       <text class="meta">退款 ¥{{ money(item.refund_cash_amount) }} + {{ item.refund_points }} 积分</text>
       <button class="primary" @click.stop="openDetail(item.id, 'refund')">{{ item.status === 'awaiting_return' ? '填写退货物流' : '查看售后进度' }}</button>
@@ -45,7 +45,7 @@
 
     <view v-if="!loading && !loadError" class="section-head second"><text>换货进度</text><text>{{ exchanges.length }} 条</text></view>
     <view v-if="!loading && !loadError" v-for="item in exchanges" :key="item.id" class="card" @click="openDetail(item.id, 'exchange')">
-      <view class="row"><text>{{ item.exchange_no }}</text><text class="status" :class="{ pending: !['completed', 'rejected', 'closed'].includes(item.status), success: item.status === 'completed', danger: ['rejected', 'closed'].includes(item.status) }">{{ statusText(item.status) }}</text></view>
+      <view class="row"><text>{{ item.exchange_no }}</text><text class="status" :class="{ pending: !['completed', 'rejected', 'closed', 'cancelled'].includes(item.status), success: item.status === 'completed', danger: ['rejected', 'closed', 'cancelled'].includes(item.status) }">{{ statusText(item.status) }}</text></view>
       <text class="meta">{{ item.reason_name }} · 数量 {{ item.quantity }}</text>
       <text class="meta">寄回运费：{{ partyText(item.return_shipping_payer) }} · 补发运费：{{ partyText(item.replacement_shipping_payer) }}</text>
       <button class="primary" @click.stop="openDetail(item.id, 'exchange')">{{ item.status === 'waiting_return' ? '填写寄回物流' : item.status === 'replacement_shipped' ? '跟踪并确认收货' : '查看换货进度' }}</button>
@@ -94,7 +94,7 @@ function eligibleItems(order: Order) { return order.items.filter(item => item.re
 function openDetail(id: string, type: 'refund' | 'exchange') { uni.navigateTo({ url: `/pages/after-sale-detail/index?id=${encodeURIComponent(id)}&type=${type}` }) }
 function toast(error: unknown) { uni.showToast({ title: error instanceof Error ? error.message : '操作失败', icon: 'none' }) }
 function money(cents: number) { return (cents / 100).toFixed(2) }
-function statusText(status: string) { return ({ submitted: '待审核', awaiting_return: '待寄回', waiting_return: '待寄回', return_in_transit: '寄回运输中', replacement_pending: '待补发', replacement_shipped: '补发运输中', processing: '退款处理中', succeeded: '已完成', completed: '已完成', rejected: '已拒绝', closed: '已关闭' } as Record<string, string>)[status] || '售后处理中' }
+function statusText(status: string) { return ({ submitted: '待审核', awaiting_return: '待寄回', waiting_return: '待寄回', return_in_transit: '寄回运输中', replacement_pending: '待补发', replacement_shipped: '补发运输中', processing: '退款处理中', succeeded: '已完成', completed: '已完成', rejected: '已拒绝', cancelled: '已撤销', closed: '已关闭' } as Record<string, string>)[status] || '售后处理中' }
 function orderStatusText(status: string) { return ({ pending_fulfillment: '待履约', fulfilled: '待确认', completed: '已完成' } as Record<string, string>)[status] || '订单处理中' }
 function partyText(value: string) { return ({ buyer: '买家', seller: '卖家', carrier: '物流方', pending: '待裁决', negotiated: '协商确定' } as Record<string, string>)[value] || '待平台确认' }
 </script>

@@ -30,6 +30,17 @@
       <text class="status-copy">{{ recordNo }}{{ deadlineText ? ` · ${deadlineText}` : '' }}</text>
     </view>
 
+    <view v-if="record" class="timeline tm-panel">
+      <text class="section-title">处理进度</text>
+      <view v-for="(step, index) in steps" :key="step.title" class="tl-li" :class="[step.state, { last: index === steps.length - 1 }]">
+        <view class="tl-rail"><i class="dot" /><i v-if="index < steps.length - 1" class="line" /></view>
+        <view class="tl-body">
+          <text class="tl-title">{{ step.title }}</text>
+          <text class="tl-desc">{{ step.desc }}</text>
+        </view>
+      </view>
+    </view>
+
     <view v-if="record" class="summary tm-panel">
       <view><text>售后类型</text><strong>{{ kind === 'exchange' ? '同 SKU 换货' : '退款 / 退货' }}</strong></view>
       <view><text>售后原因</text><strong>{{ record.reason_name }}</strong></view>
@@ -69,6 +80,10 @@
     </view>
 
     <view v-if="record" class="service-note">责任方、寄回方式和运费承担均按本次售后个案裁决，所有操作会保留审计记录。</view>
+    <view v-if="record" class="detail-action-bar">
+      <button class="ab-secondary" @click="contactSupport">联系客服</button>
+      <button v-if="canCancel" class="ab-primary" :loading="cancelling" :disabled="cancelling" @click="requestCancel">撤销申请</button>
+    </view>
     </template>
   </view>
 </template>
@@ -76,7 +91,7 @@
 <script setup lang="ts">
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
-import { completeExchange, createAfterSaleIdempotencyKey, getExchange, listRefunds, submitExchangeReturn, submitRefundReturn, type Exchange, type Refund } from '@/api/after-sales'
+import { completeExchange, cancelExchange, cancelRefund, createAfterSaleIdempotencyKey, getExchange, listRefunds, submitExchangeReturn, submitRefundReturn, type Exchange, type Refund } from '@/api/after-sales'
 import { ApiError } from '@/api/http'
 import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
@@ -97,6 +112,7 @@ const trackingNo = ref('')
 const paidShippingYuan = ref<number | string>(0)
 const proof = ref<{ fileId: string; previewUrl: string } | null>(null)
 const submitting = ref(false)
+const cancelling = ref(false)
 const loading = ref(false)
 const loadError = ref('')
 const uploading = ref(false)
@@ -116,6 +132,35 @@ const deadlineText = computed(() => {
   if (!raw) return ''
   const hours = Math.max(0, Math.ceil((new Date(raw).getTime() - Date.now()) / 3600000))
   return hours > 0 ? `剩余 ${hours} 小时操作` : '操作期限已到'
+})
+type StepState = 'done' | 'active' | 'rejected' | 'cancelled' | 'todo'
+interface TimelineStep { title: string; desc: string; state: StepState }
+const steps = computed<TimelineStep[]>(() => {
+  const status = record.value?.status
+  if (!status) return []
+  const noLogistics = kind.value === 'exchange' && exchange.value?.return_method === 'no_logistics'
+  const defs = kind.value === 'exchange'
+    ? noLogistics
+      ? { titles: ['提交申请', '平台审核', '补发商品', '确认完成'], descs: ['换货申请已提交', '平台核对换货原因与凭证', '审核通过后仓库发出替换商品', '收到替换商品后确认，换货完成'], activeMap: { submitted: 1, replacement_pending: 2, replacement_shipped: 3, completed: 4 } as Record<string, number> }
+      : { titles: ['提交申请', '平台审核', '寄回商品', '仓库验收', '补发商品', '确认完成'], descs: ['换货申请已提交', '平台核对换货原因与凭证', '按审核结果寄回问题商品', '仓库验收寄回商品', '验收通过后发出替换商品', '收到替换商品后确认，换货完成'], activeMap: { submitted: 1, waiting_return: 2, return_in_transit: 3, replacement_pending: 4, replacement_shipped: 5, completed: 6 } as Record<string, number> }
+    : refund.value?.service_type === 'return_and_refund'
+      ? { titles: ['提交申请', '平台审核', '寄回商品', '仓库验收', '退款到账'], descs: ['售后申请已提交', '平台核对原因与凭证', '按审核结果寄回商品', '仓库验收寄回商品', '退款原路退回，1-3 个工作日到账'], activeMap: { submitted: 1, awaiting_return: 2, return_in_transit: 3, processing: 4, succeeded: 5 } as Record<string, number> }
+      : { titles: ['提交申请', '平台审核', '退款到账'], descs: ['退款申请已提交', '平台将在 24 小时内完成审核', '审核通过后原路退回，1-3 个工作日到账'], activeMap: { submitted: 1, processing: 2, succeeded: 3 } as Record<string, number> }
+  const activeIndex = defs.activeMap[status] ?? 0
+  const stopped: StepState = status === 'rejected' ? 'rejected' : ['cancelled', 'closed'].includes(status) ? 'cancelled' : 'active'
+  return defs.titles.map((title, index) => {
+    let state: StepState = 'todo'
+    if (status === 'succeeded' || status === 'completed' || index < activeIndex) state = 'done'
+    else if (index === activeIndex) state = stopped
+    return { title, desc: defs.descs[index], state }
+  })
+})
+const canCancel = computed(() => {
+  const status = record.value?.status
+  if (!status) return false
+  return kind.value === 'exchange'
+    ? ['submitted', 'waiting_return'].includes(status)
+    : ['submitted', 'awaiting_return'].includes(status)
 })
 
 onLoad(async query => {
@@ -190,8 +235,29 @@ async function confirmExchange() {
   catch (error) { toast(error, '确认失败') }
   finally { submitting.value = false }
 }
+function contactSupport() { uni.navigateTo({ url: '/pages/support/index' }) }
+function requestCancel() {
+  uni.showModal({
+    title: '撤销售后申请',
+    content: '撤销后本次售后将关闭，占用的可退/可换数量会立即释放。确定撤销吗？',
+    confirmText: '确定撤销',
+    confirmColor: '#d14343',
+    success: async (res) => { if (res.confirm) await cancelRecord() },
+  })
+}
+async function cancelRecord() {
+  if (cancelling.value || !auth.accessToken || !record.value) return
+  cancelling.value = true
+  try {
+    if (kind.value === 'exchange') exchange.value = await cancelExchange(auth.accessToken, recordId.value)
+    else refund.value = await cancelRefund(auth.accessToken, recordId.value)
+    uni.showToast({ title: '售后申请已撤销', icon: 'success' })
+    await load()
+  } catch (error) { toast(error, '撤销失败') }
+  finally { cancelling.value = false }
+}
 function money(cents: number) { return (cents / 100).toFixed(2) }
-function statusTitle(status: string) { return ({ submitted: '等待平台审核', awaiting_return: '请寄回商品', waiting_return: '请寄回商品', return_in_transit: '寄回运输中', replacement_pending: '等待替换履约', replacement_shipped: '替换商品已发出', processing: '退款处理中', succeeded: '售后已完成', completed: '换货已完成', rejected: '申请未通过', closed: '申请已关闭' } as Record<string, string>)[status] || '售后处理中' }
+function statusTitle(status: string) { return ({ submitted: '等待平台审核', awaiting_return: '请寄回商品', waiting_return: '请寄回商品', return_in_transit: '寄回运输中', replacement_pending: '等待替换履约', replacement_shipped: '替换商品已发出', processing: '退款处理中', succeeded: '售后已完成', completed: '换货已完成', rejected: '申请未通过', cancelled: '申请已撤销', closed: '申请已关闭' } as Record<string, string>)[status] || '售后处理中' }
 function partyText(value: string) { return ({ buyer: '买家', seller: '卖家', carrier: '物流方', pending: '待裁决', negotiated: '协商确定' } as Record<string, string>)[value] || '待平台确认' }
 function methodText(value: string | null | undefined) { return ({ logistics: '物流寄回', no_logistics: '无需物流', pickup: '上门取件' } as Record<string, string>)[value || ''] || '待确定' }
 function compensationText(value: string) { return ({ submitted: '待平台审核', paid: '已发放至余额', rejected: '审核未通过' } as Record<string, string>)[value] || '补偿处理中' }
@@ -216,4 +282,11 @@ function isTerminalFailure(error: unknown) { return error instanceof ApiError &&
 .tm-primary-button{border:1rpx solid transparent;box-shadow:none}.tm-primary-button[disabled]{opacity:.46;filter:saturate(.55)}
 .error-card{border-color:rgba(209,67,67,.22);background:var(--tm-campus-coral-soft)}.error-card .state-title{color:var(--tm-danger)}
 .commerce-hero{position:relative;min-height:250rpx;overflow:hidden;margin-bottom:18rpx;border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-lg);background:linear-gradient(135deg,#e7f4ff 0,#e3f9f6 58%,#fff1e8 100%);box-shadow:var(--tm-shadow-sm)}.commerce-hero-art{position:absolute;right:-16rpx;top:0;width:68%;height:100%;opacity:.84;object-position:right center}.commerce-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(231,244,255,.98) 0,rgba(231,244,255,.9) 34%,rgba(231,244,255,.12) 78%,rgba(231,244,255,0) 100%)}.commerce-hero-copy{position:relative;z-index:1;width:57%;padding:28rpx 24rpx}.commerce-hero-kicker,.commerce-hero-title,.commerce-hero-sub{display:block}.commerce-hero-kicker{color:var(--tm-brand-700);font-size:13px;font-weight:850;letter-spacing:2.4rpx}.commerce-hero-title{margin-top:10rpx;color:var(--tm-ink-900);font-size:22px;font-weight:950;line-height:1.2}.commerce-hero-sub{margin-top:10rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.55}
+.page{padding-bottom:180rpx}
+.timeline{margin-top:22rpx;padding:26rpx}.tl-li{display:flex;gap:18rpx}.tl-rail{display:flex;flex-direction:column;align-items:center;width:28rpx;flex:none}.tl-rail .dot{width:20rpx;height:20rpx;margin-top:6rpx;border-radius:50%;background:#cfd8dc;border:4rpx solid #e7ecee}.tl-rail .line{width:4rpx;flex:1;min-height:48rpx;margin:4rpx 0;background:#e3e8ea}.tl-body{padding-bottom:28rpx}.tl-li.last .tl-body{padding-bottom:0}.tl-title,.tl-desc{display:block}.tl-title{font-size:14px;font-weight:900;color:var(--tm-ink-500)}.tl-desc{margin-top:6rpx;color:var(--tm-ink-500);font-size:12px;line-height:1.5}
+.tl-li.done .dot{background:var(--tm-brand-600);border-color:var(--tm-brand-100)}.tl-li.done .line{background:var(--tm-brand-200,#bfe3d2)}.tl-li.done .tl-title{color:var(--tm-ink-900)}
+.tl-li.active .dot{background:#fff;border-color:var(--tm-brand-600);box-shadow:0 0 0 6rpx rgba(11,191,99,.15)}.tl-li.active .tl-title{color:var(--tm-brand-700)}
+.tl-li.rejected .dot{background:var(--tm-danger);border-color:#f6d2cf}.tl-li.rejected .tl-title{color:var(--tm-danger)}
+.tl-li.cancelled .dot{background:#9aa5b1;border-color:#e7ecee}.tl-li.cancelled .tl-title{color:var(--tm-ink-500)}
+.detail-action-bar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:18rpx;padding:16rpx 28rpx calc(16rpx + env(safe-area-inset-bottom));border-top:1rpx solid var(--tm-line);background:var(--tm-surface);box-shadow:0 -6rpx 24rpx rgba(7,26,51,.06)}.detail-action-bar button{margin:0;height:84rpx;border-radius:18rpx;font-size:15px;font-weight:900;line-height:84rpx}.detail-action-bar .ab-secondary{flex:0 0 220rpx;border:1rpx solid var(--tm-line);background:var(--tm-surface);color:var(--tm-ink-900)}.detail-action-bar .ab-secondary::after{border:0}.detail-action-bar .ab-primary{flex:1;border:1rpx solid rgba(209,67,67,.35);background:#fff;color:var(--tm-danger)}.detail-action-bar .ab-primary::after{border:0}
 </style>

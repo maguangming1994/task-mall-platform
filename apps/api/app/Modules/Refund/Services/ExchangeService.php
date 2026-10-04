@@ -178,6 +178,21 @@ class ExchangeService
         });
     }
 
+    public function cancel(User $user, Exchange $exchange): Exchange
+    {
+        abort_unless($exchange->user_id === $user->id, 404);
+
+        return DB::transaction(function () use ($exchange) {
+            $locked = Exchange::query()->lockForUpdate()->findOrFail($exchange->id);
+            if (! in_array($locked->status, ['submitted', 'waiting_return'], true)) {
+                throw ValidationException::withMessages(['exchange' => '当前状态不可撤销，寄回或补发开始后请联系客服处理。']);
+            }
+            $locked->update(['status' => 'cancelled', 'review_note' => '用户主动撤销申请。']);
+
+            return $locked->fresh();
+        });
+    }
+
     public function receiveReturn(Exchange $exchange, string $note): Exchange
     {
         return DB::transaction(function () use ($exchange, $note) {

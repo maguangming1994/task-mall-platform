@@ -255,7 +255,7 @@ class SecondHandOrderController extends Controller
             $base['address'] = $order->address_snapshot;
             $base['buyer'] = $this->presentUser($order->buyer);
             $base['seller'] = $this->presentUser($order->seller);
-            $base['has_refund'] = $order->refund()->exists();
+            $base['has_refund'] = $order->refund()->where('status', '!=', 'cancelled')->exists();
             $base['has_rated'] = $order->ratings()->where('rater_user_id', $viewerId)->exists();
         }
 

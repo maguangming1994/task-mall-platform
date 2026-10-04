@@ -806,6 +806,73 @@ class CheckoutOrderCreationFlowTest extends TestCase
         $this->assertDatabaseHas('exchanges', ['public_id' => $exchangeId, 'status' => 'closed']);
     }
 
+    public function test_user_can_cancel_exchange_before_and_after_approval_which_releases_reserved_quantity(): void
+    {
+        $admin = $this->adminToken('exchange-cancel-admin');
+        $product = $this->product($admin, 'EXCHANGE-CANCEL', 'logistics', 2);
+        [$user, $token] = $this->loginAndConsent('13800138225');
+        UserAssetAccount::query()->firstOrCreate(['user_id' => $user->id])->update(['wallet_available_cents' => 5000]);
+        $order = $this->payableLogisticsOrder($token, $product['sku_id'], 'wallet', 'exchange-cancel-order');
+        $this->userRequest($token, ['Idempotency-Key' => 'exchange-cancel-payment'])->postJson('/api/v1/orders/'.$order['id'].'/payments')->assertCreated();
+        $this->withToken($admin)->withHeaders(['Idempotency-Key' => 'exchange-cancel-fulfillment'])->postJson('/api/v1/admin/orders/'.$order['id'].'/fulfillments', [
+            'method' => 'logistics', 'carrier_code' => 'sto', 'tracking_no' => 'STO200000001',
+            'items' => [['order_item_id' => $order['items'][0]['id'], 'quantity' => 1]],
+        ])->assertCreated();
+        $payload = ['order_item_id' => $order['items'][0]['id'], 'quantity' => 1, 'reason_code' => 'buyer_request', 'return_method' => 'logistics'];
+
+        $first = $this->userRequest($token, ['Idempotency-Key' => 'exchange-cancel-request-1'])->postJson('/api/v1/exchanges', $payload)->assertCreated();
+        $firstId = $first->json('data.id');
+        $this->userRequest($token)->postJson('/api/v1/exchanges/'.$firstId.'/cancel')->assertOk()->assertJsonPath('data.status', 'cancelled');
+        $this->userRequest($token)->getJson('/api/v1/orders/'.$order['id'])->assertOk()
+            ->assertJsonPath('data.items.0.active_exchange_quantity', 0)
+            ->assertJsonPath('data.items.0.remaining_exchangeable_quantity', 1);
+
+        $second = $this->userRequest($token, ['Idempotency-Key' => 'exchange-cancel-request-2'])->postJson('/api/v1/exchanges', $payload)->assertCreated();
+        $secondId = $second->json('data.id');
+        $this->withToken($admin)->postJson('/api/v1/admin/exchanges/'.$secondId.'/review', ['decision' => 'approve', 'reason' => '同意换货。'])->assertOk()->assertJsonPath('data.status', 'waiting_return');
+        $this->userRequest($token)->postJson('/api/v1/exchanges/'.$secondId.'/cancel')->assertOk()->assertJsonPath('data.status', 'cancelled');
+
+        $third = $this->userRequest($token, ['Idempotency-Key' => 'exchange-cancel-request-3'])->postJson('/api/v1/exchanges', $payload)->assertCreated();
+        $thirdId = $third->json('data.id');
+        $this->withToken($admin)->postJson('/api/v1/admin/exchanges/'.$thirdId.'/review', ['decision' => 'approve', 'reason' => '同意换货。'])->assertOk();
+        $this->userRequest($token, ['Idempotency-Key' => 'exchange-cancel-return'])->postJson('/api/v1/exchanges/'.$thirdId.'/return-shipment', [
+            'carrier_code' => 'sto', 'tracking_no' => 'STO200000099', 'paid_shipping_amount' => 0,
+        ])->assertOk()->assertJsonPath('data.status', 'return_in_transit');
+        $this->userRequest($token)->postJson('/api/v1/exchanges/'.$thirdId.'/cancel')->assertUnprocessable();
+    }
+
+    public function test_user_can_cancel_pending_refund_which_releases_quantity_but_not_after_settlement(): void
+    {
+        $admin = $this->adminToken('refund-cancel-admin');
+        $product = $this->product($admin, 'REFUND-CANCEL', 'logistics', 2);
+        [$user, $token] = $this->loginAndConsent('13800138226');
+        UserAssetAccount::query()->firstOrCreate(['user_id' => $user->id])->update(['wallet_available_cents' => 5000]);
+        $order = $this->payableLogisticsOrder($token, $product['sku_id'], 'wallet', 'refund-cancel-order');
+        $this->userRequest($token, ['Idempotency-Key' => 'refund-cancel-payment'])->postJson('/api/v1/orders/'.$order['id'].'/payments')->assertCreated();
+
+        $refund = $this->userRequest($token, ['Idempotency-Key' => 'refund-cancel-request-1'])->postJson('/api/v1/refunds', [
+            'order_id' => $order['id'], 'reason_code' => 'buyer_request',
+            'items' => [['order_item_id' => $order['items'][0]['id'], 'quantity' => 1]],
+        ])->assertCreated();
+        $refundId = $refund->json('data.id');
+        $this->userRequest($token)->getJson('/api/v1/orders/'.$order['id'])->assertOk()
+            ->assertJsonPath('data.items.0.pending_refund_quantity', 1)
+            ->assertJsonPath('data.items.0.remaining_refundable_quantity', 0);
+        $this->userRequest($token)->postJson('/api/v1/refunds/'.$refundId.'/cancel')->assertOk()->assertJsonPath('data.status', 'cancelled');
+        $this->userRequest($token)->getJson('/api/v1/orders/'.$order['id'])->assertOk()
+            ->assertJsonPath('data.items.0.pending_refund_quantity', 0)
+            ->assertJsonPath('data.items.0.remaining_refundable_quantity', 1);
+        $this->userRequest($token)->postJson('/api/v1/refunds/'.$refundId.'/cancel')->assertUnprocessable();
+
+        $second = $this->userRequest($token, ['Idempotency-Key' => 'refund-cancel-request-2'])->postJson('/api/v1/refunds', [
+            'order_id' => $order['id'], 'reason_code' => 'buyer_request',
+            'items' => [['order_item_id' => $order['items'][0]['id'], 'quantity' => 1]],
+        ])->assertCreated();
+        $secondId = $second->json('data.id');
+        $this->withToken($admin)->postJson('/api/v1/admin/refunds/'.$secondId.'/review', ['decision' => 'approve', 'note' => '钱包退款立即到账。'])->assertOk();
+        $this->userRequest($token)->postJson('/api/v1/refunds/'.$secondId.'/cancel')->assertUnprocessable();
+    }
+
     public function test_exchange_replacement_and_return_shipping_compensation_close_with_wallet_ledger(): void
     {
         Storage::fake('local');
