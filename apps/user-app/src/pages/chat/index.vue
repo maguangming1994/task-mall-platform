@@ -67,24 +67,25 @@ onShow(() => load())
 </script>
 
 <style lang="scss" scoped>
-.page { min-height: 100vh; background: #f6f6f8; }
+.page { min-height: 100vh; background: #F4F6F4; }
 .head { padding: 32rpx 28rpx 16rpx; background: #fff; }
-.title { font-size: 40rpx; font-weight: 700; color: #1a1a1b; }
-.list { padding: 16rpx 0; }
-.conv { display: flex; gap: 20rpx; padding: 24rpx 28rpx; background: #fff; margin-bottom: 2rpx; align-items: center; }
-.avatar { width: 96rpx; height: 96rpx; border-radius: 50%; background: #eee; flex-shrink: 0; }
+.title { font-size: 40rpx; font-weight: 800; color: #191B1F; }
+.list { margin: 16rpx 24rpx; border-radius: 28rpx; overflow: hidden; background: #fff; box-shadow: 0 12rpx 40rpx rgba(23,26,23,.05); }
+.conv { display: flex; gap: 20rpx; padding: 24rpx 28rpx; background: #fff; align-items: center; border-bottom: 1rpx solid #F2F4F3; }
+.conv:last-child { border-bottom: 0; }
+.avatar { width: 96rpx; height: 96rpx; border-radius: 50%; background: #E7F9EF; flex-shrink: 0; }
 .main { flex: 1; min-width: 0; }
 .row1 { display: flex; justify-content: space-between; align-items: center; }
-.name { font-size: 30rpx; color: #1a1a1b; font-weight: 600; }
-.time { font-size: 22rpx; color: #a0a0a5; }
+.name { font-size: 30rpx; color: #191B1F; font-weight: 700; }
+.time { font-size: 22rpx; color: #AEB3BB; }
 .row2 { display: flex; justify-content: space-between; align-items: center; margin-top: 10rpx; }
-.last { font-size: 26rpx; color: #6e6e73; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400rpx; }
-.badge { background: #ff2442; color: #fff; border-radius: 20rpx; min-width: 36rpx; height: 36rpx; line-height: 36rpx; text-align: center; font-size: 22rpx; padding: 0 8rpx; }
-.item-preview { display: flex; gap: 12rpx; align-items: center; border-left: 1rpx solid #f0f0f0; padding-left: 16rpx; flex-shrink: 0; }
-.item-cover { width: 72rpx; height: 72rpx; border-radius: 8rpx; background: #eee; }
+.last { font-size: 26rpx; color: #767C85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400rpx; }
+.badge { background: #FF3B30; color: #fff; border-radius: 20rpx; min-width: 36rpx; height: 36rpx; line-height: 36rpx; text-align: center; font-size: 22rpx; padding: 0 8rpx; }
+.item-preview { display: flex; gap: 12rpx; align-items: center; border-left: 1rpx solid #EDEFEF; padding-left: 16rpx; flex-shrink: 0; }
+.item-cover { width: 72rpx; height: 72rpx; border-radius: 12rpx; background: #E7F9EF; }
 .item-info { display: flex; flex-direction: column; }
-.item-title { font-size: 22rpx; color: #6e6e73; max-width: 140rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.item-price { font-size: 22rpx; color: #ff2442; }
-.empty { text-align: center; padding: 160rpx 0; color: #a0a0a5; font-size: 28rpx; display: flex; flex-direction: column; gap: 12rpx; }
+.item-title { font-size: 22rpx; color: #767C85; max-width: 140rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item-price { font-size: 22rpx; color: #FF3B30; font-weight: 700; }
+.empty { text-align: center; padding: 160rpx 0; color: #AEB3BB; font-size: 28rpx; display: flex; flex-direction: column; gap: 12rpx; }
 .empty .sub { font-size: 24rpx; }
 </style>

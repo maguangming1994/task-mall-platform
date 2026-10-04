@@ -65,21 +65,22 @@ onShow(() => load())
 </script>
 
 <style lang="scss" scoped>
-.page { min-height: 100vh; background: #f6f6f8; }
+.page { min-height: 100vh; background: #F4F6F4; }
 .tabs { display: flex; background: #fff; position: sticky; top: 0; z-index: 10; }
-.tab { flex: 1; text-align: center; padding: 28rpx 0; font-size: 30rpx; color: #6e6e73; }
-.tab.active { color: #07c160; font-weight: 600; border-bottom: 4rpx solid #07c160; }
+.tab { position: relative; flex: 1; text-align: center; padding: 28rpx 0; font-size: 30rpx; color: #767C85; }
+.tab.active { color: #08A152; font-weight: 800; }
+.tab.active::after { content: ''; position: absolute; right: 60rpx; bottom: 0; left: 60rpx; height: 6rpx; border-radius: 3rpx; background: linear-gradient(135deg,#12D978,#08A152); }
 .list { padding: 20rpx 0; }
-.card { background: #fff; margin: 0 28rpx 20rpx; border-radius: 16rpx; padding: 24rpx; }
+.card { background: #fff; margin: 0 24rpx 20rpx; border-radius: 28rpx; padding: 28rpx; box-shadow: 0 12rpx 40rpx rgba(23,26,23,.05); }
 .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
-.status { font-size: 26rpx; color: #07c160; font-weight: 600; }
-.order-no { font-size: 22rpx; color: #a0a0a5; }
+.status { font-size: 24rpx; color: #08A152; font-weight: 700; padding: 6rpx 18rpx; border-radius: 999rpx; background: #E7F9EF; }
+.order-no { font-size: 22rpx; color: #AEB3BB; }
 .card-body { display: flex; gap: 20rpx; }
-.cover { width: 120rpx; height: 120rpx; border-radius: 12rpx; background: #eee; }
-.cover.placeholder { display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 36rpx; }
+.cover { width: 120rpx; height: 120rpx; border-radius: 16rpx; background: #E7F9EF; }
+.cover.placeholder { display: flex; align-items: center; justify-content: center; color: #08A152; font-size: 36rpx; font-weight: 800; }
 .info { flex: 1; }
-.title { font-size: 28rpx; color: #1a1a1b; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.price { font-size: 32rpx; color: #ff2442; font-weight: 700; margin-top: 12rpx; display: block; }
-.card-foot { display: flex; justify-content: space-between; margin-top: 16rpx; font-size: 22rpx; color: #a0a0a5; }
-.empty { text-align: center; padding: 160rpx 0; color: #a0a0a5; font-size: 28rpx; }
+.title { font-size: 28rpx; color: #191B1F; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.price { font-size: 34rpx; color: #FF3B30; font-weight: 800; margin-top: 12rpx; display: block; }
+.card-foot { display: flex; justify-content: space-between; margin-top: 16rpx; font-size: 22rpx; color: #AEB3BB; }
+.empty { text-align: center; padding: 160rpx 0; color: #AEB3BB; font-size: 28rpx; }
 </style>
