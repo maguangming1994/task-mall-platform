@@ -106,10 +106,20 @@ class TaskClaimService
         $notEnded = CarbonImmutable::parse($content['claim_ends_at'])->gte($now);
         $userClaimable = $content['participation_mode'] !== 'auto_enroll';
 
+        $campusPublisherName = trim((string) ($content['publisher_display_name'] ?? ''));
+
         return [
             'id' => $task->public_id, ...$publicContent,
-            'publisher' => ['id' => DB::table('admin_users')->where('id', $task->created_by_admin_id)->value('public_id'), 'publisher_type' => 'platform_admin', 'display_name' => '平台任务运营', 'verification_status' => 'verified', 'publisher_badge' => '平台发布'],
-            'status' => $task->status, 'historical_claim_count' => TaskClaim::query()->where('task_id', $task->id)->count(),
+            'publisher' => [
+                'id' => DB::table('admin_users')->where('id', $task->created_by_admin_id)->value('public_id'),
+                'publisher_type' => $campusPublisherName !== '' ? 'campus_user' : 'platform_admin',
+                'display_name' => $campusPublisherName !== '' ? $campusPublisherName : '平台任务运营',
+                'verification_status' => 'verified',
+                'publisher_badge' => $campusPublisherName !== '' ? '校园认证' : '平台发布',
+                'avatar_url' => $content['publisher_avatar_url'] ?? null,
+                'credit_score' => isset($content['publisher_credit_score']) ? (int) $content['publisher_credit_score'] : null,
+            ],
+            'status' => $task->status, 'published_at' => $task->published_at?->toIso8601String(), 'historical_claim_count' => TaskClaim::query()->where('task_id', $task->id)->count(),
             'active_reservation_count' => $active, 'successful_reward_count' => $successful, 'remaining_reward_slots' => $remaining,
             'completed_user_count' => $completedClaims->count(),
             'pass_rate_percent' => $reviewedClaimCount === 0 ? null : (int) round($completedClaims->count() / $reviewedClaimCount * 100),

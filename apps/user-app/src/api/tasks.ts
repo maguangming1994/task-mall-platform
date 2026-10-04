@@ -47,11 +47,32 @@ export interface HallTask {
   appeal_deadline_days: number
   claim_ends_at: string
   submit_ends_at: string
-  publisher: { display_name: string; publisher_badge: string; verification_status: string }
+  published_at?: string | null
+  location_text?: string | null
+  urgent?: boolean
+  bounty?: boolean
+  gallery?: string[]
+  publisher: { id?: string; publisher_type?: string; display_name: string; publisher_badge: string; verification_status: string; avatar_url?: string | null; credit_score?: number | null }
   can_claim: boolean
   claim_unavailable_reason: string | null
 }
 export interface WithdrawalNotice { id: string; user_masked: string; withdrawal_amount: number; completed_at: string }
+export interface TaskActivityEvent {
+  id: string
+  type: 'completed' | 'published'
+  actor_masked: string
+  action_text: string
+  task_title: string
+  reward_text: string
+  occurred_at: string
+}
+export interface HallListResponse {
+  items: HallTask[]
+  withdrawal_notices: WithdrawalNotice[]
+  activity_feed: TaskActivityEvent[]
+  pagination: { page: number; page_size: number; total: number }
+}
+export type HallSort = 'default' | 'latest' | 'reward'
 export interface TaskClaim {
   id: string
   task_id: string
@@ -90,13 +111,14 @@ export interface TaskClaim {
   last_review: { decision: string; reason_code: string | null; note: string | null; reviewed_at: string; step_results: TaskStepReviewResult[] } | null
 }
 
-export function listHallTasks(filters: { category?: string; claimable_only?: boolean; keyword?: string } = {}) {
+export function listHallTasks(filters: { category?: string; claimable_only?: boolean; keyword?: string; sort?: HallSort } = {}) {
   const suffix = buildQueryString({
     category: filters.category,
     claimable_only: filters.claimable_only ? 1 : undefined,
     keyword: filters.keyword,
+    sort: filters.sort && filters.sort !== 'default' ? filters.sort : undefined,
   })
-  return apiRequest<{ items: HallTask[]; withdrawal_notices: WithdrawalNotice[] }>({ path: `/tasks${suffix ? `?${suffix}` : ''}` })
+  return apiRequest<HallListResponse>({ path: `/tasks${suffix ? `?${suffix}` : ''}` })
 }
 export function getHallTask(taskId: string) { return apiRequest<HallTask>({ path: `/tasks/${taskId}` }) }
 export function claimTask(token: string, taskId: string) {

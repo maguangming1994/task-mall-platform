@@ -1,6 +1,6 @@
 import { apiRequest } from '@/api/http'
 
-export interface PointAccount { available_points: number; frozen_points: number; debt_points: number; spendable: boolean; expiring_points: number; next_expiration_at: string | null; expiring_7_days: number; expiring_30_days: number }
+export interface PointAccount { available_points: number; frozen_points: number; debt_points: number; spendable: boolean; expiring_points: number; next_expiration_at: string | null; expiring_7_days: number; expiring_30_days: number; points_earned_today: number }
 export interface PointBatch { id: string; source_code: string; issued_points: number; remaining_points: number; frozen_points: number; status: string; issued_at: string | null; expires_at: string | null; days_remaining: number | null }
 export interface PointTransaction { id: string; type: string; source_code?: string; change_points: number; balance_after: number; debt_after: number; reason: string; created_at: string }
 export interface WalletAccount { currency: 'CNY'; available_amount: number; frozen_amount: number; withdrawable_amount: number }

@@ -42,3 +42,28 @@ export function formatDateTime(value: TimeValue, fallback = '—'): string {
   const date = beijingDate(value)
   return date ? `${datePart(date)} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}` : fallback
 }
+
+// 社交动态相对时间：刚刚 / N分钟前 / N小时前 / 昨天 / M月D日（按北京时间计算）。
+export function formatRelativeTime(value: TimeValue, fallback = '—'): string {
+  const date = beijingDate(value)
+  if (!date) return fallback
+  // beijingDate 的 getTime 是「北京墙钟时间当作 UTC」的虚拟时刻，换算回真实 epoch 再与当前时间比较。
+  const timestamp = date.getTime() - BEIJING_OFFSET_MINUTES * 60000
+  const now = Date.now()
+  const diffSeconds = Math.max(0, Math.round((now - timestamp) / 1000))
+  if (diffSeconds < 60) return '刚刚'
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  if (diffMinutes < 60) return `${diffMinutes}分钟前`
+  const diffHours = Math.floor(diffMinutes / 60)
+  if (diffHours < 24) return `${diffHours}小时前`
+  const nowBeijing = new Date(now + BEIJING_OFFSET_MINUTES * 60000)
+  const todayStart = Date.UTC(
+    nowBeijing.getUTCFullYear(),
+    nowBeijing.getUTCMonth(),
+    nowBeijing.getUTCDate(),
+  ) - BEIJING_OFFSET_MINUTES * 60000
+  if (timestamp >= todayStart - 24 * 3600 * 1000 && timestamp < todayStart) return '昨天'
+  if (diffHours < 24 * 7) return `${Math.floor(diffHours / 24)}天前`
+
+  return `${date.getUTCMonth() + 1}月${date.getUTCDate()}日`
+}

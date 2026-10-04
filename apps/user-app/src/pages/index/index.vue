@@ -40,9 +40,9 @@
             <text class="home-v13-pc-sub">今日已赚 +{{ todayEarned }}</text>
           </text>
         </view>
-        <button class="home-v13-pc-sign" @click="goCheckIn">
+        <button class="home-v13-pc-sign" :class="{ signed: checkedInToday }" @click="goCheckIn">
           <text class="home-v13-pc-sign-icon">✓</text>
-          每日签到
+          {{ checkedInToday ? '今日已签' : '每日签到' }}
         </button>
       </view>
       <view class="home-v13-sign-strip">
@@ -54,8 +54,7 @@
         >
           <view class="home-v13-sign-day-badge">
             <text v-if="day.done" class="home-v13-sign-day-check">✓</text>
-            <text v-else-if="day.today" class="home-v13-sign-day-coin">¥</text>
-            <text v-else class="home-v13-sign-day-coin">¥</text>
+            <text v-else class="home-v13-sign-day-coin">{{ day.reward ?? '¥' }}</text>
           </view>
           <text class="home-v13-sign-day-label">{{ day.label }}</text>
         </view>
@@ -71,8 +70,8 @@
         @click="item.action"
       >
         <view class="home-v13-king-icon" :style="kingIconStyle(item.tone)">
-          <image v-if="item.icon_url" class="home-v13-king-icon-img" :src="item.iconSrc" mode="aspectFit" />
-          <text v-else>{{ item.displayLabel.slice(0, 1) }}</text>
+          <image v-if="item.iconSrc" class="home-v13-king-icon-img" :src="item.iconSrc" mode="aspectFit" />
+          <text v-else>{{ item.mark || item.displayLabel.slice(0, 1) }}</text>
         </view>
         <text class="home-v13-king-label">{{ item.displayLabel }}</text>
       </view>
@@ -100,43 +99,69 @@
 
     <!-- 任务推荐流 -->
     <view class="home-v13-feed-tabs">
-      <text class="home-v13-feed-tab active">推荐</text>
-      <text class="home-v13-feed-tab" @click="openTasks">最新</text>
-      <text class="home-v13-feed-tab" @click="openTasks">高价</text>
-      <text class="home-v13-feed-tab" @click="openTasks">附近</text>
+      <text
+        v-for="tab in feedTabOptions"
+        :key="tab.id"
+        class="home-v13-feed-tab"
+        :class="{ active: activeFeedTab === tab.id }"
+        @click="selectFeedTab(tab.id)"
+      >{{ tab.label }}</text>
+      <text class="home-v13-feed-more" @click="openTasks">附近 ›</text>
     </view>
 
     <view v-if="homeError" class="home-v13-error" @click="loadHome">
       首页内容使用默认配置，点击重新加载
     </view>
 
-    <!-- 任务卡片列表 -->
+    <!-- 社交式任务卡片列表 -->
     <view
       v-for="task in feedTasks"
       :key="`feed-${task.id}`"
-      class="home-v13-tcard"
+      class="home-v13-post"
       @click="openTaskDetail(task.id)"
     >
-      <view class="home-v13-tcard-img-wrap">
-        <image v-if="task.cover_image_url" class="home-v13-tcard-img" :src="task.cover_image_url" mode="aspectFill" />
-        <view v-else class="home-v13-tcard-img-fallback">{{ task.category?.slice(0, 1) || '任' }}</view>
+      <view class="home-v13-post-head">
+        <image
+          v-if="taskAvatarSrc(task)"
+          class="home-v13-post-avatar"
+          :src="taskAvatarSrc(task)"
+          mode="aspectFill"
+        />
+        <view v-else class="home-v13-post-avatar home-v13-post-avatar-fallback">
+          {{ publisherInitial(task) }}
+        </view>
+        <view class="home-v13-post-head-main">
+          <view class="home-v13-post-name-row">
+            <text class="home-v13-post-name">{{ task.publisher?.display_name || '同学' }}</text>
+            <text v-if="task.publisher?.publisher_badge" class="home-v13-post-badge">{{ task.publisher.publisher_badge }}</text>
+          </view>
+          <text class="home-v13-post-meta">{{ postMetaText(task) }}</text>
+        </view>
+        <view class="home-v13-post-follow" @click.stop="followPublisher(task)">+关注</view>
       </view>
-      <view class="home-v13-tcard-main">
-        <text class="home-v13-tcard-title">{{ task.title }}</text>
-        <view class="home-v13-tcard-tags">
-          <text v-if="task.tags.includes('悬赏')" class="home-v13-tag tag-red">悬赏</text>
-          <text v-if="task.tags.includes('加急')" class="home-v13-tag tag-orange">加急</text>
-          <text v-else-if="task.category" class="home-v13-tag tag-green">{{ task.category }}</text>
-        </view>
-        <text class="home-v13-tcard-meta">
-          {{ task.publisher?.display_name || '同学' }}
-          <text class="home-v13-tcard-dot" />
-          {{ formatTaskTime(task.claim_ends_at) }}
-        </text>
-        <view class="home-v13-tcard-foot">
-          <text class="home-v13-tcard-pts">{{ taskRewardText(task) }}</text>
-          <button class="home-v13-tcard-btn" @click.stop="openTaskDetail(task.id)">去接单</button>
-        </view>
+
+      <text class="home-v13-post-body">{{ postBodyText(task) }}</text>
+
+      <view class="home-v13-post-tags">
+        <text v-if="task.bounty" class="home-v13-tag tag-red">悬赏</text>
+        <text v-if="task.urgent" class="home-v13-tag tag-orange">加急</text>
+        <text v-for="tag in postTags(task)" :key="tag" class="home-v13-tag tag-gray">{{ tag }}</text>
+      </view>
+
+      <view v-if="task.gallery?.length" class="home-v13-post-gallery" :class="`g-${Math.min(task.gallery.length, 3)}`">
+        <image
+          v-for="(image, index) in task.gallery.slice(0, 3)"
+          :key="`gallery-${index}`"
+          class="home-v13-post-gallery-img"
+          :src="resolveApiAssetUrl(image)"
+          mode="aspectFill"
+        />
+      </view>
+
+      <view class="home-v13-post-foot">
+        <text class="home-v13-post-pts">{{ taskRewardText(task) }}</text>
+        <text v-if="task.location_text" class="home-v13-post-loc">@ {{ task.location_text }}</text>
+        <button class="home-v13-post-btn" @click.stop="openTaskDetail(task.id)">{{ isTeamTask(task) ? '报名' : '去接单' }}</button>
       </view>
     </view>
 
@@ -173,6 +198,9 @@ import { openPrimaryNavigation } from '@/api/navigation'
 import { listProducts, type MallProduct } from '@/api/products'
 import { listHallTasks, listMyTaskClaims, type HallTask, type TaskClaim, type TaskReward } from '@/api/tasks'
 import { getPointAccount } from '@/api/assets'
+import { getDailyCheckIn, type DailyCheckInStatus } from '@/api/growth'
+import { resolveApiAssetUrl } from '@/api/http'
+import { formatRelativeTime } from '@/utils/dateTime'
 import AppTabBar from '@/components/AppTabBar.vue'
 import CampusSelector from '@/components/CampusSelector.vue'
 import type { Campus } from '@/api/campuses'
@@ -204,7 +232,8 @@ const failedHeroImages = ref<Record<string, boolean>>({})
 const hallTasks = ref<HallTask[]>([])
 const myClaims = ref<TaskClaim[]>([])
 const mallProducts = ref<MallProduct[]>([])
-const pointAccount = ref<{ available_points: number } | null>(null)
+const pointAccount = ref<{ available_points: number; points_earned_today: number } | null>(null)
+const checkInStatus = ref<DailyCheckInStatus | null>(null)
 const infoTabs: Array<{ id: InfoTab; label: string }> = [
   { id: 'announcement', label: '公告' },
   { id: 'messages', label: '个人消息' },
@@ -263,11 +292,14 @@ function createDefaultHome(): HomeContent {
       notification_icon_url: '',
       quick_grid_background_url: '',
       quick_entries: [
-        { id: 'tasks', label: '任务大厅', note: '领取奖励', mark: '任', tone: 'green', icon_url: '/static/icons/module-tasks.svg', link_type: 'tasks' },
-        { id: 'products', label: '积分商城', note: '兑换好物', mark: '兑', tone: 'blue', icon_url: '/static/icons/module-mall.svg', link_type: 'products' },
-        { id: 'second_hand', label: '校园闲置', note: '二手交易', mark: '闲', tone: 'orange', icon_url: '/static/icons/module-mall-trade.svg', link_type: 'second_hand' },
-        { id: 'community', label: '社区成长', note: '分享交流', mark: '聊', tone: 'violet', icon_url: '/static/icons/module-community.svg', link_type: 'community' },
-        { id: 'orders', label: '我的订单', note: '查看进度', mark: '单', tone: 'pink', icon_url: '/static/icons/service-orders.svg', link_type: 'orders' },
+        { id: 'cat-errand', label: '跑腿代办', note: '取件带饭', mark: '跑', tone: 'green', icon_url: '/static/icons/cat-errand.svg', link_type: 'tasks:errand' },
+        { id: 'cat-study', label: '学习助力', note: '答疑打印', mark: '学', tone: 'blue', icon_url: '/static/icons/cat-study.svg', link_type: 'tasks:study' },
+        { id: 'cat-secondhand', label: '二手闲置', note: '淘好物', mark: '闲', tone: 'orange', icon_url: '/static/icons/cat-secondhand.svg', link_type: 'secondhand' },
+        { id: 'cat-skill', label: '技能服务', note: '修电脑修车', mark: '技', tone: 'violet', icon_url: '/static/icons/cat-skill.svg', link_type: 'tasks:skill' },
+        { id: 'cat-lost', label: '失物招领', note: '寻物启事', mark: '失', tone: 'pink', icon_url: '/static/icons/cat-lost.svg', link_type: 'tasks:lost_found' },
+        { id: 'cat-teamup', label: '组队拼单', note: '搭子拼团', mark: '队', tone: 'cyan', icon_url: '/static/icons/cat-teamup.svg', link_type: 'tasks:teamup' },
+        { id: 'cat-research', label: '问卷调研', note: '填问卷', mark: '研', tone: 'yellow', icon_url: '/static/icons/cat-research.svg', link_type: 'tasks:research' },
+        { id: 'cat-all', label: '全部服务', note: '更多', mark: '全', tone: 'gray', icon_url: '/static/icons/cat-all.svg', link_type: 'tasks' },
       ],
       priority_entries: [
         { id: 'assets', mark: '资', icon_url: '/static/icons/module-wallet.svg' },
@@ -309,17 +341,27 @@ function createDefaultHome(): HomeContent {
 const home = ref<HomeContent>(createDefaultHome())
 const topSafeAreaStyle = createTopSafeAreaStyle()
 const activeHeroSlide = computed(() => home.value.carousel.items[activeHeroIndex.value] || home.value.carousel.items[0])
+const categoryIconMap: Record<string, string> = {
+  'cat-errand': '/static/icons/cat-errand.svg',
+  'cat-study': '/static/icons/cat-study.svg',
+  'cat-secondhand': '/static/icons/cat-secondhand.svg',
+  'cat-skill': '/static/icons/cat-skill.svg',
+  'cat-lost': '/static/icons/cat-lost.svg',
+  'cat-teamup': '/static/icons/cat-teamup.svg',
+  'cat-research': '/static/icons/cat-research.svg',
+  'cat-all': '/static/icons/cat-all.svg',
+}
 const quickEntries = computed(() => home.value.modules.quick_entries
   .filter((item) => {
-    const code = HOME_LINK_MODULE[item.link_type]
+    const code = HOME_LINK_MODULE[item.link_type as HomeLinkType]
     return !code || modules.isEnabled(code)
   })
   .slice(0, 8)
   .map((item) => ({
     ...item,
-    action: () => navigateHomeLink(item.link_type),
-    iconSrc: icons.resolve(item.icon_url),
-    displayLabel: icons.label(item.label, item.icon_url),
+    action: () => handleKingLink(item.link_type, item.id),
+    iconSrc: icons.resolve(categoryIconMap[item.id] || item.icon_url),
+    displayLabel: icons.label(item.label, categoryIconMap[item.id] || item.icon_url),
   })))
 const pageStyle = computed(() => ({
   ...backgroundStyle(home.value.modules.page_background_url),
@@ -392,16 +434,48 @@ const registeredProducts = computed<RegisteredProductCard[]>(() => {
 
 // v13 新增计算属性
 const userPoints = computed(() => pointAccount.value?.available_points?.toLocaleString() || '0')
-const todayEarned = computed(() => '45')
+const todayEarned = computed(() => pointAccount.value?.points_earned_today ?? 0)
+const checkedInToday = computed(() => checkInStatus.value?.checked_in_today ?? false)
 const signDays = computed(() => {
-  const labels = ['周一', '周二', '周三', '周四', '周五', '今天', '周日']
+  const status = checkInStatus.value
+  const week = status?.week
+  if (status && week?.length) {
+    const dailyReward = status.rules?.daily_reward_points || status.today_reward_points || 0
+    return week.map((day) => {
+      // 已签到显示对勾；今天/未来日期显示当日可得积分；已过期未签到显示占位币符。
+      let reward: number | null = null
+      if (!day.checked_in && day.date >= status.today) reward = day.is_today ? (status.today_reward_points || dailyReward) : dailyReward
+      return {
+        label: day.is_today ? '今天' : day.weekday,
+        done: day.checked_in,
+        today: day.is_today,
+        reward: reward || null,
+      }
+    })
+  }
+  const labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+  const todayIndex = (new Date().getDay() + 6) % 7
   return labels.map((label, index) => ({
-    label,
-    done: index < 5,
-    today: index === 5,
+    label: index === todayIndex ? '今天' : label,
+    done: false,
+    today: index === todayIndex,
+    reward: null as number | null,
   }))
 })
-const feedTasks = computed(() => hallTasks.value.slice(0, 5))
+type FeedTab = 'recommend' | 'latest' | 'reward'
+const activeFeedTab = ref<FeedTab>('recommend')
+const feedTasks = computed(() => {
+  const list = hallTasks.value.slice(0, 10)
+  if (activeFeedTab.value === 'reward') {
+    return [...list].sort((a, b) => maxReward(b.rewards) - maxReward(a.rewards)).slice(0, 5)
+  }
+  // 推荐与最新均按发布时间倒序（后端默认即最新优先）。
+  return list.slice(0, 5)
+})
+function selectFeedTab(tab: FeedTab) { activeFeedTab.value = tab }
+function maxReward(rewards: TaskReward[] | undefined) {
+  return (rewards || []).reduce((max, reward) => Math.max(max, reward.points || 0), 0)
+}
 
 onLoad((options?: Record<string, string | undefined>) => {
   const hint = promotionCampusHint(options)
@@ -434,14 +508,21 @@ async function loadRegisteredHomeData() {
   if (tasksResult.status === 'fulfilled') hallTasks.value = tasksResult.value.items
   if (claimsResult.status === 'fulfilled') myClaims.value = claimsResult.value.items
   if (productsResult.status === 'fulfilled') mallProducts.value = productsResult.value.items
-  // v13: 拉取积分账户
+  // v13: 拉取积分账户与签到状态
   if (auth.accessToken) {
-    try {
-      const account = await getPointAccount(auth.accessToken)
-      pointAccount.value = { available_points: account.available_points }
-    } catch {
+    const [accountResult, checkInResult] = await Promise.allSettled([
+      getPointAccount(auth.accessToken),
+      getDailyCheckIn(auth.accessToken),
+    ])
+    if (accountResult.status === 'fulfilled') {
+      pointAccount.value = {
+        available_points: accountResult.value.available_points,
+        points_earned_today: accountResult.value.points_earned_today ?? 0,
+      }
+    } else {
       pointAccount.value = null
     }
+    if (checkInResult.status === 'fulfilled') checkInStatus.value = checkInResult.value
   }
 }
 
@@ -466,7 +547,7 @@ async function loadHome() {
   failedHeroImages.value = {}
   try {
     home.value = normalizeHomeContent(await loadHomeContent())
-    const preferredHeroIndex = home.value.carousel.items.findIndex((item) => item.link_type === 'products')
+    const preferredHeroIndex = home.value.carousel.items.findIndex((item) => item.image_url)
     activeHeroIndex.value = preferredHeroIndex >= 0 ? preferredHeroIndex : 0
     showPopupWhenNeeded()
   } catch {
@@ -564,7 +645,7 @@ function quickArtIcon(id: string, linkType: HomeLinkType) {
 }
 
 function heroImageSource(slide: HomeCarouselItem) {
-  if (slide.image_url && !failedHeroImages.value[slide.id]) return slide.image_url
+  if (slide.image_url && !failedHeroImages.value[slide.id]) return resolveApiAssetUrl(slide.image_url)
   return fallbackHeroImage
 }
 
@@ -646,7 +727,18 @@ function navigateHomeLink(link: HomeLinkType) {
   if (link === 'notifications') return openNotifications()
   if (link === 'orders') return openOrders()
   if (link === 'assets') return openAssets()
-  if (link === 'second_hand') return openSecondHand()
+  if (link === 'second_hand' || link === 'secondhand') return openSecondHand()
+}
+
+// 金刚区跳转：支持 tasks:<category> 直达大厅指定分类。
+function handleKingLink(link: string, id: string) {
+  if (link === 'secondhand' || id === 'cat-secondhand') return openSecondHand()
+  if (link.startsWith('tasks:')) {
+    const categoryValue = link.slice('tasks:'.length)
+    if (categoryValue) uni.setStorageSync('task_mall_hall_category', categoryValue)
+    return openTasks()
+  }
+  navigateHomeLink(link as HomeLinkType)
 }
 
 function backgroundStyle(url: string) {
@@ -688,8 +780,43 @@ function taskRewardText(task: HallTask) {
   return rewards.map(rewardLabel).join(' + ')
 }
 
-function formatTaskTime(_dateStr: string) {
-  return '5分钟前'
+const feedTabOptions: Array<{ id: FeedTab; label: string }> = [
+  { id: 'recommend', label: '推荐' },
+  { id: 'latest', label: '最新' },
+  { id: 'reward', label: '高价' },
+]
+
+function taskAvatarSrc(task: HallTask) {
+  return resolveApiAssetUrl(task.publisher?.avatar_url) || ''
+}
+
+function publisherInitial(task: HallTask) {
+  return (task.publisher?.display_name || '同').slice(0, 1)
+}
+
+function postMetaText(task: HallTask) {
+  const parts: string[] = []
+  if (task.published_at) parts.push(formatRelativeTime(task.published_at))
+  if (task.publisher?.credit_score) parts.push(`信用分${task.publisher.credit_score}`)
+  return parts.join(' · ')
+}
+
+function postBodyText(task: HallTask) {
+  return plainText(task.description_text || task.description) || task.title
+}
+
+function isTeamTask(task: HallTask) {
+  return task.category === 'teamup' || (task.tags || []).some(tag => tag.includes('组队'))
+}
+
+function postTags(task: HallTask) {
+  return (task.tags || []).filter(tag => tag !== '悬赏' && tag !== '加急').slice(0, 3)
+}
+
+// 关注功能暂无 C2C 后端链路，先做占位，不伪造交互结果。
+function followPublisher(_task: HallTask) {
+  if (!auth.isAuthenticated) return openLogin()
+  uni.showToast({ title: '关注功能即将上线', icon: 'none' })
 }
 
 function kingIconStyle(tone: string) {
@@ -699,6 +826,9 @@ function kingIconStyle(tone: string) {
     orange: { bg: '#FFF2E5', color: '#F2620A' },
     violet: { bg: '#F1EAFF', color: '#8B5CF6' },
     pink: { bg: '#FFEAF1', color: '#F43F7F' },
+    cyan: { bg: '#E3F7F5', color: '#12A59B' },
+    yellow: { bg: '#FFF6DC', color: '#D99400' },
+    gray: { bg: '#F0F2F5', color: '#8A919C' },
     warm: { bg: '#FFF6DE', color: '#D99400' },
   }
   const style = map[tone] || map.green
@@ -733,12 +863,14 @@ function kingIconStyle(tone: string) {
 .home-v13-pc-sub{font-size:24rpx;font-weight:500;opacity:.85;margin-left:8rpx}
 .home-v13-pc-sign{height:64rpx;padding:0 28rpx;border-radius:32rpx;background:#fff;color:#08A152;font-size:24rpx;font-weight:700;display:inline-flex;align-items:center;gap:8rpx;box-shadow:0 8rpx 20rpx rgba(0,0,0,.12);border:0}
 .home-v13-pc-sign::after{display:none}
+.home-v13-pc-sign.signed{background:rgba(255,255,255,.25);color:#fff;box-shadow:none}
 .home-v13-pc-sign-icon{font-size:22rpx;font-weight:900}
 .home-v13-sign-strip{position:relative;display:flex;margin-top:28rpx;background:rgba(255,255,255,.14);border-radius:24rpx;padding:18rpx 12rpx}
 .home-v13-sign-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:8rpx;font-size:20rpx;color:rgba(255,255,255,.85)}
 .home-v13-sign-day-badge{width:44rpx;height:44rpx;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:20rpx}
 .home-v13-sign-day.done .home-v13-sign-day-badge{background:#fff;color:#08A152}
 .home-v13-sign-day.today .home-v13-sign-day-badge{background:#FFB020;color:#7A4A00;box-shadow:0 0 0 6rpx rgba(255,176,32,.35)}
+.home-v13-sign-day.done.today .home-v13-sign-day-badge{background:#fff;color:#08A152;box-shadow:0 0 0 6rpx rgba(255,255,255,.35)}
 .home-v13-sign-day.today{color:#fff;font-weight:700}
 
 /* ============ 金刚区 ============ */
@@ -757,30 +889,40 @@ function kingIconStyle(tone: string) {
 .home-v13-promo-img{width:300rpx;height:100%;flex:none;mask-image:linear-gradient(to right,transparent,#000 38%);-webkit-mask-image:linear-gradient(to right,transparent,#000 38%)}
 
 /* ============ Feed Tabs ============ */
-.home-v13-feed-tabs{display:flex;gap:36rpx;padding:28rpx 32rpx 4rpx;font-size:26rpx;color:#767C85}
+.home-v13-feed-tabs{display:flex;align-items:center;gap:36rpx;padding:28rpx 32rpx 4rpx;font-size:26rpx;color:#767C85}
 .home-v13-feed-tab{padding-bottom:8rpx}
 .home-v13-feed-tab.active{color:#191B1F;font-size:30rpx;font-weight:700;position:relative}
 .home-v13-feed-tab.active::after{content:'';position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:36rpx;height:6rpx;border-radius:4rpx;background:#0BBF63}
+.home-v13-feed-more{margin-left:auto;font-size:24rpx;color:#9AA0A8;padding-bottom:8rpx}
 
-/* ============ 任务卡片 tcard ============ */
-.home-v13-tcard{background:#fff;border-radius:32rpx;margin:20rpx 24rpx 0;padding:24rpx;display:flex;gap:22rpx;align-items:center;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
-.home-v13-tcard-img-wrap{width:184rpx;height:184rpx;border-radius:20rpx;flex:none;overflow:hidden}
-.home-v13-tcard-img{width:100%;height:100%}
-.home-v13-tcard-img-fallback{width:100%;height:100%;border-radius:20rpx;background:linear-gradient(135deg,#E7F9EF,#B4EDD1);display:flex;align-items:center;justify-content:center;color:#08A152;font-size:40rpx;font-weight:800}
-.home-v13-tcard-main{flex:1;min-width:0;display:flex;flex-direction:column}
-.home-v13-tcard-title{font-size:28rpx;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.home-v13-tcard-tags{margin:10rpx 0 8rpx;display:flex;gap:6rpx}
+/* ============ 社交式任务卡片 post ============ */
+.home-v13-post{background:#fff;border-radius:28rpx;margin:20rpx 24rpx 0;padding:28rpx 24rpx 22rpx;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
+.home-v13-post-head{display:flex;align-items:center;gap:16rpx}
+.home-v13-post-avatar{width:76rpx;height:76rpx;border-radius:50%;flex:none;background:#F0F2F5}
+.home-v13-post-avatar-fallback{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#D9F2E3,#B4EDD1);color:#08A152;font-size:30rpx;font-weight:800}
+.home-v13-post-head-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6rpx}
+.home-v13-post-name-row{display:flex;align-items:center;gap:10rpx}
+.home-v13-post-name{font-size:27rpx;font-weight:700;color:#191B1F;max-width:260rpx;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-v13-post-badge{height:32rpx;line-height:32rpx;padding:0 10rpx;border-radius:8rpx;background:#FFF2E5;color:#F2620A;font-size:18rpx;font-weight:600}
+.home-v13-post-meta{font-size:21rpx;color:#AEB3BB}
+.home-v13-post-follow{height:52rpx;line-height:52rpx;padding:0 24rpx;border-radius:26rpx;background:#FFF6EC;color:#F2620A;font-size:22rpx;font-weight:600;flex:none}
+.home-v13-post-body{display:block;margin-top:18rpx;font-size:27rpx;line-height:1.55;color:#2A2D33}
+.home-v13-post-tags{margin-top:14rpx;display:flex;flex-wrap:wrap;gap:10rpx}
 .home-v13-tag{display:inline-flex;align-items:center;height:36rpx;padding:0 12rpx;border-radius:10rpx;font-size:20rpx;font-weight:500;background:#F2F4F3;color:#767C85}
 .home-v13-tag.tag-red{background:#FFEEEA;color:#FF3B30}
 .home-v13-tag.tag-orange{background:#FFF2E5;color:#F2620A}
 .home-v13-tag.tag-green{background:#E7F9EF;color:#08A152}
-.home-v13-tcard-meta{font-size:22rpx;color:#AEB3BB;display:flex;align-items:center;gap:6rpx}
-.home-v13-tcard-dot{width:4rpx;height:4rpx;border-radius:50%;background:#AEB3BB;display:inline-block}
-.home-v13-tcard-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12rpx}
-.home-v13-tcard-pts{font-size:38rpx;font-weight:800;color:#08A152;line-height:1}
-.home-v13-tcard-pts small{font-size:20rpx;font-weight:500;color:#0BBF63;margin-left:2rpx}
-.home-v13-tcard-btn{height:60rpx;padding:0 32rpx;border-radius:30rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:24rpx;font-weight:600;box-shadow:0 8rpx 20rpx rgba(11,191,99,.28);border:0}
-.home-v13-tcard-btn::after{display:none}
+.home-v13-post-gallery{margin-top:16rpx;display:grid;gap:10rpx}
+.home-v13-post-gallery.g-1{grid-template-columns:1fr}
+.home-v13-post-gallery.g-2{grid-template-columns:1fr 1fr}
+.home-v13-post-gallery.g-3{grid-template-columns:1fr 1fr 1fr}
+.home-v13-post-gallery-img{width:100%;aspect-ratio:1/1;border-radius:16rpx;background:#F4F6F4}
+.home-v13-post-gallery.g-1 .home-v13-post-gallery-img{aspect-ratio:16/10}
+.home-v13-post-foot{display:flex;align-items:center;margin-top:18rpx;gap:14rpx}
+.home-v13-post-pts{font-size:34rpx;font-weight:800;color:#08A152;line-height:1}
+.home-v13-post-loc{font-size:21rpx;color:#9AA0A8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-v13-post-btn{margin-left:auto;height:60rpx;padding:0 34rpx;border-radius:30rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:24rpx;font-weight:600;box-shadow:0 8rpx 20rpx rgba(11,191,99,.28);border:0}
+.home-v13-post-btn::after{display:none}
 
 /* ============ 空态 ============ */
 .home-v13-empty{margin:20rpx 24rpx 0;padding:40rpx;background:#fff;border-radius:32rpx;display:flex;flex-direction:column;align-items:center;gap:10rpx;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}

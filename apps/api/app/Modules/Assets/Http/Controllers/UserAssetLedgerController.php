@@ -35,6 +35,11 @@ class UserAssetLedgerController extends Controller
             'expiring_points' => $next?->remaining_points ?? 0, 'next_expiration_at' => $next?->expires_at?->toIso8601String(),
             'expiring_7_days' => (clone $activeBatches)->where('expires_at', '<=', now()->addDays(7))->sum('remaining_points'),
             'expiring_30_days' => (clone $activeBatches)->where('expires_at', '<=', now()->addDays(30))->sum('remaining_points'),
+            'points_earned_today' => (int) PointTransaction::query()
+                ->where('user_id', $userId)
+                ->where('change_available', '>', 0)
+                ->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])
+                ->sum('change_available'),
         ]);
     }
 

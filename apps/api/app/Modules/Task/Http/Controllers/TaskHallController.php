@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Assets\Models\WalletWithdrawal;
 use App\Modules\Task\Models\Task;
 use App\Modules\Task\Models\TaskClaim;
+use App\Modules\Task\Models\TaskVersion;
 use App\Modules\Task\Services\TaskClaimService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,16 +17,20 @@ class TaskHallController extends Controller
     public function index(Request $request, TaskClaimService $claims): JsonResponse
     {
         $filters = $request->validate([
-            'keyword' => ['sometimes', 'string', 'max:100'], 'category' => ['sometimes', 'in:onboarding,daily,community,commerce,research,campaign'],
+            'keyword' => ['sometimes', 'string', 'max:100'], 'category' => ['sometimes', 'in:onboarding,daily,community,commerce,research,campaign,errand,study,skill,lost_found,teamup'],
             'participation_mode' => ['sometimes', 'in:claim_and_submit,claim_and_auto_verify,auto_enroll'],
             'reward_type' => ['sometimes', 'in:points,coupon,wallet_balance'], 'task_type' => ['sometimes', 'in:one_time,daily,weekly,monthly,milestone,repeatable'],
+            'sort' => ['sometimes', 'in:default,latest,reward'],
             'claimable_only' => ['sometimes', 'boolean'],
         ]);
-        $items = collect($claims->hall($filters));
+        $items = collect($claims->hall($filters))
+            ->when(($filters['sort'] ?? null) === 'latest', fn ($collection) => $collection->sortByDesc(fn (array $task) => $task['published_at'] ?? null)->values())
+            ->when(($filters['sort'] ?? null) === 'reward', fn ($collection) => $collection->sortByDesc(fn (array $task) => (int) collect($task['rewards'] ?? [])->max('points'))->values());
 
         return ApiResponse::success([
-            'items' => $items,
+            'items' => $items->all(),
             'withdrawal_notices' => $this->withdrawalNotices(),
+            'activity_feed' => $this->activityFeed(),
             'pagination' => ['page' => 1, 'page_size' => $items->count(), 'total' => $items->count()],
         ]);
     }
@@ -90,6 +95,87 @@ class TaskHallController extends Controller
         abort_unless(strlen($key) >= 12 && strlen($key) <= 128, 422, 'Idempotency-Key is required.');
 
         return $key;
+    }
+
+    /**
+     * 任务大厅动态：真实的完成/审核通过事件 + 最新发布事件，按时间合并。
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function activityFeed(): array
+    {
+        $events = [];
+
+        TaskClaim::query()
+            ->with(['task', 'user'])
+            ->whereNotNull('approved_at')
+            ->latest('approved_at')
+            ->limit(8)
+            ->get()
+            ->each(function (TaskClaim $claim) use (&$events): void {
+                $snapshot = is_array($claim->task_snapshot) ? $claim->task_snapshot : [];
+                $points = (int) collect($snapshot['rewards'] ?? [])->where('type', 'points')->sum('points');
+                $events[] = [
+                    'id' => 'claim-'.$claim->public_id,
+                    'type' => 'completed',
+                    'actor_masked' => $this->maskActor($claim->user?->nickname, $claim->user?->phone),
+                    'action_text' => '完成',
+                    'task_title' => (string) ($snapshot['title'] ?? '校园任务'),
+                    'reward_text' => $points > 0 ? "赚到 {$points} 积分" : '任务已完成',
+                    'occurred_at' => $claim->approved_at?->toIso8601String(),
+                ];
+            });
+
+        $publishedTitles = Task::query()
+            ->where('status', 'published')
+            ->whereNotNull('published_at')
+            ->latest('published_at')
+            ->limit(8)
+            ->get()
+            ->mapWithKeys(function (Task $task): array {
+                $version = TaskVersion::query()->where('task_id', $task->id)->where('version_no', $task->published_version_no)->first();
+                $actor = trim((string) ($version?->content['publisher_display_name'] ?? ''));
+
+                return [$task->id => [
+                    'title' => (string) ($version?->content['title'] ?? '新任务'),
+                    'actor' => $actor !== '' ? $actor : '校园任务官',
+                ]];
+            });
+
+        Task::query()
+            ->where('status', 'published')
+            ->whereNotNull('published_at')
+            ->latest('published_at')
+            ->limit(8)
+            ->get()
+            ->each(function (Task $task) use (&$events, $publishedTitles): void {
+                $events[] = [
+                    'id' => 'publish-'.$task->public_id,
+                    'type' => 'published',
+                    'actor_masked' => $publishedTitles[$task->id]['actor'] ?? '校园任务官',
+                    'action_text' => '发布',
+                    'task_title' => $publishedTitles[$task->id]['title'] ?? '新任务',
+                    'reward_text' => '快去看看',
+                    'occurred_at' => $task->published_at?->toIso8601String(),
+                ];
+            });
+
+        return collect($events)
+            ->filter(fn (array $event): bool => ! empty($event['occurred_at']))
+            ->sortByDesc(fn (array $event) => $event['occurred_at'])
+            ->take(10)
+            ->values()
+            ->all();
+    }
+
+    private function maskActor(?string $nickname, ?string $phone): string
+    {
+        $nickname = trim((string) $nickname);
+        if (is_string($phone) && preg_match('/^(\d{3})\d+(\d{4})$/', $phone, $matches)) {
+            return $matches[1].'****'.$matches[2];
+        }
+
+        return $nickname !== '' ? $nickname : '某位同学';
     }
 
     /** @return array<int,array<string,mixed>> */

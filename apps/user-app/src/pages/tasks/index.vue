@@ -31,7 +31,15 @@
         <view class="sp" />
         <view class="filter-btn" @click="showFilterHint">筛选<text class="filter-btn-ic">⌄</text></view>
       </view>
-      <view v-if="withdrawalNotices.length && modules.isEnabled('module_withdraw')" class="notice">
+      <view v-if="activityFeed.length" class="notice">
+        <text class="notice-ic">♪</text>
+        <swiper class="notice-swiper" vertical autoplay circular :interval="3500" :duration="450">
+          <swiper-item v-for="event in activityFeed" :key="event.id">
+            <view class="notice-line"><text class="notice-user">{{ event.actor_masked }}</text><text>{{ feedEventText(event) }}</text></view>
+          </swiper-item>
+        </swiper>
+      </view>
+      <view v-else-if="withdrawalNotices.length && modules.isEnabled('module_withdraw')" class="notice">
         <text class="notice-ic">讯</text>
         <swiper class="notice-swiper" vertical autoplay circular :interval="3500" :duration="450">
           <swiper-item v-for="notice in withdrawalNotices" :key="notice.id">
@@ -55,24 +63,25 @@
         </view>
       </view>
       <view v-for="task in visibleTasks" :key="task.id" class="tcard" @click="openTaskDetail(task.id)">
-        <image v-if="task.cover_image_url" class="tcard-img" :src="task.cover_image_url" mode="aspectFill" />
+        <image v-if="task.cover_image_url" class="tcard-img" :src="resolveApiAssetUrl(task.cover_image_url)" mode="aspectFill" />
         <view v-else class="tcard-img tcard-fallback" :class="`fb-${task.category}`"><text>{{ categoryLabel(task.category) }}</text></view>
         <view class="t-main">
           <view class="t-title">{{ task.title }}</view>
           <view class="t-tags">
-            <text class="tag tag-green">{{ categoryLabel(task.category) }}</text>
-            <text v-for="(tag, tagIndex) in displayTags(task)" :key="tag" class="tag" :class="tagVariant(tagIndex)">{{ tag }}</text>
+            <text v-if="task.bounty" class="tag tag-red">悬赏</text>
+            <text v-if="task.urgent" class="tag tag-orange">加急</text>
+            <text v-for="tag in displayTags(task)" :key="tag" class="tag" :class="tagClass(tag)">{{ tag }}</text>
           </view>
           <view class="t-meta">
             <text class="t-meta-name">{{ task.publisher?.display_name || '校园任务官' }}</text>
             <view class="dot" />
-            <text>剩余 {{ task.remaining_reward_slots }} 名额</text>
-            <view class="dot" />
-            <text>{{ task.view_count }} 人看过</text>
+            <text>{{ formatRelativeTime(task.published_at) }}</text>
+            <template v-if="task.location_text"><view class="dot" /><text class="t-meta-loc">{{ task.location_text }}</text></template>
+            <template v-if="task.remaining_reward_slots <= 5"><view class="dot" /><text>剩{{ task.remaining_reward_slots }}名</text></template>
           </view>
           <view class="t-foot">
             <view :class="['t-pts', { plain: !rewardParts(task).matched }]">{{ rewardParts(task).main }}<text v-if="rewardParts(task).sub" class="t-pts-sub"> {{ rewardParts(task).sub }}</text></view>
-            <view :class="['btn-go', { disabled: !task.can_claim }]">{{ task.can_claim ? '接单' : reasonText(task.claim_unavailable_reason) }}</view>
+            <view :class="['btn-go', { disabled: !task.can_claim }]">{{ actionLabel(task) }}</view>
           </view>
         </view>
       </view>
@@ -133,17 +142,18 @@
 </template>
 
 <script setup lang="ts">
-import { formatDateTime as formatTime } from '@/utils/dateTime'
+import { formatDateTime as formatTime, formatRelativeTime } from '@/utils/dateTime'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AppTabBar from '@/components/AppTabBar.vue'
-import { cancelTaskClaim, listHallTasks, listMyTaskClaims, type HallTask, type TaskClaim, type TaskReward, type WithdrawalNotice } from '@/api/tasks'
+import { cancelTaskClaim, listHallTasks, listMyTaskClaims, type HallTask, type TaskActivityEvent, type TaskClaim, type TaskReward, type WithdrawalNotice } from '@/api/tasks'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { plainTextFromRich } from '@/utils/richText'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
+import { resolveApiAssetUrl } from '@/api/http'
 
 const topSafeAreaStyle = createTopSafeAreaStyle()
 
@@ -155,11 +165,12 @@ const tab = ref<'hall' | 'mine'>('hall')
 const category = ref('')
 const tasks = ref<HallTask[]>([])
 const withdrawalNotices = ref<WithdrawalNotice[]>([])
+const activityFeed = ref<TaskActivityEvent[]>([])
 const myClaims = ref<TaskClaim[]>([])
 const claimGroup = ref('')
 const searchKeyword = ref('')
 const filterVisible = ref(false)
-const sortMode = ref<'default' | 'latest' | 'reward' | 'easy'>('default')
+const sortMode = ref<'default' | 'latest' | 'reward'>('default')
 const loading = ref(false)
 const loadError = ref('')
 const totalSlots = computed(() => tasks.value.reduce((sum, task) => sum + task.remaining_reward_slots, 0))
@@ -169,22 +180,24 @@ const sortOptions = [
   { value: 'default' as const, label: '综合排序' },
   { value: 'latest' as const, label: '最新发布' },
   { value: 'reward' as const, label: '奖励优先' },
-  { value: 'easy' as const, label: '容易完成' },
 ]
 const visibleTasks = computed(() => {
   const keyword = searchKeyword.value.trim().toLocaleLowerCase()
-  const result = (keyword ? tasks.value.filter((task) => {
+  return keyword ? tasks.value.filter((task) => {
     const haystack = [task.title, task.description_text, plainTextFromRich(task.description), ...task.tags].filter(Boolean).join(' ').toLocaleLowerCase()
     return haystack.includes(keyword)
-  }) : [...tasks.value])
-  if (sortMode.value === 'latest') return result.sort((left, right) => new Date(right.claim_ends_at).getTime() - new Date(left.claim_ends_at).getTime())
-  if (sortMode.value === 'reward') return result.sort((left, right) => rewardSortValue(right) - rewardSortValue(left))
-  if (sortMode.value === 'easy') return result.sort((left, right) => (left.average_completion_minutes ?? left.completion_window_hours * 60) - (right.average_completion_minutes ?? right.completion_window_hours * 60))
-  return result
+  }) : [...tasks.value]
 })
 const nowEpoch = ref(Date.now())
 let clock: ReturnType<typeof setInterval> | undefined
-const categories = [{ value: '', label: '全部' }, { value: 'onboarding', label: '线下' }, { value: 'daily', label: '日常' }, { value: 'community', label: '社区' }, { value: 'commerce', label: '商城' }, { value: 'research', label: '调研' }, { value: 'campaign', label: '活动' }]
+const categories = [
+  { value: '', label: '全部' },
+  { value: 'errand', label: '跑腿' },
+  { value: 'study', label: '学习' },
+  { value: 'commerce', label: '二手' },
+  { value: 'skill', label: '技能' },
+  { value: 'lost_found', label: '失物' },
+]
 const claimGroups = [{ value: '', label: '全部' }, { value: 'to_submit', label: '待提交' }, { value: 'reviewing', label: '审核中' }, { value: 'rejected', label: '未通过' }, { value: 'completed', label: '已完成' }, { value: 'ended', label: '已结束' }]
 
 onMounted(() => { clock = setInterval(() => { nowEpoch.value = Date.now() }, 1000) })
@@ -199,6 +212,12 @@ onShow(async () => {
     void loadMine()
     return
   }
+  const hallCategory = uni.getStorageSync('task_mall_hall_category')
+  if (typeof hallCategory === 'string') {
+    uni.removeStorageSync('task_mall_hall_category')
+    tab.value = 'hall'
+    category.value = hallCategory
+  }
   if (tab.value === 'hall') void loadHall(); else void loadMine()
 })
 onPullDownRefresh(async () => { try { await modules.ensureReady(); if (!moduleEnabled.value) return; if (tab.value === 'hall') await loadHall(); else await loadMine() } finally { uni.stopPullDownRefresh() } })
@@ -206,9 +225,10 @@ async function loadHall() {
   loading.value = true
   loadError.value = ''
   try {
-    const data = await listHallTasks({ category: category.value || undefined })
+    const data = await listHallTasks({ category: category.value || undefined, sort: sortMode.value })
     tasks.value = data.items
     withdrawalNotices.value = data.withdrawal_notices || []
+    activityFeed.value = data.activity_feed || []
   } catch (error) {
     loadError.value = error instanceof Error ? error.message : '请检查网络后重试。'
     uni.showToast({ title: error instanceof Error ? error.message : '任务加载失败', icon: 'none' })
@@ -226,9 +246,8 @@ async function loadMine() {
 }
 function openTaskDetail(taskId: string) { uni.navigateTo({ url: `/pages/task-detail/index?id=${encodeURIComponent(taskId)}` }) }
 function openClaimDetail(claimId: string) { uni.navigateTo({ url: `/pages/task-claim/index?id=${encodeURIComponent(claimId)}` }) }
-function rewardSortValue(task: HallTask) { const reward = task.rewards[0]; if (!reward) return 0; if (reward.type === 'points') return reward.points || 0; if (reward.type === 'wallet_balance') return reward.balance_amount || 0; return (reward.quantity || 1) * 100 }
 function showFilterHint() { filterVisible.value = true }
-function selectSort(value: 'default' | 'latest' | 'reward' | 'easy') { sortMode.value = value; filterVisible.value = false }
+function selectSort(value: 'default' | 'latest' | 'reward') { sortMode.value = value; filterVisible.value = false; void loadHall() }
 async function cancel(item: TaskClaim) {
   if (!auth.accessToken) return
   const confirmed = await uni.showModal({ title: '取消任务', content: '名额和奖励预留会释放，但本周期不能再次领取。' })
@@ -243,16 +262,31 @@ function rewardParts(task: HallTask) {
   const match = text.match(/^([+¥]*[\d.]+)\s*(.*)$/)
   return match ? { main: match[1], sub: match[2], matched: true } : { main: text, sub: '', matched: false }
 }
-function tagVariant(index: number) { return ['tag-red', 'tag-orange', 'tag-green', 'tag-blue'][index % 4] }
-function categoryLabel(value: string) { return ({ onboarding: '线下', daily: '日常', community: '社区', commerce: '商城', research: '调研', campaign: '活动' } as Record<string, string>)[value] || '其他' }
+const tagClassMap: Record<string, string> = { 组队: 'tag-blue', 学习助力: 'tag-green', 线下: 'tag-gray', 长期可约: 'tag-gray', 问卷调研: 'tag-yellow', 跑腿代办: 'tag-green', 失物招领: 'tag-pink' }
+const tagClassCycle = ['tag-green', 'tag-orange', 'tag-blue', 'tag-gray']
+function tagClass(tag: string) {
+  if (tagClassMap[tag]) return tagClassMap[tag]
+  const hash = [...tag].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  return tagClassCycle[hash % tagClassCycle.length]
+}
+const categoryNameMap: Record<string, string> = { onboarding: '新手', daily: '日常', community: '社区', commerce: '二手闲置', research: '问卷调研', campaign: '活动', errand: '跑腿代办', study: '学习助力', skill: '技能服务', lost_found: '失物招领', teamup: '组队拼单' }
+function categoryLabel(value: string) { return categoryNameMap[value] || '校园任务' }
 function taskTypeLabel(value: string) { return ({ one_time: '单次任务', daily: '每日任务', weekly: '每周任务', monthly: '每月任务', milestone: '里程碑任务', repeatable: '可重复任务' } as Record<string, string>)[value] || '常规任务' }
-function displayTags(task: HallTask) { const category = categoryLabel(task.category); return [...new Set(task.tags.filter((tag) => tag !== category))].slice(0, 2) }
+function displayTags(task: HallTask) { const category = categoryLabel(task.category); return [...new Set(task.tags.filter((tag) => tag !== category))].slice(0, 3) }
+function isTeamTask(task: HallTask) { return task.category === 'teamup' || task.tags.includes('组队') }
+function actionLabel(task: HallTask) {
+  if (isTeamTask(task)) return task.can_claim ? '报名' : reasonText(task.claim_unavailable_reason)
+  return task.can_claim ? '接单' : reasonText(task.claim_unavailable_reason)
+}
+function feedEventText(event: TaskActivityEvent) {
+  return ` ${formatRelativeTime(event.occurred_at)}${event.action_text}「${event.task_title}」，${event.reward_text}`
+}
 function durationText(value: number | null) { if (value === null) return '暂无'; if (value < 60) return `${value} 分钟`; return `${(value / 60).toFixed(value % 60 === 0 ? 0 : 1)} 小时` }
 function reviewDurationText(task: HallTask) { return task.average_review_minutes === null ? `限时 ${task.review_deadline_hours} 小时` : durationText(task.average_review_minutes) }
 function completionDurationText(task: HallTask) { return task.average_completion_minutes === null ? `领取后 ${task.completion_window_hours} 小时` : `约 ${durationText(task.average_completion_minutes)}` }
 function formatMoney(value: number) { return (value / 100).toFixed(2) }
 function reasonText(reason: string | null) { return ({ not_started: '尚未开始', ended: '已结束', quota_exhausted: '名额已满', ineligible: '系统自动加入' } as Record<string, string>)[reason || ''] || '暂不可领取' }
-function categoryMark(value: string) { return ({ onboarding: '新', daily: '学', community: '享', commerce: '购', research: '研', campaign: '活' } as Record<string, string>)[value] || '任' }
+function categoryMark(value: string) { return ({ onboarding: '新', daily: '学', community: '享', commerce: '闲', research: '研', campaign: '活', errand: '跑', study: '学', skill: '技', lost_found: '失', teamup: '队' } as Record<string, string>)[value] || '任' }
 function visibleClaimTags(item: TaskClaim) { const category = categoryLabel(item.category); return [...new Set(item.tags.filter(tag => tag !== category))].slice(0, 1) }
 function claimRewardText(item: TaskClaim) { return item.rewards[0] ? rewardText(item.rewards[0]).replace(' 余额', '') : '任务奖励' }
 function claimStatusText(status: string) { return ({ claimed: '待提交', withdrawn: '待重新提交', submitted: '已提交', reviewing: '审核中', rejected: '未通过', approved: '已完成', cancelled: '已放弃', expired: '已过期', appealed: '申诉中', appeal_reviewing: '申诉审核中', appeal_rejected: '申诉未通过' } as Record<string, string>)[status] || '状态待同步' }
@@ -312,7 +346,9 @@ function deadlineText(item: TaskClaim) { if (['approved', 'cancelled', 'appeal_r
 .notice{display:flex;align-items:center;gap:14rpx;height:64rpx;margin-top:20rpx;padding:0 22rpx;box-sizing:border-box;border-radius:18rpx;background:var(--green-soft);color:var(--green-deep);font-size:22rpx}
 .notice-ic{display:flex;align-items:center;justify-content:center;width:32rpx;height:32rpx;flex:none;border-radius:50%;background:var(--green);color:#fff;font-size:18rpx;font-weight:700}
 .notice-swiper{min-width:0;height:64rpx;flex:1}
+.notice-swiper :deep(uni-swiper-item),.notice-swiper :deep(.uni-swiper-item),.notice-swiper :deep(.swiper-item){height:64rpx;overflow:hidden}
 .notice-line{display:flex;align-items:center;height:64rpx;overflow:hidden;white-space:nowrap}
+.notice-line text:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .notice-user,.notice-amount{font-weight:700}
 /* ============ 任务横卡 ============ */
 .tcard{display:flex;gap:22rpx;align-items:center;margin-top:20rpx;padding:24rpx;box-sizing:border-box;border-radius:32rpx;background:#fff;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
@@ -332,9 +368,19 @@ function deadlineText(item: TaskClaim) { if (['approved', 'cancelled', 'appeal_r
 .tag-orange{background:var(--orange-soft);color:var(--orange-deep)}
 .tag-green{background:var(--green-soft);color:var(--green-deep)}
 .tag-blue{background:#EAF2FF;color:#3B82F6}
+.tag-gray{background:#F0F2F5;color:#8A919C}
+.tag-yellow{background:#FFF6DC;color:#C98A06}
+.tag-pink{background:#FFEDF4;color:#E03E7C}
+.fb-errand{background:linear-gradient(135deg,#2FD088,#0E9D62)}
+.fb-study{background:linear-gradient(135deg,#5FA0FF,#2F6BDE)}
+.fb-skill{background:linear-gradient(135deg,#A78BFA,#7C4DFF)}
+.fb-lost_found{background:linear-gradient(135deg,#FF8FB6,#E03E7C)}
+.fb-teamup{background:linear-gradient(135deg,#4FD1C5,#14939B)}
+.fb-research{background:linear-gradient(135deg,#FFD66B,#F0A818)}
 .t-meta{display:flex;align-items:center;gap:8rpx;overflow:hidden;color:var(--t3);font-size:22rpx;white-space:nowrap}
 .t-meta-name{max-width:170rpx;overflow:hidden;text-overflow:ellipsis}
 .t-meta .dot{width:4rpx;height:4rpx;flex:none;border-radius:50%;background:var(--t3)}
+.t-meta-loc{max-width:220rpx;overflow:hidden;text-overflow:ellipsis}
 .t-foot{display:flex;align-items:center;justify-content:space-between;gap:16rpx;margin-top:16rpx}
 .t-pts{color:var(--green-deep);font-size:38rpx;font-weight:800;line-height:1}
 .t-pts.plain{font-size:24rpx;line-height:1.2}
