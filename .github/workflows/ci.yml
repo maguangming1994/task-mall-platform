@@ -124,7 +124,8 @@ jobs:
     environment: production
     permissions:
       contents: read
-    timeout-minutes: 90
+    # 跨境推送到腾讯 TCR 单镜像层可能持续 80+ 分钟；为 2 次 45 分钟内部重试预留完整窗口。
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Restore checksum-pinned school emblems
