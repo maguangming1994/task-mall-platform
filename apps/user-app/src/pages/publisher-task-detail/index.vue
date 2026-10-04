@@ -9,12 +9,14 @@
     <view v-if="loading" class="detail-loading"><view class="detail-skeleton hero-skeleton" /><view class="detail-skeleton card-skeleton" /><view class="detail-skeleton card-skeleton short" /></view>
     <view v-else-if="loadError" class="state-card error-state"><text class="state-icon">!</text><text class="state-title">发布任务加载失败</text><text class="state-copy">{{ loadError }}</text><view class="state-actions"><button class="retry-button" @click="initialize">重试</button><button class="back-button" @click="backToPublisher">返回发布中心</button></view></view>
     <template v-else-if="task">
-      <view class="hero">
-        <view class="hero-top"><text class="eyebrow">发布管理</text><text class="status">{{ statusText(task.status) }}</text></view>
+      <view class="hero pub-hero">
+        <text class="hero-status">{{ statusText(task.status) }}<template v-if="task.has_unpublished_changes"> · 有待发布版本</template></text>
         <text class="title">{{ task.title }}</text>
-        <text class="description">{{ task.description || '暂无任务说明' }}</text>
-        <view class="metrics"><view><strong>{{ task.historical_claim_count || 0 }}</strong><small>累计领取</small></view><view><strong>{{ task.active_reservation_count || 0 }}</strong><small>进行中</small></view><view><strong>{{ task.successful_reward_count || 0 }}</strong><small>已结算</small></view><view><strong>{{ task.remaining_reward_slots ?? task.reward_quota_total ?? 0 }}</strong><small>剩余名额</small></view></view>
+        <view class="bounty"><text class="bounty-num">{{ pointsBudget ? pointsBudget.available_amount : '—' }}</text><text class="bounty-unit">积分托管 · 验收后结算</text></view>
+        <text class="hero-meta">领取截止 {{ formatTime(task.claim_ends_at) }} · 进行中 {{ task.active_reservation_count || 0 }} 人 · 累计领取 {{ task.historical_claim_count || 0 }} 次</text>
       </view>
+
+      <view class="panel desc-panel"><text class="panel-title">任务说明</text><text class="muted">{{ task.description || '暂无任务说明' }}</text></view>
 
       <view class="panel flow-panel"><view class="panel-head"><text>发布闭环</text><text>状态可追溯</text></view><view class="flow-track"><view v-for="(item,index) in workflowStages" :key="item" :class="['flow-node',{current:index===workflowIndex,done:index<workflowIndex}]"><text>{{ index < workflowIndex ? '✓' : index + 1 }}</text><small>{{ item }}</small></view></view><text class="flow-note">当前处于：{{ currentFlowLabel }}。领取记录、提交材料与奖励验收均保留在任务快照中。</text></view>
 
@@ -59,6 +61,7 @@ let initializing=false;let leavingForAccess=false
 const workflowStages=['草稿','审核','发布','领取','验收']
 const workflowIndex=computed(()=>{if(!task.value)return 0;if((task.value.successful_reward_count||0)>0)return 4;if((task.value.active_reservation_count||0)>0)return 3;if(['published','scheduled','paused','closed','archived'].includes(task.value.status))return 2;if(task.value.status==='pending_approval')return 1;return 0})
 const currentFlowLabel=computed(()=>workflowStages[workflowIndex.value])
+const pointsBudget=computed(()=>(task.value?.reward_budgets||[]).find(budget=>budget.asset_type==='points'))
 onLoad((options)=>{taskId=String(options?.id||'')})
 onShow(async()=>{await modules.ensureReady();if(!moduleEnabled.value)return;void initialize()})
 async function initialize(){
@@ -100,4 +103,54 @@ function auditActionText(value:string){return({'task.create_draft':'创建任务
 .page{background:radial-gradient(circle at 94% 1%,rgba(59,207,214,.18),transparent 27%),linear-gradient(180deg,#eefaff 0,#f7fbfd 42%,#f4f8fa 100%)!important}.hero{border:1rpx solid #d7e8ef!important;background:linear-gradient(135deg,#1268c9,#1aaec1)!important;box-shadow:0 16rpx 34rpx rgba(29,104,145,.16)!important}.panel,.state-card{border:1rpx solid #dce9ef!important;box-shadow:0 12rpx 30rpx rgba(34,78,103,.075)!important;background:rgba(255,255,255,.97)!important}.tool-button{border:1rpx solid #cfe1e9!important;background:#fff!important;box-shadow:none!important}.tool-button[disabled]{opacity:.5}.approval{background:#fff8e8!important;border-color:#f0dfb2!important}.draft-notice{background:#effaf7!important;border-color:#c9eadc!important}.step-index{border:0!important;background:linear-gradient(145deg,#1268dc,#20b9c8)!important;color:#fff!important;box-shadow:0 7rpx 16rpx rgba(18,104,220,.16)!important}.actions button{border:1rpx solid #d3e2e9!important;box-shadow:none!important}.actions .primary{border:0!important;background:linear-gradient(135deg,#1268c9,#19a7c8)!important;box-shadow:0 8rpx 18rpx rgba(18,104,201,.16)!important}.actions .danger{background:#fff4f2!important;color:#b9382d!important;border-color:#f0c8c1!important}.actions button[disabled]{opacity:.5;box-shadow:none!important}.detail-loading{padding-top:10rpx}.detail-skeleton{border-radius:28rpx;background:linear-gradient(100deg,#e6f1f5 30%,#f8fcfd 45%,#e6f1f5 60%);background-size:220% 100%;animation:publisher-detail-shimmer 1.2s ease-in-out infinite}.hero-skeleton{height:310rpx}.card-skeleton{height:220rpx;margin-top:20rpx}.card-skeleton.short{height:150rpx}.error-state,.empty-state{display:flex;align-items:center;flex-direction:column;text-align:center}.state-icon{display:flex;align-items:center;justify-content:center;width:64rpx;height:64rpx;border-radius:20rpx;background:#e8f7fb;color:#1477c7;font-size:15px;font-weight:900}.state-title{margin-top:14rpx;color:#173b53;font-size:15px;font-weight:850}.state-copy{margin-top:8rpx;color:#7a909e;font-size:13px;line-height:1.55}.retry-button{height:60rpx;margin-top:20rpx;padding:0 26rpx;border:1rpx solid #b9dbe5;border-radius:999rpx;background:#fff;color:#1475c5;font-size:14px;line-height:58rpx}.retry-button::after{border:0}.flow-panel{background:linear-gradient(145deg,#fff,#f1fbfd)!important}.flow-track{display:flex;justify-content:space-between;gap:6rpx;margin-top:22rpx}.flow-node{position:relative;display:flex;align-items:center;flex-direction:column;gap:7rpx;min-width:0;flex:1;color:#91a2ad;font-size:12px}.flow-node:not(:last-child)::after{content:'';position:absolute;left:58%;top:19rpx;width:84%;height:2rpx;background:#dce9ef}.flow-node text{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;width:40rpx;height:40rpx;border-radius:50%;background:#eef4f7;color:#80939e;font-size:12px;font-weight:850}.flow-node.done,.flow-node.current{color:#1475c5;font-weight:800}.flow-node.done text{background:#dcf8e9;color:#087a4d}.flow-node.current text{background:#1778ce;color:#fff;box-shadow:0 6rpx 14rpx rgba(23,120,206,.18)}.flow-node.done:not(:last-child)::after{background:#a9dec6}.flow-note{display:block;margin-top:17rpx;padding:13rpx 15rpx;border-radius:15rpx;background:#eef9fc;color:#668594;font-size:13px;line-height:1.5}.history-error{display:block;margin-top:14rpx;padding:12rpx 14rpx;border-radius:14rpx;background:#fff2ef;color:#b9382d;font-size:13px}
 @keyframes publisher-detail-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
 .state-actions{display:flex;justify-content:center;gap:12rpx;margin-top:20rpx}.state-actions button{margin-top:0}.back-button{height:60rpx;padding:0 26rpx;border:1rpx solid #cfe1e9;border-radius:999rpx;background:#fff;color:#1475c5;font-size:14px;line-height:58rpx}.back-button::after{border:0}
+/* ===== 新视觉（设计屏 52 pub-detail） ===== */
+.page{--green:#0BBF63;--green-deep:#08A152;--green-soft:#E7F9EF;--t1:#191B1F;--t2:#767C85;--t3:#AEB3BB;--line:#EDEFEF;background:#F4F6F4!important;color:var(--t1)}
+.pub-hero{border:0!important;border-radius:24rpx!important;padding:34rpx 32rpx!important;background:linear-gradient(135deg,#12D978,#08A152)!important;box-shadow:0 14rpx 30rpx rgba(11,191,99,.22)!important;overflow:hidden}
+.hero-status{align-self:flex-start;display:inline-flex;align-items:center;height:44rpx;padding:0 18rpx;border-radius:22rpx;background:rgba(255,255,255,.2);color:#fff;font-size:22rpx;font-weight:600}
+.pub-hero .title{margin-top:20rpx;font-size:38rpx;font-weight:800;line-height:1.4}
+.bounty{display:flex;align-items:baseline;gap:14rpx;margin-top:18rpx}
+.bounty-num{font-size:52rpx;font-weight:800;line-height:1}
+.bounty-unit{font-size:22rpx;opacity:.85}
+.hero-meta{display:block;margin-top:16rpx;font-size:22rpx;line-height:1.6;opacity:.9}
+.panel{border:0!important;border-radius:24rpx!important;background:#fff!important;box-shadow:none!important;margin-top:20rpx;padding:28rpx}
+.panel-title{font-size:30rpx;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:14rpx}
+.panel-title::before{content:'';width:8rpx;height:30rpx;border-radius:4rpx;background:var(--green)}
+.panel-head text:first-child{font-size:30rpx;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:14rpx}
+.panel-head text:first-child::before{content:'';width:8rpx;height:30rpx;border-radius:4rpx;background:var(--green)}
+.panel-head text:last-child{color:var(--t3)!important;font-size:22rpx;font-weight:400}
+.muted,.empty{color:var(--t3)!important;font-size:24rpx;line-height:1.6}
+.desc-panel .muted{display:block;margin-top:14rpx}
+.info-row{border-bottom:2rpx solid #F5F6F6;padding:22rpx 0;font-size:26rpx}
+.info-row text:last-child{color:var(--t2)!important}
+.tool-row{margin-top:20rpx;gap:16rpx}
+.tool-button{height:72rpx;border:0!important;border-radius:36rpx;background:var(--green-soft)!important;color:var(--green-deep)!important;font-size:26rpx;font-weight:700;line-height:72rpx}
+.tool-button[disabled]{opacity:.5}
+.flow-panel{padding-bottom:28rpx}
+.flow-node{color:var(--t3)}
+.flow-node.done,.flow-node.current{color:var(--green-deep)}
+.flow-node.current text{background:var(--green);color:#fff;box-shadow:0 6rpx 14rpx rgba(11,191,99,.22)}
+.flow-node.done text{background:var(--green-soft);color:var(--green-deep)}
+.flow-node:not(:last-child)::after{background:#EDF0EF}
+.flow-node.done:not(:last-child)::after{background:#BFEBD3}
+.flow-note{background:var(--green-soft);color:var(--green-deep);border-radius:14rpx;padding:18rpx 20rpx;font-size:22rpx;line-height:1.6}
+.approval{background:#FFF9EC!important;border:0!important}
+.draft-notice{background:var(--green-soft)!important;border:0!important}
+.step-index{background:linear-gradient(135deg,#12D978,#08A152)!important;color:#fff;box-shadow:0 6rpx 14rpx rgba(11,191,99,.18)!important}
+.step-title{color:var(--t1)}
+.history-row{border-bottom:2rpx solid #F5F6F6}
+.history-time{color:var(--t3)!important}
+.budget-value{color:var(--green-deep)!important}
+.history-error{background:#FFF4F1;color:#B42318}
+.actions{gap:16rpx}
+.actions button{height:84rpx;border-radius:42rpx;font-size:28rpx;line-height:84rpx}
+.actions .primary{border:0!important;background:linear-gradient(135deg,#12D978,#08A152)!important;color:#fff;box-shadow:0 8rpx 18rpx rgba(11,191,99,.22)}
+.actions .secondary{border:2rpx solid var(--line)!important;background:#fff!important;color:var(--t2)}
+.actions .danger{border:2rpx solid #FAD2CB!important;background:#FFF0ED!important;color:#B4382D}
+.detail-skeleton{border-radius:24rpx;background:linear-gradient(100deg,#F0F2F0 30%,#E8EBE8 45%,#F0F2F0 60%);background-size:220% 100%}
+.hero-skeleton{height:300rpx}
+.state-icon{background:var(--green-soft)!important;color:var(--green-deep)!important}
+.state-title{color:var(--t1)!important}
+.state-copy{color:var(--t3)!important}
+.retry-button,.back-button{border:2rpx solid var(--green-soft)!important;color:var(--green-deep)!important;background:#fff!important;border-radius:999rpx}
+.retry-button::after,.back-button::after{border:0}
 </style>

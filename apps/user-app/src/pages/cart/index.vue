@@ -6,24 +6,29 @@
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="commerce-hero" aria-label="购物车结算引导">
-      <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
-      <view class="commerce-hero-copy">
-        <text class="commerce-hero-kicker">CHECKOUT BAG</text>
-        <text class="commerce-hero-title">购物车</text>
-        <text class="commerce-hero-sub">先确认商品与购买方式，再锁定库存、价格和现金运费</text>
-      </view>
-    </view>
-    <view class="heading"><text class="eyebrow">CHECKOUT BAG</text><text class="title">购物车</text><text class="sub">先确认商品与购买方式，结算时再锁定库存、价格和现金运费</text></view>
     <view v-if="loading && !cart.items.length" class="state-card"><text class="state-title">正在加载购物车</text><text class="state-copy">正在同步商品、地址和支付能力…</text></view>
     <view v-else-if="loadError" class="state-card error-state"><text class="state-title">购物车暂时无法加载</text><text class="state-copy">{{ loadError }}</text><button class="state-action" @click="load">重新加载</button></view>
-    <view class="flow-strip"><view class="flow active"><text>1</text><text>确认商品</text></view><view class="flow-line"/><view class="flow"><text>2</text><text>结算预览</text></view><view class="flow-line"/><view class="flow"><text>3</text><text>完成支付</text></view></view>
-    <view v-for="item in cart.items" :key="item.id" class="card" :class="{ invalid: !item.valid }">
-      <view class="row"><text class="name">{{ item.product_name }}</text><switch :checked="item.selected" color="#2F67DF" @change="toggle(item, $event)" /></view>
-      <text class="meta">{{ item.sku_name }} · {{ modeText(item.purchase_mode) }}</text>
-      <text class="price">{{ priceText(item) }}</text>
-      <text v-if="!item.valid" class="warning">当前不可结算：{{ reasonText(item.invalid_reason) }}</text>
-      <view class="row actions"><view><button class="qty" @click="changeQuantity(item, -1)">−</button><text class="count">{{ item.quantity }}</text><button class="qty" @click="changeQuantity(item, 1)">+</button></view><button class="delete" @click="remove(item)">删除</button></view>
+    <view v-for="item in cart.items" :key="item.id" class="card cart-card" :class="{ invalid: !item.valid }">
+      <view class="cart-row">
+        <view class="cart-ck" :class="{ on: item.selected }" @click="toggle(item, !item.selected)"><text v-if="item.selected">✓</text></view>
+        <view class="cart-thumb">{{ item.product_name.slice(0, 1) }}</view>
+        <view class="tx">
+          <text class="cart-name">{{ item.product_name }}</text>
+          <text class="spec">{{ item.sku_name }} · {{ modeText(item.purchase_mode) }}</text>
+          <view class="btm">
+            <text class="cart-price">{{ priceText(item) }}</text>
+            <view class="stepper">
+              <button class="step-btn" @click="changeQuantity(item, -1)">−</button>
+              <text class="qnum">{{ item.quantity }}</text>
+              <button class="step-btn plus" @click="changeQuantity(item, 1)">+</button>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="cart-extra">
+        <text v-if="!item.valid" class="warning">当前不可结算：{{ reasonText(item.invalid_reason) }}</text>
+        <text class="delete-link" @click="remove(item)">删除</text>
+      </view>
     </view>
     <view v-if="cart.items.length" class="quote-card">
       <picker :range="addressLabels" @change="selectAddress"><view class="address">{{ selectedAddress ? `配送到：${selectedAddress.province}${selectedAddress.city}${selectedAddress.district}` : '选择收货地址试算运费' }}</view></picker>
@@ -33,7 +38,6 @@
       <picker v-if="paymentLabels.length > 1" :range="paymentLabels" :value="paymentIndex" @change="selectPayment"><view class="address payment">现金部分：{{ paymentLabels[paymentIndex] }} ›</view></picker>
       <view v-else-if="paymentLabels.length === 1" class="address payment">现金部分：{{ paymentLabels[0] }}</view>
       <view v-else-if="requiresCashPayment" class="payment-unavailable"><text>暂无可用现金支付方式</text><small>{{ paymentUnavailableText }}</small></view>
-      <button class="checkout" :disabled="!canCheckout" @click="openCheckout">去结算（{{ cart.summary.selected_quantity }}）</button>
     </view>
     <view v-if="preview" class="preview-card">
       <view class="row"><text class="preview-title">将拆为 {{ preview.groups.length }} 个订单</text><text class="expires">5 分钟内有效</text></view>
@@ -43,6 +47,14 @@
       <view class="row total"><text>合计</text><text>{{ amountText(preview.payable_cash_amount, preview.payable_points) }}</text></view>
       <text v-if="preview.shipping_amount" class="shipping">其中现金运费 ¥{{ (preview.shipping_amount / 100).toFixed(2) }}</text>
       <button class="confirm" :loading="submitting" :disabled="submitting" @click="createOrder">确认创建订单</button>
+    </view>
+    <view v-if="cart.items.length" class="cart-bar">
+      <view class="all" @click="toggleAll()">
+        <view class="cart-ck" :class="{ on: cart.items.length > 0 && cart.items.every((x) => x.selected) }"><text v-if="cart.items.length > 0 && cart.items.every((x) => x.selected)">✓</text></view>
+        <text>全选</text>
+      </view>
+      <view class="sum">合计<text class="sum-val">{{ amountText(selectedItems.reduce((s, i) => s + (i.unit_cash_amount || 0) * i.quantity, 0), selectedItems.reduce((s, i) => s + (i.unit_points || 0) * i.quantity, 0)) }}</text></view>
+      <button class="ab-main" :disabled="!canCheckout" @click="openCheckout">结算({{ cart.summary.selected_quantity }})</button>
     </view>
     <view v-if="!loading && !loadError && !cart.items.length" class="empty-card"><view class="empty-icon">袋</view><text class="empty-title">购物车还是空的</text><text class="empty-copy">去商城看看支持现金、积分和组合购买的精选商品</text><button class="empty-action" @click="openProducts">去逛商城</button></view>
     <view v-if="!loading && !loadError && !cart.items.length" class="empty-rules" aria-label="空购物车结算规则">
@@ -105,13 +117,19 @@ async function load() {
     loadError.value = error instanceof Error ? error.message : '请稍后重试。'
   } finally { loading.value = false }
 }
-async function toggle(item: CartItem, event: Event) {
+async function toggle(item: CartItem, selected: boolean) {
   if (!auth.accessToken || loading.value) return
   const previous = cart.value
   invalidatePreview()
-  const selected = (event as CustomEvent<{ value: boolean }>).detail.value
   try { cart.value = await updateCartItem(auth.accessToken, item.id, { selected }); await loadQuote() }
   catch (error) { cart.value = previous; await loadQuote(); uni.showToast({ title: error instanceof Error ? error.message : '更新购物车失败，请重试', icon: 'none' }) }
+}
+async function toggleAll() {
+  if (!auth.accessToken || loading.value || !cart.value.items.length) return
+  const targetOn = !cart.value.items.every((x) => x.selected)
+  for (const i of cart.value.items) {
+    if (i.selected !== targetOn) await toggle(i, targetOn)
+  }
 }
 async function changeQuantity(item: CartItem, delta: number) {
   if (!auth.accessToken || loading.value) return
@@ -210,4 +228,63 @@ function openCheckout() {
 .empty-rules{margin-top:16rpx;padding:24rpx;border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-lg);background:var(--tm-surface-soft)}.empty-rules-head{display:flex;align-items:center;justify-content:space-between;gap:14rpx}.empty-rules-head text:first-child{color:var(--tm-ink-900);font-size:15px;font-weight:850}.empty-rules-head text:last-child{color:var(--tm-ink-500);font-size:13px}.empty-rule{display:flex;align-items:center;gap:13rpx;margin-top:16rpx;padding-top:16rpx;border-top:1rpx solid var(--tm-line)}.empty-rule-mark{display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;flex:none;border-radius:15rpx;background:var(--tm-brand-100);color:var(--tm-brand-700);font-size:13px;font-weight:850}.empty-rule-mark.cash{background:var(--tm-reward-100);color:var(--tm-reward-600)}.empty-rule-mark.points{background:var(--tm-growth-100);color:var(--tm-growth-700)}.empty-rule view{min-width:0}.empty-rule view>text,.empty-rule small{display:block}.empty-rule view>text{color:var(--tm-ink-700);font-size:14px;font-weight:750}.empty-rule small{margin-top:4rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.45}.empty-total-bar{display:flex;align-items:center;gap:14rpx;margin-top:16rpx;padding:19rpx 20rpx;border:1rpx solid var(--tm-line);border-radius:22rpx;background:var(--tm-surface);box-sizing:border-box}.empty-total-bar>view{min-width:0;flex:1}.empty-total-label,.empty-total-note{display:block}.empty-total-label{color:var(--tm-ink-700);font-size:14px;font-weight:800}.empty-total-note{margin-top:3rpx;color:var(--tm-ink-500);font-size:12px}.empty-total-amount{color:var(--tm-ink-500);font-size:15px;font-weight:850}.empty-total-button{width:148rpx;height:58rpx;margin:0;padding:0;border:0;border-radius:15rpx;background:#dfe7e8;color:#93a0a4;font-size:13px;line-height:58rpx}.empty-total-button::after{border:0}.empty-total-button[disabled]{opacity:1}
 .empty-card{padding:72rpx 34rpx 54rpx}.empty-icon{position:relative;width:154rpx;height:118rpx;margin:0 auto;border-radius:34rpx;background:linear-gradient(145deg,#e2f6f8,#edf7ff);font-size:0}.empty-icon::before{content:'';position:absolute;left:28rpx;top:28rpx;width:88rpx;height:56rpx;border:5rpx solid #4bb7cd;border-radius:11rpx 11rpx 18rpx 18rpx;background:#fff;box-sizing:border-box}.empty-icon::after{content:'⌕';position:absolute;right:8rpx;bottom:4rpx;display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;border:5rpx solid #1268c9;border-radius:50%;background:#fff;color:#1268c9;font-size:21px;font-weight:900;box-sizing:border-box}
 @media (prefers-reduced-motion: reduce){.qty:active,.delete:active{transform:none}}
+
+/* ===== 视觉对齐设计屏 50 cart（新绿色体系，覆盖上方旧令牌样式） ===== */
+.page{padding:24rpx 24rpx 180rpx;background:#F4F6F4;color:#191B1F}
+.state-card{margin-top:20rpx;padding:72rpx 32rpx;border:0;border-radius:24rpx;background:#fff;box-shadow:none}
+.state-title{color:#191B1F}
+.state-copy{color:#767C85}
+.state-action{height:80rpx;padding:0 48rpx;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:80rpx}
+.error-state{background:#fff}
+.card,.quote-card,.preview-card{margin:20rpx 0 0;padding:0;border:0;border-radius:24rpx;background:#fff;box-shadow:none}
+.cart-card{padding:0;overflow:hidden}
+.card.cart-card.invalid{background:#FFF6F4}
+.cart-row{display:flex;align-items:center;gap:20rpx;padding:24rpx}
+.cart-ck{width:40rpx;height:40rpx;flex:none;box-sizing:border-box;border:3rpx solid #D7DBD8;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22rpx}
+.cart-ck.on{background:#0BBF63;border-color:#0BBF63}
+.cart-thumb{width:148rpx;height:148rpx;flex:none;border-radius:20rpx;background:#E7F9EF;color:#08A152;display:flex;align-items:center;justify-content:center;font-size:40rpx;font-weight:800}
+.tx{min-width:0;flex:1}
+.cart-name{font-size:26rpx;font-weight:600;color:#191B1F;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.spec{display:block;margin-top:10rpx;font-size:22rpx;color:#AEB3BB}
+.btm{display:flex;align-items:center;margin-top:14rpx}
+.cart-price{font-size:30rpx;font-weight:800;color:#FF2442}
+.stepper{margin-left:auto;display:flex;align-items:center;gap:14rpx}
+.step-btn{width:48rpx;height:48rpx;margin:0;padding:0;border:0;border-radius:50%;background:#F2F4F3;color:#767C85;font-size:30rpx;line-height:48rpx}
+.step-btn.plus{background:linear-gradient(135deg,#12D978,#08A152);color:#fff}
+.step-btn::after{border:0}
+.qnum{min-width:44rpx;text-align:center;font-size:28rpx;font-weight:600;color:#191B1F}
+.cart-extra{display:flex;align-items:center;gap:16rpx;padding:0 24rpx 22rpx}
+.cart-extra .warning{margin:0;color:#FF2442;font-size:22rpx}
+.delete-link{margin-left:auto;color:#AEB3BB;font-size:22rpx}
+.quote-card{padding:24rpx}
+.quote-card .address{border:0;border-radius:16rpx;background:#F2F4F3;color:#191B1F;font-size:26rpx}
+.shipping{color:#08A152;font-size:24rpx}
+.quote-error{border:0;border-radius:16rpx;background:#FFF1EE;color:#FF2442}
+.quote-card .shipping-tip{margin-top:16rpx;padding:16rpx 20rpx;border-radius:16rpx;background:#FFF2E5;color:#F2620A;font-size:22rpx;line-height:1.6}
+.payment-unavailable{border:1rpx solid #FFD9D2;border-radius:16rpx;background:#FFF1EE;color:#FF2442}
+.payment-unavailable small{color:#767C85}
+.preview-card{padding:24rpx;background:#fff}
+.preview-card .group{border:0;border-radius:16rpx;background:#F2F4F3;color:#191B1F;font-size:24rpx}
+.confirm{height:84rpx;border:0;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:84rpx;box-shadow:0 12rpx 28rpx rgba(11,191,99,.3)}
+.confirm::after{border:0}
+.cart-bar{position:fixed;z-index:50;right:0;bottom:0;left:0;display:flex;align-items:center;gap:16rpx;padding:14rpx 24rpx calc(14rpx + env(safe-area-inset-bottom));background:#fff;border-top:1rpx solid #EDEFEF}
+.cart-bar .all{flex:none;display:flex;align-items:center;gap:10rpx;font-size:24rpx;color:#767C85}
+.cart-bar .all .cart-ck{width:36rpx;height:36rpx;font-size:20rpx}
+.cart-bar .sum{flex:1;text-align:right;font-size:24rpx;color:#767C85}
+.cart-bar .sum-val{margin-left:10rpx;font-size:34rpx;font-weight:800;color:#FF2442}
+.cart-bar .ab-main{flex:none;width:224rpx;height:80rpx;margin:0;padding:0;border:0;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:80rpx;box-shadow:0 10rpx 24rpx rgba(11,191,99,.3)}
+.cart-bar .ab-main::after{border:0}
+.cart-bar .ab-main[disabled]{opacity:.5}
+.empty-card{margin-top:20rpx;padding:96rpx 40rpx;border:0;border-radius:24rpx;background:#fff;box-shadow:none}
+.empty-icon{width:140rpx;height:140rpx;border-radius:36rpx;background:#E7F9EF;color:#08A152;font-size:48rpx;font-weight:800;display:flex;align-items:center;justify-content:center}
+.empty-icon::before,.empty-icon::after{content:none}
+.empty-title{color:#191B1F}
+.empty-copy{color:#767C85}
+.empty-action{width:320rpx;height:84rpx;border:0;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:84rpx}
+.empty-action::after{border:0}
+.empty-rules{margin-top:20rpx;padding:24rpx;border:0;border-radius:24rpx;background:#fff;box-shadow:none}
+.empty-rules-head text:first-child{color:#191B1F}
+.empty-rule-mark,.empty-rule-mark.cash,.empty-rule-mark.points{background:#E7F9EF;color:#08A152}
+.empty-total-bar{margin-top:20rpx;border:0;border-radius:24rpx;background:#fff;box-shadow:none}
+.empty-total-button{background:#F2F4F3;color:#AEB3BB}
 </style>

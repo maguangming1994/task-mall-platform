@@ -67,7 +67,7 @@
 
     <view v-if="modules.isEnabled('module_wallet')" class="data-row">
       <view class="d" @click="openAssets"><b>¥{{ money(assets?.wallet.available_amount ?? 0) }}</b><span>钱包</span></view>
-      <view class="d" @click="openAssets"><b>{{ assets?.coupons.available ?? 0 }}<em> 张</em></b><span>优惠券</span></view>
+      <view class="d" @click="openCoupons"><b>{{ assets?.coupons.available ?? 0 }}<em> 张</em></b><span>优惠券</span></view>
       <view class="d" @click="openAssets"><b>0</b><span>收藏</span></view>
       <view class="d" @click="openAssets"><b>0</b><span>足迹</span></view>
     </view>
@@ -382,6 +382,7 @@ function showError(error: unknown, fallback: string) {
 function money(cents: number) { return (cents / 100).toFixed(2) }
 function goLogin() { navigateToLogin('/pages/account/index') }
 function openAssets() { uni.navigateTo({ url: '/pages/assets/index' }) }
+function openCoupons() { uni.navigateTo({ url: '/pages/coupons/index' }) }
 function openRecharge() { uni.navigateTo({ url: '/pages/wallet-recharge/index' }) }
 function openVip() { uni.showToast({ title: '校园 PLUS 会员即将上线', icon: 'none' }) }
 function openTasks() { uni.setStorageSync('task_mall_open_my_tasks', true); uni.reLaunch({ url: '/pages/tasks/index' }) }

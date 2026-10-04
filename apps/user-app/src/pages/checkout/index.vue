@@ -341,12 +341,12 @@ function amountText(cash: number, points: number) { return [cash ? `¥${money(ca
 
 <style scoped>
 .page{min-height:100vh;padding-bottom:260rpx;background:#F4F6F4;color:#191B1F}
-.subnav{display:flex;align-items:center;justify-content:center;height:88rpx;position:relative;background:linear-gradient(135deg,#12D978,#08A152)}
+.subnav{display:flex;align-items:center;justify-content:center;height:88rpx;position:relative;background:#0BBF63}
 .nav-back{position:absolute;left:16rpx;top:14rpx;display:flex;align-items:center;justify-content:center;width:60rpx;height:60rpx;margin:0;padding:0;border-radius:50%;color:#fff;font-size:40rpx;line-height:56rpx}
 .nav-back::after{border:0}
 .nav-title{color:#fff;font-size:32rpx;font-weight:700}
-.card,.form-card{margin:20rpx 24rpx 0;border-radius:32rpx;background:#fff}
-.addr-card{display:flex;align-items:center;gap:22rpx;margin:20rpx 24rpx 0;padding:28rpx;border-radius:32rpx;background:#fff}
+.card,.form-card{margin:20rpx 24rpx 0;border-radius:24rpx;background:#fff}
+.addr-card{display:flex;align-items:center;gap:22rpx;margin:20rpx 24rpx 0;padding:28rpx;border-radius:24rpx;background:#fff}
 .addr-ic{display:flex;align-items:center;justify-content:center;width:76rpx;height:76rpx;flex:none;border-radius:22rpx;background:#E7F9EF;color:#08A152;font-size:30rpx;font-weight:800}
 .addr-main{min-width:0;flex:1}
 .addr-name{display:block;font-size:28rpx;font-weight:700}
@@ -360,7 +360,7 @@ function amountText(cash: number, points: number) { return [cash ? `¥${money(ca
 .goods-name{display:block;font-size:26rpx;font-weight:600;line-height:1.4}
 .goods-meta{display:block;margin-top:10rpx;color:#AEB3BB;font-size:22rpx}
 .goods-foot{display:flex;align-items:center;margin-top:14rpx}
-.goods-price{color:#FF3B30;font-size:32rpx;font-weight:800}
+.goods-price{color:#FF2442;font-size:32rpx;font-weight:800}
 .goods-qty{margin-left:auto;color:#767C85;font-size:24rpx}
 .form-card{padding:4rpx 28rpx}
 .frow{display:flex;align-items:center;gap:20rpx;min-height:104rpx;padding:24rpx 0;border-bottom:1rpx solid #F5F6F6}
@@ -369,7 +369,7 @@ function amountText(cash: number, points: number) { return [cash ? `¥${money(ca
 .spacer{flex:1}
 .f-val{font-size:26rpx;color:#08A152;font-weight:600;text-align:right}
 .f-val.dim{color:#767C85;font-weight:400}
-.f-val.error{color:#FF3B30}
+.f-val.error{color:#FF2442}
 .head-row{min-height:88rpx;padding-bottom:8rpx}
 .pay-choice{display:flex;align-items:center;gap:20rpx;margin:0 0 20rpx;padding:22rpx;border:2rpx solid #EDEFEF;border-radius:24rpx;background:#fff}
 .pay-choice.selected{border-color:#0BBF63;background:#E7F9EF}
@@ -381,11 +381,11 @@ function amountText(cash: number, points: number) { return [cash ? `¥${money(ca
 .pay-check{display:flex;align-items:center;justify-content:center;width:36rpx;height:36rpx;flex:none;border:2rpx solid #EDEFEF;border-radius:50%;color:#fff;font-size:22rpx}
 .pay-check.on{border-color:#0BBF63;background:#0BBF63}
 .recharge-link{margin:4rpx 0 24rpx;padding:22rpx;border-radius:20rpx;background:#FFF2E5;color:#F2620A;font-size:26rpx;font-weight:700;text-align:center}
-.payment-unavailable{margin:20rpx 24rpx 0;padding:28rpx;border-radius:32rpx;background:#FFEEEA;color:#FF3B30}
+.payment-unavailable{margin:20rpx 24rpx 0;padding:28rpx;border-radius:24rpx;background:#FFEEEA;color:#FF2442}
 .payment-unavailable text,.payment-unavailable small{display:block}
 .payment-unavailable text{font-size:28rpx;font-weight:600}
 .payment-unavailable small{margin-top:8rpx;color:#767C85;font-size:24rpx;line-height:1.5}
-.coupon-section{margin:20rpx 24rpx 0;padding:28rpx;border-radius:32rpx;background:#fff}
+.coupon-section{margin:20rpx 24rpx 0;padding:28rpx;border-radius:24rpx;background:#fff}
 .coupon-heading,.group-heading,.coupon-choice{display:flex;align-items:center;justify-content:space-between;gap:20rpx}
 .coupon-title,.coupon-tip{display:block}
 .coupon-title{font-size:30rpx;font-weight:700}
@@ -402,24 +402,24 @@ function amountText(cash: number, points: number) { return [cash ? `¥${money(ca
 .coupon-name{font-size:26rpx;font-weight:600}
 .coupon-detail{margin-top:6rpx;color:#767C85;font-size:24rpx}
 .coupon-saving{margin-top:8rpx;color:#F2620A;font-size:24rpx;font-weight:700}
-.coupon-reason{margin-top:8rpx;color:#FF3B30;font-size:24rpx}
+.coupon-reason{margin-top:8rpx;color:#FF2442;font-size:24rpx}
 .empty-coupons{padding:28rpx 0;color:#AEB3BB;font-size:24rpx;text-align:center}
 .amount-card{padding:8rpx 28rpx 24rpx}
 .amount-row{display:flex;justify-content:space-between;gap:24rpx;padding:18rpx 0;color:#767C85;font-size:26rpx}
 .amount-row.discount{color:#F2620A}
 .amount-row.total{margin-top:10rpx;padding-top:24rpx;border-top:1rpx solid #F5F6F6;color:#191B1F;font-size:30rpx;font-weight:800}
-.total-val{color:#FF3B30}
+.total-val{color:#FF2442}
 .rule-note{margin:20rpx 24rpx 0;padding:24rpx;border-radius:24rpx;background:#FFF2E5;color:#F2620A;font-size:24rpx;line-height:1.55}
 .action-bar{position:fixed;z-index:50;right:0;bottom:0;left:0;display:flex;align-items:center;gap:20rpx;padding:16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));border-top:1rpx solid #EDEFEF;background:#fff}
 .total-box{display:flex;flex:1;align-items:baseline;gap:12rpx;padding-left:8rpx}
 .total-label{color:#767C85;font-size:24rpx}
-.total-amount{color:#FF3B30;font-size:34rpx;font-weight:800}
+.total-amount{color:#FF2442;font-size:34rpx;font-weight:800}
 .ab-main{flex:none;width:340rpx;height:84rpx;margin:0;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:84rpx;box-shadow:0 12rpx 28rpx rgba(11,191,99,.3)}
 .ab-main::after{border:0}
 .ab-main[disabled]{opacity:.5}
 .cancel-checkout{position:fixed;z-index:49;right:0;bottom:150rpx;left:0;margin:0;color:#AEB3BB;font-size:22rpx;text-align:center;background:transparent}
 .cancel-checkout::after{border:0}
-.state-card{margin:20rpx 24rpx 0;padding:80rpx 40rpx;border-radius:32rpx;background:#fff;text-align:center}
+.state-card{margin:20rpx 24rpx 0;padding:80rpx 40rpx;border-radius:24rpx;background:#fff;text-align:center}
 .state-spinner{width:56rpx;height:56rpx;margin:0 auto;border:6rpx solid #E7F9EF;border-top-color:#0BBF63;border-radius:50%;animation:ck-spin .8s linear infinite}
 .state-title{display:block;margin-top:24rpx;font-size:30rpx;font-weight:700}
 .state-copy{display:block;margin:12rpx auto 0;max-width:560rpx;color:#767C85;font-size:24rpx;line-height:1.6}

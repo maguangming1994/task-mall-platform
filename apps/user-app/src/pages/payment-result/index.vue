@@ -43,8 +43,13 @@
       </view>
 
       <view class="actions">
-        <button class="btn-ghost" @click="goHome">返回首页</button>
+        <button class="btn-ghost" @click="goHome">继续逛逛</button>
         <button class="btn-main" :disabled="!orderIds.length" @click="goOrderEntry">{{ isSuccess ? '查看订单' : resultStatus === 'pending' ? '返回订单继续确认' : '返回订单重试支付' }}</button>
+      </view>
+
+      <view v-if="orders.some((item) => item.fulfillment_type === 'logistics')" class="ship-card">
+        <view class="ship-ic">物</view>
+        <text class="ship-copy">发货后可在「我的 - 订单记录」查看物流，到货记得来确认收货哦</text>
       </view>
     </template>
     </template>
@@ -153,24 +158,27 @@ function goHome(){uni.reLaunch({url:'/pages/index/index'})}
 .state .btn-main{margin-top:32rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-weight:700}
 .state .btn-ghost{margin-top:16rpx;border:1rpx solid #EDEFEF;background:#fff;color:#767C85}
 .state .btn-main::after,.state .btn-ghost::after{border:0}
-.state.error .state-title{color:#FF3B30}
+.state.error .state-title{color:#FF2442}
 .result{display:flex;flex-direction:column;align-items:center;padding:80rpx 48rpx 20rpx;text-align:center}
 .result-icon{display:flex;align-items:center;justify-content:center;width:184rpx;height:184rpx;margin:0 auto;border-radius:50%;background:linear-gradient(135deg,#12D978,#08A152);box-shadow:0 28rpx 60rpx rgba(11,191,99,.32);color:#fff;font-size:52rpx;font-weight:900}
 .result-icon.failure{background:linear-gradient(135deg,#FF9A3D,#F2620A);box-shadow:0 28rpx 60rpx rgba(242,98,10,.28)}
 .result-title{display:block;margin-top:44rpx;font-size:44rpx;font-weight:800}
 .result-copy{display:block;margin-top:16rpx;color:#767C85;font-size:26rpx;line-height:1.6}
-.result-amount{display:block;margin-top:40rpx;color:#FF3B30;font-size:38rpx;font-weight:800}
-.info-card{margin:24rpx 0 0;padding:8rpx 28rpx;border-radius:32rpx;background:#fff}
+.result-amount{display:block;margin-top:40rpx;color:#FF2442;font-size:38rpx;font-weight:800}
+.info-card{margin:24rpx 0 0;padding:8rpx 28rpx;border-radius:24rpx;background:#fff}
 .info-group+.info-group{margin-top:10rpx;padding-top:10rpx;border-top:1rpx solid #F5F6F6}
 .info-row{display:flex;justify-content:space-between;gap:24rpx;padding:20rpx 0;border-bottom:1rpx solid #F5F6F6;font-size:26rpx}
 .info-row:last-child{border-bottom:0}
 .info-row text:last-child{max-width:65%;text-align:right;font-weight:600}
-.tips-card{display:flex;align-items:center;gap:22rpx;margin:24rpx 0 0;padding:28rpx;border-radius:32rpx;background:#fff}
+.tips-card{display:flex;align-items:center;gap:22rpx;margin:24rpx 0 0;padding:28rpx;border-radius:24rpx;background:#fff}
 .tips-ic{display:flex;align-items:center;justify-content:center;width:76rpx;height:76rpx;flex:none;border-radius:24rpx;background:#E7F9EF;color:#08A152;font-size:30rpx;font-weight:800}
 .tips-body{min-width:0;flex:1}
 .tips-title{display:block;font-size:28rpx;font-weight:600}
 .tips-sub{display:block;margin-top:6rpx;color:#767C85;font-size:24rpx;line-height:1.5}
-.actions{display:flex;gap:24rpx;margin-top:52rpx;padding:0 8rpx}
+.ship-card{display:flex;align-items:center;gap:20rpx;margin:24rpx 0 0;padding:28rpx;border-radius:24rpx;background:#fff}
+.ship-ic{display:flex;align-items:center;justify-content:center;width:68rpx;height:68rpx;flex:none;border-radius:20rpx;background:#FFF6DE;color:#D99400;font-size:28rpx;font-weight:800}
+.ship-copy{min-width:0;flex:1;color:#767C85;font-size:24rpx;line-height:1.5}
+.actions{display:flex;gap:24rpx;margin-top:40rpx;padding:0 8rpx}
 .actions button{flex:1;height:88rpx;margin:0;border-radius:999rpx;font-size:30rpx;font-weight:700;line-height:88rpx}
 .actions button::after{border:0}
 .btn-ghost{border:1rpx solid #EDEFEF;background:#F2F4F3;color:#767C85}

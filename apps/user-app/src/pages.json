@@ -91,6 +91,18 @@
       }
     },
     {
+      "path": "pages/coupons/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/second-hand-buy/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/tasks/index",
       "style": {
 				"navigationStyle": "custom",

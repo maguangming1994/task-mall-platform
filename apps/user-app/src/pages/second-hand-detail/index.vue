@@ -67,7 +67,7 @@
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { getSecondHandItem, createSecondHandOrder, type SecondHandItem } from '@/api/second-hand'
+import { getSecondHandItem, type SecondHandItem } from '@/api/second-hand'
 import { ensureChatConversation } from '@/api/chat'
 import { resolveApiAssetUrl } from '@/api/http'
 import { formatDate } from '@/utils/dateTime'
@@ -128,19 +128,7 @@ function goSeller() {
 async function buy() {
   if (!auth.isAuthenticated) { uni.navigateTo({ url: '/pages/login/index' }); return }
   if (!item.value) return
-  uni.showModal({
-    title: '确认购买',
-    content: `以 ¥${item.value.price} 购买「${item.value.title}」？`,
-    success: async (r) => {
-      if (!r.confirm) return
-      try {
-        const order = await createSecondHandOrder(auth.accessToken, { item_id: item.value!.id }, `sh-${Date.now()}`)
-        uni.redirectTo({ url: `/pages/second-hand-order-detail/index?id=${order.id}` })
-      } catch (e: any) {
-        uni.showToast({ title: e.message || '下单失败', icon: 'none' })
-      }
-    },
-  })
+  uni.navigateTo({ url: `/pages/second-hand-buy/index?id=${encodeURIComponent(item.value.id)}` })
 }
 </script>
 

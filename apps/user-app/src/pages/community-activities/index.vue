@@ -6,33 +6,52 @@
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="topbar"><view class="back" @click="goBack">‹</view><view><text class="title">校园组团</text><text class="subtitle">找搭子，一起做有趣的事</text></view><view class="my-link" @click="selectMode('joined')">我的参与</view></view>
-
-    <view class="hero">
-      <view><text class="hero-tag">CAMPUS TOGETHER</text><text class="hero-title">今天想找谁一起？</text><text class="hero-copy">自习、电影、聚餐、拼车、运动，都能发起组团</text></view>
-      <view class="hero-art"><text>团</text><view /></view>
+    <view class="subnav">
+      <view class="back" @click="goBack"><text>‹</text></view>
+      <text class="nav-title">校园活动</text>
+      <text v-if="modules.isEnabled('module_community_post')" class="nav-action" @click="createActivity">发布</text>
     </view>
 
-    <scroll-view class="category-scroll" scroll-x :show-scrollbar="false"><view class="category-row"><view :class="['category', { active: !activeCategory }]" @click="selectCategory('')"><i />全部</view><view v-for="(item,index) in categories" :key="item.code" :class="['category', { active: activeCategory === item.code }]" :style="categoryStyle(item,index)" @click="selectCategory(item.code)"><i />{{ item.label }}</view></view></scroll-view>
+    <view class="act-banner">
+      <text class="banner-title">校园活动季 · 参与赢积分</text>
+      <text class="banner-copy">报名校园活动，做任务赚积分，好物好礼送到宿舍</text>
+    </view>
 
-    <view class="mode-grid"><view :class="{ active: mode === 'all' }" @click="selectMode('all')">发现组团</view><view :class="{ active: mode === 'created' }" @click="selectMode('created')">我发起的</view><view :class="{ active: mode === 'joined' }" @click="selectMode('joined')">我的参与</view></view>
+    <scroll-view class="cat-chips" scroll-x :show-scrollbar="false"><view class="chips-inner"><text :class="['chip', { on: mode === 'all' }]" @click="selectMode('all')">发现活动</text><text :class="['chip', { on: mode === 'created' }]" @click="selectMode('created')">我发起的</text><text :class="['chip', { on: mode === 'joined' }]" @click="selectMode('joined')">我的参与</text></view></scroll-view>
+    <scroll-view class="cat-chips chips-sub" scroll-x :show-scrollbar="false"><view class="chips-inner"><text :class="['chip', { on: !activeCategory }]" @click="selectCategory('')">全部分类</text><text v-for="item in categories" :key="item.code" :class="['chip', { on: activeCategory === item.code }]" @click="selectCategory(item.code)">{{ item.label }}</text></view></scroll-view>
 
-    <view class="list-head"><view><text>{{ modeTitle }}</text><text>{{ mode === 'all' ? '看看同学们最近在计划什么' : '管理你的校园组团' }}</text></view><button v-if="modules.isEnabled('module_community_post')" :disabled="loading" @click="createActivity">＋ 发起组团</button></view>
-
-    <view v-if="loading" class="loading-list"><view v-for="index in 3" :key="index" class="activity-card tm-skeleton" /></view>
-    <view v-else-if="error" class="state-card error"><view class="state-icon">!</view><text class="state-title">组团加载失败</text><text class="state-copy">{{ error }}</text><button @click="load">重新加载</button></view>
-    <template v-else>
-      <view v-for="(activity,index) in activities" :key="activity.id" class="activity-card" @click="openDetail(activity.id)">
-        <view class="activity-accent" :style="{ background: accentColor(activity.category_code,index) }" />
-        <image v-if="firstImage(activity)" class="activity-image" :src="firstImage(activity)" mode="aspectFill" />
-        <view v-else class="activity-image fallback" :style="{ background: accentColor(activity.category_code,index) }"><text>{{ activity.category_label.slice(0,1) }}</text></view>
-        <view class="activity-main"><view class="activity-head"><text class="category-tag">{{ activity.category_label }}</text><text :class="['status', `status-${statusTone(activity.status)}`]">{{ statusText(activity.status) }}</text></view><text class="activity-title">{{ activity.title }}</text><text class="activity-details">{{ activity.details }}</text><view class="meta"><text>◷ {{ formatStart(activity.starts_at) }}</text><text>⌖ {{ activity.location || '校内地点待定' }}</text></view><view class="activity-foot"><view class="creator"><view>{{ avatarText(activity.creator.nickname) }}</view><text>{{ activity.creator.nickname }}</text></view><view class="capacity"><strong>{{ activity.participant_count }}</strong>/{{ activity.participant_limit }} 人 <text>›</text></view></view></view>
+    <view v-if="loading" class="card">
+      <view v-for="i in 3" :key="i" class="act-card">
+        <view class="cover tm-skeleton" />
+        <view class="skel tm-skeleton" /><view class="skel short tm-skeleton" />
       </view>
-      <view v-if="!activities.length" class="state-card"><view class="state-icon">团</view><text class="state-title">暂时还没有这样的组团</text><text class="state-copy">发起第一个活动，邀请同学一起自习、运动或探索校园。</text><button v-if="modules.isEnabled('module_community_post')" @click="createActivity">发起组团</button></view>
-    </template>
+    </view>
+    <view v-else-if="error" class="state-card">
+      <view class="state-icon">!</view>
+      <text class="state-title">活动加载失败</text>
+      <text class="state-copy">{{ error }}</text>
+      <button class="state-btn" @click="load">重新加载</button>
+    </view>
+    <view v-else-if="activities.length" class="card">
+      <view v-for="(activity,index) in activities" :key="activity.id" class="act-card" @click="openDetail(activity.id)">
+        <image v-if="firstImage(activity)" class="cover" :src="firstImage(activity)" mode="aspectFill" />
+        <view v-else class="cover placeholder" :style="{ background: accentColor(activity.category_code,index) }"><text>{{ activity.category_label.slice(0,1) }}</text></view>
+        <text class="act-title">{{ activity.title }}</text>
+        <view class="act-meta"><text class="meta-ic">◷</text><text class="meta-text">{{ formatStart(activity.starts_at) }} · {{ activity.location || '校内地点待定' }}</text></view>
+        <view class="act-foot">
+          <text class="tag tag-green">{{ activity.category_label }}</text>
+          <text :class="['tag', `tag-${statusTone(activity.status)}`]">{{ statusText(activity.status) }}</text>
+          <text class="signup">已报名 {{ activity.participant_count }}/{{ activity.participant_limit }} 人</text>
+        </view>
+      </view>
+    </view>
+    <view v-else class="empty">
+      <text class="empty-title">暂时还没有这样的活动</text>
+      <text class="empty-sub">发起第一个活动，邀请同学一起参与校园活动</text>
+      <button v-if="modules.isEnabled('module_community_post')" class="empty-btn" @click="createActivity">发起活动</button>
+    </view>
 
     <view class="safe-space" />
-    <button v-if="modules.isEnabled('module_community_post')" class="floating-create" :disabled="loading" @click="createActivity"><text>＋</text> 发起组团</button>
     </template>
     <AppTabBar current-target="community" @compose="createActivity" />
   </view>
@@ -92,4 +111,51 @@ function message(value:unknown){ return value instanceof Error?value.message:'�
 .page{background:radial-gradient(circle at 92% 0,rgba(55,205,212,.18),transparent 28%),linear-gradient(180deg,#eefaff 0,#f7fbfd 44%,#f4f8fa 100%)!important}.back,.my-link{border:1rpx solid #cfe1e9!important;background:#fff!important;box-shadow:none!important;color:#1475c5}.hero{border:1rpx solid #d7e8ef!important;background:linear-gradient(135deg,#1268c9,#19abc4)!important;box-shadow:0 16rpx 34rpx rgba(29,104,145,.16)!important;color:#fff}.hero-art text{border:0;background:rgba(255,255,255,.18);box-shadow:none;color:#fff}.hero-art view{border:0;background:rgba(255,243,200,.72)}.category{border:1rpx solid #d7e6ed!important;background:#fff!important;box-shadow:none!important}.category.active{border-color:#1778ce!important;background:#1778ce!important;box-shadow:0 7rpx 16rpx rgba(23,120,206,.16)!important}.mode-grid{border:1rpx solid #dce9ef!important;background:#fff!important}.mode-grid view.active{background:#e7f8fb;color:#14758a}.list-head button,.floating-create{border:0!important;box-shadow:0 8rpx 18rpx rgba(8,169,103,.16)!important;background:linear-gradient(135deg,#08a967,#0abca1)!important;color:#fff!important}.list-head button[disabled],.floating-create[disabled]{opacity:.48;box-shadow:none!important}.activity-card,.state-card{border:1rpx solid #dce9ef!important;box-shadow:0 12rpx 30rpx rgba(34,78,103,.075)!important;background:rgba(255,255,255,.97)!important}.activity-image{border-right:1rpx solid #dce9ef!important}.activity-image.fallback{color:#fff}.activity-image.fallback text{border:0;background:rgba(255,255,255,.75);box-shadow:none;color:#1475c5}.creator view{border:0;background:#e6f7fb;color:#1475c5}.state-icon{border:0;background:#e8f7fb;color:#1477c7;box-shadow:none}.state-card button{border:1rpx solid #b9dbe5!important;background:#fff!important;color:#1475c5!important;box-shadow:none!important}.loading-list .activity-card{background:linear-gradient(100deg,#e6f1f5 30%,#f8fcfd 45%,#e6f1f5 60%)!important;background-size:220% 100%;animation:community-activity-shimmer 1.2s ease-in-out infinite}@keyframes community-activity-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
 .floating-create{bottom:calc(154rpx + env(safe-area-inset-bottom))!important}
 @media screen and (min-width:768px){.floating-create{bottom:calc(154rpx + env(safe-area-inset-bottom))!important}}
+/* ===== 新视觉（设计屏 42 act-list） ===== */
+.page{--green:#0BBF63;--green-deep:#08A152;--green-soft:#E7F9EF;--t1:#191B1F;--t2:#767C85;--t3:#AEB3BB;--line:#EDEFEF;--price:#FF2442;background:#F4F6F4!important;padding:0 0 30rpx!important;color:var(--t1)}
+.subnav{display:flex;align-items:center;padding:calc(var(--status-bar-height,20px) + 8rpx) 20rpx 8rpx;background:#F4F6F4}
+.subnav .back{width:64rpx;height:64rpx;display:flex;align-items:center;justify-content:center;font-size:44rpx;color:var(--t1);line-height:1}
+.nav-title{flex:1;text-align:center;font-size:32rpx;font-weight:800;margin-right:64rpx}
+.nav-action{position:absolute;right:28rpx;font-size:26rpx;color:var(--green-deep);font-weight:700}
+.act-banner{position:relative;margin:12rpx 24rpx 0;border-radius:24rpx;padding:40rpx 32rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;overflow:hidden}
+.act-banner::before{content:'';position:absolute;width:300rpx;height:300rpx;border-radius:50%;background:rgba(255,255,255,.10);top:-120rpx;right:-80rpx}
+.banner-title{position:relative;display:block;font-size:36rpx;font-weight:800}
+.banner-copy{position:relative;display:block;margin-top:12rpx;font-size:23rpx;opacity:.92;line-height:1.6}
+.cat-chips{white-space:nowrap;margin-top:16rpx}
+.chips-sub{margin-top:0}
+.chips-inner{display:inline-flex;gap:16rpx;padding:8rpx 24rpx}
+.chip{flex:none;height:60rpx;line-height:60rpx;padding:0 28rpx;border-radius:30rpx;background:#fff;border:2rpx solid var(--line);font-size:25rpx;color:var(--t2)}
+.chip.on{background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-weight:700;border-color:transparent;box-shadow:0 6rpx 14rpx rgba(11,191,99,.22)}
+.card{background:#fff;border-radius:24rpx;margin:16rpx 24rpx 0;overflow:hidden}
+.act-card{padding:24rpx}
+.act-card+.act-card{border-top:2rpx solid #F5F6F6}
+.act-card .cover{width:100%;height:260rpx;border-radius:18rpx;background:#F2F4F3;display:block}
+.act-card .cover.placeholder{display:flex;align-items:center;justify-content:center;color:#fff;font-size:48rpx;font-weight:800;opacity:.85}
+.act-title{display:block;margin-top:20rpx;font-size:28rpx;font-weight:700;color:var(--t1);line-height:1.45}
+.act-meta{display:flex;align-items:center;gap:10rpx;margin-top:12rpx}
+.meta-ic{font-size:24rpx;color:var(--green)}
+.meta-text{font-size:22rpx;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.act-foot{display:flex;align-items:center;gap:12rpx;margin-top:16rpx}
+.act-foot .tag{font-size:20rpx;padding:4rpx 14rpx;border-radius:8rpx;background:#F2F4F3;color:var(--t2)}
+.act-foot .tag-green{background:var(--green-soft);color:var(--green-deep)}
+.act-foot .tag-open{background:var(--green-soft);color:var(--green-deep)}
+.act-foot .tag-pending{background:#EAF2FE;color:#2F7DE1}
+.act-foot .tag-danger{background:#FDECEC;color:#D4380D}
+.act-foot .tag-muted{background:#F2F4F3;color:var(--t3)}
+.act-foot .tag-full{background:#FFF3E5;color:#D97706}
+.signup{margin-left:auto;font-size:22rpx;color:var(--t3)}
+.act-card .skel{height:28rpx;border-radius:8rpx;margin:20rpx 0 14rpx}
+.act-card .skel.short{width:55%}
+.state-card{margin:24rpx;background:#fff;border-radius:24rpx;padding:70rpx 48rpx;display:flex;flex-direction:column;align-items:center}
+.state-icon{width:88rpx;height:88rpx;border-radius:26rpx;background:#FDECEC!important;color:#D4380D!important;display:flex;align-items:center;justify-content:center;font-size:40rpx;font-weight:800;border:0;box-shadow:none}
+.state-title{font-size:30rpx;font-weight:700;color:var(--t1);margin-top:24rpx}
+.state-copy{font-size:24rpx;color:var(--t3);margin-top:12rpx;text-align:center}
+.state-btn{margin-top:32rpx;height:72rpx;line-height:72rpx;padding:0 48rpx;border-radius:36rpx;background:#fff!important;color:var(--green-deep)!important;font-size:26rpx;border:2rpx solid var(--green-soft)!important;box-shadow:none}
+.state-btn::after{border:0}
+.empty{display:flex;flex-direction:column;align-items:center;padding:120rpx 48rpx}
+.empty-title{font-size:30rpx;font-weight:700;color:var(--t1)}
+.empty-sub{font-size:24rpx;color:var(--t3);margin-top:14rpx;text-align:center}
+.empty-btn{margin-top:36rpx;height:76rpx;line-height:76rpx;padding:0 56rpx;border-radius:38rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700}
+.empty-btn::after{border:0}
+.safe-space{height:150rpx}
 </style>

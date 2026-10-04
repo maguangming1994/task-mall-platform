@@ -6,43 +6,105 @@
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="commerce-hero" aria-label="售后申请">
-      <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
-      <view class="commerce-hero-copy">
-        <text class="commerce-hero-kicker">AFTER SALES</text>
-        <text class="commerce-hero-title">申请售后</text>
-        <text class="commerce-hero-sub">先确认原因与数量，提交后按订单规则审核</text>
-      </view>
+    <view v-if="loading" class="state-card">
+      <view class="state-spinner tm-skeleton" />
+      <text class="state-title">正在准备售后申请</text>
+      <text class="state-copy">正在校验订单项、可申请数量和售后规则。</text>
     </view>
-    <view class="rule-grid"><view><text>未发货</text><small>无需退货物流</small></view><view><text>已发货</text><small>按原因判断责任</small></view><view><text>7 天内</text><small>超时自动关闭</small></view></view>
-
-    <view v-if="loading" class="state-card tm-panel"><view class="state-spinner tm-skeleton" /><text class="state-title">正在准备售后申请</text><text class="state-copy">正在校验订单项、可申请数量和售后规则。</text></view>
-    <view v-else-if="loadError" class="state-card error-card tm-panel"><text class="state-title">售后申请暂不可用</text><text class="state-copy">{{ loadError }}</text><button class="tm-primary-button" :loading="loading" :disabled="loading" @click="load">重新加载</button></view>
-
-    <view v-if="!loading && !loadError && item" class="item-card tm-panel"><view class="item-mark">{{ item.product_name.slice(0, 1) }}</view><view><text class="item-name">{{ item.product_name }}</text><text class="item-meta">{{ item.sku_name }} · {{ serviceType === 'exchange' ? '剩余可换' : '剩余可退' }} {{ maxQuantity }} 件</text><text class="tm-money">{{ refundPreview }}</text></view></view>
-
-    <view v-if="!loading && !loadError" class="form-card tm-panel">
-      <view class="field"><text class="label">售后类型</text><view class="type-tabs"><view v-for="option in availableTypes" :key="option.value" :class="{ active: serviceType === option.value }" @click="changeType(option.value)">{{ option.label }}</view></view></view>
-      <view class="field"><text class="label">申请数量</text><view class="quantity"><button :disabled="quantity <= 1" @click="quantity = Math.max(1, quantity - 1)">−</button><text>{{ quantity }}</text><button :disabled="quantity >= maxQuantity" @click="quantity = Math.min(maxQuantity, quantity + 1)">＋</button></view><text class="quantity-note">已退款 {{ item?.refunded_quantity || 0 }} 件，审核中占用 {{ item?.pending_refund_quantity || 0 }} 件</text></view>
-      <view class="field reason-field">
-        <text class="label">退换原因</text>
-        <picker v-if="!reasonError" :range="reasonLabels" :disabled="reasonsLoading || !reasons.length" @change="selectReason"><view class="field row"><text class="field-value">{{ reasonsLoading ? '原因加载中…' : selectedReason?.name || (reasons.length ? '请选择 ›' : '暂无可用原因') }}</text></view></picker>
-        <view v-else class="reason-error"><text>退换原因加载失败</text><text>{{ reasonError }}</text><button class="retry-button" :loading="reasonsLoading" :disabled="reasonsLoading" @click="retryReasons">重新加载</button></view>
-      </view>
-      <view v-if="selectedReason" class="responsibility">
-        <view><text>责任预判</text><strong>{{ partyText(selectedReason.default_responsibility) }}</strong></view>
-        <view><text>退货运费</text><strong>{{ payerText(selectedReason.return_shipping_payer) }}</strong></view>
-        <view><text>凭证要求</text><strong>{{ selectedReason.evidence_required ? '必须上传' : '选填' }}</strong></view>
-      </view>
-      <view class="field"><text class="label">问题说明与凭证</text><textarea v-model="description" maxlength="500" placeholder="请描述商品问题、期望处理方式和必要细节" /><text class="counter">{{ description.length }} / 500</text></view>
-      <view class="evidence-list">
-        <view v-for="(evidence, index) in evidenceFiles" :key="evidence.fileId" class="evidence"><image :src="evidence.previewUrl" mode="aspectFill" /><text @click="evidenceFiles.splice(index, 1)">删除</text></view>
-        <view v-if="evidenceFiles.length < 6" class="evidence add" @click="uploadEvidence"><text>＋</text><small>上传凭证</small></view>
-      </view>
+    <view v-else-if="loadError" class="state-card error-card">
+      <text class="state-title">售后申请暂不可用</text>
+      <text class="state-copy">{{ loadError }}</text>
+      <button class="retry-main" :loading="loading" :disabled="loading" @click="load">重新加载</button>
     </view>
 
-    <view v-if="!loading && !loadError" class="notice">原运费不退；退货运费承担将按所选原因和审核结果确定。多次部分退款累计不会超过实际支付金额和积分。</view>
-    <button v-if="!loading && !loadError" class="tm-primary-button" :loading="submitting" :disabled="submitting || !canSubmit" @click="submit">提交售后申请</button>
+    <template v-if="!loading && !loadError && item">
+      <!-- 商品摘要 -->
+      <view class="card item-card">
+        <view class="item-mark"><text>{{ item.product_name.slice(0, 1) }}</text></view>
+        <view class="item-main">
+          <text class="item-name">{{ item.product_name }}</text>
+          <text class="item-meta">{{ item.sku_name }} · 订单 {{ order?.order_no || '—' }}</text>
+          <text class="item-money">{{ refundPreview }}</text>
+        </view>
+      </view>
+
+      <!-- 申请表单 -->
+      <view class="card form-card">
+        <view class="field">
+          <text class="label">售后类型</text>
+          <view class="type-tabs">
+            <view
+              v-for="option in availableTypes"
+              :key="option.value"
+              class="type-tab"
+              :class="{ active: serviceType === option.value }"
+              @click="changeType(option.value)"
+            >{{ option.label }}</view>
+          </view>
+        </view>
+
+        <view class="field">
+          <text class="label">申请数量</text>
+          <view class="quantity-row">
+            <view class="quantity">
+              <button class="qty-btn" :disabled="quantity <= 1" @click="quantity = Math.max(1, quantity - 1)">−</button>
+              <text class="qty-num">{{ quantity }}</text>
+              <button class="qty-btn" :disabled="quantity >= maxQuantity" @click="quantity = Math.min(maxQuantity, quantity + 1)">＋</button>
+            </view>
+            <text class="quantity-note">{{ serviceType === 'exchange' ? '剩余可换' : '剩余可退' }} {{ maxQuantity }} 件 · 已处理 {{ item.refunded_quantity || 0 }} 件</text>
+          </view>
+        </view>
+
+        <view class="field reason-field">
+          <text class="label">申请原因</text>
+          <picker v-if="!reasonError" :range="reasonLabels" :disabled="reasonsLoading || !reasons.length" @change="selectReason">
+            <view class="picker-value" :class="{ placeholder: !selectedReason }">
+              <text>{{ reasonsLoading ? '原因加载中…' : selectedReason?.name || (reasons.length ? '请选择申请原因 ›' : '暂无可用原因') }}</text>
+            </view>
+          </picker>
+          <view v-else class="reason-error">
+            <text class="re-title">退换原因加载失败</text>
+            <text class="re-detail">{{ reasonError }}</text>
+            <button class="retry-button" :loading="reasonsLoading" :disabled="reasonsLoading" @click="retryReasons">重新加载</button>
+          </view>
+        </view>
+
+        <view v-if="selectedReason" class="responsibility">
+          <view class="resp-item"><text>责任预判</text><strong>{{ partyText(selectedReason.default_responsibility) }}</strong></view>
+          <view class="resp-item"><text>退货运费</text><strong>{{ payerText(selectedReason.return_shipping_payer) }}</strong></view>
+          <view class="resp-item"><text>凭证要求</text><strong>{{ selectedReason.evidence_required ? '必须上传' : '选填' }}</strong></view>
+        </view>
+
+        <view class="field">
+          <text class="label">补充描述<text class="label-sub">（选填）</text></text>
+          <textarea v-model="description" class="desc-input" maxlength="500" placeholder="补充描述问题情况，有助于加快审核" placeholder-class="ph" />
+          <text class="counter">{{ description.length }} / 500</text>
+        </view>
+
+        <view class="field">
+          <text class="label">上传凭证<text class="label-sub">（最多 6 张）</text></text>
+          <view class="evidence-list">
+            <view v-for="(evidence, index) in evidenceFiles" :key="evidence.fileId" class="evidence">
+              <image :src="evidence.previewUrl" mode="aspectFill" />
+              <text class="evidence-del" @click="evidenceFiles.splice(index, 1)">×</text>
+            </view>
+            <view v-if="evidenceFiles.length < 6" class="evidence add" @click="uploadEvidence">
+              <text class="add-plus">＋</text>
+              <small>添加照片 {{ evidenceFiles.length }}/6</small>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="notice">
+        <text class="notice-icon">!</text>
+        <text class="notice-copy">原运费不退；退货运费承担将按所选原因和审核结果确定。多次部分退款累计不会超过实际支付金额和积分。</text>
+      </view>
+
+      <view class="action-bar">
+        <button class="submit-btn" :loading="submitting" :disabled="submitting || !canSubmit" @click="submit">提交申请</button>
+      </view>
+    </template>
     </template>
   </view>
 </template>
@@ -196,21 +258,74 @@ function isTerminalFailure(error: unknown) { return error instanceof ApiError &&
 </script>
 
 <style scoped>
-.rule-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10rpx}.rule-grid view{padding:20rpx 8rpx;text-align:center;border-radius:16rpx;background:var(--tm-brand-50)}.rule-grid text,.rule-grid small,.item-name,.item-meta{display:block}.rule-grid text{color:var(--tm-brand-700);font-size:13px;font-weight:900}.rule-grid small{margin-top:5rpx;color:var(--tm-ink-500);font-size:12px}.item-card{display:flex;align-items:center;gap:20rpx;margin-top:20rpx;padding:24rpx}.item-mark{display:flex;align-items:center;justify-content:center;width:96rpx;height:96rpx;flex:none;border-radius:18rpx;background:linear-gradient(145deg,#dff3f1,#fff0dc);color:var(--tm-brand-700);font-size:21px;font-weight:950}.item-name{font-size:15px;font-weight:900}.item-meta{margin:7rpx 0;color:var(--tm-ink-500);font-size:13px}.form-card{margin-top:20rpx;padding:26rpx}.field{margin-top:24rpx}.field:first-child{margin-top:0}.field.row{display:flex;align-items:center;justify-content:space-between}.label{display:block;margin-bottom:12rpx;font-size:14px;font-weight:900}.type-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10rpx}.type-tabs view{padding:15rpx 8rpx;text-align:center;border:1rpx solid var(--tm-line);border-radius:13rpx;color:var(--tm-ink-700);font-size:13px}.type-tabs .active{border-color:var(--tm-brand-600);background:var(--tm-brand-50);color:var(--tm-brand-700);font-weight:900}.quantity{display:flex;align-items:center}.quantity button{width:60rpx;height:56rpx;margin:0;padding:0;border-radius:12rpx;background:#f0f4f4;line-height:56rpx}.quantity text{width:82rpx;text-align:center;font-weight:900}.field-value{color:var(--tm-ink-500);font-size:14px}.responsibility{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8rpx;margin-top:22rpx}.responsibility view{padding:16rpx 8rpx;text-align:center;border-radius:12rpx;background:var(--tm-surface-soft)}.responsibility text,.responsibility strong{display:block}.responsibility text{color:var(--tm-ink-500);font-size:12px}.responsibility strong{margin-top:6rpx;font-size:13px}.field textarea{width:100%;height:160rpx;padding:18rpx;border:1rpx solid var(--tm-line);border-radius:14rpx;background:#fafcfc;box-sizing:border-box;font-size:14px}.counter{display:block;margin-top:7rpx;color:var(--tm-ink-500);text-align:right;font-size:12px}.evidence-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10rpx;margin-top:16rpx}.evidence{position:relative;height:150rpx;overflow:hidden;border:1rpx dashed #b9c8c9;border-radius:14rpx}.evidence image{width:100%;height:100%}.evidence>text{position:absolute;right:6rpx;top:6rpx;padding:4rpx 8rpx;border-radius:7rpx;background:rgba(7,26,51,.72);color:#fff;font-size:12px}.evidence.add{display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--tm-brand-700)}.evidence.add text{position:static;padding:0;background:transparent;color:inherit;font-size:21px}.evidence.add small{margin-top:6rpx;font-size:13px}.notice{margin:20rpx 0;padding:19rpx;border-radius:14rpx;background:var(--tm-reward-100);color:#89500c;font-size:13px;line-height:1.55}
-.quantity button[disabled]{opacity:.38}.quantity-note{display:block;margin-top:9rpx;color:var(--tm-ink-500);font-size:13px}
-.reason-error{padding:18rpx;border:1rpx solid #f0c7c3;border-radius:14rpx;background:#fff5f4;color:#b42318;font-size:13px;line-height:1.5}.reason-error text{display:block}.reason-error text+text{margin-top:5rpx;color:#b54708;font-size:13px}.retry-button{height:58rpx;margin:14rpx 0 0;border:1rpx solid #b42318;border-radius:12rpx;background:#fff;color:#b42318;font-size:13px;line-height:56rpx}.retry-button::after{border:0}
-/* V09 campus after-sales surface */
-.page{background:linear-gradient(180deg,var(--tm-campus-cyan-soft) 0,var(--tm-canvas) 520rpx);color:var(--tm-ink-900)}
-.rule-grid view,.item-card,.form-card,.state-card{border:1rpx solid var(--tm-line);box-shadow:var(--tm-shadow-sm);background:var(--tm-surface)}
-.rule-grid view:nth-child(1){background:var(--tm-growth-100)}.rule-grid view:nth-child(2){background:var(--tm-reward-100)}.rule-grid view:nth-child(3){background:var(--tm-campus-coral-soft)}
-.rule-grid text{color:var(--tm-ink-900)}.item-card{background:var(--tm-surface)}.item-mark{border:0;background:var(--tm-brand-100);color:var(--tm-brand-700)}
-.form-card{background:var(--tm-surface)}.type-tabs view{border:1rpx solid var(--tm-line);box-shadow:none}
-.type-tabs .active{border-color:var(--tm-brand-500);background:var(--tm-brand-50);color:var(--tm-brand-700);box-shadow:none}
-.quantity button,.field textarea,.evidence{border:1rpx solid var(--tm-line);background:var(--tm-surface)}
-.responsibility view{border:0}.responsibility view:nth-child(1){background:var(--tm-reward-100)}.responsibility view:nth-child(2){background:var(--tm-campus-cyan-soft)}.responsibility view:nth-child(3){background:var(--tm-growth-100)}
-.notice{border:1rpx solid rgba(183,123,18,.18);background:var(--tm-reward-100)}
-.tm-primary-button{border:1rpx solid transparent;box-shadow:none}.tm-primary-button[disabled]{opacity:.46;filter:saturate(.55)}
-.reason-error{border:1rpx solid rgba(209,67,67,.22);background:var(--tm-campus-coral-soft);color:var(--tm-danger)}.reason-error text+text{color:var(--tm-ink-700)}.retry-button{border:1rpx solid rgba(209,67,67,.3);box-shadow:none;background:var(--tm-surface);color:var(--tm-danger)}
-.state-card{margin-top:22rpx;padding:44rpx 28rpx;text-align:center}.state-spinner{width:72rpx;height:72rpx;margin:0 auto;border-radius:24rpx}.state-title,.state-copy{display:block}.state-title{margin-top:18rpx;font-size:17px;font-weight:900}.state-copy{margin-top:9rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.5}.error-card{border-color:rgba(209,67,67,.22);background:var(--tm-campus-coral-soft)}
-.commerce-hero{position:relative;min-height:250rpx;overflow:hidden;margin-bottom:18rpx;border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-lg);background:linear-gradient(135deg,#eaffef 0,#e3f7ff 58%,#fff4e8 100%);box-shadow:var(--tm-shadow-sm)}.commerce-hero-art{position:absolute;right:-16rpx;top:0;width:68%;height:100%;opacity:.84;object-position:right center}.commerce-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(234,255,239,.98) 0,rgba(234,255,239,.9) 34%,rgba(234,255,239,.12) 78%,rgba(234,255,239,0) 100%)}.commerce-hero-copy{position:relative;z-index:1;width:57%;padding:28rpx 24rpx}.commerce-hero-kicker,.commerce-hero-title,.commerce-hero-sub{display:block}.commerce-hero-kicker{color:var(--tm-brand-700);font-size:13px;font-weight:850;letter-spacing:2.4rpx}.commerce-hero-title{margin-top:10rpx;color:var(--tm-ink-900);font-size:22px;font-weight:950;line-height:1.2}.commerce-hero-sub{margin-top:10rpx;color:var(--tm-ink-500);font-size:13px;line-height:1.55}
+.page { min-height: 100vh; background: #F4F6F4; padding-bottom: calc(160rpx + env(safe-area-inset-bottom)); }
+
+.card { margin: 20rpx 24rpx 0; background: #fff; border-radius: 24rpx; box-shadow: 0 4rpx 16rpx rgba(25, 27, 31, 0.05); }
+.item-card { display: flex; gap: 22rpx; padding: 28rpx; }
+.item-mark { width: 110rpx; height: 110rpx; flex: none; border-radius: 20rpx; background: #E7F9EF; display: flex; align-items: center; justify-content: center; }
+.item-mark text { font-size: 40rpx; font-weight: 800; color: #08A152; }
+.item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.item-name { font-size: 28rpx; font-weight: 700; color: #191B1F; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.item-meta { margin-top: 10rpx; font-size: 22rpx; color: #AEB3BB; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item-money { margin-top: 8rpx; font-size: 24rpx; font-weight: 700; color: #FF2442; }
+
+.form-card { padding: 10rpx 28rpx 28rpx; }
+.field { padding: 26rpx 0 0; }
+.label { display: block; font-size: 27rpx; font-weight: 700; color: #191B1F; margin-bottom: 18rpx; }
+.label-sub { font-weight: 400; color: #AEB3BB; font-size: 22rpx; }
+
+.type-tabs { display: flex; gap: 14rpx; }
+.type-tab { flex: 1; text-align: center; padding: 18rpx 0; border-radius: 16rpx; background: #F2F4F3; color: #767C85; font-size: 25rpx; }
+.type-tab.active { background: #E7F9EF; color: #08A152; font-weight: 700; box-shadow: inset 0 0 0 2rpx #0BBF63; }
+
+.quantity-row { display: flex; align-items: center; gap: 20rpx; }
+.quantity { display: flex; align-items: center; background: #F2F4F3; border-radius: 14rpx; }
+.qty-btn { width: 64rpx; height: 60rpx; line-height: 56rpx; padding: 0; margin: 0; background: transparent; font-size: 32rpx; color: #191B1F; }
+.qty-btn::after { border: 0; }
+.qty-btn[disabled] { color: #C7CCC8; }
+.qty-num { width: 72rpx; text-align: center; font-size: 28rpx; font-weight: 700; }
+.quantity-note { font-size: 22rpx; color: #AEB3BB; }
+
+.picker-value { padding: 24rpx 22rpx; border-radius: 16rpx; background: #F2F4F3; font-size: 26rpx; color: #191B1F; }
+.picker-value.placeholder { color: #AEB3BB; }
+
+.responsibility { display: flex; gap: 14rpx; margin-top: 24rpx; }
+.resp-item { flex: 1; padding: 18rpx 8rpx; text-align: center; border-radius: 16rpx; background: #F7FAF8; }
+.resp-item text { display: block; font-size: 21rpx; color: #767C85; }
+.resp-item strong { display: block; margin-top: 8rpx; font-size: 23rpx; color: #08A152; }
+
+.desc-input { width: 100%; height: 180rpx; padding: 22rpx; box-sizing: border-box; border-radius: 16rpx; background: #F7FAF8; font-size: 26rpx; line-height: 1.5; }
+.ph { color: #AEB3BB; }
+.counter { display: block; margin-top: 10rpx; text-align: right; font-size: 21rpx; color: #AEB3BB; }
+
+.evidence-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14rpx; }
+.evidence { position: relative; height: 150rpx; border-radius: 16rpx; overflow: hidden; }
+.evidence image { width: 100%; height: 100%; }
+.evidence-del { position: absolute; right: 6rpx; top: 6rpx; width: 36rpx; height: 36rpx; line-height: 32rpx; text-align: center; border-radius: 50%; background: rgba(25, 27, 31, 0.62); color: #fff; font-size: 26rpx; }
+.evidence.add { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2rpx dashed #B9C6BE; background: #F7FAF8; color: #08A152; }
+.add-plus { font-size: 40rpx; line-height: 1; }
+.evidence.add small { margin-top: 8rpx; font-size: 20rpx; color: #767C85; }
+
+.reason-error { padding: 24rpx; border-radius: 16rpx; background: #FFF4F2; }
+.re-title { display: block; font-size: 26rpx; font-weight: 700; color: #D9402E; }
+.re-detail { display: block; margin-top: 8rpx; font-size: 22rpx; color: #B54708; }
+.retry-button { margin-top: 16rpx; height: 64rpx; line-height: 64rpx; border-radius: 12rpx; background: #fff; color: #D9402E; font-size: 24rpx; border: 2rpx solid rgba(217, 64, 46, 0.35); }
+.retry-button::after { border: 0; }
+
+.notice { display: flex; align-items: flex-start; gap: 14rpx; margin: 22rpx 24rpx 0; padding: 22rpx 26rpx; background: #FFF8EC; border-radius: 20rpx; }
+.notice-icon { width: 32rpx; height: 32rpx; flex: none; border-radius: 50%; background: #E6A808; color: #fff; font-size: 22rpx; text-align: center; line-height: 32rpx; font-weight: 800; }
+.notice-copy { font-size: 22rpx; color: #8A6D2F; line-height: 1.6; }
+
+.action-bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); background: #fff; box-shadow: 0 -4rpx 20rpx rgba(25, 27, 31, 0.06); }
+.submit-btn { width: 100%; height: 88rpx; line-height: 88rpx; border-radius: 44rpx; background: linear-gradient(135deg, #12D978, #08A152); color: #fff; font-size: 30rpx; font-weight: 700; box-shadow: 0 10rpx 22rpx rgba(11, 191, 99, 0.25); }
+.submit-btn::after { border: 0; }
+.submit-btn[disabled] { opacity: 0.55; box-shadow: none; }
+
+.state-card { margin: 24rpx; padding: 70rpx 40rpx; text-align: center; background: #fff; border-radius: 24rpx; }
+.state-spinner { width: 80rpx; height: 80rpx; margin: 0 auto; border-radius: 24rpx; }
+.state-title { display: block; margin-top: 22rpx; font-size: 30rpx; font-weight: 800; color: #191B1F; }
+.state-copy { display: block; margin-top: 12rpx; font-size: 24rpx; color: #767C85; line-height: 1.6; }
+.error-card { background: #FFF4F2; }
+.retry-main { margin-top: 32rpx; width: 320rpx; height: 80rpx; line-height: 80rpx; border-radius: 40rpx; background: linear-gradient(135deg, #12D978, #08A152); color: #fff; font-size: 27rpx; font-weight: 700; }
+.retry-main::after { border: 0; }
 </style>

@@ -7,9 +7,12 @@
     </view>
     <template v-else>
 
-    <view class="recommend-hero"><image class="recommend-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFit" /><view class="hero-copy"><text class="hero-kicker">INVITE &amp; REWARD</text><text class="hero-title">邀请好友，一起成长</text><text class="hero-subtitle">合规邀请条件完成后，奖励自动进入积分账户。</text></view></view>
+    <view class="ref-hero">
+      <view class="hero-col"><text class="hero-num">{{ dashboard ? dashboard.summary.invited_count : 0 }}</text><text class="hero-label">累计邀请（人）</text></view>
+      <view class="hero-col"><text class="hero-num">{{ dashboard ? dashboard.summary.reward_points_total : 0 }}</text><text class="hero-label">获得积分</text></view>
+    </view>
 
-    <view class="invite-panel"><view class="invite-code"><text class="code-label">我的邀请码</text><view class="code-line"><text class="code">{{ displayReferralCode }}</text><button class="copy-icon" :disabled="!referralCode" aria-label="复制邀请码" @click="copyCode">▣</button></view></view><view class="reward-badge"><text>{{ rewardPoints }}</text><small>积分 / 人</small></view><view class="invite-actions"><button class="poster-button" :disabled="!referralCode" @click="openPoster">➤　生成邀请海报</button><button class="link-button" :disabled="!referralCode" @click="copyLink">↗　复制链接</button></view></view>
+    <view class="invite-panel"><view class="invite-code"><text class="code-label">我的邀请码</text><view class="code-line"><text class="code">{{ displayReferralCode }}</text><button class="copy-icon" :disabled="!referralCode" aria-label="复制邀请码" @click="copyCode">复制</button></view></view><view class="reward-badge"><text>{{ rewardPoints }}</text><small>积分 / 人</small></view><view class="invite-actions"><button class="poster-button" :disabled="!referralCode" @click="openPoster">生成邀请海报</button><button class="link-button" :disabled="!referralCode" @click="copyLink">复制链接</button></view></view>
 
     <view v-if="loading && !dashboard" class="state-card" role="status" aria-live="polite"><view class="spinner" /><text>正在同步邀请规则与好友进度…</text></view>
     <view v-else-if="loadError && !dashboard" class="state-card error-state" role="alert"><text class="state-icon">!</text><text>邀请数据暂时不可用</text><small>{{ loadError }}</small><button @click="load">重试</button></view>
@@ -109,4 +112,62 @@ function errorMessage(error: unknown, fallback: string) { return error instanceo
 .code-line{max-width:calc(100% - 145rpx)}
 .code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .recommend-hero-art{position:absolute;right:0;bottom:0;width:310rpx;height:310rpx}
+/* ===== 新视觉（设计屏 48 referrals） ===== */
+.referrals-page{--green:#0BBF63;--green-deep:#08A152;--green-soft:#E7F9EF;--t1:#191B1F;--t2:#767C85;--t3:#AEB3BB;--line:#EDEFEF;background:#F4F6F4!important;padding:0 0 150rpx;color:var(--t1)}
+.ref-hero{position:relative;display:flex;margin:20rpx 24rpx 0;border-radius:24rpx;padding:36rpx 24rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;overflow:hidden}
+.ref-hero::before{content:'';position:absolute;width:300rpx;height:300rpx;border-radius:50%;background:rgba(255,255,255,.10);top:-120rpx;right:-80rpx}
+.hero-col{flex:1;position:relative}
+.hero-col+.hero-col{border-left:2rpx solid rgba(255,255,255,.28)}
+.hero-num{display:block;text-align:center;font-size:50rpx;font-weight:800;line-height:1.2}
+.hero-label{display:block;text-align:center;margin-top:8rpx;font-size:22rpx;opacity:.9}
+.invite-panel{margin:20rpx 24rpx 0;border-radius:24rpx;border:0;box-shadow:none;background:#fff;padding:28rpx}
+.invite-code{display:block}
+.code-label{color:var(--t2);font-size:24rpx}
+.code-line{display:flex;align-items:center;gap:16rpx;margin-top:10rpx;max-width:calc(100% - 150rpx)}
+.code{color:var(--t1);font-size:38rpx;font-weight:800;letter-spacing:2rpx}
+.copy-icon{width:auto;height:52rpx;line-height:52rpx;padding:0 22rpx;margin:0;border:2rpx solid var(--green-soft);border-radius:26rpx;background:#fff;color:var(--green-deep);font-size:22rpx;font-weight:600}
+.copy-icon::after{border:0}
+.reward-badge{top:28rpx;right:28rpx;width:124rpx;height:96rpx;border:0;border-radius:20rpx;background:var(--green-soft)}
+.reward-badge text{font-size:34rpx;font-weight:800;color:var(--green-deep)}
+.reward-badge small{font-size:20rpx;color:var(--green-deep)}
+.invite-actions{margin-top:28rpx;gap:16rpx}
+.invite-actions button{height:80rpx;border-radius:40rpx;font-size:27rpx;font-weight:700;line-height:80rpx}
+.poster-button{background:linear-gradient(135deg,#12D978,#08A152);box-shadow:0 8rpx 18rpx rgba(11,191,99,.22);color:#fff}
+.poster-button::after,.link-button::after{border:0}
+.link-button{border:2rpx solid var(--green-soft);background:#fff;color:var(--green-deep)}
+.section-card{margin:20rpx 24rpx 0;border:0;border-radius:24rpx;background:#fff;box-shadow:none;padding:28rpx}
+.section-icon{color:var(--green-deep)}
+.section-title{color:var(--t1)}
+.section-subtitle,.section-kicker{color:var(--t2)}
+.rules-card{padding-bottom:24rpx}
+.rule-icon.invite,.rule-icon.done,.rule-icon.reward{background:var(--green-soft);color:var(--green-deep)}
+.flow-arrow{color:var(--t3)}
+.rule-step>text:last-child{color:var(--t2)}
+.rule-note{border-radius:14rpx;background:var(--green-soft);color:var(--green-deep)}
+.bind-input{border-color:var(--line);background:#F7F9F8;color:var(--t1)}
+.bind-button{background:linear-gradient(135deg,#12D978,#08A152);border-radius:17rpx}
+.bind-button::after{border:0}
+.where-button{border-color:var(--green-soft);color:var(--green-deep)}
+.pending-tip{background:var(--green-soft);color:var(--green-deep)}
+.bind-help{color:var(--t3)}
+.progress-summary{border-color:var(--line);background:#FAFBFA;border-radius:16rpx}
+.progress-summary>view{border-color:#EEF0EF}
+.progress-icon-large{color:var(--green-deep)}
+.progress-icon-large.done-color{color:var(--green-deep)}
+.progress-icon-large.reward-color{color:#FF9A3D}
+.progress-summary small{color:var(--t2)}
+.progress-summary em{color:var(--t3)}
+.history-button{color:var(--green-deep)}
+.friend-avatar{background:var(--green-soft);color:var(--green-deep);border-radius:50%}
+.friend-main text{color:var(--t1)}
+.friend-main small{color:var(--t3)}
+.status-pill{background:var(--green-soft);color:var(--green-deep)}
+.compliance-card{border:0;border-radius:24rpx;background:var(--green-soft)}
+.compliance-icon{color:var(--green-deep)}
+.compliance-title{color:var(--green-deep)}
+.compliance-copy{color:var(--green-deep);opacity:.85}
+.link{color:var(--green-deep);text-decoration:underline}
+.state-card{border:0;border-radius:24rpx;color:var(--t2)}
+.spinner{border-color:var(--green-soft);border-top-color:var(--green)}
+.state-icon{background:#FDECEC;color:#D4380D}
 </style>

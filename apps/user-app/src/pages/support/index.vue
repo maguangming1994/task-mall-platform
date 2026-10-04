@@ -1,29 +1,39 @@
 <template>
   <view class="page">
-    <view class="support-topbar">
-      <view class="support-back" role="button" aria-label="返回上一页" @click="goBack">‹</view>
-      <text class="support-page-title">客服二维码</text>
-      <view class="support-topbar-spacer" aria-hidden="true" />
+    <view class="subnav">
+      <view class="back" role="button" aria-label="返回上一页" @click="goBack"><text>‹</text></view>
+      <text class="nav-title">帮助与反馈</text>
+      <view class="nav-spacer" aria-hidden="true" />
     </view>
 
-    <view class="support-hero">
-      <text class="support-hero-kicker">CAMPUS SERVICE</text>
-      <text class="support-hero-title">联系校园客服</text>
-      <text class="support-hero-copy">打开微信扫一扫，识别下方小程序二维码即可联系在线客服。</text>
+    <view class="search-bar">
+      <view class="search-box"><text class="search-ic">⌕</text><text>搜索常见问题</text></view>
     </view>
 
-    <view class="qr-card">
-      <view class="qr-card-head">
-        <view class="service-avatar">服<i /></view>
-        <view class="service-copy">
-          <text class="service-title">{{ support.label || '客服二维码' }}</text>
-          <text class="service-subtitle">{{ support.subtitle || '扫码进入小程序客服' }}</text>
-        </view>
-        <text class="online-pill" :class="{ configured: Boolean(support.qr_code_url) }">
-          {{ support.qr_code_url ? '已配置' : '待配置' }}
-        </text>
+    <view class="card">
+      <view class="sec-title"><text class="sec-name">常见问题</text></view>
+      <view class="qa-row">如何接单？<text class="chev">›</text></view>
+      <view class="qa-row">积分如何获取？<text class="chev">›</text></view>
+      <view class="qa-row">提现多久到账？<text class="chev">›</text></view>
+      <view class="qa-row">如何联系卖家？<text class="chev">›</text></view>
+    </view>
+
+    <view class="card">
+      <view class="sec-title"><text class="sec-name">联系客服</text></view>
+      <view class="sp-svc" @click="previewQRCode">
+        <view class="svc-ic">服</view>
+        <view class="svc-tx"><text class="svc-b">在线客服</text><text class="svc-p">工作日 9:00 - 21:00</text></view>
+        <text class="tag tag-green">在线</text>
       </view>
+      <view class="sp-svc">
+        <view class="svc-ic">☎</view>
+        <view class="svc-tx"><text class="svc-b">客服电话</text><text class="svc-p">400-820-1024</text></view>
+        <text class="chev">›</text>
+      </view>
+    </view>
 
+    <view class="card qr-card">
+      <view class="sec-title"><text class="sec-name">客服二维码</text><text class="online-pill" :class="{ configured: Boolean(support.qr_code_url) }">{{ support.qr_code_url ? '已配置' : '待配置' }}</text></view>
       <view class="qr-stage">
         <view v-if="loading" class="qr-empty qr-loading" role="status" aria-live="polite">
           <view class="qr-spinner" aria-hidden="true" />
@@ -37,7 +47,6 @@
         </view>
         <view v-else-if="support.qr_code_url" class="qr-frame" role="button" aria-label="预览客服二维码" @click="previewQRCode">
           <image class="qr-image" :src="support.qr_code_url" mode="aspectFit" :show-menu-by-longpress="true" />
-          <view class="corner corner-a" /><view class="corner corner-b" /><view class="corner corner-c" /><view class="corner corner-d" />
         </view>
         <view v-else class="qr-empty">
           <text class="qr-empty-mark">码</text>
@@ -50,12 +59,19 @@
       <button v-if="support.qr_code_url" class="preview-button" @click="previewQRCode">查看二维码大图</button>
     </view>
 
-    <view class="guide-card">
-      <text class="guide-title">扫码说明</text>
+    <view class="card">
+      <view class="sec-title"><text class="sec-name">扫码说明</text></view>
       <view class="guide-step"><strong>1</strong><text>长按二维码，选择识别图中二维码</text></view>
       <view class="guide-step"><strong>2</strong><text>进入客服小程序后发送你的问题</text></view>
       <view class="guide-step"><strong>3</strong><text>涉及订单或任务时，请同时提供相关编号</text></view>
     </view>
+
+    <view class="card feedback-card">
+      <view class="sec-title"><text class="sec-name">意见反馈</text></view>
+      <textarea v-model="feedback" class="feedback-input" placeholder="描述你遇到的问题或建议…" />
+      <view class="upload-grid"><view class="upload-add"><text class="up-plus">＋</text><text class="up-text">添加截图 0/3</text></view></view>
+    </view>
+    <view class="feedback-action"><button class="feedback-btn" @click="submitFeedback">提交反馈</button></view>
     <AppTabBar current-target="account" />
   </view>
 </template>
@@ -80,6 +96,15 @@ const support = ref<HomeFloatingSupport>({
 })
 const loading = ref(false)
 const loadError = ref('')
+const feedback = ref('')
+
+function submitFeedback() {
+  if (!feedback.value.trim()) {
+    uni.showToast({ title: '请描述你遇到的问题或建议', icon: 'none' })
+    return
+  }
+  uni.showModal({ title: '提交反馈', content: '意见反馈提交功能即将开放，当前可通过上方在线客服二维码联系我们。', showCancel: false })
+}
 
 onShow(async () => {
   await loadSupport()
@@ -125,4 +150,54 @@ function goBack() {
 .guide-card{margin-top:22rpx;padding:28rpx;border:1rpx solid #deeaee;border-radius:28rpx;background:rgba(255,255,255,.92)}.guide-title{font-size:17px;font-weight:900}.guide-step{display:flex;align-items:center;gap:17rpx;margin-top:20rpx}.guide-step strong{display:flex;width:42rpx;height:42rpx;align-items:center;justify-content:center;flex:none;border-radius:14rpx;background:#fff1a8;color:#725500;font-size:13px}.guide-step text{color:#53636e;font-size:14px;line-height:1.45}
 @media screen and (min-width:768px){.page{width:750rpx;margin:0 auto}}
 @keyframes support-spin{to{transform:rotate(360deg)}}
+/* ===== 新视觉（设计屏 51 support） ===== */
+.page{--green:#0BBF63;--green-deep:#08A152;--green-soft:#E7F9EF;--t1:#191B1F;--t2:#767C85;--t3:#AEB3BB;--line:#EDEFEF;background:#F4F6F4!important;padding:0 0 150rpx;color:var(--t1)}
+.subnav{display:flex;align-items:center;padding:calc(var(--status-bar-height,20px) + 8rpx) 20rpx 8rpx;background:#F4F6F4}
+.subnav .back{width:64rpx;height:64rpx;display:flex;align-items:center;justify-content:center;font-size:44rpx;color:var(--t1);line-height:1}
+.nav-title{flex:1;text-align:center;font-size:32rpx;font-weight:800}
+.nav-spacer{width:64rpx;height:64rpx}
+.search-bar{background:#fff;padding:16rpx 24rpx}
+.search-box{flex:1;height:68rpx;border-radius:34rpx;background:#F2F4F3;display:flex;align-items:center;gap:12rpx;padding:0 24rpx;color:var(--t3);font-size:25rpx}
+.search-ic{font-size:30rpx;color:var(--t3)}
+.card{background:#fff;border-radius:24rpx;margin:20rpx 24rpx 0;overflow:hidden}
+.sec-title{display:flex;align-items:center;justify-content:space-between;padding:26rpx 28rpx 18rpx}
+.sec-name{font-size:30rpx;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:14rpx}
+.sec-name::before{content:'';width:8rpx;height:28rpx;border-radius:4rpx;background:var(--green)}
+.qa-row{display:flex;align-items:center;padding:28rpx;font-size:27rpx;font-weight:600;color:var(--t1);border-top:2rpx solid #F5F6F6}
+.qa-row .chev{margin-left:auto;color:var(--t3);font-size:32rpx}
+.sp-svc{display:flex;align-items:center;gap:20rpx;padding:24rpx 28rpx;border-top:2rpx solid #F5F6F6}
+.svc-ic{width:68rpx;height:68rpx;border-radius:20rpx;background:var(--green-soft);color:var(--green-deep);display:flex;align-items:center;justify-content:center;font-size:28rpx;font-weight:800;flex:none}
+.svc-tx{flex:1;min-width:0}
+.svc-b{display:block;font-size:27rpx;font-weight:600;color:var(--t1)}
+.svc-p{display:block;margin-top:6rpx;font-size:22rpx;color:var(--t3)}
+.tag{font-size:20rpx;padding:6rpx 16rpx;border-radius:8rpx;background:#F2F4F3;color:var(--t2)}
+.tag-green{background:var(--green-soft);color:var(--green-deep)}
+.sp-svc .chev{color:var(--t3);font-size:32rpx}
+.qr-card{border:0;box-shadow:none;padding-bottom:28rpx}
+.online-pill{background:var(--green-soft)!important;color:var(--green-deep)!important;font-size:20rpx;padding:6rpx 16rpx;border-radius:8rpx;font-weight:600}
+.qr-stage{display:flex;justify-content:center;margin-top:8rpx;padding:0 28rpx}
+.qr-frame{width:400rpx;height:400rpx;padding:20rpx;border:2rpx solid var(--line);border-radius:28rpx;background:#F7F9F8;box-shadow:none;box-sizing:border-box}
+.qr-image{border-radius:16rpx}
+.qr-empty{width:400rpx;height:400rpx;border:3rpx dashed #D7DBD8;border-radius:28rpx;background:#F7F9F8;color:var(--t2)}
+.qr-empty-mark{background:var(--green-soft)!important;color:var(--green-deep)!important;border-radius:28rpx;font-size:40rpx;font-weight:800}
+.qr-empty strong{color:var(--t1);font-size:28rpx}
+.qr-empty text:last-child{color:var(--t3);font-size:23rpx}
+.scan-tip{display:block;color:var(--t2);font-size:23rpx;text-align:center;margin-top:24rpx;padding:0 28rpx}
+.preview-button{height:80rpx;margin:24rpx 28rpx 0;width:calc(100% - 56rpx);border:0;border-radius:40rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:27rpx;font-weight:700;line-height:80rpx;box-shadow:0 8rpx 18rpx rgba(11,191,99,.22)}
+.preview-button::after{border:0}
+.qr-spinner{border-color:var(--green-soft);border-top-color:var(--green)}
+.retry-button{border-color:#F3C4BE;color:#B42318;border-radius:999rpx}
+.retry-button::after{border:0}
+.guide-step{display:flex;align-items:center;gap:20rpx;padding:20rpx 28rpx}
+.guide-step strong{width:48rpx;height:48rpx;flex:none;border-radius:16rpx;background:var(--green-soft);color:var(--green-deep);font-size:25rpx;font-weight:800;display:flex;align-items:center;justify-content:center}
+.guide-step text{color:var(--t2);font-size:25rpx;line-height:1.5}
+.feedback-card{padding-bottom:10rpx}
+.feedback-input{width:calc(100% - 56rpx);height:180rpx;margin:0 28rpx;padding:20rpx;box-sizing:border-box;border-radius:16rpx;background:#F7F9F8;font-size:26rpx;line-height:1.6}
+.upload-grid{display:flex;gap:16rpx;padding:20rpx 28rpx 24rpx}
+.upload-add{width:200rpx;height:150rpx;border-radius:18rpx;border:3rpx dashed #D7DBD8;background:#F7F9F8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8rpx}
+.up-plus{font-size:40rpx;color:var(--t3);line-height:1}
+.up-text{font-size:22rpx;color:var(--t3)}
+.feedback-action{padding:24rpx 24rpx 0}
+.feedback-btn{height:88rpx;border-radius:44rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:30rpx;font-weight:700;line-height:88rpx;box-shadow:0 8rpx 18rpx rgba(11,191,99,.22)}
+.feedback-btn::after{border:0}
 </style>
