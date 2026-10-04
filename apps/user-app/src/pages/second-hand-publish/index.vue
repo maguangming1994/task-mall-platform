@@ -1,6 +1,6 @@
 <template>
   <view class="page">
-    <view class="page-title">发布闲置</view>
+    <view class="page-title">{{ editingId ? '编辑闲置' : '发布闲置' }}</view>
 
     <view class="form-card">
       <view class="frow block">
@@ -65,8 +65,13 @@
 
     <view class="publish-tip">发布后需平台审核，通过后上架闲置市场；请使用平台私信沟通，平台托管支付，确认收货后款项结算给卖家。</view>
 
+    <view v-if="loadError" class="load-error">
+      <text>{{ loadError }}</text>
+      <button class="retry-btn" @click="loadEditingItem">重试</button>
+    </view>
+
     <view class="action-bar">
-      <button class="ab-main" :loading="submitting" :disabled="!canSubmit" @click="submit">确认发布</button>
+      <button class="ab-main" :loading="submitting" :disabled="!canSubmit" @click="submit">{{ editingId ? '保存修改' : '确认发布' }}</button>
     </view>
   </view>
 </template>
@@ -76,10 +81,16 @@ import { onLoad } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { chooseAndUploadPrivateImage } from '@/api/upload'
-import { createSecondHandItem, listSecondHandCategories, type SecondHandCategory, type SecondHandCondition } from '@/api/second-hand'
+import {
+  createSecondHandItem, updateSecondHandItem, getSecondHandItem,
+  listSecondHandCategories, type SecondHandCategory, type SecondHandCondition,
+} from '@/api/second-hand'
+import { resolveApiAssetUrl } from '@/api/http'
 
 const auth = useAuthStore()
 const submitting = ref(false)
+const editingId = ref('')
+const loadError = ref('')
 const images = ref<{ fileId: string; url: string }[]>([])
 const categories = ref<SecondHandCategory[]>([])
 const conditions: Record<string, string> = { new: '全新', like_new: '几乎全新', very_good: '轻微使用', good: '正常使用', fair: '明显使用' }
@@ -107,7 +118,30 @@ const form = reactive<{
 const categoryNames = computed(() => categories.value.map(c => c.name))
 const canSubmit = computed(() => form.title.trim().length >= 2 && Number(form.price) >= 0)
 
-onLoad(() => { loadCategories() })
+onLoad((q) => {
+  editingId.value = typeof q?.id === 'string' ? q.id : ''
+  loadCategories().then(() => { if (editingId.value) loadEditingItem() })
+})
+
+async function loadEditingItem() {
+  if (!auth.accessToken || !editingId.value) return
+  loadError.value = ''
+  try {
+    const item = await getSecondHandItem(auth.accessToken, editingId.value)
+    form.title = item.title
+    form.description = item.description || ''
+    form.price = String(item.price)
+    form.condition = item.condition
+    form.trade_type = item.trade_type
+    form.location = item.location || ''
+    form.category_id = item.category?.id || ''
+    form.category_index = Math.max(0, categories.value.findIndex(c => c.id === item.category?.id))
+    const ids = [...(item.cover ? [item.cover] : []), ...(item.images || [])].filter((v, i, arr) => v && arr.indexOf(v) === i)
+    images.value = ids.map(id => ({ fileId: id, url: resolveApiAssetUrl(id) }))
+  } catch {
+    loadError.value = '宝贝信息加载失败'
+  }
+}
 
 async function loadCategories() {
   if (!auth.accessToken) return
@@ -148,7 +182,7 @@ async function submit() {
   submitting.value = true
   try {
     const cover = images.value[0]?.fileId || ''
-    await createSecondHandItem(auth.accessToken, {
+    const payload = {
       title: form.title,
       description: form.description || undefined,
       price: Number(form.price),
@@ -158,11 +192,17 @@ async function submit() {
       images: images.value.map(i => i.fileId),
       trade_type: form.trade_type,
       location: form.location || undefined,
-    }, `sh-pub-${Date.now()}`)
-    uni.showToast({ title: '发布成功', icon: 'success' })
+    }
+    if (editingId.value) {
+      await updateSecondHandItem(auth.accessToken, editingId.value, payload)
+      uni.showToast({ title: '保存成功', icon: 'success' })
+    } else {
+      await createSecondHandItem(auth.accessToken, payload, `sh-pub-${Date.now()}`)
+      uni.showToast({ title: '发布成功', icon: 'success' })
+    }
     setTimeout(() => uni.navigateBack(), 800)
   } catch (e: any) {
-    uni.showToast({ title: e.message || '发布失败', icon: 'none' })
+    uni.showToast({ title: e.message || (editingId.value ? '保存失败' : '发布失败'), icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -207,6 +247,9 @@ async function submit() {
 .price-input { font-size: 32rpx; font-weight: 800; color: #191B1F; }
 
 .publish-tip { margin: 20rpx 28rpx 0; font-size: 22rpx; color: #AEB3BB; line-height: 1.6; }
+.load-error { display:flex; flex-direction:column; align-items:center; margin:24rpx 28rpx 0; padding:32rpx; background:#FDECEC; border-radius:24rpx; color:#D4380D; font-size:24rpx; }
+.retry-btn { margin-top:20rpx; height:64rpx; line-height:64rpx; padding:0 44rpx; border-radius:32rpx; background:#0BBF63; color:#fff; font-size:25rpx; }
+.retry-btn::after { border:0; }
 
 /* 底部操作栏 */
 .action-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom)); background: #fff; border-top: 1rpx solid #EDEFEF; }

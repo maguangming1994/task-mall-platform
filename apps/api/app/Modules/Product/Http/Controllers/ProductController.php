@@ -31,9 +31,13 @@ class ProductController extends Controller
 
     public function index(Request $request, ProductCatalogService $catalog): JsonResponse
     {
+        $keyword = trim((string) $request->string('keyword'));
         $products = Product::query()->where('status', 'on_sale')->with(['category', 'skus.purchaseOptions'])
             ->whereHas('category', fn ($category) => $category->where('status', 'active'))
             ->when($request->string('category_id')->isNotEmpty(), fn ($query) => $query->whereHas('category', fn ($category) => $category->where('public_id', $request->string('category_id'))->where('status', 'active')))
+            ->when($keyword !== '', fn ($query) => $query->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', "%{$keyword}%")->orWhere('subtitle', 'like', "%{$keyword}%");
+            }))
             ->latest('published_at')->get()->map(fn ($product) => $catalog->present($product, true))->filter(fn ($product) => count($product['skus']) > 0)->values();
 
         return ApiResponse::success(['items' => $products, 'pagination' => ['page' => 1, 'page_size' => $products->count(), 'total' => $products->count()]]);

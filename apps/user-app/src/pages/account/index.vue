@@ -75,7 +75,7 @@
     <view class="my-task">
       <view class="sec-title"><text class="sec-h">我的闲置</text><text class="sec-more" @click="openSecondHand">闲置市场 ›</text></view>
       <view class="mt-row">
-        <view class="mt-chip" @click="openSecondHand"><b>0</b><span>我发布的</span></view>
+        <view class="mt-chip" @click="openMySecondHand"><b>0</b><span>我发布的</span></view>
         <view class="mt-chip" @click="openSecondHandOrders('seller')"><b>0</b><span>我卖出的</span></view>
         <view class="mt-chip" @click="openSecondHandOrders('buyer')"><b>0</b><span>我买到的</span></view>
       </view>
@@ -392,6 +392,7 @@ function openReferrals() { uni.navigateTo({ url: '/pages/referrals/index' }) }
 function openCheckIn() { uni.navigateTo({ url: '/pages/check-in/index' }) }
 function openNotifications() { uni.navigateTo({ url: '/pages/notifications/index' }) }
 function openSecondHand() { uni.navigateTo({ url: '/pages/second-hand/index' }) }
+function openMySecondHand() { uni.navigateTo({ url: '/pages/second-hand-my/index' }) }
 function openSecondHandOrders(role?: 'buyer' | 'seller') { uni.navigateTo({ url: `/pages/second-hand-orders/index${role ? `?role=${role}` : ''}` }) }
 function openChat() { uni.navigateTo({ url: '/pages/chat/index' }) }
 function openPrivacy() { uni.navigateTo({ url: '/pages/privacy/index' }) }

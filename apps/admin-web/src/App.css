@@ -42,6 +42,8 @@
 .workbench-heading { padding: 28px 30px; border: 1px solid #dfe7e9; border-radius: 18px; background: #fff; box-shadow: 0 8px 26px rgba(7,26,51,.04); }
 .workbench-heading h2 { font-weight: 750; }
 .workbench-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr); gap: 18px; }
+.data-board-grid-main { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 18px; margin-top: 18px; }
+.data-board-grid-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
 .pending-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .pending-item { display: flex; align-items: center; gap: 12px; padding: 15px; border: 1px solid #edf0f5; border-radius: 14px; background: #fafbfe; }
 .pending-icon { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 12px; color: #087975; background: #dff3f1; font-size: 17px; }
@@ -168,7 +170,7 @@
 .mobile-navigation-footer { position: absolute; right: 18px; bottom: 18px; left: 18px; display: flex; align-items: center; gap: 10px; padding: 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; color: #fff; background: rgba(255,255,255,.05); }
 .mobile-navigation-footer > span:last-child { min-width: 0; display: flex; flex-direction: column; }
 .mobile-navigation-footer small { overflow: hidden; color: #8fa0ca; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 1100px) { .stat-grid-four, .user-stat-grid { grid-template-columns: repeat(2, 1fr); } .workbench-grid, .user-overview-grid { grid-template-columns: 1fr; } .user-pending-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 1100px) { .stat-grid-four, .user-stat-grid { grid-template-columns: repeat(2, 1fr); } .workbench-grid, .user-overview-grid, .data-board-grid-main, .data-board-grid-three { grid-template-columns: 1fr; } .user-pending-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 1350px) { .campus-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .campus-agent-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 850px) { .campus-overview-grid, .campus-catalog-grid { grid-template-columns: 1fr; } .campus-scope-select { width: 190px; } }
 @media (max-width: 900px) { .login-page { grid-template-columns: 1fr; } .login-story { min-height: 320px; padding: 50px 36px; } .brand-mark { margin-bottom: 26px; } .login-story h1 { font-size: 36px; } .security-note { margin-top: 18px; } }

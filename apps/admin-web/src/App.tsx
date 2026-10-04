@@ -1,6 +1,7 @@
 import {
   AppstoreOutlined,
   AuditOutlined,
+  BarChartOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   CustomerServiceOutlined,
@@ -50,7 +51,7 @@ import {
 } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
-import { ApiError, changeAdminPassword, getAdminCampusScope, getOperationsDashboard, getRememberedAdminAccount, setAdminCampusScope, type AdminMfaChallenge, type NavigationItem, type OperationsMetrics } from './api/admin'
+import { ApiError, changeAdminPassword, getAdminCampusScope, getOperationsAnalytics, getOperationsDashboard, getRememberedAdminAccount, setAdminCampusScope, type AdminMfaChallenge, type NavigationItem, type OperationsAnalytics, type OperationsMetrics } from './api/admin'
 import { useAdminAuth } from './features/auth/AdminAuthContext'
 import { AdminAuthProvider } from './features/auth/AdminAuthProvider'
 import './App.css'
@@ -67,6 +68,7 @@ const AfterSaleManagementPage = lazy(() => import('./features/after-sales/AfterS
 const CommunityManagementPage = lazy(() => import('./features/community/CommunityManagementPage').then((module) => ({ default: module.CommunityManagementPage })))
 const SecondHandManagementPage = lazy(() => import('./features/second-hand/SecondHandManagementPage').then((module) => ({ default: module.SecondHandManagementPage })))
 const OperationsPage = lazy(() => import('./features/operations/OperationsPage').then((module) => ({ default: module.OperationsPage })))
+const DataBoardPage = lazy(() => import('./features/operations/DataBoardPage').then((module) => ({ default: module.DataBoardPage })))
 const UserOperationsPage = lazy(() => import('./features/users/UserOperationsPage').then((module) => ({ default: module.UserOperationsPage })))
 const SupportTicketPage = lazy(() => import('./features/support/SupportTicketPage').then((module) => ({ default: module.SupportTicketPage })))
 const CampusManagementPage = lazy(() => import('./features/campuses/CampusManagementPage').then((module) => ({ default: module.CampusManagementPage })))
@@ -85,6 +87,7 @@ const iconMap: Record<string, ReactNode> = {
   SafetyCertificateOutlined: <SafetyCertificateOutlined />,
   CustomerServiceOutlined: <CustomerServiceOutlined />,
   SwapOutlined: <SwapOutlined />,
+  BarChartOutlined: <BarChartOutlined />,
 }
 
 const roleNames: Record<string, string> = {
@@ -170,17 +173,28 @@ function LoginPage() {
   )
 }
 
-function Workbench() {
-  const { admin } = useAdminAuth()
+const workbenchQuickEntries: Array<{ code: string; label: string; color: string }> = [
+  { code: 'tasks', label: '任务审核', color: 'green' },
+  { code: 'second_hand', label: '闲置审核', color: 'orange' },
+  { code: 'finance', label: '提现审核', color: 'blue' },
+  { code: 'support', label: '工单客服', color: 'default' },
+  { code: 'data_board', label: '数据看板', color: 'purple' },
+]
+
+function Workbench({ onNavigate }: { onNavigate: (code: string) => void }) {
+  const { admin, navigation } = useAdminAuth()
   const [metrics, setMetrics] = useState<OperationsMetrics | null>(null)
+  const [analytics, setAnalytics] = useState<OperationsAnalytics | null>(null)
   const canViewOperations = admin?.permissions.includes('operations.manage') ?? false
 
   useEffect(() => {
     if (!canViewOperations) {
       setMetrics(null)
+      setAnalytics(null)
       return
     }
     void getOperationsDashboard().then(setMetrics).catch(() => setMetrics(null))
+    void getOperationsAnalytics().then(setAnalytics).catch(() => setAnalytics(null))
   }, [canViewOperations])
 
   if (!canViewOperations) {
@@ -229,10 +243,36 @@ function Workbench() {
         <Card variant="borderless"><Statistic title="未读业务消息" value={metrics?.notifications.unread_total ?? 0} suffix="条" prefix={<NotificationOutlined />} /></Card>
       </div>
       <div className="workbench-grid">
+        <Card variant="borderless" className="milestone-card" title="近7天任务与订单趋势" extra={<div className="trend-legend"><span className="trend-task">任务领取</span><span className="trend-order">实付订单</span></div>}>
+          <div className="trend-chart">
+            {(analytics?.task_claim_trend ?? []).map((item, index) => {
+              const orderCount = analytics?.order_trend[index]?.count ?? 0
+              const trendMax = Math.max(1, ...(analytics?.task_claim_trend.map((point) => point.count) ?? [1]), ...(analytics?.order_trend.map((point) => point.count) ?? [1]))
+              return (
+                <div className="trend-day" key={item.date}>
+                  <div className="trend-bars">
+                    <i className="trend-task" style={{ height: `${Math.max(4, item.count / trendMax * 120)}px` }} title={`任务领取 ${item.count}`} />
+                    <i className="trend-order" style={{ height: `${Math.max(4, orderCount / trendMax * 120)}px` }} title={`实付订单 ${orderCount}`} />
+                  </div>
+                  <small>{item.date}</small>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
         <Card variant="borderless" className="milestone-card" title="待处理事项" extra={<Typography.Text type="secondary">实时汇总</Typography.Text>}>
           <div className="pending-grid">
             {pending.map((item) => <div className="pending-item" key={item.label}><span className="pending-icon">{item.icon}</span><span><strong>{item.value}</strong><small>{item.label}</small></span></div>)}
           </div>
+        </Card>
+      </div>
+      <div className="workbench-grid">
+        <Card variant="borderless" className="milestone-card" title="快捷入口">
+          <Space wrap size={10}>
+            {workbenchQuickEntries.filter((entry) => navigation.some((item) => item.code === entry.code)).map((entry) => (
+              <Tag key={entry.code} color={entry.color} style={{ cursor: 'pointer', padding: '4px 14px', fontSize: 13, fontWeight: 700 }} onClick={() => onNavigate(entry.code)}>{entry.label}</Tag>
+            ))}
+          </Space>
         </Card>
         <Card variant="borderless" className="milestone-card" title="资产与系统">
           <Space orientation="vertical" size={16} className="system-summary">
@@ -246,7 +286,7 @@ function Workbench() {
   )
 }
 
-function Workspace({ item }: { item: NavigationItem }) {
+function Workspace({ item, onNavigate }: { item: NavigationItem; onNavigate: (code: string) => void }) {
   if (item.code === 'campuses') return <CampusManagementPage />
   if (item.code === 'users') return <UserOperationsPage />
   if (item.code === 'settings') return <SettingsPage />
@@ -262,6 +302,7 @@ function Workspace({ item }: { item: NavigationItem }) {
   if (item.code === 'second_hand') return <SecondHandManagementPage />
   if (item.code === 'operations') return <OperationsPage />
   if (item.code === 'support') return <SupportTicketPage />
+  if (item.code === 'data_board') return <DataBoardPage />
   if (item.code !== 'workbench') {
     return (
       <Result
@@ -272,7 +313,7 @@ function Workspace({ item }: { item: NavigationItem }) {
     )
   }
 
-  return <Workbench />
+  return <Workbench onNavigate={onNavigate} />
 }
 
 function AdminShell() {
@@ -391,7 +432,7 @@ function AdminShell() {
           </div>
         </Layout.Header>
         <Layout.Content className="admin-content">
-          {activeItem && <div className="workspace-stage" key={`${activeItem.code}:${campusScope ?? 'global'}`}><Suspense fallback={<Skeleton active paragraph={{ rows: 5 }} />}><Workspace item={activeItem} /></Suspense></div>}
+          {activeItem && <div className="workspace-stage" key={`${activeItem.code}:${campusScope ?? 'global'}`}><Suspense fallback={<Skeleton active paragraph={{ rows: 5 }} />}><Workspace item={activeItem} onNavigate={selectNavigation} /></Suspense></div>}
         </Layout.Content>
       </Layout>
       <Drawer

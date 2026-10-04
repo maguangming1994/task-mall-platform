@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class WalletWithdrawal extends Model
 {
-    protected $fillable = ['public_id', 'withdrawal_no', 'user_id', 'requested_amount_cents', 'fee_rate_ppm', 'fee_amount_cents', 'received_amount_cents', 'channel', 'status', 'idempotency_key_hash', 'request_payload_hash', 'reviewed_by_admin_id', 'review_note', 'review_idempotency_key_hash', 'channel_reference', 'failure_message', 'reviewed_at', 'completed_at'];
+    protected $fillable = ['public_id', 'withdrawal_no', 'user_id', 'requested_amount_cents', 'fee_rate_ppm', 'fee_amount_cents', 'received_amount_cents', 'channel', 'status', 'idempotency_key_hash', 'request_payload_hash', 'reviewed_by_admin_id', 'review_note', 'review_idempotency_key_hash', 'channel_reference', 'bank_card_snapshot', 'failure_message', 'reviewed_at', 'completed_at'];
 
     protected $hidden = ['idempotency_key_hash', 'request_payload_hash', 'review_idempotency_key_hash'];
 
@@ -20,7 +20,7 @@ class WalletWithdrawal extends Model
 
     protected function casts(): array
     {
-        return ['requested_amount_cents' => 'integer', 'fee_rate_ppm' => 'integer', 'fee_amount_cents' => 'integer', 'received_amount_cents' => 'integer', 'reviewed_at' => 'datetime', 'completed_at' => 'datetime'];
+        return ['requested_amount_cents' => 'integer', 'fee_rate_ppm' => 'integer', 'fee_amount_cents' => 'integer', 'received_amount_cents' => 'integer', 'bank_card_snapshot' => 'array', 'reviewed_at' => 'datetime', 'completed_at' => 'datetime'];
     }
 
     public function getRouteKeyName(): string

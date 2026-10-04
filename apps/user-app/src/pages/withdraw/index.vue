@@ -29,14 +29,31 @@
     <view class="section-card fee-card"><view class="section-head"><text class="section-title">手续费说明</text><text class="rule-link">如何计算 ?</text></view><view class="fee-equation"><view><text>提现金额</text><strong class="dark">¥{{ quote ? money(quote.requested_amount) : '0.00' }}</strong></view><text class="operator">−</text><view><text>手续费率</text><strong class="dark">{{ quote ? feeRateText : '—' }}</strong></view><text class="operator">=</text><view><text>手续费</text><strong class="orange">¥{{ quote ? money(quote.fee_amount) : '0.00' }}</strong></view><text class="operator">→</text><view class="received-cell"><text>实际到账</text><strong class="green">¥{{ quote ? money(quote.received_amount) : '0.00' }}</strong></view></view><text class="fee-note">以提交时计算为准，手续费将从提现金额中扣除</text></view>
 
     <view class="section-card info-row"><view class="info-icon clock">◷</view><view class="info-main"><text class="info-title">到账时间</text><text class="info-note">工作日到账，周末及节假日顺延，请耐心等待</text></view><text class="info-side">预计1-3个工作日</text></view>
-    <view class="section-card info-row"><view class="info-icon account">▣</view><view class="info-main"><text class="info-title">收款账户</text><text class="info-note">将提现至微信支付绑定的实名账户</text></view><text class="info-side">微信零钱 ›</text></view>
+
+    <view class="section-card channel-card">
+      <view class="section-head"><text class="section-title">到账方式</text><text class="rule-link" @click="goBankCards">银行卡管理 ›</text></view>
+      <view class="channel-option" :class="{ on: channel === 'wechat_transfer' }" @click="channel = 'wechat_transfer'">
+        <view class="channel-ic wechat">微</view>
+        <view class="channel-main"><text class="channel-name">微信零钱</text><text class="channel-note">审核通过后转账至微信支付实名账户</text></view>
+        <view class="channel-radio" :class="{ on: channel === 'wechat_transfer' }" />
+      </view>
+      <view class="channel-option" :class="{ on: channel === 'bank_card' }" @click="chooseBankChannel">
+        <view class="channel-ic bank">卡</view>
+        <view class="channel-main">
+          <text class="channel-name">银行卡</text>
+          <text class="channel-note">{{ selectedCard ? `${selectedCard.bank_name} ${selectedCard.card_masked}` : '绑定本人储蓄卡，财务审核后人工转账' }}</text>
+        </view>
+        <view v-if="cards.length" class="channel-radio" :class="{ on: channel === 'bank_card' }" />
+        <text v-else class="channel-bind">去绑定 ›</text>
+      </view>
+    </view>
 
     <label class="consent"><checkbox value="withdraw-consent" :checked="withdrawAgreed" color="#0BBF63" @change="onConsentChange" /><text>我已阅读并同意 <text class="link">《用户协议》</text> 和 <text class="link">《隐私政策》</text></text></label>
     <button class="withdraw-button" :disabled="!withdrawAgreed || withdrawing" :loading="withdrawing" @click="handleWithdraw">{{ quote ? '确认提现' : '提现' }}</button>
     <view class="safety-note">平台保障资金安全，禁止任何形式的线下交易或提现代办行为</view>
 
     <view v-if="actionError" class="action-error" role="alert"><text>{{ actionError }}</text><button @click="actionError = ''">知道了</button></view>
-    <view v-if="withdrawals.length" class="history-card section-card"><view class="section-head"><text class="section-title">提现记录</text><text class="rule-link">最近记录</text></view><view v-for="item in withdrawals" :key="item.id" class="history-row"><view><text>{{ item.withdrawal_no }}</text><small>{{ formatDate(item.created_at) }} · {{ item.workflow?.next_action || '请稍后刷新处理状态' }}</small></view><view><text>¥{{ money(item.requested_amount) }}</text><small>{{ item.workflow?.status_label || statusText(item.status) }}</small></view></view></view>
+    <view v-if="withdrawals.length" class="history-card section-card"><view class="section-head"><text class="section-title">提现记录</text><text class="rule-link">最近记录</text></view><view v-for="item in withdrawals" :key="item.id" class="history-row"><view><text>{{ item.withdrawal_no }}</text><small>{{ formatDate(item.created_at) }} · {{ item.channel_label || '微信零钱' }} · {{ item.workflow?.next_action || '请稍后刷新处理状态' }}</small></view><view><text>¥{{ money(item.requested_amount) }}</text><small>{{ item.workflow?.status_label || statusText(item.status) }}</small></view></view></view>
     </template>
   </view>
 </template>
@@ -45,7 +62,8 @@
 import { formatDateTime as formatDate } from '@/utils/dateTime'
 import { onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
-import { createWithdrawal, getPointAccount, getWalletAccount, getWithdrawalQuote, listWithdrawals, type PointAccount, type WalletAccount, type Withdrawal, type WithdrawalQuote } from '@/api/assets'
+import { createWithdrawal, getPointAccount, getWalletAccount, getWithdrawalQuote, listWithdrawals, type PointAccount, type WalletAccount, type Withdrawal, type WithdrawalChannel, type WithdrawalQuote } from '@/api/assets'
+import { listBankCards, type BankCard } from '@/api/bank-cards'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
@@ -65,6 +83,10 @@ const loading = ref(false)
 const withdrawing = ref(false)
 const loadError = ref('')
 const actionError = ref('')
+const channel = ref<WithdrawalChannel>('wechat_transfer')
+const cards = ref<BankCard[]>([])
+const selectedCardId = ref('')
+const selectedCard = computed(() => cards.value.find((c) => c.id === selectedCardId.value) || null)
 const fallbackMinimum = 100
 const fallbackMaximum = 500000
 const minimumCents = computed(() => quote.value?.minimum_amount || fallbackMinimum)
@@ -84,10 +106,20 @@ async function load() {
   loading.value = true
   loadError.value = ''
   try {
-    const [account, pointAccount, list] = await Promise.all([getWalletAccount(auth.accessToken), getPointAccount(auth.accessToken), listWithdrawals(auth.accessToken)])
+    const [account, pointAccount, list, cardRes] = await Promise.all([
+      getWalletAccount(auth.accessToken),
+      getPointAccount(auth.accessToken),
+      listWithdrawals(auth.accessToken),
+      listBankCards(auth.accessToken).catch(() => ({ items: [] as BankCard[] })),
+    ])
     wallet.value = account
     points.value = pointAccount
     withdrawals.value = list.items
+    cards.value = cardRes.items
+    if (!selectedCardId.value || !cards.value.some((c) => c.id === selectedCardId.value)) {
+      selectedCardId.value = cards.value.find((c) => c.is_default)?.id || cards.value[0]?.id || ''
+    }
+    if (channel.value === 'bank_card' && !selectedCardId.value) channel.value = 'wechat_transfer'
   } catch (error) {
     loadError.value = errorMessage(error, '提现信息加载失败，请稍后重试')
     uni.showToast({ title: loadError.value, icon: 'none' })
@@ -97,6 +129,28 @@ async function load() {
 }
 
 function goBack() { const pages = getCurrentPages(); if (pages.length > 1) uni.navigateBack({ delta: 1 }); else uni.redirectTo({ url: '/pages/assets/index' }) }
+function goBankCards() { uni.navigateTo({ url: '/pages/bank-cards/index' }) }
+
+async function chooseBankChannel() {
+  if (!cards.value.length) {
+    const r = await uni.showModal({ title: '绑定银行卡', content: '提现到银行卡需先绑定本人储蓄卡，信息须与实名认证一致。', confirmText: '去绑定', cancelText: '取消' })
+    if (r.confirm) goBankCards()
+    return
+  }
+  if (cards.value.length === 1) {
+    channel.value = 'bank_card'
+    selectedCardId.value = cards.value[0].id
+    return
+  }
+  try {
+    const labels = cards.value.map((c) => `${c.bank_name} ${c.card_masked}${c.is_default ? '（默认）' : ''}`)
+    labels.push('银行卡管理')
+    const r = await uni.showActionSheet({ itemList: labels })
+    if (r.tapIndex === cards.value.length) { goBankCards(); return }
+    channel.value = 'bank_card'
+    selectedCardId.value = cards.value[r.tapIndex].id
+  } catch { /* 用户取消 */ }
+}
 function money(cents: number) { return (cents / 100).toFixed(2) }
 function statusText(value: string) { return ({ reviewing: '审核中', submitted: '待审核', approved: '待打款', processing: '处理中', succeeded: '已到账', completed: '已完成', rejected: '已拒绝', failed: '打款失败', cancelled: '已取消' } as Record<string, string>)[value] || '状态同步中' }
 function errorMessage(error: unknown, fallback: string) { return error instanceof Error ? error.message : fallback }
@@ -111,11 +165,18 @@ async function handleWithdraw() {
   let cents: number
   try { cents = amountCents() } catch (error) { actionError.value = errorMessage(error, '请输入正确的提现金额'); uni.showToast({ title: actionError.value, icon: 'none' }); return }
   if (!quote.value || quote.value.requested_amount !== cents) return calculateQuote(cents)
-  const confirmed = await uni.showModal({ title: '确认提现', content: `手续费 ¥${money(quote.value.fee_amount)}，预计到账 ¥${money(quote.value.received_amount)}。提交后将冻结申请金额。` })
+  if (channel.value === 'bank_card' && !selectedCard.value) {
+    actionError.value = '请先选择或绑定提现银行卡'
+    return uni.showToast({ title: actionError.value, icon: 'none' })
+  }
+  const destination = channel.value === 'bank_card' && selectedCard.value
+    ? `${selectedCard.value.bank_name} ${selectedCard.value.card_masked}`
+    : '微信零钱'
+  const confirmed = await uni.showModal({ title: '确认提现', content: `到账方式：${destination}\n手续费 ¥${money(quote.value.fee_amount)}，预计到账 ¥${money(quote.value.received_amount)}。提交后将冻结申请金额。` })
   if (!confirmed.confirm) return
   withdrawing.value = true
   try {
-    await createWithdrawal(auth.accessToken, cents)
+    await createWithdrawal(auth.accessToken, cents, channel.value, selectedCardId.value || undefined)
     quote.value = null
     withdrawYuan.value = ''
     await load()
@@ -148,6 +209,19 @@ async function calculateQuote(cents: number) {
 .fee-equation{display:flex;align-items:stretch;justify-content:space-between;gap:8rpx;margin-top:24rpx}.fee-equation>view{display:flex;min-width:0;flex:1;align-items:center;justify-content:center;flex-direction:column;padding:18rpx 4rpx;border-radius:20rpx;background:#F7F9F8;text-align:center}.fee-equation>view>text{font-size:22rpx;color:#767C85;white-space:nowrap}.fee-equation strong{display:block;margin-top:8rpx;font-size:28rpx}.operator{display:flex;align-items:center;color:#AEB3BB;font-size:32rpx;font-weight:700}.dark{color:#191B1F}.orange{color:#F2620A}.green{color:#08A152}.received-cell{background:#E7F9EF!important}.fee-note{display:block;margin-top:20rpx;color:#AEB3BB;font-size:24rpx;line-height:1.5}
 /* 信息行 */
 .info-row{display:flex;align-items:center;gap:20rpx;padding:24rpx 28rpx}.info-icon{display:flex;align-items:center;justify-content:center;width:64rpx;height:64rpx;flex:none;border-radius:20rpx;background:#E7F9EF;color:#08A152;font-size:32rpx;font-weight:800}.info-icon.account{background:#FFF2E5;color:#F2620A}.info-main{min-width:0;flex:1}.info-title{display:block;font-size:28rpx;font-weight:700}.info-note{display:block;margin-top:6rpx;overflow:hidden;color:#767C85;font-size:24rpx;text-overflow:ellipsis;white-space:nowrap}.info-side{color:#AEB3BB;font-size:24rpx;white-space:nowrap}
+/* 到账方式 */
+.channel-card{padding-bottom:8rpx}
+.channel-option{display:flex;align-items:center;gap:20rpx;margin-top:20rpx;padding:24rpx;border:2rpx solid #EDF0ED;border-radius:24rpx}
+.channel-option.on{border-color:#0BBF63;background:#F3FCF7}
+.channel-ic{display:flex;align-items:center;justify-content:center;width:64rpx;height:64rpx;flex:none;border-radius:20rpx;font-size:26rpx;font-weight:800;color:#fff}
+.channel-ic.wechat{background:#0BBF63}
+.channel-ic.bank{background:#F2620A}
+.channel-main{min-width:0;flex:1}
+.channel-name{display:block;font-size:28rpx;font-weight:700;color:#191B1F}
+.channel-note{display:block;margin-top:6rpx;overflow:hidden;color:#767C85;font-size:22rpx;text-overflow:ellipsis;white-space:nowrap}
+.channel-radio{width:34rpx;height:34rpx;flex:none;border:3rpx solid #C9CEC9;border-radius:50%;box-sizing:border-box}
+.channel-radio.on{border:10rpx solid #0BBF63}
+.channel-bind{flex:none;color:#08A152;font-size:24rpx;font-weight:700}
 /* 协议与按钮 */
 .consent{display:flex;align-items:flex-start;gap:8rpx;margin:24rpx 8rpx 0;color:#767C85;font-size:24rpx;line-height:1.5}.consent checkbox{transform:scale(.8);transform-origin:left top}.link{color:#08A152}.withdraw-button{height:88rpx;margin:20rpx 0 0;border:0;border-radius:44rpx;background:#F2F4F3;color:#AEB3BB;font-size:32rpx;font-weight:800;line-height:88rpx}.withdraw-button:not([disabled]){background:linear-gradient(135deg,#12D978,#08A152);box-shadow:0 12rpx 28rpx rgba(11,191,99,.3);color:#fff}.withdraw-button[disabled]{opacity:1}.withdraw-button::after{border:0}.safety-note{margin:20rpx 8rpx 0;color:#AEB3BB;text-align:center;font-size:22rpx}
 /* 状态卡 */

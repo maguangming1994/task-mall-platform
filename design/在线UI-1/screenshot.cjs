@@ -63,6 +63,22 @@ const jobs = [
   { file: sub,  screen: 'withdraw',        name: '36-withdraw' },
   { file: sub,  screen: 'address',         name: '37-address' },
   { file: sub,  screen: 'admin-audit',     name: '38-admin-audit' },
+  { file: sub,  screen: 'as-list',         name: '39-as-list' },
+  { file: sub,  screen: 'as-apply',        name: '40-as-apply' },
+  { file: sub,  screen: 'as-detail',       name: '41-as-detail' },
+  { file: sub,  screen: 'act-list',        name: '42-act-list' },
+  { file: sub,  screen: 'act-detail',      name: '43-act-detail' },
+  { file: sub,  screen: 'act-compose',     name: '44-act-compose' },
+  { file: sub,  screen: 'legal-consent',   name: '45-legal-consent' },
+  { file: sub,  screen: 'privacy',         name: '46-privacy' },
+  { file: sub,  screen: 'realname',        name: '47-realname' },
+  { file: sub,  screen: 'referrals',       name: '48-referrals' },
+  { file: sub,  screen: 'ref-poster',      name: '49-ref-poster' },
+  { file: sub,  screen: 'cart',            name: '50-cart' },
+  { file: sub,  screen: 'support',         name: '51-support' },
+  { file: sub,  screen: 'pub-detail',      name: '52-pub-detail' },
+  { file: sub,  screen: 'bank-cards',      name: '53-bank-cards' },
+  { file: sub,  screen: 'bank-card-add',   name: '54-bank-card-add' },
 ];
 
 (async () => {

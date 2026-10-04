@@ -119,6 +119,27 @@ class AdminAssetAdjustmentController extends Controller
         return ApiResponse::success($presented);
     }
 
+    public function manualWithdrawalResult(Request $request, WalletWithdrawal $walletWithdrawal, WalletWithdrawalService $withdrawals, AuditLogger $audit): JsonResponse
+    {
+        $data = $request->validate([
+            'decision' => ['required', 'in:paid,failed'],
+            'reference' => ['nullable', 'string', 'max:100'],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+        /** @var AdminUser $admin */ $admin = $request->user();
+        $result = $withdrawals->recordManualResult(
+            $admin,
+            $walletWithdrawal,
+            $data['decision'],
+            (string) ($data['reference'] ?? ''),
+            (string) ($data['note'] ?? ''),
+        );
+        $presented = $withdrawals->present($result);
+        $audit->record($admin, 'wallet_withdrawal.manual_'.$data['decision'], 'wallet_withdrawal', $result->public_id, null, $presented, $data['note'] ?? $data['reference'] ?? null);
+
+        return ApiResponse::success($presented);
+    }
+
     private function key(Request $request): string
     {
         $key = (string) $request->header('Idempotency-Key');

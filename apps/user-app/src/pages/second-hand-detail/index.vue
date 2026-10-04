@@ -40,13 +40,13 @@
       </view>
 
       <view class="card" v-if="item.seller">
-        <view class="publisher">
+        <view class="publisher" @click="goSeller">
           <image class="avatar" :src="resolveCover(item.seller.avatar)" mode="aspectFill" />
           <view class="pub-main">
             <text class="pub-name">{{ item.seller.nickname }}</text>
             <text class="pub-sub">卖家 · {{ item.location || '校内' }}</text>
           </view>
-          <view class="pub-btn" @click="goChat">聊一聊</view>
+          <view class="pub-btn" @click.stop="goChat">聊一聊</view>
         </view>
       </view>
 
@@ -118,6 +118,11 @@ async function goChat() {
   } catch {
     uni.showToast({ title: '发起聊天失败', icon: 'none' })
   }
+}
+
+function goSeller() {
+  if (!item.value?.seller?.id) return
+  uni.navigateTo({ url: `/pages/sh-user/index?id=${item.value.seller.id}` })
 }
 
 async function buy() {

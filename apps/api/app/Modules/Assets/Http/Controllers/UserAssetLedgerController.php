@@ -12,6 +12,7 @@ use App\Modules\Assets\Models\WalletTransaction;
 use App\Modules\Assets\Models\WalletWithdrawal;
 use App\Modules\Assets\Services\AssetLedgerService;
 use App\Modules\Assets\Services\WalletWithdrawalService;
+use App\Modules\Wallet\Models\UserBankCard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -130,10 +131,27 @@ class UserAssetLedgerController extends Controller
 
     public function createWithdrawal(Request $request, WalletWithdrawalService $withdrawals): JsonResponse
     {
-        $data = $request->validate(['amount' => ['required', 'integer', 'min:1'], 'channel' => ['required', 'in:wechat_transfer']]);
+        $data = $request->validate([
+            'amount' => ['required', 'integer', 'min:1'],
+            'channel' => ['required', 'in:wechat_transfer,bank_card'],
+            'bank_card_id' => ['nullable', 'string', 'size:26'],
+        ]);
         $key = (string) $request->header('Idempotency-Key');
         abort_unless(strlen($key) >= 12 && strlen($key) <= 128, 422, 'Idempotency-Key is required.');
-        $withdrawal = $withdrawals->create($request->user(), $data['amount'], $data['channel'], $key);
+
+        $bankCard = null;
+        if ($data['channel'] === 'bank_card') {
+            if (empty($data['bank_card_id'])) {
+                abort(422, '请选择提现银行卡。');
+            }
+            $bankCard = UserBankCard::query()
+                ->where('public_id', $data['bank_card_id'])
+                ->where('user_id', $request->user()->id)
+                ->first();
+            abort_if($bankCard === null, 422, '收款银行卡不存在或已解绑，请重新选择。');
+        }
+
+        $withdrawal = $withdrawals->create($request->user(), $data['amount'], $data['channel'], $key, $bankCard);
 
         return ApiResponse::success($withdrawals->present($withdrawal), 201);
     }

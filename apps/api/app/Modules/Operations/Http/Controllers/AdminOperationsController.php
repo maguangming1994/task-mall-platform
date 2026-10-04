@@ -27,6 +27,11 @@ class AdminOperationsController extends Controller
         return ApiResponse::success($service->metrics());
     }
 
+    public function analytics(OperationsDashboardService $service): JsonResponse
+    {
+        return ApiResponse::success($service->analytics());
+    }
+
     public function resilience(ResilienceService $service): JsonResponse
     {
         return ApiResponse::success(['readiness' => $service->readiness(), 'consistency' => $service->consistencyAudit()]);

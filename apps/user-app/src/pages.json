@@ -25,6 +25,30 @@
       }
     },
     {
+      "path": "pages/second-hand/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/sh-user/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/second-hand-my/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/search/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/account/index",
       "style": {
         "navigationStyle": "custom"
@@ -50,6 +74,18 @@
     },
     {
       "path": "pages/withdraw/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/bank-cards/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/bank-card-add/index",
       "style": {
         "navigationStyle": "custom"
       }
@@ -176,10 +212,6 @@
       "style": { "navigationBarTitleText": "帮助与反馈", "navigationStyle": "custom" }
     },
     {
-      "path": "pages/second-hand/index",
-      "style": { "navigationStyle": "custom", "enablePullDownRefresh": true }
-    },
-    {
       "path": "pages/second-hand-detail/index",
       "style": { "navigationBarTitleText": "闲置详情" }
     },
@@ -194,6 +226,18 @@
     {
       "path": "pages/second-hand-order-detail/index",
       "style": { "navigationBarTitleText": "订单详情" }
+    },
+    {
+      "path": "pages/second-hand-ship/index",
+      "style": { "navigationBarTitleText": "我要发货" }
+    },
+    {
+      "path": "pages/second-hand-rate/index",
+      "style": { "navigationBarTitleText": "评价订单" }
+    },
+    {
+      "path": "pages/second-hand-refund/index",
+      "style": { "navigationBarTitleText": "退款/售后" }
     },
     {
       "path": "pages/chat/index",

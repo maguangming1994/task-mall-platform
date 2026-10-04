@@ -7,5 +7,11 @@ export interface ProductCategory { id: string; name: string; slug: string; sort_
 export interface MallProduct { id: string; name: string; subtitle: string | null; description: string; description_text?: string; cover_file_id: string | null; gallery_images: Array<{ url: string; alt?: string | null; sort_order: number }>; category: Pick<ProductCategory, 'id' | 'name'> | null; status: string; skus: ProductSku[] }
 
 export function listProductCategories() { return apiRequest<{ items: ProductCategory[] }>({ path: '/product-categories' }) }
-export function listProducts(categoryId?: string) { return apiRequest<{ items: MallProduct[] }>({ path: `/products${categoryId ? `?category_id=${encodeURIComponent(categoryId)}` : ''}` }) }
+export function listProducts(categoryId?: string, keyword?: string) {
+  const params = new URLSearchParams()
+  if (categoryId) params.set('category_id', categoryId)
+  if (keyword) params.set('keyword', keyword)
+  const qs = params.toString()
+  return apiRequest<{ items: MallProduct[] }>({ path: `/products${qs ? `?${qs}` : ''}` })
+}
 export function getProduct(id: string) { return apiRequest<MallProduct>({ path: `/products/${id}` }) }

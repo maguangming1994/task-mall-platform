@@ -26,6 +26,7 @@ class AdminNavigationService
             ['code' => 'second_hand', 'label' => '闲置审核', 'icon' => 'SwapOutlined', 'path' => '/second-hand', 'permissions' => ['community.review', 'after_sale.review']],
             ['code' => 'support', 'label' => '客服工单', 'icon' => 'CustomerServiceOutlined', 'path' => '/support', 'permissions' => ['after_sale.review', 'privacy.manage']],
             ['code' => 'operations', 'label' => '运营与消息', 'icon' => 'NotificationOutlined', 'path' => '/operations', 'permissions' => ['operations.manage']],
+            ['code' => 'data_board', 'label' => '数据看板', 'icon' => 'BarChartOutlined', 'path' => '/data-board', 'permissions' => ['operations.manage']],
             ['code' => 'settings', 'label' => '配置中心', 'icon' => 'SettingOutlined', 'path' => '/settings', 'permissions' => ['settings.manage']],
             ['code' => 'readiness', 'label' => '上线准备', 'icon' => 'SafetyCertificateOutlined', 'path' => '/readiness', 'permissions' => ['settings.manage']],
             ['code' => 'security', 'label' => '权限与审计', 'icon' => 'SafetyCertificateOutlined', 'path' => '/security', 'permissions' => ['rbac.manage', 'audit.view', 'audit.view_own']],

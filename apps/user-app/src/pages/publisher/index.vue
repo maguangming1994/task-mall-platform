@@ -68,6 +68,14 @@
           <input v-model="projectName" class="input" maxlength="80" placeholder="用于后台归档" />
           <text class="field-label">标签</text>
           <input v-model="tagsText" class="input" placeholder="多个用逗号分隔，例如：电商,截图" />
+          <text class="field-label">任务分类</text>
+          <view class="choice-row">
+            <view v-for="item in categoryOptions" :key="item.value" :class="['choice-chip',{active:category===item.value}]" @click="category=item.value"><text>{{ item.label }}</text></view>
+          </view>
+          <text class="field-label">适用设备</text>
+          <view class="inline-choices">
+            <text v-for="item in deviceOptions" :key="item.value" :class="['inline-choice',{active:device===item.value}]" @click="device=item.value">{{ item.label }}</text>
+          </view>
         </view>
       </view>
 

@@ -5,8 +5,10 @@ namespace App\Modules\SecondHand\Http\Controllers;
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Modules\Identity\Models\UserIdentityVerification;
 use App\Modules\SecondHand\Models\SecondHandCategory;
 use App\Modules\SecondHand\Models\SecondHandItem;
+use App\Modules\SecondHand\Models\SecondHandRating;
 use App\Modules\SecondHand\Services\SecondHandNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,6 +50,7 @@ class SecondHandItemController extends Controller
             'keyword' => ['nullable', 'string', 'max:60'],
             'condition' => ['nullable', Rule::in(array_keys(self::CONDITIONS))],
             'trade_type' => ['nullable', Rule::in(['meetup', 'mail', 'both'])],
+            'seller' => ['nullable', 'string', 'max:40'],
             'sort' => ['nullable', Rule::in(['latest', 'price_asc', 'price_desc'])],
         ]);
         $page = $data['page'] ?? 1;
@@ -67,6 +70,10 @@ class SecondHandItemController extends Controller
         if (! empty($data['trade_type'])) {
             $tt = $data['trade_type'];
             $query->where(fn ($q) => $q->where('trade_type', $tt)->orWhere('trade_type', 'both'));
+        }
+
+        if (! empty($data['seller'])) {
+            $query->whereHas('seller', fn ($q) => $q->where('public_id', $data['seller']));
         }
 
         $sort = $data['sort'] ?? 'latest';
@@ -155,6 +162,52 @@ class SecondHandItemController extends Controller
         $item->update(['status' => 'off_shelf']);
 
         return ApiResponse::success(['id' => $item->public_id, 'status' => 'off_shelf']);
+    }
+
+    public function relist(Request $request, SecondHandItem $item): JsonResponse
+    {
+        abort_unless($request->user()->id === $item->seller_user_id, 403);
+        abort_unless($item->status === 'off_shelf', 409, '仅已下架的商品可以重新上架');
+
+        // 曾通过审核的直接恢复在售；被驳回或未审核过的重新进入审核队列
+        $auditStatus = $item->audit_status === 'approved' ? 'approved' : 'pending';
+        $item->update(['status' => 'on_sale', 'audit_status' => $auditStatus]);
+        $item->loadMissing(['seller', 'category']);
+
+        return ApiResponse::success($this->present($item, true, true));
+    }
+
+    public function sellerProfile(string $user): JsonResponse
+    {
+        $seller = User::query()->where('public_id', $user)->firstOrFail();
+
+        $onSaleCount = SecondHandItem::query()
+            ->where('seller_user_id', $seller->id)
+            ->where('status', 'on_sale')->where('audit_status', 'approved')->count();
+        $soldCount = SecondHandItem::query()
+            ->where('seller_user_id', $seller->id)->where('status', 'sold')->count();
+
+        $ratingQuery = SecondHandRating::query()->where('ratee_user_id', $seller->id);
+        $ratingCount = (clone $ratingQuery)->count();
+        $average = $ratingCount > 0 ? round((float) (clone $ratingQuery)->avg('score'), 1) : null;
+        $goodCount = (clone $ratingQuery)->where('score', '>=', 4)->count();
+        $goodRate = $ratingCount > 0 ? (int) round($goodCount / $ratingCount * 100) : null;
+
+        $identityVerified = UserIdentityVerification::query()
+            ->where('user_id', $seller->id)->where('status', 'verified')->exists();
+
+        return ApiResponse::success([
+            'id' => $seller->public_id,
+            'nickname' => $seller->nickname,
+            'avatar' => $seller->avatar_file_id,
+            'campus_name' => $seller->campus?->name,
+            'identity_verified' => $identityVerified,
+            'on_sale_count' => $onSaleCount,
+            'sold_count' => $soldCount,
+            'rating_average' => $average,
+            'rating_count' => $ratingCount,
+            'good_rate_percent' => $goodRate,
+        ]);
     }
 
     // ---------- Admin 审核 ----------

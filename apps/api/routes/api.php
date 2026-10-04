@@ -97,6 +97,7 @@ use App\Modules\Task\Http\Controllers\TaskPublisherTaskController;
 use App\Modules\Task\Http\Controllers\TaskRiskController;
 use App\Modules\Task\Http\Controllers\UserTaskSubmissionController;
 use App\Modules\Upload\Http\Controllers\UploadController;
+use App\Modules\Wallet\Http\Controllers\UserBankCardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -120,6 +121,7 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/product-categories', [ProductController::class, 'categories']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::get('/second-hand/categories', [SecondHandItemController::class, 'categories']);
+Route::get('/second-hand/sellers/{user}', [SecondHandItemController::class, 'sellerProfile']);
 Route::get('/second-hand/items', [SecondHandItemController::class, 'index']);
 Route::get('/second-hand/items/{item}', [SecondHandItemController::class, 'show'])->middleware('auth.optional');
 Route::get('/media/assets/{mediaAsset}', [MediaAssetController::class, 'show']);
@@ -189,6 +191,10 @@ Route::middleware('auth.access')->group(function () {
     Route::get('/wallet/withdrawals', [UserAssetLedgerController::class, 'withdrawals'])->middleware('legal.consent:wallet');
     Route::get('/wallet/withdrawal-quote', [UserAssetLedgerController::class, 'withdrawalQuote'])->middleware('legal.consent:wallet');
     Route::post('/wallet/withdrawals', [UserAssetLedgerController::class, 'createWithdrawal'])->middleware(['legal.consent:wallet', 'throttle:10,1']);
+    Route::get('/wallet/bank-cards', [UserBankCardController::class, 'index'])->middleware('legal.consent:wallet');
+    Route::post('/wallet/bank-cards', [UserBankCardController::class, 'store'])->middleware(['legal.consent:wallet', 'throttle:10,1']);
+    Route::put('/wallet/bank-cards/{userBankCard}/default', [UserBankCardController::class, 'setDefault'])->middleware('legal.consent:wallet');
+    Route::delete('/wallet/bank-cards/{userBankCard}', [UserBankCardController::class, 'destroy'])->middleware('legal.consent:wallet');
     Route::get('/wallet/recharges', [WalletRechargeController::class, 'index'])->middleware('legal.consent:wallet');
     Route::post('/wallet/recharges', [WalletRechargeController::class, 'store'])->middleware(['legal.consent:wallet', 'throttle:10,1']);
     Route::get('/wallet/recharges/{walletRecharge}', [WalletRechargeController::class, 'show'])->middleware('legal.consent:wallet');
@@ -282,6 +288,7 @@ Route::middleware('auth.access')->group(function () {
     Route::post('/second-hand/items', [SecondHandItemController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
     Route::put('/second-hand/items/{item}', [SecondHandItemController::class, 'update'])->middleware('legal.consent:account');
     Route::delete('/second-hand/items/{item}', [SecondHandItemController::class, 'destroy'])->middleware('legal.consent:account');
+    Route::post('/second-hand/items/{item}/relist', [SecondHandItemController::class, 'relist'])->middleware('legal.consent:account');
     Route::get('/second-hand/my-items', [SecondHandItemController::class, 'mine'])->middleware('legal.consent:account');
     Route::get('/second-hand/orders', [SecondHandOrderController::class, 'index'])->middleware('legal.consent:account');
     Route::post('/second-hand/orders', [SecondHandOrderController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
@@ -413,6 +420,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/production-readiness', [AdminProductionReadinessController::class, 'show'])
             ->middleware('admin.permission:settings.manage');
         Route::get('/operations/dashboard', [AdminOperationsController::class, 'dashboard'])->middleware('admin.permission:operations.manage');
+        Route::get('/operations/analytics', [AdminOperationsController::class, 'analytics'])->middleware('admin.permission:operations.manage');
         Route::get('/operations/resilience', [AdminOperationsController::class, 'resilience'])->middleware('admin.permission:operations.manage');
         Route::get('/operations/uat-runs', [AdminOperationsController::class, 'uatRuns'])->middleware('admin.permission:operations.manage');
         Route::get('/operations/release-control', [AdminOperationsController::class, 'releaseControl'])->middleware('admin.permission:deployment.manage');
@@ -542,6 +550,7 @@ Route::prefix('admin')->group(function () {
         Route::post('/wallet-withdrawals/{walletWithdrawal}/review', [AdminAssetAdjustmentController::class, 'reviewWithdrawal'])->middleware(['admin.permission:finance.manage', 'admin.recent_verification']);
         Route::post('/wallet-withdrawals/{walletWithdrawal}/dispatch', [AdminAssetAdjustmentController::class, 'dispatchWithdrawal'])->middleware(['admin.permission:finance.manage', 'admin.recent_verification']);
         Route::post('/wallet-withdrawals/{walletWithdrawal}/sync', [AdminAssetAdjustmentController::class, 'syncWithdrawal'])->middleware(['admin.permission:finance.manage', 'admin.recent_verification']);
+        Route::post('/wallet-withdrawals/{walletWithdrawal}/manual-result', [AdminAssetAdjustmentController::class, 'manualWithdrawalResult'])->middleware(['admin.permission:finance.manage', 'admin.recent_verification']);
         Route::get('/wallet-recharges', [AdminWalletRechargeController::class, 'index'])->middleware('admin.permission:finance.manage');
         Route::get('/wallet-recharges/{walletRecharge}/proofs/{file}', [AdminWalletRechargeController::class, 'proof'])->middleware('admin.permission:finance.manage');
         Route::post('/wallet-recharges/{walletRecharge}/review', [AdminWalletRechargeController::class, 'review'])->middleware(['admin.permission:finance.manage', 'admin.recent_verification']);

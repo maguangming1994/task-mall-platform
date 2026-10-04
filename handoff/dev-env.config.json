@@ -1,0 +1,119 @@
+{
+  "_comment": "校园任务商城 task-mall-platform 开发环境配置 —— 供新账号/新会话快速加载。生成于 2026-10-03。",
+  "project": {
+    "name": "task-mall-platform（校园任务商城）",
+    "root": "c:\\Users\\Administrator\\Desktop\\trae\\task-mall-platform",
+    "defaultWorkingDirectory": "项目根目录（注意：同机另有 lung-3d-planning-miniprogram 医疗项目，勿混淆）",
+    "git": { "branch": "main", "headCommit": "c6ba248", "remote": "origin/main（本地与远端同步）" }
+  },
+  "apps": {
+    "api": {
+      "path": "apps/api",
+      "stack": "Laravel（PHP 8+），模块在 app/Modules/*，路由 routes/api.php",
+      "artisan": "php artisan"
+    },
+    "user-app": {
+      "path": "apps/user-app",
+      "stack": "uni-app + Vue3 + TypeScript + Vite + Pinia",
+      "node": ">=24 <25",
+      "mpWeixinDist": "apps/user-app/dist/dev/mp-weixin",
+      "note": "无原生 tabBar，底部导航用自定义组件 src/components/AppTabBar.vue"
+    },
+    "admin-web": {
+      "path": "apps/admin-web",
+      "stack": "React + Vite + TypeScript"
+    }
+  },
+  "ports": {
+    "local": {
+      "api_artisanServe": "8000（http://127.0.0.1:8000）",
+      "postgres": "5432",
+      "redis": "6379",
+      "minio_api": "9000",
+      "minio_console": "9001",
+      "admin_web_vite": "5173（vite 默认）",
+      "design_preview_history": "8902/8903/8905（设计稿本地预览，按需启动）"
+    },
+    "production": {
+      "nginx_gateway": "8080（HTTP_PORT，仅绑 127.0.0.1，由宝塔反代到外网域名）",
+      "reverb_websocket": "8081（REVERB_PORT，容器内 8080，nginx 路径 /app/ 反代）"
+    }
+  },
+  "docker": {
+    "localComposeFile": "infra/compose.yaml",
+    "localProjectName": "task-mall-local",
+    "localServices": ["postgres", "redis", "minio", "minio-init"],
+    "productionComposeFile": "infra/compose.production.yaml",
+    "productionProjectName": "task-mall-production",
+    "productionServices": ["api", "queue", "scheduler", "reverb", "nginx", "postgres", "redis"],
+    "productionContainerNames": {
+      "api": "task-mall-production-api-1",
+      "queue": "task-mall-production-queue-1",
+      "scheduler": "task-mall-production-scheduler-1",
+      "reverb": "task-mall-production-reverb-1",
+      "nginx": "task-mall-production-nginx-1"
+    },
+    "note": "本机终端 docker 不在 PATH 时需用完整路径或在 Docker Desktop 环境中执行"
+  },
+  "commands": {
+    "infra_up": "docker compose -f infra/compose.yaml up -d",
+    "api_install": "composer install（在 apps/api）",
+    "api_env": "复制 apps/api/.env.example 为 apps/api/.env 并按需修改；php artisan key:generate",
+    "migrate": "php artisan migrate",
+    "seed_base": "php artisan db:seed",
+    "seed_demo": "php artisan db:seed --class=DemoDataSeeder（仅 local/testing 环境）",
+    "seed_icons": "php artisan db:seed --class=IconConfigSeeder --force",
+    "serve": "php artisan serve（在 apps/api）",
+    "userapp_install": "npm install（在 apps/user-app）",
+    "userapp_dev_weixin": "npm run dev:mp-weixin",
+    "userapp_build_weixin": "npm run build:mp-weixin",
+    "userapp_typecheck": "npx vue-tsc --noEmit -p tsconfig.json",
+    "userapp_unit": "npm run test:unit",
+    "admin_install": "npm install（在 apps/admin-web）",
+    "admin_dev": "npm run dev",
+    "prod_exec_noninteractive": "docker exec task-mall-production-api-1 php artisan <命令>（不要加 -it，宝塔终端会挂起）"
+  },
+  "localTestAccounts": {
+    "miniprogram": {
+      "auth": "手机号 + 短信验证码（本地 PHONE_VERIFICATION_DRIVER=log）",
+      "devCode": "246810（PHONE_VERIFICATION_DEV_CODE）",
+      "phones": [
+        { "phone": "13800000001", "nickname": "成长体验官" },
+        { "phone": "13800000002", "nickname": "小满同学" },
+        { "phone": "13800000003", "nickname": "行动派阿南" }
+      ]
+    },
+    "adminPreview": { "account": "preview_admin", "password": "TaskMall2026!Preview", "roles": ["super_admin", "platform_admin"] },
+    "roleScreenshot": {
+      "accounts": "role_super_admin / role_platform_admin / role_operations_admin / role_task_reviewer / role_community_reviewer / role_customer_service / role_warehouse / role_finance / role_auditor",
+      "password": "RolePreview2026!",
+      "restriction": "仅限 local/testing，由 RoleScreenshotAccountSeeder 创建"
+    }
+  },
+  "design": {
+    "v13PrimaryPages": "design/ui-v13/redesign.html（5 个一级 Tab：首页/任务/商城/社区/我的）",
+    "secondaryPages": "design/在线UI-1/sub-screens.html（33 个二级屏，按 data-screen 属性定位）",
+    "screenPngs": "design/在线UI-1/images/（01-home ~ 38-admin-audit，共 38 张）",
+    "onlinePreviewEntry": "design/在线UI-1/index.html",
+    "tokens": {
+      "green": "#0BBF63",
+      "greenDeep": "#08A152",
+      "greenGrad": "linear-gradient(135deg,#12D978,#08A152)",
+      "greenSoft": "#E7F9EF",
+      "orange": "#FF7A1A",
+      "orangeGrad": "linear-gradient(135deg,#FF9A3D,#F2620A)",
+      "bg": "#F4F6F4",
+      "text1": "#191B1F",
+      "text2": "#767C85",
+      "text3": "#AEB3BB",
+      "line": "#EDEFEF",
+      "priceRed": "#FF2442",
+      "radiusRule": "设计稿 390px 宽，px × 2 = rpx；卡片 16px/内部 12px"
+    }
+  },
+  "uncommittedChanges_2026-10-03": [
+    "apps/user-app/src/pages/chat/index.vue（v13 私信列表）",
+    "apps/user-app/src/pages/second-hand-order-detail/index.vue（v13 订单详情）",
+    "apps/user-app/src/pages/second-hand-orders/index.vue（v13 订单列表 + ?role= 参数直达）"
+  ]
+}

@@ -10,6 +10,7 @@ use App\Modules\Assets\Contracts\PayoutProvider;
 use App\Modules\Assets\Models\WalletPayout;
 use App\Modules\Assets\Models\WalletWithdrawal;
 use App\Modules\Settings\Services\SystemSettingService;
+use App\Modules\Wallet\Models\UserBankCard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -23,12 +24,19 @@ class WalletWithdrawalService
         private readonly PayoutProvider $provider,
     ) {}
 
-    public function create(User $user, int $amount, string $channel, string $idempotencyKey): WalletWithdrawal
+    public function create(User $user, int $amount, string $channel, string $idempotencyKey, ?UserBankCard $bankCard = null): WalletWithdrawal
     {
+        if ($channel === 'bank_card' && $bankCard === null) {
+            throw ValidationException::withMessages(['bank_card_id' => ['请选择提现银行卡。']]);
+        }
+        if ($bankCard !== null && $bankCard->user_id !== $user->id) {
+            throw ValidationException::withMessages(['bank_card_id' => ['收款银行卡不存在或已解绑，请重新选择。']]);
+        }
+        $bankCardSnapshot = $bankCard !== null ? $this->bankCardSnapshot($bankCard) : null;
         $hash = $this->fingerprint('withdrawal:'.$user->id.':'.$idempotencyKey);
-        $payloadHash = $this->requestPayloadFingerprint($amount, $channel);
+        $payloadHash = $this->requestPayloadFingerprint($amount, $channel, $bankCard?->public_id);
 
-        return DB::transaction(function () use ($user, $amount, $channel, $hash, $payloadHash): WalletWithdrawal {
+        return DB::transaction(function () use ($user, $amount, $channel, $hash, $payloadHash, $bankCardSnapshot): WalletWithdrawal {
             // Every withdrawal for a user serializes on the wallet account before
             // limits are read, so a concurrent request cannot pass stale totals.
             $this->lockedWalletAccount($user);
@@ -65,6 +73,8 @@ class WalletWithdrawalService
                 'received_amount_cents' => $quote['received_amount'],
                 'channel' => $channel,
                 'status' => 'reviewing',
+                'channel_reference' => $bankCardSnapshot['id'] ?? null,
+                'bank_card_snapshot' => $bankCardSnapshot,
                 'idempotency_key_hash' => $hash,
                 'request_payload_hash' => $payloadHash,
             ]);
@@ -130,7 +140,52 @@ class WalletWithdrawalService
             return $locked->fresh();
         });
 
-        return $result->status === 'processing' ? $this->dispatch($result) : $result;
+        if ($result->status !== 'processing') {
+            return $result;
+        }
+
+        // 银行卡通道由财务线下人工转账，不提交线上出款渠道，等待登记打款结果
+        return $result->channel === 'bank_card' ? $result : $this->dispatch($result);
+    }
+
+    /**
+     * 登记银行卡通道的人工打款结果（财务线下转账后调用）。
+     */
+    public function recordManualResult(AdminUser $admin, WalletWithdrawal $withdrawal, string $decision, string $reference, string $note): WalletWithdrawal
+    {
+        return DB::transaction(function () use ($admin, $withdrawal, $decision, $reference, $note): WalletWithdrawal {
+            $locked = WalletWithdrawal::query()->lockForUpdate()->findOrFail($withdrawal->id);
+            abort_unless($locked->channel === 'bank_card', 422, '仅银行卡提现可以登记人工打款结果。');
+            if ($locked->status !== 'processing') {
+                throw ValidationException::withMessages(['decision' => ['只有处理中的提现单可以登记打款结果。']]);
+            }
+
+            $user = User::query()->findOrFail($locked->user_id);
+            $payout = WalletPayout::query()->firstOrCreate(
+                ['wallet_withdrawal_id' => $locked->id],
+                [
+                    'payout_no' => $locked->withdrawal_no,
+                    'provider' => 'manual_bank',
+                    'amount_cents' => $locked->received_amount_cents,
+                    'status' => 'pending',
+                ],
+            );
+
+            if ($decision === 'paid') {
+                $reference = trim($reference);
+                abort_if($reference === '', 422, '请填写银行转账凭证号或流水号。');
+                $this->ledger->consumeFrozenWallet($user, $locked->requested_amount_cents, '银行卡人工转账完成，扣减冻结余额。', 'withdrawal-success:'.$locked->public_id, $admin);
+                $locked->update(['status' => 'succeeded', 'channel_reference' => $reference, 'failure_message' => null, 'completed_at' => now()]);
+                $payout->update(['status' => 'succeeded', 'provider_reference' => $reference, 'last_error' => null, 'completed_at' => now()]);
+            } else {
+                $message = trim($note) !== '' ? mb_substr($note, 0, 500) : '银行卡人工打款失败，金额已解冻。';
+                $this->ledger->unfreezeWallet($user, $locked->requested_amount_cents, '银行卡人工打款失败，解冻原申请金额。', 'withdrawal-failed:'.$locked->public_id, $admin);
+                $locked->update(['status' => 'failed', 'failure_message' => $message, 'completed_at' => now()]);
+                $payout->update(['status' => 'failed', 'last_error' => $message, 'completed_at' => now()]);
+            }
+
+            return $locked->fresh();
+        });
     }
 
     public function dispatch(WalletWithdrawal $withdrawal): WalletWithdrawal
@@ -138,6 +193,9 @@ class WalletWithdrawalService
         $withdrawal = WalletWithdrawal::query()->findOrFail($withdrawal->id);
         if ($withdrawal->status === 'succeeded') {
             return $withdrawal;
+        }
+        if ($withdrawal->channel === 'bank_card') {
+            throw ValidationException::withMessages(['withdrawal' => '银行卡提现由财务人工转账，无需提交线上出款渠道。']);
         }
         if ($withdrawal->status !== 'processing') {
             throw ValidationException::withMessages(['withdrawal' => '只有处理中的提现单可以提交出款。']);
@@ -180,6 +238,9 @@ class WalletWithdrawalService
         if ($withdrawal->status === 'succeeded') {
             return $withdrawal->fresh();
         }
+        if ($withdrawal->channel === 'bank_card') {
+            throw ValidationException::withMessages(['withdrawal' => '银行卡提现由财务人工转账，结果请通过人工打款登记。']);
+        }
         if ($withdrawal->status !== 'processing') {
             throw ValidationException::withMessages(['withdrawal' => '只有处理中的提现单可以主动查询。']);
         }
@@ -206,7 +267,7 @@ class WalletWithdrawalService
     public function syncPending(int $limit = 100): int
     {
         $count = 0;
-        WalletWithdrawal::query()->where('status', 'processing')->orderBy('id')->limit($limit)->get()
+        WalletWithdrawal::query()->where('status', 'processing')->where('channel', '!=', 'bank_card')->orderBy('id')->limit($limit)->get()
             ->each(function (WalletWithdrawal $withdrawal) use (&$count): void {
                 try {
                     $this->sync($withdrawal);
@@ -326,7 +387,8 @@ class WalletWithdrawalService
     public function present(WalletWithdrawal $withdrawal): array
     {
         $payout = WalletPayout::query()->where('wallet_withdrawal_id', $withdrawal->id)->first();
-        $workflow = $this->workflow($withdrawal->status);
+        $isBankCard = $withdrawal->channel === 'bank_card';
+        $workflow = $this->workflow($withdrawal->status, $isBankCard, is_array($withdrawal->bank_card_snapshot) ? ($withdrawal->bank_card_snapshot['card_tail'] ?? null) : null);
 
         return [
             'id' => $withdrawal->public_id,
@@ -336,10 +398,12 @@ class WalletWithdrawalService
             'fee_amount' => $withdrawal->fee_amount_cents,
             'received_amount' => $withdrawal->received_amount_cents,
             'channel' => $withdrawal->channel,
+            'channel_label' => $isBankCard ? '银行卡' : '微信零钱',
             'status' => $withdrawal->status,
             'workflow' => $workflow,
             'review_note' => $withdrawal->review_note,
             'channel_reference' => $withdrawal->channel_reference,
+            'bank_card' => $isBankCard ? $withdrawal->bank_card_snapshot : null,
             'failure_message' => $withdrawal->failure_message,
             'payout' => $payout ? ['provider' => $payout->provider, 'status' => $payout->status, 'retry_count' => $payout->retry_count, 'last_queried_at' => $payout->last_queried_at?->toIso8601String()] : null,
             'created_at' => $withdrawal->created_at?->toIso8601String(),
@@ -348,17 +412,35 @@ class WalletWithdrawalService
     }
 
     /** @return array{status_label:string,next_action:string,is_terminal:bool} */
-    private function workflow(string $status): array
+    private function workflow(string $status, bool $isBankCard = false, ?string $cardTail = null): array
     {
+        $processingAction = $isBankCard
+            ? '审核已通过，财务将在工作日向'.($cardTail ? '尾号 '.$cardTail.' ' : '').'银行卡转账，请留意到账通知。'
+            : '申请已通过，出款渠道正在处理，无需重复提交。';
+        $succeededAction = $isBankCard ? '提现已完成，可在收款银行账户核对到账记录。' : '提现已完成，可在微信钱包或收款渠道核对到账记录。';
+
         return match ($status) {
             'reviewing', 'submitted' => ['status_label' => '审核中', 'next_action' => '平台正在核对提现资格和金额，请留意审核结果。', 'is_terminal' => false],
-            'approved', 'processing' => ['status_label' => '打款处理中', 'next_action' => '申请已通过，出款渠道正在处理，无需重复提交。', 'is_terminal' => false],
-            'succeeded', 'completed' => ['status_label' => '已到账', 'next_action' => '提现已完成，可在微信钱包或收款渠道核对到账记录。', 'is_terminal' => true],
+            'approved', 'processing' => ['status_label' => '打款处理中', 'next_action' => $processingAction, 'is_terminal' => false],
+            'succeeded', 'completed' => ['status_label' => '已到账', 'next_action' => $succeededAction, 'is_terminal' => true],
             'rejected' => ['status_label' => '审核未通过', 'next_action' => '原申请金额已解冻，请查看审核说明后重新提交。', 'is_terminal' => true],
             'failed' => ['status_label' => '打款失败', 'next_action' => '原申请金额已解冻；如仍需提现，请确认收款信息后重新提交。', 'is_terminal' => true],
             'cancelled' => ['status_label' => '已取消', 'next_action' => '原申请金额已解冻，可重新发起提现。', 'is_terminal' => true],
             default => ['status_label' => '状态同步中', 'next_action' => '请稍后刷新，若长时间未更新可联系校园客服。', 'is_terminal' => false],
         };
+    }
+
+    /** @return array{id:string,cardholder_name:string,bank_name:string,card_tail:string,card_masked:string,phone_masked:string} */
+    private function bankCardSnapshot(UserBankCard $card): array
+    {
+        return [
+            'id' => $card->public_id,
+            'cardholder_name' => $card->cardholder_name,
+            'bank_name' => $card->bank_name,
+            'card_tail' => $card->card_tail,
+            'card_masked' => '**** **** **** '.$card->card_tail,
+            'phone_masked' => $card->phone_masked,
+        ];
     }
 
     private function recordProviderFailure(WalletPayout $payout, string $operation, \Throwable $exception): void
@@ -389,11 +471,12 @@ class WalletWithdrawalService
         return UserAssetAccount::query()->where('user_id', $user->id)->lockForUpdate()->firstOrFail();
     }
 
-    private function requestPayloadFingerprint(int $amount, string $channel): string
+    private function requestPayloadFingerprint(int $amount, string $channel, ?string $bankCardId = null): string
     {
         $payload = [
             'amount' => $amount,
             'channel' => mb_strtolower(trim($channel), 'UTF-8'),
+            'bank_card_id' => $bankCardId,
         ];
 
         return $this->fingerprint('withdrawal-payload:'.json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));

@@ -568,6 +568,15 @@ export interface AssetAdjustment {
   created_at: string
 }
 
+export interface WithdrawalBankCardSnapshot {
+  id: string
+  cardholder_name: string
+  bank_name: string
+  card_tail: string
+  card_masked: string
+  phone_masked: string
+}
+
 export interface WalletWithdrawal {
   id: string
   withdrawal_no: string
@@ -576,9 +585,15 @@ export interface WalletWithdrawal {
   fee_amount: number
   received_amount: number
   channel: string
+  channel_label?: string
+  bank_card?: WithdrawalBankCardSnapshot | null
   status: string
+  workflow?: { status_label: string; next_action: string; is_terminal: boolean }
   review_note: string | null
+  channel_reference?: string | null
+  failure_message?: string | null
   created_at: string
+  completed_at?: string | null
 }
 
 export interface ReconciliationEntry { id: string; payment_no: string; provider_trade_no: string | null; provider_amount: number | null; local_amount: number | null; provider_state: string | null; local_state: string | null; result: string; resolution_status: string }
@@ -715,6 +730,29 @@ export interface CommunityHomepageConfigInput {
   reason: string
 }
 export interface OperationsMetrics { users: { active_total: number; new_today: number }; tasks: { published: number; pending_reviews: number }; orders: { paid_today: number; paid_cash_today: number; pending_fulfillment: number }; after_sales: { pending_refunds: number; pending_exchanges: number }; community: { published_posts: number; pending_reviews: number; open_reports: number }; finance: { reconciliation_differences: number; pending_withdrawals: number }; notifications: { unread_total: number; failed_deliveries: number; retrying_deliveries: number }; generated_at: string }
+
+export interface AnalyticsTrendPoint { date: string; count: number }
+export interface OperationsAnalytics {
+  today: {
+    dau: number
+    dau_change_pct: number
+    new_users: number
+    new_users_change_pct: number
+    task_points_turnover: number
+    task_points_change_pct: number
+    mall_gmv_cents: number
+    mall_gmv_change_pct: number
+  }
+  dau_trend: AnalyticsTrendPoint[]
+  new_user_trend: AnalyticsTrendPoint[]
+  task_claim_trend: AnalyticsTrendPoint[]
+  order_trend: AnalyticsTrendPoint[]
+  funnel: Array<{ label: string; count: number; ratio: number }>
+  task_type_share: Array<{ label: string; count: number; ratio: number }>
+  campus_top5: Array<{ name: string; dau: number; task_count: number }>
+  alerts: Array<{ level: 'critical' | 'warning' | 'info'; text: string; at: string }>
+  generated_at: string
+}
 
 export interface ManagedOrderItem {
   id: string
@@ -1646,6 +1684,12 @@ export async function reviewWalletWithdrawal(id: string, decision: 'approve' | '
   })
 }
 
+export async function recordManualWithdrawalResult(id: string, decision: 'paid' | 'failed', payload: { reference?: string; note?: string }): Promise<WalletWithdrawal> {
+  return request(`/admin/wallet-withdrawals/${id}/manual-result`, {
+    method: 'POST', headers: { 'Idempotency-Key': `admin-withdrawal-manual-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify({ decision, ...payload }),
+  })
+}
+
 export async function listReconciliationRuns(): Promise<{ items: ReconciliationRun[] }> { return request('/admin/reconciliation-runs') }
 export async function importReconciliationRun(businessDate: string, rows: Array<{ payment_no: string; provider_trade_no?: string; cash_amount: number; state: string }>): Promise<ReconciliationRun> {
   return request('/admin/reconciliation-runs', { method: 'POST', headers: { 'Idempotency-Key': `reconciliation-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify({ business_date: businessDate, rows }) })
@@ -1796,6 +1840,7 @@ export async function updateCommunityHomepageConfig(input: CommunityHomepageConf
   return request('/admin/community/config', { method: 'PUT', body: JSON.stringify(input) })
 }
 export async function getOperationsDashboard(): Promise<OperationsMetrics> { return request('/admin/operations/dashboard') }
+export async function getOperationsAnalytics(): Promise<OperationsAnalytics> { return request('/admin/operations/analytics') }
 export async function listManagedSupportTickets(filters: { status?: string; category?: string } = {}): Promise<{ items: ManagedSupportTicket[] }> {
   const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => Boolean(value)) as Array<[string, string]>)
   return request(`/admin/support-tickets${query.size ? `?${query.toString()}` : ''}`)

@@ -90,10 +90,11 @@ export interface TaskClaim {
   last_review: { decision: string; reason_code: string | null; note: string | null; reviewed_at: string; step_results: TaskStepReviewResult[] } | null
 }
 
-export function listHallTasks(filters: { category?: string; claimable_only?: boolean } = {}) {
+export function listHallTasks(filters: { category?: string; claimable_only?: boolean; keyword?: string } = {}) {
   const suffix = buildQueryString({
     category: filters.category,
     claimable_only: filters.claimable_only ? 1 : undefined,
+    keyword: filters.keyword,
   })
   return apiRequest<{ items: HallTask[]; withdrawal_notices: WithdrawalNotice[] }>({ path: `/tasks${suffix ? `?${suffix}` : ''}` })
 }

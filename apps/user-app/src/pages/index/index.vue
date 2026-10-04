@@ -15,7 +15,7 @@
           @change="handleCampusChange"
         />
       </view>
-      <view class="home-v13-search" role="button" aria-label="搜索任务" @click="openTasks">
+      <view class="home-v13-search" role="button" aria-label="搜索任务" @click="openSearch">
         <view class="home-v13-search-icon" />
         <text class="home-v13-search-placeholder">搜任务 / 搜商品</text>
       </view>
@@ -621,6 +621,7 @@ function openProduct(id: string) {
 }
 
 function openLogin() { navigateToLogin() }
+function openSearch() { uni.navigateTo({ url: '/pages/search/index' }) }
 function openTasks() { openPrimaryNavigation('tasks') }
 function openProducts() { openPrimaryNavigation('products') }
 function openCommunity() { openPrimaryNavigation('community') }

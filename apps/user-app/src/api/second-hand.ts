@@ -17,6 +17,8 @@ export interface SecondHandItem {
   cover: string | null
   images: string[]
   status: SecondHandItemStatus
+  audit_status: 'pending' | 'approved' | 'rejected'
+  rejected_reason?: string | null
   trade_type: SecondHandTradeType
   location: string | null
   view_count: number
@@ -26,6 +28,19 @@ export interface SecondHandItem {
   description?: string
   favorite_count?: number
   is_owner?: boolean
+}
+
+export interface SecondHandSellerProfile {
+  id: string
+  nickname: string
+  avatar: string | null
+  campus_name: string | null
+  identity_verified: boolean
+  on_sale_count: number
+  sold_count: number
+  rating_average: number | null
+  rating_count: number
+  good_rate_percent: number | null
 }
 
 export interface SecondHandOrder {
@@ -46,6 +61,40 @@ export interface SecondHandOrder {
   address?: Record<string, unknown> | null
   buyer?: SecondHandUser | null
   seller?: SecondHandUser | null
+  has_refund?: boolean
+  has_rated?: boolean
+}
+
+export interface SecondHandRating {
+  id: string
+  order_id: string | null
+  score: number
+  content: string | null
+  images: string[]
+  reply_content: string | null
+  replied_at: string | null
+  rater: SecondHandUser | null
+  ratee: SecondHandUser | null
+  created_at: string
+}
+
+export type SecondHandRefundStatus = 'pending' | 'seller_approved' | 'seller_rejected' | 'arbitrating' | 'arbitrated_approved' | 'arbitrated_rejected'
+
+export interface SecondHandRefund {
+  id: string
+  order_id: string | null
+  amount: number
+  reason: string
+  images: string[]
+  status: SecondHandRefundStatus
+  seller_note: string | null
+  seller_responded_at: string | null
+  admin_note: string | null
+  arbitrated_at: string | null
+  auto_approve_at: string | null
+  buyer: SecondHandUser | null
+  seller: SecondHandUser | null
+  created_at: string
 }
 
 // 分类
@@ -54,7 +103,7 @@ export function listSecondHandCategories(token: string) {
 }
 
 // 列表
-export function listSecondHandItems(token: string, params: { page?: number; page_size?: number; category_id?: string; keyword?: string; condition?: SecondHandCondition; trade_type?: SecondHandTradeType; sort?: 'latest' | 'price_asc' | 'price_desc' }) {
+export function listSecondHandItems(token: string, params: { page?: number; page_size?: number; category_id?: string; seller?: string; keyword?: string; condition?: SecondHandCondition; trade_type?: SecondHandTradeType; sort?: 'latest' | 'price_asc' | 'price_desc' }) {
   const q = new URLSearchParams()
   Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && String(v) !== '') q.set(k, String(v)) })
   const qs = q.toString()
@@ -79,6 +128,23 @@ export function updateSecondHandItem(token: string, id: string, data: Record<str
 // 下架
 export function deleteSecondHandItem(token: string, id: string) {
   return apiRequest<{ id: string; status: string }>({ path: `/second-hand/items/${id}`, method: 'DELETE', accessToken: token })
+}
+
+// 重新上架
+export function relistSecondHandItem(token: string, id: string) {
+  return apiRequest<SecondHandItem>({ path: `/second-hand/items/${id}/relist`, method: 'POST', accessToken: token })
+}
+
+// 卖家公开资料
+export function getSecondHandSellerProfile(sellerId: string, token?: string) {
+  return apiRequest<SecondHandSellerProfile>({ path: `/second-hand/sellers/${sellerId}`, accessToken: token })
+}
+
+// 某用户收到的闲置评价
+export function listUserSecondHandRatings(token: string, userId: string, params: { page?: number; page_size?: number; role?: 'buyer' | 'seller' } = {}) {
+  const q = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && String(v) !== '') q.set(k, String(v)) })
+  return apiRequest<{ items: SecondHandRating[]; pagination: { page: number; page_size: number; total: number }; average_score: number | null; total_count: number }>({ path: `/users/${userId}/second-hand-ratings${q.toString() ? `?${q.toString()}` : ''}`, accessToken: token })
 }
 
 // 我发布的
@@ -124,4 +190,39 @@ export function completeSecondHandOrder(token: string, id: string) {
 // 取消
 export function cancelSecondHandOrder(token: string, id: string) {
   return apiRequest<SecondHandOrder>({ path: `/second-hand/orders/${id}/cancel`, method: 'POST', accessToken: token })
+}
+
+// 评价
+export function rateSecondHandOrder(token: string, orderId: string, data: { score: number; content?: string; images?: string[] }) {
+  return apiRequest<SecondHandRating>({ path: `/second-hand/orders/${orderId}/rate`, method: 'POST', accessToken: token, data: data as unknown as Record<string, unknown> })
+}
+
+// 订单评价列表
+export function listSecondHandOrderRatings(token: string, orderId: string) {
+  return apiRequest<{ items: SecondHandRating[] }>({ path: `/second-hand/orders/${orderId}/ratings`, accessToken: token })
+}
+
+// 回复评价
+export function replySecondHandRating(token: string, ratingId: string, replyContent: string) {
+  return apiRequest<SecondHandRating>({ path: `/second-hand/ratings/${ratingId}/reply`, method: 'PUT', accessToken: token, data: { reply_content: replyContent } })
+}
+
+// 申请退款
+export function requestSecondHandRefund(token: string, orderId: string, data: { reason: string; images?: string[] }) {
+  return apiRequest<SecondHandRefund>({ path: `/second-hand/orders/${orderId}/refund`, method: 'POST', accessToken: token, data: data as unknown as Record<string, unknown> })
+}
+
+// 退款详情（无退款时后端返回 404）
+export function getSecondHandRefund(token: string, orderId: string) {
+  return apiRequest<SecondHandRefund>({ path: `/second-hand/orders/${orderId}/refund`, accessToken: token })
+}
+
+// 卖家响应退款
+export function respondSecondHandRefund(token: string, orderId: string, data: { action: 'approve' | 'reject'; seller_note?: string }) {
+  return apiRequest<SecondHandRefund>({ path: `/second-hand/orders/${orderId}/refund/respond`, method: 'POST', accessToken: token, data: data as unknown as Record<string, unknown> })
+}
+
+// 买家申请平台介入
+export function escalateSecondHandRefund(token: string, orderId: string) {
+  return apiRequest<SecondHandRefund>({ path: `/second-hand/orders/${orderId}/refund/escalate`, method: 'POST', accessToken: token })
 }
