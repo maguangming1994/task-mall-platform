@@ -37,6 +37,16 @@ export function apiUrl(path: string) {
   return `${apiBaseUrl}${path}`
 }
 
+// 小程序运行时没有 URLSearchParams，统一用该函数拼接查询串（跳过空值）
+export function toQueryString(params: Record<string, unknown>): string {
+  const parts: string[] = []
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === '') continue
+    parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+  }
+  return parts.join('&')
+}
+
 export function resolveApiAssetUrl(value?: string | null) {
   const url = String(value ?? '').trim()
   if (!url || /^(?:https?:|data:|blob:|wxfile:)/i.test(url) || !url.startsWith('/')) {

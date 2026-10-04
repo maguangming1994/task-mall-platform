@@ -1,4 +1,4 @@
-import { apiRequest } from '@/api/http'
+import { apiRequest, toQueryString } from '@/api/http'
 
 export interface ChatUser { id: string; nickname: string; avatar: string | null }
 
@@ -33,9 +33,7 @@ export function ensureChatConversation(token: string, data: { user_id: string; i
 
 // 消息列表
 export function listChatMessages(token: string, conversationId: string, params: { page?: number; page_size?: number }) {
-  const q = new URLSearchParams()
-  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && String(v) !== '') q.set(k, String(v)) })
-  const qs = q.toString()
+  const qs = toQueryString(params)
   return apiRequest<{ items: ChatMessage[]; pagination: { page: number; page_size: number; total: number }; conversation: { id: string; other_user: ChatUser | null; item: { id: string; title: string; cover: string | null; price: number } | null } }>({ path: `/chat/conversations/${conversationId}/messages${qs ? `?${qs}` : ''}`, accessToken: token })
 }
 

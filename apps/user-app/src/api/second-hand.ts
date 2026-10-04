@@ -1,4 +1,4 @@
-import { apiRequest } from '@/api/http'
+import { apiRequest, toQueryString } from '@/api/http'
 
 export type SecondHandCondition = 'new' | 'like_new' | 'very_good' | 'good' | 'fair'
 export type SecondHandTradeType = 'meetup' | 'mail' | 'both'
@@ -105,9 +105,7 @@ export function listSecondHandCategories(token: string) {
 
 // 列表
 export function listSecondHandItems(token: string, params: { page?: number; page_size?: number; category_id?: string; seller?: string; keyword?: string; condition?: SecondHandCondition; trade_type?: SecondHandTradeType; sort?: 'latest' | 'price_asc' | 'price_desc' }) {
-  const q = new URLSearchParams()
-  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && String(v) !== '') q.set(k, String(v)) })
-  const qs = q.toString()
+  const qs = toQueryString(params)
   return apiRequest<{ items: SecondHandItem[]; pagination: { page: number; page_size: number; total: number } }>({ path: `/second-hand/items${qs ? `?${qs}` : ''}`, accessToken: token })
 }
 
@@ -143,16 +141,13 @@ export function getSecondHandSellerProfile(sellerId: string, token?: string) {
 
 // 某用户收到的闲置评价
 export function listUserSecondHandRatings(token: string, userId: string, params: { page?: number; page_size?: number; role?: 'buyer' | 'seller' } = {}) {
-  const q = new URLSearchParams()
-  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && String(v) !== '') q.set(k, String(v)) })
-  return apiRequest<{ items: SecondHandRating[]; pagination: { page: number; page_size: number; total: number }; average_score: number | null; total_count: number }>({ path: `/users/${userId}/second-hand-ratings${q.toString() ? `?${q.toString()}` : ''}`, accessToken: token })
+  const qs = toQueryString(params)
+  return apiRequest<{ items: SecondHandRating[]; pagination: { page: number; page_size: number; total: number }; average_score: number | null; total_count: number }>({ path: `/users/${userId}/second-hand-ratings${qs ? `?${qs}` : ''}`, accessToken: token })
 }
 
 // 我发布的
 export function mySecondHandItems(token: string, params: { page?: number; page_size?: number; status?: SecondHandItemStatus }) {
-  const q = new URLSearchParams()
-  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && String(v) !== '') q.set(k, String(v)) })
-  const qs = q.toString()
+  const qs = toQueryString(params)
   return apiRequest<{ items: SecondHandItem[]; pagination: { page: number; page_size: number; total: number } }>({ path: `/second-hand/my-items${qs ? `?${qs}` : ''}`, accessToken: token })
 }
 
@@ -163,9 +158,8 @@ export function createSecondHandOrder(token: string, data: { item_id: string; tr
 
 // 订单列表
 export function listSecondHandOrders(token: string, params: { role: 'buyer' | 'seller'; status?: string; page?: number; page_size?: number }) {
-  const q = new URLSearchParams()
-  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && String(v) !== '') q.set(k, String(v)) })
-  return apiRequest<{ items: SecondHandOrder[]; pagination: { page: number; page_size: number; total: number } }>({ path: `/second-hand/orders?${q.toString()}`, accessToken: token })
+  const qs = toQueryString(params)
+  return apiRequest<{ items: SecondHandOrder[]; pagination: { page: number; page_size: number; total: number } }>({ path: `/second-hand/orders${qs ? `?${qs}` : ''}`, accessToken: token })
 }
 
 // 订单详情

@@ -1,4 +1,4 @@
-import { apiRequest } from '@/api/http'
+import { apiRequest, toQueryString } from '@/api/http'
 
 export type PurchaseMode = 'cash' | 'points' | 'cash_points'
 export interface PurchaseOption { id: string; purchase_mode: PurchaseMode; cash_amount: number; points: number; enabled: boolean; channels: string[] }
@@ -8,10 +8,7 @@ export interface MallProduct { id: string; name: string; subtitle: string | null
 
 export function listProductCategories() { return apiRequest<{ items: ProductCategory[] }>({ path: '/product-categories' }) }
 export function listProducts(categoryId?: string, keyword?: string) {
-  const params = new URLSearchParams()
-  if (categoryId) params.set('category_id', categoryId)
-  if (keyword) params.set('keyword', keyword)
-  const qs = params.toString()
+  const qs = toQueryString({ category_id: categoryId, keyword })
   return apiRequest<{ items: MallProduct[] }>({ path: `/products${qs ? `?${qs}` : ''}` })
 }
 export function getProduct(id: string) { return apiRequest<MallProduct>({ path: `/products/${id}` }) }
