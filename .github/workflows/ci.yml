@@ -120,11 +120,13 @@ jobs:
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       vars.PRODUCTION_DEPLOY_ENABLED == 'true'
-    runs-on: ubuntu-latest
+    # 自建 runner 位于国内生产服务器：构建与 TCR 推送全程国内网络，层缓存常驻本机，
+    # 根治 GitHub 境外 runner 跨境推送 44+ 分钟且易被腰斩的问题。
+    runs-on: [self-hosted, linux, x64]
     environment: production
     permissions:
       contents: read
-    # 跨境推送到腾讯 TCR 单镜像层可能持续 80+ 分钟；为 2 次 45 分钟内部重试预留完整窗口。
+    # 国内推送 TCR 正常为分钟级；180 分钟仅作极端兜底。
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -142,7 +144,11 @@ jobs:
           fi
           printf '%s' "$TCR_PASSWORD" | docker login ccr.ccs.tencentyun.com --username "$TCR_USERNAME" --password-stdin
       - name: Set up cached image builder
-        run: docker buildx create --driver docker-container --use --name task-mall-ci
+        # self-hosted runner 常驻：builder 已存在则直接复用（层缓存跨构建保留），不存在才创建。
+        run: |
+          docker buildx inspect task-mall-ci >/dev/null 2>&1 \
+            || docker buildx create --driver docker-container --name task-mall-ci
+          docker buildx use task-mall-ci
       - name: Build and push API image
         env:
           IMAGE_PREFIX: ccr.ccs.tencentyun.com/task-mall-platform/task-mall
