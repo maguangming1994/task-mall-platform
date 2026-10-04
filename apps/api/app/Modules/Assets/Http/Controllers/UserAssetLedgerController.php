@@ -4,6 +4,7 @@ namespace App\Modules\Assets\Http\Controllers;
 
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Modules\Assets\Models\CouponTemplate;
 use App\Modules\Assets\Models\PointBatch;
 use App\Modules\Assets\Models\PointDebt;
 use App\Modules\Assets\Models\PointTransaction;
@@ -15,6 +16,7 @@ use App\Modules\Assets\Services\WalletWithdrawalService;
 use App\Modules\Wallet\Models\UserBankCard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class UserAssetLedgerController extends Controller
 {
@@ -124,6 +126,71 @@ class UserAssetLedgerController extends Controller
         ]);
 
         return ApiResponse::success($items);
+    }
+
+    public function couponCenter(Request $request): JsonResponse
+    {
+        $userId = $request->user()->id;
+        $templates = CouponTemplate::query()
+            ->where('status', 'active')
+            ->whereColumn('issued_quantity', '<', 'total_quantity')
+            ->latest('id')
+            ->get()
+            ->map(function (CouponTemplate $template) use ($userId): array {
+                $claimed = UserCoupon::query()
+                    ->where('user_id', $userId)
+                    ->where('coupon_template_id', $template->id)
+                    ->exists();
+
+                return [
+                    'id' => $template->public_id,
+                    'name' => $template->name,
+                    'cash_discount_amount' => $template->cash_discount_cents,
+                    'points_discount' => $template->points_discount,
+                    'minimum_cash_amount' => $template->minimum_cash_cents,
+                    'minimum_points' => $template->minimum_points,
+                    'valid_days' => $template->valid_days,
+                    'remaining' => max(0, $template->total_quantity - $template->issued_quantity),
+                    'total_quantity' => $template->total_quantity,
+                    'claimed' => $claimed,
+                ];
+            });
+
+        return ApiResponse::success(['items' => $templates]);
+    }
+
+    public function claimCoupon(Request $request, AssetLedgerService $ledger, CouponTemplate $couponTemplate): JsonResponse
+    {
+        $user = $request->user();
+        if ($couponTemplate->status !== 'active' || $couponTemplate->issued_quantity >= $couponTemplate->total_quantity) {
+            throw ValidationException::withMessages(['coupon_template' => ['该优惠券已下架或已被抢光。']]);
+        }
+        $alreadyClaimed = UserCoupon::query()
+            ->where('user_id', $user->id)
+            ->where('coupon_template_id', $couponTemplate->id)
+            ->exists();
+        if ($alreadyClaimed) {
+            throw ValidationException::withMessages(['coupon_template' => ['您已领取过该优惠券，每人限领一张。']]);
+        }
+
+        // A fixed event key per user+template makes double clicks / retries idempotent.
+        $issued = $ledger->issueCoupons(
+            $user,
+            $couponTemplate,
+            1,
+            '用户在领券中心领取',
+            'coupon-center:'.$user->id.':'.$couponTemplate->public_id,
+        );
+        $coupon = $issued[0]->refresh();
+
+        return ApiResponse::success([
+            'id' => $coupon->public_id,
+            'name' => $coupon->template_snapshot['name'],
+            'cash_discount_amount' => $coupon->template_snapshot['cash_discount_cents'],
+            'points_discount' => $coupon->template_snapshot['points_discount'],
+            'valid_to' => $coupon->valid_to?->toIso8601String(),
+            'status' => $coupon->status,
+        ], 201);
     }
 
     public function withdrawals(Request $request, WalletWithdrawalService $withdrawals): JsonResponse

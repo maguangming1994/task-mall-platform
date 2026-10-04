@@ -3,7 +3,7 @@
     <view class="subnav">
       <view class="back" @click="goBack"><text>‹</text></view>
       <text class="nav-title">优惠券</text>
-      <text class="nav-side" />
+      <text class="nav-side" @click="openCenter">领券中心</text>
     </view>
 
     <view class="tabs">
@@ -131,6 +131,9 @@ function formatDate(value: string) {
 function goBack() {
   uni.navigateBack({ fail: () => uni.reLaunch({ url: '/pages/account/index' }) })
 }
+function openCenter() {
+  uni.navigateTo({ url: '/pages/coupon-center/index' })
+}
 function goUse() {
   uni.reLaunch({ url: '/pages/products/index' })
 }
@@ -143,7 +146,7 @@ function goUse() {
 .back { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; }
 .back text { font-size: 52rpx; line-height: 1; color: #191B1F; margin-top: -6rpx; }
 .nav-title { flex: 1; text-align: center; font-size: 32rpx; font-weight: 800; color: #191B1F; }
-.nav-side { width: 64rpx; }
+.nav-side { width: 120rpx; text-align: right; font-size: 24rpx; color: #08A152; font-weight: 600; }
 
 .tabs { display: flex; margin: 20rpx 24rpx 0; padding: 6rpx; background: #fff; border-radius: 20rpx; box-shadow: 0 4rpx 16rpx rgba(25, 27, 31, 0.05); }
 .tab { flex: 1; text-align: center; padding: 18rpx 0; font-size: 26rpx; color: #767C85; border-radius: 16rpx; }

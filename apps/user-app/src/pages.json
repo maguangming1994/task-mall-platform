@@ -97,6 +97,12 @@
       }
     },
     {
+      "path": "pages/coupon-center/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/second-hand-buy/index",
       "style": {
         "navigationStyle": "custom"

@@ -12,7 +12,7 @@ class SecondHandOrder extends Model
     protected $fillable = [
         'public_id', 'order_no', 'buyer_user_id', 'seller_user_id', 'item_id',
         'title_snapshot', 'cover_snapshot', 'price', 'trade_type',
-        'address_snapshot', 'status', 'cash_payment_method', 'paid_amount',
+        'address_snapshot', 'buyer_message', 'status', 'cash_payment_method', 'paid_amount',
         'idempotency_key_hash', 'paid_at', 'shipped_at', 'completed_at', 'cancelled_at',
     ];
 

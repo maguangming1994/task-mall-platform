@@ -59,6 +59,7 @@ export interface SecondHandOrder {
   shipped_at: string | null
   completed_at: string | null
   address?: Record<string, unknown> | null
+  buyer_message?: string | null
   buyer?: SecondHandUser | null
   seller?: SecondHandUser | null
   has_refund?: boolean
@@ -156,7 +157,7 @@ export function mySecondHandItems(token: string, params: { page?: number; page_s
 }
 
 // 下单
-export function createSecondHandOrder(token: string, data: { item_id: string; trade_type?: 'meetup' | 'mail'; address?: Record<string, unknown> }, idempotencyKey: string) {
+export function createSecondHandOrder(token: string, data: { item_id: string; trade_type?: 'meetup' | 'mail'; address?: Record<string, unknown>; buyer_message?: string }, idempotencyKey: string) {
   return apiRequest<SecondHandOrder>({ path: '/second-hand/orders', method: 'POST', accessToken: token, data: data as unknown as Record<string, unknown>, headers: { 'Idempotency-Key': idempotencyKey } })
 }
 

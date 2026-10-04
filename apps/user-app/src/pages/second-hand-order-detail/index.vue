@@ -30,6 +30,7 @@
     <view class="info-card">
       <view class="row"><text class="k">订单编号</text><text class="v">{{ order.order_no }}</text></view>
       <view class="row"><text class="k">交易方式</text><text class="v">{{ tradeTypeText }}</text></view>
+      <view v-if="order.buyer_message" class="row"><text class="k">买家留言</text><text class="v">{{ order.buyer_message }}</text></view>
       <view class="row"><text class="k">下单时间</text><text class="v">{{ formatTime(order.created_at) }}</text></view>
       <view v-if="order.paid_at" class="row"><text class="k">付款时间</text><text class="v">{{ formatTime(order.paid_at) }}</text></view>
       <view v-if="order.shipped_at" class="row"><text class="k">发货时间</text><text class="v">{{ formatTime(order.shipped_at) }}</text></view>

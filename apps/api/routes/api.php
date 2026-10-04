@@ -200,6 +200,8 @@ Route::middleware('auth.access')->group(function () {
     Route::get('/wallet/recharges/{walletRecharge}', [WalletRechargeController::class, 'show'])->middleware('legal.consent:wallet');
     Route::post('/wallet/recharges/{walletRecharge}/payments', [WalletRechargeController::class, 'pay'])->middleware(['legal.consent:wallet', 'throttle:20,1']);
     Route::get('/coupons', [UserAssetLedgerController::class, 'coupons'])->middleware('legal.consent:account');
+    Route::get('/coupon-center', [UserAssetLedgerController::class, 'couponCenter'])->middleware('legal.consent:account');
+    Route::post('/coupon-center/{couponTemplate}/claim', [UserAssetLedgerController::class, 'claimCoupon'])->middleware(['legal.consent:account', 'throttle:10,1']);
     Route::get('/growth/referrals', [ReferralController::class, 'index'])->middleware('legal.consent:account');
     Route::get('/growth/check-in', [DailyCheckInController::class, 'show'])->middleware('legal.consent:account');
     Route::post('/growth/check-in', [DailyCheckInController::class, 'store'])->middleware(['legal.consent:account', 'throttle:10,1']);

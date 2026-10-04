@@ -20,6 +20,16 @@ export function listPointTransactions(token: string) { return apiRequest<{ items
 export function getWalletAccount(token: string) { return apiRequest<WalletAccount>({ path: '/wallet/account', accessToken: token }) }
 export function listWalletTransactions(token: string) { return apiRequest<{ items: WalletTransaction[] }>({ path: '/wallet/transactions', accessToken: token }) }
 export function listCoupons(token: string) { return apiRequest<UserCoupon[]>({ path: '/coupons', accessToken: token }) }
+export interface CouponCenterItem { id: string; name: string; cash_discount_amount: number; points_discount: number; minimum_cash_amount: number; minimum_points: number; valid_days: number; remaining: number; total_quantity: number; claimed: boolean }
+export function listCouponCenter(token: string) { return apiRequest<{ items: CouponCenterItem[] }>({ path: '/coupon-center', accessToken: token }) }
+export function claimCoupon(token: string, templateId: string) {
+  return apiRequest<UserCoupon>({
+    path: `/coupon-center/${encodeURIComponent(templateId)}/claim`,
+    method: 'POST',
+    accessToken: token,
+    headers: { 'Idempotency-Key': `coupon-claim-${templateId}-${Date.now()}` },
+  })
+}
 export function getWithdrawalQuote(token: string, amount: number) { return apiRequest<WithdrawalQuote>({ path: `/wallet/withdrawal-quote?amount=${amount}`, accessToken: token }) }
 export function createWithdrawal(token: string, amount: number, channel: WithdrawalChannel = 'wechat_transfer', bankCardId?: string) {
   return apiRequest<Withdrawal>({

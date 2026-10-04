@@ -69,6 +69,7 @@ class SecondHandOrderController extends Controller
             'item_id' => ['required', 'string'],
             'trade_type' => ['nullable', Rule::in(['meetup', 'mail'])],
             'address' => ['nullable', 'array'],
+            'buyer_message' => ['nullable', 'string', 'max:100'],
         ]);
 
         $item = SecondHandItem::where('public_id', $data['item_id'])->firstOrFail();
@@ -86,6 +87,7 @@ class SecondHandOrderController extends Controller
                 'price' => $item->price,
                 'trade_type' => $data['trade_type'] ?? $item->trade_type === 'both' ? 'meetup' : ($item->trade_type === 'mail' ? 'mail' : $item->trade_type),
                 'address_snapshot' => $data['address'] ?? null,
+                'buyer_message' => isset($data['buyer_message']) ? (trim($data['buyer_message']) ?: null) : null,
                 'status' => 'pending_payment',
                 'idempotency_key_hash' => hash('sha256', $request->header('Idempotency-Key') ?: ($request->ip().'|'.$buyer->id.'|'.$item->id)),
             ]);
@@ -253,6 +255,7 @@ class SecondHandOrderController extends Controller
         ];
         if ($detail) {
             $base['address'] = $order->address_snapshot;
+            $base['buyer_message'] = $order->buyer_message;
             $base['buyer'] = $this->presentUser($order->buyer);
             $base['seller'] = $this->presentUser($order->seller);
             $base['has_refund'] = $order->refund()->where('status', '!=', 'cancelled')->exists();

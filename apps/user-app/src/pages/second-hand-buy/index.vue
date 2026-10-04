@@ -73,13 +73,17 @@
         </view>
       </view>
 
-      <!-- 支付 -->
+      <!-- 支付与留言 -->
       <view class="card form-card">
         <view class="frow">
           <text class="label">支付方式</text>
           <text class="spacer" />
           <text class="value wallet">钱包余额 {{ wallet ? `¥${(wallet.available_amount / 100).toFixed(2)}` : '读取中' }}</text>
           <view class="radio-on" />
+        </view>
+        <view class="frow">
+          <text class="label">买家留言</text>
+          <input v-model="message" class="value input" maxlength="20" placeholder="选填，留言给卖家（20 字以内）" placeholder-class="ph" />
         </view>
       </view>
 
@@ -126,6 +130,7 @@ const wallet = ref<WalletAccount | null>(null)
 const addresses = ref<UserAddress[]>([])
 const selectedAddressId = ref<string | null>(null)
 const tradeType = ref<TradeChoice>('meetup')
+const message = ref('')
 const loading = ref(true)
 const loadError = ref('')
 const submitting = ref(false)
@@ -208,6 +213,7 @@ async function submit() {
       {
         item_id: item.value.id,
         trade_type: tradeType.value,
+        ...(message.value.trim() ? { buyer_message: message.value.trim() } : {}),
         ...(tradeType.value === 'mail' && selectedAddress.value
           ? {
               address: {
