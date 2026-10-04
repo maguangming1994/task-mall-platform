@@ -162,11 +162,13 @@ jobs:
               --cache-from "type=registry,ref=$image:buildcache" \
               --cache-to type=inline \
               --file infra/docker/api.Dockerfile \
-              --tag "$image:$GITHUB_SHA" --tag "$image:buildcache" --push .
+              --tag "$image:$GITHUB_SHA" --push .
+            # 跨境推送单标签约 44 分钟；buildcache 用镜像仓库侧复制避免重复上传同一批层。
+            docker buildx imagetools create -t "$image:buildcache" "$image:$GITHUB_SHA"
           }
           export -f push_image
           for attempt in 1 2; do
-            if timeout 2700 bash -c push_image; then
+            if timeout 5400 bash -c push_image; then
               exit 0
             fi
             if [ "$attempt" -eq 2 ]; then
@@ -200,11 +202,13 @@ jobs:
               --cache-from "type=registry,ref=$image:buildcache" \
               --cache-to type=inline \
               --file infra/docker/web.Dockerfile \
-              --tag "$image:$GITHUB_SHA" --tag "$image:buildcache" --push .
+              --tag "$image:$GITHUB_SHA" --push .
+            # 同 API：buildcache 走镜像仓库侧复制，避免同一批层重复跨境上传。
+            docker buildx imagetools create -t "$image:buildcache" "$image:$GITHUB_SHA"
           }
           export -f push_image
           for attempt in 1 2; do
-            if timeout 2700 bash -c push_image; then
+            if timeout 5400 bash -c push_image; then
               exit 0
             fi
             if [ "$attempt" -eq 2 ]; then
