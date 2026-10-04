@@ -3475,6 +3475,257 @@ body[data-screen="bank-card-add"] .screen[data-screen="bank-card-add"]{display:b
   </div>
 </section>
 
+<!-- ================= 55 ORDER DETAIL 商城订单详情 ================= -->
+<style>
+body[data-screen="order-detail"] .screen[data-screen="order-detail"]{display:block}
+.od-addr{display:flex;gap:10px;padding:13px 14px;align-items:flex-start}
+.od-addr .pin{width:30px;height:30px;border-radius:9px;background:var(--green-soft);color:var(--green-deep);display:flex;align-items:center;justify-content:center;flex:none}
+.od-addr .pin svg{width:16px;height:16px}
+.od-addr b{font-size:14px}
+.od-addr .ph{font-size:12px;color:var(--t2);margin-left:6px;font-weight:400}
+.od-addr p{font-size:12px;color:var(--t2);margin-top:4px;line-height:1.5}
+.od-fee{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--t2);padding:6px 0}
+.od-fee b{font-weight:600;color:var(--t1)}
+.od-fee.total{padding-top:11px;margin-top:4px;border-top:1px solid #F5F6F6}
+.od-fee.total span{font-size:12px;color:var(--t2)}
+.od-fee.total .pts{font-size:19px;font-weight:800;color:var(--green-deep)}
+</style>
+<section class="screen has-bar" data-screen="order-detail">
+  <div class="status on-dark"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav" style="background:var(--green)">
+    <div class="back" style="color:#fff"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1 style="color:#fff">订单详情</h1>
+    <div class="right" style="color:rgba(255,255,255,.85)"><span>客服</span></div>
+  </div>
+
+  <!-- 状态横幅 -->
+  <div style="background:var(--green-grad);padding:10px 18px 16px;color:#fff">
+    <div style="display:flex;align-items:center;gap:8px">
+      <svg class="ic" style="width:22px;height:22px;stroke:#fff" viewBox="0 0 24 24"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg>
+      <b style="font-size:17px">待收货 · 运输中</b>
+    </div>
+    <p style="font-size:12px;opacity:.88;margin-top:6px;line-height:1.6">商品已送达 3 号宿舍楼驿站，请凭取件码 8-8-4-2 在 24 小时内领取；确认收货后积分最终结算。</p>
+  </div>
+
+  <!-- 进度时间线 -->
+  <div class="card" style="margin-top:-10px;position:relative;z-index:2">
+    <div class="sec-title" style="padding-bottom:8px"><h2>订单进度</h2><span class="more">订单号 EX202610040917</span></div>
+    <div style="padding:2px 16px 12px">
+      <div style="display:flex;gap:12px">
+        <div style="display:flex;flex-direction:column;align-items:center"><i style="width:10px;height:10px;border-radius:50%;background:var(--green)"></i><i style="width:2px;flex:1;background:var(--green);opacity:.3"></i></div>
+        <div style="padding-bottom:11px"><b style="font-size:13px">已到达驿站</b><p style="font-size:11px;color:var(--t3);margin-top:3px">今天 10:24 · 3 号宿舍楼驿站 · 取件码 8842</p></div>
+      </div>
+      <div style="display:flex;gap:12px">
+        <div style="display:flex;flex-direction:column;align-items:center"><i style="width:10px;height:10px;border-radius:50%;background:var(--green)"></i><i style="width:2px;flex:1;background:var(--green);opacity:.3"></i></div>
+        <div style="padding-bottom:11px"><b style="font-size:13px">商家已发货</b><p style="font-size:11px;color:var(--t3);margin-top:3px">昨天 18:02 · 校圈自营仓 · 校内配送</p></div>
+      </div>
+      <div style="display:flex;gap:12px">
+        <div style="display:flex;flex-direction:column;align-items:center"><i style="width:10px;height:10px;border-radius:50%;background:var(--green)"></i></div>
+        <div><b style="font-size:13px">兑换成功</b><p style="font-size:11px;color:var(--t3);margin-top:3px">昨天 17:40 · 已扣除 270 积分</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 商品信息 -->
+  <div class="card">
+    <div style="padding:11px 14px;display:flex;gap:11px;align-items:center">
+      <img src="https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=160&h=160&fit=crop&crop=entropy&auto=format&q=70" style="width:56px;height:56px;border-radius:10px">
+      <div style="flex:1;min-width:0">
+        <h4 style="font-size:13px;line-height:1.4">ins 风大容量保温杯 500ml</h4>
+        <p style="font-size:11px;color:var(--t3);margin-top:5px"><span class="tag tag-green">奶雾绿 · 500ml</span> ×1</p>
+      </div>
+      <b style="font-size:14px;color:var(--green-deep);font-weight:800;white-space:nowrap">320 积分</b>
+    </div>
+    <div style="border-top:1px solid #F5F6F6;padding:9px 14px;display:flex;justify-content:space-between;font-size:12px;color:var(--t2)">
+      <span>配送方式</span><span style="color:var(--t1)">校内驿站配送 · 免邮券抵扣</span>
+    </div>
+  </div>
+
+  <!-- 收货地址 -->
+  <div class="card">
+    <div class="od-addr" style="padding:10px 14px">
+      <i class="pin"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.1-7-11a7 7 0 1114 0c0 5.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></i>
+      <div style="flex:1">
+        <b>陈同学<small class="ph">138****8888</small></b>
+        <p>江湾校区 3 号宿舍楼 508 室</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 订单信息 -->
+  <div class="form-card" style="padding:4px 14px 8px">
+    <div class="od-fee" style="padding:5px 0"><span>下单时间</span><b>2026-10-04 17:40</b></div>
+    <div class="od-fee" style="padding:5px 0"><span>支付方式</span><b>积分支付</b></div>
+    <div class="od-fee" style="padding:5px 0"><span>商品总额</span><b>320 积分</b></div>
+    <div class="od-fee" style="padding:5px 0"><span>优惠券（全品类 50 积分券）</span><b style="color:var(--green-deep)">-50 积分</b></div>
+    <div class="od-fee" style="padding:5px 0"><span>运费</span><b>免邮券抵扣</b></div>
+    <div class="od-fee total" style="padding-top:9px"><span>实付积分</span><b class="pts">270 <small style="font-size:11px;font-weight:600">积分</small></b></div>
+  </div>
+
+  <div class="action-bar">
+    <button class="ab-duo" style="background:#F2F4F3;color:var(--t2)">联系客服</button>
+    <button class="ab-duo" style="background:#fff;border:1.5px solid var(--green);color:var(--green-deep)">申请售后</button>
+    <button class="ab-main" style="flex:1.35">确认收货</button>
+  </div>
+</section>
+
+<!-- ================= 56 COUPON CENTER 领券中心 ================= -->
+<style>
+body[data-screen="coupon-center"] .screen[data-screen="coupon-center"]{display:block}
+.cc-hero{background:var(--green-grad);margin:10px 12px 0;border-radius:16px;padding:18px 17px;color:#fff;position:relative;overflow:hidden;box-shadow:0 10px 24px rgba(11,191,99,.25)}
+.cc-hero::after{content:"";position:absolute;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.1);top:-70px;right:-30px}
+.cc-hero h2{font-size:20px;font-weight:800;position:relative}
+.cc-hero p{font-size:11.5px;opacity:.9;margin-top:6px;position:relative}
+.cc-lab{padding:15px 16px 2px;font-size:13px;font-weight:700;color:var(--t2);display:flex;align-items:center;gap:6px}
+.cc-lab::before{content:"";width:4px;height:13px;border-radius:2px;background:var(--green)}
+.cc-stock{display:flex;align-items:center;gap:6px;margin-top:8px}
+.cc-stock .bar{flex:1;max-width:108px;height:4px;border-radius:2px;background:rgba(255,255,255,.28);overflow:hidden}
+.cc-stock .bar i{display:block;height:100%;background:#fff;border-radius:2px}
+.cc-stock span{font-size:9.5px;opacity:.88;white-space:nowrap}
+.cp .cp-right .claim{width:56px;height:30px;border-radius:15px;background:#fff;font-size:11.5px;font-weight:700}
+.cp.gray .cp-right .stale{background:rgba(255,255,255,.18);color:#fff;font-size:11px;font-weight:700;border-radius:15px;padding:7px 10px}
+</style>
+<section class="screen" data-screen="coupon-center">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>领券中心</h1>
+    <div class="right"><span style="font-size:12px;color:var(--green-deep);font-weight:600">我的券</span></div>
+  </div>
+
+  <div class="cc-hero">
+    <h2>校园福利券</h2>
+    <p>下单自动匹配最优券 · 每人每种限领一张</p>
+  </div>
+
+  <div class="cc-lab">热门领取</div>
+
+  <div class="cp use c-orange">
+    <div class="cp-left"><b>¥<small>5</small></b><span>现金券</span></div>
+    <i class="cp-sep"></i>
+    <div class="cp-mid"><h4>新生专享现金券</h4><p>满 20 元可用 · 闲置/商城通用</p><div class="cc-stock"><i class="bar"><i style="width:64%"></i></i><span>剩 128/200 张</span></div></div>
+    <div class="cp-right"><button class="claim">立即领取</button></div>
+  </div>
+
+  <div class="cp use">
+    <div class="cp-left"><b>50</b><span>积分券</span></div>
+    <i class="cp-sep"></i>
+    <div class="cp-mid"><h4>全品类通用积分券</h4><p>满 300 积分可用 · 兑换自动抵扣</p><div class="cc-stock"><i class="bar"><i style="width:29%"></i></i><span>剩 86/300 张</span></div></div>
+    <div class="cp-right"><button class="claim">立即领取</button></div>
+  </div>
+
+  <div class="cp use">
+    <div class="cp-left"><b>免<small>邮</small></b><span>配送券</span></div>
+    <i class="cp-sep"></i>
+    <div class="cp-mid"><h4>校内免邮券</h4><p>实物商品兑换免配送费 · 不限金额</p><div class="cc-stock"><i class="bar"><i style="width:40%"></i></i><span>剩 40/100 张</span></div></div>
+    <div class="cp-right"><button class="claim">立即领取</button></div>
+  </div>
+
+  <div class="cp gray">
+    <div class="cp-left"><b>¥<small>3</small></b><span>现金券</span></div>
+    <i class="cp-sep"></i>
+    <div class="cp-mid"><h4>周末零食满减券</h4><p>满 10 元可用 · 限本周六日</p><div class="cc-stock"><i class="bar"><i style="width:100%"></i></i><span>你已领取</span></div></div>
+    <div class="cp-right"><span class="stale">已领取</span></div>
+  </div>
+
+  <div class="cp gray">
+    <div class="cp-left"><b>8<small>折</small></b><span>折扣券</span></div>
+    <i class="cp-sep"></i>
+    <div class="cp-mid"><h4>零食饮料专享 8 折</h4><p>最高抵扣 100 积分 · 秒杀不可用</p><div class="cc-stock"><i class="bar"><i style="width:0%"></i></i><span>0/150 张 已抢光</span></div></div>
+    <div class="cp-right"><span class="stale">已抢光</span></div>
+  </div>
+
+  <div style="margin:14px 14px 0;background:var(--green-soft);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--green-deep);display:flex;align-items:center;gap:8px;line-height:1.5">
+    <svg class="ic" style="width:18px;height:18px;flex:none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+    优惠券领取后按券面天数计算有效期，下单时自动匹配最优方案，积分券与现金券不可叠加使用
+  </div>
+</section>
+
+<!-- ================= 57 LEGAL DOCS 协议与隐私 ================= -->
+<style>
+body[data-screen="legal-docs"] .screen[data-screen="legal-docs"]{display:block}
+.ld-summary{margin:10px 12px 0;background:var(--green-grad);border-radius:16px;padding:14px 15px;color:#fff;display:flex;gap:12px;position:relative;overflow:hidden;box-shadow:0 10px 24px rgba(11,191,99,.25)}
+.ld-summary::after{content:"";position:absolute;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.1);top:-60px;right:-30px}
+.ld-summary .sh{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex:none;position:relative}
+.ld-summary .sh svg{width:20px;height:20px;stroke:#fff}
+.ld-summary h3{font-size:16px;font-weight:800;position:relative}
+.ld-summary p{font-size:11.5px;line-height:1.65;opacity:.92;margin-top:5px;position:relative}
+.ld-row{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #F5F6F6}
+.ld-row:last-child{border-bottom:0}
+.ld-row .doc{flex:1;min-width:0}
+.ld-row .doc b{font-size:14px;font-weight:700;display:block}
+.ld-row .doc p{font-size:11px;color:var(--t3);margin-top:3px}
+.ld-row .pen{font-size:10px;font-weight:700;color:var(--orange-deep);background:#FFF1E6;border-radius:6px;padding:2px 7px;flex:none}
+.ld-row svg.go{width:15px;height:15px;color:var(--t3);flex:none}
+.ld-perm{display:flex;align-items:center;padding:11px 14px;font-size:13px;border-bottom:1px solid #F5F6F6}
+.ld-perm:last-child{border-bottom:0}
+.ld-perm span{font-size:11.5px;margin-left:auto}
+.ld-perm span.ok{color:var(--green-deep)}
+.ld-perm span.mut{color:var(--t3)}
+.ld-consent{display:flex;gap:8px;align-items:flex-start;margin:12px 14px 0;font-size:12px;color:var(--t2);line-height:1.6}
+.ld-consent i{width:16px;height:16px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+.ld-consent i svg{width:9px;height:9px;stroke:#fff;stroke-width:3}
+.ld-consent a{color:var(--green-deep)}
+.ld-btn{margin:12px 12px 0;width:calc(100% - 24px);height:44px;border-radius:22px;background:var(--green-grad);color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(11,191,99,.3)}
+</style>
+<section class="screen" data-screen="legal-docs">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>协议与隐私</h1>
+  </div>
+
+  <div class="ld-summary">
+    <i class="sh"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></i>
+    <div>
+      <h3>隐私政策摘要</h3>
+      <p>我们仅在登录、任务审核、商城履约和售后服务所必需的范围内处理个人信息，并记录后台操作审计。</p>
+    </div>
+  </div>
+
+  <div class="sec-title" style="padding:10px 16px 6px"><h2>协议与政策</h2><span class="more">4 份有效文件</span></div>
+  <div class="card" style="margin-top:0;padding:2px 0">
+    <div class="ld-row">
+      <div class="doc"><b>用户协议</b><p>版本 v3.2 · 2026-09-18 生效</p></div>
+      <span class="pen">待确认</span>
+    </div>
+    <div class="ld-row">
+      <div class="doc"><b>隐私政策</b><p>版本 v3.2 · 2026-09-18 生效</p></div>
+      <span class="pen">待确认</span>
+    </div>
+    <div class="ld-row">
+      <div class="doc"><b>实名认证服务协议</b><p>版本 v2.1 · 2026-08-30 生效</p></div>
+      <svg class="ic go" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="ld-row">
+      <div class="doc"><b>支付服务协议</b><p>版本 v1.5 · 2026-09-01 生效</p></div>
+      <svg class="ic go" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <div class="sec-title" style="padding:10px 16px 6px"><h2>授权管理</h2><span class="more">可在系统设置调整</span></div>
+  <div class="card" style="margin-top:0">
+    <div class="ld-perm">微信基础信息<span class="ok">登录后按需授权</span></div>
+    <div class="ld-perm">相册与相机<span class="mut">仅上传凭证时访问</span></div>
+    <div class="ld-perm">消息通知<span class="mut">由消息中心管理</span></div>
+  </div>
+
+  <div class="ld-consent">
+    <i><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></i>
+    <span>我已阅读并同意当前版本的<a>《用户协议》</a>和<a>《隐私政策》</a>，继续使用即表示接受协议约束。</span>
+  </div>
+  <button class="ld-btn">确认并继续（2）</button>
+</section>
+
 </div>
 </body>
 </html>

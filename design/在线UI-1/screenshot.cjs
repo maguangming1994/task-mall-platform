@@ -1,4 +1,4 @@
-// 批量渲染 30 张页面设计图：前 5 屏取自 v13，后 25 屏取自 sub-screens.html
+// 批量渲染页面设计图：前 5 屏取自 v13，其余 52 屏取自 sub-screens.html（共 57 屏）
 const { chromium } = require('playwright-core');
 const path = require('path');
 const fs = require('fs');
@@ -79,6 +79,9 @@ const jobs = [
   { file: sub,  screen: 'pub-detail',      name: '52-pub-detail' },
   { file: sub,  screen: 'bank-cards',      name: '53-bank-cards' },
   { file: sub,  screen: 'bank-card-add',   name: '54-bank-card-add' },
+  { file: sub,  screen: 'order-detail',    name: '55-order-detail' },
+  { file: sub,  screen: 'coupon-center',   name: '56-coupon-center' },
+  { file: sub,  screen: 'legal-docs',      name: '57-legal' },
 ];
 
 (async () => {
