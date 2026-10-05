@@ -121,8 +121,8 @@ export function listHallTasks(filters: { category?: string; claimable_only?: boo
   return apiRequest<HallListResponse>({ path: `/tasks${suffix ? `?${suffix}` : ''}` })
 }
 export function getHallTask(taskId: string) { return apiRequest<HallTask>({ path: `/tasks/${taskId}` }) }
-export function claimTask(token: string, taskId: string) {
-  return apiRequest<TaskClaim>({ path: `/tasks/${taskId}/claims`, method: 'POST', accessToken: token, headers: { 'Idempotency-Key': `task-claim-${Date.now()}-${Math.random().toString(36).slice(2)}` } })
+export function claimTask(token: string, taskId: string, idempotencyKey = `task-claim-${Date.now()}-${Math.random().toString(36).slice(2)}`) {
+  return apiRequest<TaskClaim>({ path: `/tasks/${taskId}/claims`, method: 'POST', accessToken: token, headers: { 'Idempotency-Key': idempotencyKey } })
 }
 export function listMyTaskClaims(token: string, group = '') {
   return apiRequest<{ items: TaskClaim[] }>({ path: `/task-claims${group ? `?group=${group}` : ''}`, accessToken: token })

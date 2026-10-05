@@ -159,6 +159,7 @@ import { formatDateTime as formatTime } from '@/utils/dateTime'
 import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import qrcode from 'qrcode-generator'
 import { computed, nextTick, ref } from 'vue'
+import { ApiError } from '@/api/http'
 import { claimTask, getHallTask, reportTask, type HallTask, type TaskReward } from '@/api/tasks'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
@@ -247,12 +248,23 @@ function goBack() {
   uni.navigateBack()
 }
 
+// 同一页面会话内复用同一幂等键：首次请求若已在服务端成功但响应丢失，重试会命中幂等返回原领取记录而不是报“本周期已领取”
+const claimIdempotencyKey = `task-claim-${Date.now()}-${Math.random().toString(36).slice(2)}`
+
 async function confirmClaim() {
-  if (!task.value || !auth.accessToken) return
+  if (!task.value || !auth.accessToken || claiming.value) return
   claimConfirmVisible.value = false
   claiming.value = true
   try {
-    await claimTask(auth.accessToken, task.value.id)
+    await claimTask(auth.accessToken, task.value.id, claimIdempotencyKey)
+  } catch (error) {
+    claiming.value = false
+    await handleClaimError(error)
+    return
+  }
+  claiming.value = false
+  // 领取已在服务端成功：后续结果弹窗/跳转异常绝不能再报“领取失败”
+  try {
     const result = await uni.showModal({ title: '领取成功', content: '任务已加入“我的任务”，请在规定时间内提交完成材料。', confirmText: '查看我的任务', cancelText: '继续浏览' })
     if (result.confirm) {
       uni.setStorageSync('task_mall_open_my_tasks', true)
@@ -260,8 +272,35 @@ async function confirmClaim() {
     } else {
       await loadTask()
     }
-  } catch (error) { uni.showToast({ title: error instanceof Error ? error.message : '领取失败', icon: 'none' }) }
-  finally { claiming.value = false }
+  } catch {
+    uni.showToast({ title: '领取成功，已加入我的任务', icon: 'success' })
+    await loadTask()
+  }
+}
+
+async function handleClaimError(error: unknown) {
+  if (error instanceof ApiError && error.code === 'LEGAL_DOCUMENT_CONSENT_REQUIRED') {
+    const returnUrl = encodeURIComponent(`/pages/task-detail/index?id=${taskId}`)
+    const choice = await uni.showModal({ title: '需要先确认协议', content: '领取任务前请先阅读并确认相关协议。', confirmText: '去确认', cancelText: '取消' }).catch(() => null)
+    if (choice?.confirm) uni.navigateTo({ url: `/pages/legal-consent/index?scope=task&returnUrl=${returnUrl}` })
+    return
+  }
+  uni.showToast({ title: claimErrorMessage(error), icon: 'none' })
+  await loadTask()
+}
+
+function claimErrorMessage(error: unknown) {
+  if (error instanceof ApiError && error.code === 'VALIDATION_FAILED') {
+    // 422 时把后端真实原因（如“本周期已经领取过”）直接透传，而不是笼统的“请求参数校验失败”
+    const errors = error.details?.errors
+    if (errors && typeof errors === 'object') {
+      for (const value of Object.values(errors)) {
+        if (Array.isArray(value) && value.length) return String(value[0])
+        if (typeof value === 'string' && value) return value
+      }
+    }
+  }
+  return error instanceof Error ? error.message : '领取失败'
 }
 
 async function reportCurrentTask() {

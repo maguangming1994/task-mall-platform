@@ -57,6 +57,7 @@ const loadError = ref('')
 const next = ref<'home' | 'bind-phone'>('home')
 const readOnly = ref(false)
 const documentType = ref<string>()
+const scope = ref('account')
 const returnUrl = ref<string | null>(null)
 const allSelected = computed(() => documents.value.length > 0 && selectedIds.value.length === documents.value.length)
 
@@ -64,6 +65,7 @@ onLoad((options) => {
   readOnly.value = options?.mode === 'read'
   documentType.value = options?.type
   next.value = options?.next === 'bind-phone' ? 'bind-phone' : 'home'
+  if (typeof options?.scope === 'string' && options.scope) scope.value = options.scope
   returnUrl.value = resolveReturnUrl(options?.returnUrl)
   if (!auth.accessToken && !readOnly.value) {
     redirectToLogin()
@@ -83,7 +85,7 @@ async function loadDocuments() {
   try {
     documents.value = readOnly.value
       ? await loadCurrentLegalDocuments(documentType.value)
-      : await loadPendingLegalDocuments(auth.accessToken, 'account')
+      : await loadPendingLegalDocuments(auth.accessToken, scope.value)
     if (!readOnly.value && documents.value.length === 0) setTimeout(continueFlow, 300)
   } catch (error) {
     loadError.value = error instanceof ApiError ? error.message : '协议加载失败，请稍后重试。'
