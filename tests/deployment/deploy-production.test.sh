@@ -70,8 +70,10 @@ for mode in routine sync supplement migration-failure; do
   else
     if [ "$result" -ne 0 ]; then cat "$tmp/output"; exit 1; fi
     grep -q -- '--remove-orphans' "$MOCK_LOG"
-    expected=1
-    if [ "$mode" = sync ]; then expected=3; fi
+    # routine: migrate + RbacSeeder + ReleaseControlSeeder = 3
+    # sync:    再加 campuses:sync-directory + campuses:sync-branding = 5
+    expected=3
+    if [ "$mode" = sync ]; then expected=5; fi
     [ "$(grep -c 'run --rm --no-deps api php artisan' "$MOCK_LOG")" -eq "$expected" ]
     if [ "$mode" = supplement ]; then
       grep -q 'timeout 600 php artisan campuses:sync-branding --supplement --once' "$MOCK_LOG"

@@ -49,3 +49,6 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
+
+# 冒烟测试报告
+.smoke/

@@ -130,20 +130,58 @@
 
 ## 六、部署与回滚
 
-**部署顺序**：
+### 6.1 前置条件
 
-1. 后端发布并执行 `php artisan migrate --force`（只新增空表，不播种覆盖行，现有校区行为零变化）；
-2. 执行 `php artisan db:seed --class=RbacSeeder --force`（**必须**：新增矩阵写权限 `campus.module_manage` 需同步给超级管理员角色；seeder 为 updateOrCreate + sync，幂等不改动既有角色配置）；
-3. （首次或新模块）执行 `php artisan db:seed --class=ReleaseControlSeeder --force` 确保 13 个全局 flag 存在（缺失按 fail-close 视为关；生产 DatabaseSeeder 通常已含）；
-4. admin-web 发布；
-5. 后台按 4.3 配置试点学校；
-6. 小程序发版（旧版小程序不消费校区维度，仅按全局行为运行，兼容共存）。
+- 后端代码已合并到 main 并由 CI 构建好生产镜像（`RELEASE_VERSION` 为提交号）；
+- 生产环境 `infra/.env.production` 存在，PostgreSQL/Redis 正常；
+- 确认当前生产 `feature_flags` 表已有 13 个模块全局开关（`php artisan tinker` 中 `FeatureFlag::count()` 应为 13）。如缺失，部署时会一并补齐。
 
-**冒烟**：部署后对现有校区分别请求任务/商城/社区/闲置各 1 个受控接口应保持 200；`client-capabilities` version=5 且 `feature_flags` 含 13 键。
+### 6.2 部署步骤（基于 `scripts/deploy-production.sh`）
 
-**回滚**：
+`deploy-production.sh` 已在 `migrate`（步骤 4/11）之后自动执行 `RbacSeeder`（5/11）与 `ReleaseControlSeeder`（6/11），均为 `updateOrCreate`/`sync` 语义，**幂等可重复**，不影响既有角色与开关配置。标准部署一条命令即可：
 
-- 校区级误配：删除该校对应覆盖行（或矩阵改回「继承全局」）即恢复，缓存 60s 内或写入即时生效；
+```bash
+cd /opt/task-mall-platform
+RELEASE_VERSION=<提交号> bash scripts/deploy-production.sh
+```
+
+脚本执行完毕后，权限与全局开关已就绪，直接进入 6.4 冒烟验证即可。
+
+> 如需单独重跑某个 seeder（例如手动补充权限）：
+> ```bash
+> docker compose --env-file infra/.env.production -f infra/compose.production.yaml exec -T api \
+>   php artisan db:seed --class=RbacSeeder --force
+> ```
+
+### 6.3 部署顺序总结
+
+1. `RELEASE_VERSION=<提交号> bash scripts/deploy-production.sh`（一条命令完成：拉镜像 → migrate → RbacSeeder → ReleaseControlSeeder → 启动服务 → optimize → 健康检查）；
+2. admin-web 发布；
+3. 后台按 4.3 配置试点学校；
+4. 小程序发版（旧版小程序不消费校区维度，仅按全局行为运行，兼容共存）。
+
+### 6.4 部署后冒烟
+
+使用仓库内冒烟脚本（只读，不写数据）：
+
+```powershell
+# 基础：四类公开接口 + capabilities v5
+.\scripts\smoke-module-gates.ps1 -CampusId <任一现有校区public_id>
+
+# 带登录态防伪造校验
+.\scripts\smoke-module-gates.ps1 -CampusId <校区public_id> -Token <access_token>
+
+# 验证被关闭模块返回 403 MODULE_DISABLED
+.\scripts\smoke-module-gates.ps1 -CampusId <校区public_id> `
+    -DisabledModuleCode module_second_hand `
+    -DisabledRoute /second-hand/items
+```
+
+通过标准：四类受控接口任务/商城/社区/闲置各 1 请求 200；`client-capabilities` version=5 且 `feature_flags` 含 13 键；`campus_id` 回显与请求一致。
+
+### 6.5 回滚
+
+- 校区级误配：矩阵改回「继承全局」（删除覆盖行）即恢复，缓存写入即时失效；
 - 套餐误应用：重新应用目标套餐或逐行改回；
 - 全局应急：「功能开关」置 enabled/disabled 即可一刀切；
-- 代码回滚：新表留存无害（旧代码不读取）；需要彻底清理时 `migrate:rollback` 删表，不影响 `feature_flags` 与任何业务数据。
+- 代码回滚：新表 `campus_feature_flags` 留存无害（旧代码不读取）；需彻底清理时 `php artisan migrate:rollback --step=1` 删表，不影响 `feature_flags` 与任何业务数据。
