@@ -18,8 +18,8 @@
     </view>
 
     <template v-else>
-    <view class="acc-head">
-      <view class="acc-top">
+    <view class="acc-head" :style="headStyle">
+      <view class="acc-top" :style="topBarStyle">
         <button class="acc-top-btn" aria-label="消息中心" @click="openNotifications">🔔</button>
         <button class="acc-top-btn" aria-label="设置" @click="openPrivacy">⚙️</button>
       </view>
@@ -50,8 +50,8 @@
         </view>
       </view>
       <view class="acc-stats">
-        <view class="st"><b>0</b><span>关注</span></view>
-        <view class="st"><b>0</b><span>粉丝</span></view>
+        <view class="st"><b>{{ followingCount }}</b><span>关注</span></view>
+        <view class="st"><b>{{ followerCount }}</b><span>粉丝</span></view>
         <view class="st"><b>0</b><span>信用分</span></view>
         <view class="st"><b>{{ assets?.points.available ?? 0 }}</b><span>总积分</span></view>
       </view>
@@ -138,6 +138,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import AppTabBar from '@/components/AppTabBar.vue'
 import { loadAssetOverview, updateProfile, type AssetOverview } from '@/api/account'
+import { getCommunitySocialStats } from '@/api/community'
 import { loadAppearanceContent, type AccountAppearance } from '@/api/appearance'
 import { resolveApiAssetUrl } from '@/api/http'
 import { chooseAndUploadAvatar, uploadAvatarFromPath } from '@/api/upload'
@@ -157,10 +158,34 @@ const avatarFileId = ref(auth.user?.avatar_file_id ?? '')
 const avatarPreviewUrl = ref('')
 const avatarLoadFailed = ref(false)
 const assets = ref<AssetOverview | null>(null)
+const followingCount = ref(0)
+const followerCount = ref(0)
 const savingNickname = ref(false)
 const uploading = ref(false)
 const accountAppearance = ref<AccountAppearance>({ profile_icon_url: '', service_icons: [] })
 const resolvingAccount = ref(Boolean(auth.accessToken))
+// 微信小程序原生胶囊（右上角 ••• ⊙）不可遮挡、不可覆盖触摸；
+// 用胶囊矩形把自定义图标行定位到胶囊左侧，并让头部内容下移避开。
+const headStyle = ref<Record<string, string>>({})
+const topBarStyle = ref<Record<string, string>>({})
+function initCapsuleInset() {
+  // #ifdef MP-WEIXIN
+  try {
+    const menu = uni.getMenuButtonBoundingClientRect()
+    const system = uni.getSystemInfoSync()
+    if (!menu || !menu.left || !menu.width || !system.windowWidth) return
+    topBarStyle.value = {
+      position: 'absolute',
+      top: `${menu.top}px`,
+      right: `${system.windowWidth - menu.left + 8}px`,
+      height: `${menu.height}px`,
+    }
+    headStyle.value = { paddingTop: `${menu.bottom + 10}px` }
+  } catch {
+    // 旧基础库拿不到胶囊信息时保持默认流式布局
+  }
+  // #endif
+}
 let pendingReviewedNickname: string | null = null
 let supportsNicknameReview = false
 let supportsChooseAvatar = false
@@ -237,7 +262,10 @@ const communityServices = computed(() => [
   .filter((item) => !item.needPost || modules.isEnabled('module_community_post'))
   .map((item) => ({ ...item, iconSrc: icons.resolve(item.icon), displayLabel: icons.label(item.label, item.icon) })))
 
-onShow(load)
+onShow(() => {
+  initCapsuleInset()
+  void load()
+})
 
 async function load() {
   void modules.ensureReady()
@@ -255,6 +283,14 @@ async function load() {
     avatarPreviewUrl.value = ''
     avatarLoadFailed.value = false
     assets.value = await loadAssetOverview(auth.accessToken)
+    try {
+      const stats = await getCommunitySocialStats(auth.accessToken)
+      followingCount.value = stats.following_count
+      followerCount.value = stats.follower_count
+    } catch {
+      followingCount.value = 0
+      followerCount.value = 0
+    }
   } finally {
     resolvingAccount.value = false
   }
@@ -417,7 +453,7 @@ async function logout() {
 .page{--green:#0BBF63;--green-deep:#08A152;--green-soft:#E7F9EF;--orange-deep:#F2620A;--t1:#191B1F;--t2:#767C85;--t3:#AEB3BB;min-height:100vh;padding-bottom:24rpx;box-sizing:border-box;background:#F4F6F4;color:var(--t1)}
 .acc-head{position:relative;overflow:hidden;padding:calc(var(--status-bar-height) + 20rpx) 32rpx 128rpx;background:linear-gradient(135deg,#12D978,#08A152)}
 .acc-head::before{content:'';position:absolute;top:-220rpx;right:-120rpx;width:440rpx;height:440rpx;border-radius:50%;background:rgba(255,255,255,.09)}
-.acc-top{position:relative;display:flex;justify-content:flex-end;gap:20rpx}
+.acc-top{position:relative;z-index:2;display:flex;align-items:center;justify-content:flex-end;gap:20rpx}
 .acc-top-btn{display:flex;align-items:center;justify-content:center;width:64rpx;height:64rpx;margin:0;padding:0;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:30rpx;line-height:1}
 .acc-top-btn::after{border:0}
 .acc-user{position:relative;display:flex;align-items:center;gap:26rpx;margin-top:20rpx}

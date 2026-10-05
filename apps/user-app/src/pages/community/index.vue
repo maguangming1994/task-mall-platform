@@ -6,15 +6,13 @@
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="campus-head">
-      <view class="campus-brand" @click="showCampusTip">
-        <view class="campus-logo"><image v-if="home.brand.logo_url" :src="communityHomeAssetUrl(home.brand.logo_url)" mode="aspectFit" /><text v-else>{{ home.brand.logo_text || '校' }}</text></view>
-        <view class="brand-copy"><text class="campus-name">{{ home.brand.name }}</text><text class="campus-sub">{{ home.brand.caption }}</text></view>
-        <text class="chevron">⌄</text>
-      </view>
-      <view class="head-actions">
-        <button class="round-action" aria-label="搜索校园内容" @click="searching = true">⌕</button>
-        <button class="round-action has-dot" aria-label="打开社区消息" @click="openTarget('messages')">信</button>
+    <view class="wall-head">
+      <text class="wall-title">校园墙</text>
+      <view class="wall-actions">
+        <button class="icon-action has-dot" aria-label="社区消息" @click="openTarget('messages')">
+          <text class="bell-glyph">🔔</text>
+        </button>
+        <button v-if="modules.isEnabled('module_community_post')" class="publish-btn" @click="showPublishSheet = true">＋ 发布</button>
       </view>
     </view>
 
@@ -23,17 +21,28 @@
       <text @click="clearSearch">{{ keyword ? '清空' : '取消' }}</text>
     </view>
 
-    <view class="sticky-bar">
-      <scroll-view class="category-scroll" scroll-x :show-scrollbar="false" enhanced :bounces="false">
-        <view class="category-row">
-          <view :class="['category-tab', { active: activeView === 'square' && !activeCategory }]" @click="selectCategory('')">全部</view>
-          <view v-for="category in categories" :key="category.code" :class="['category-tab', { active: activeView === 'square' && activeCategory === category.code }]" @click="selectCategory(category.code)">{{ category.label }}</view>
-          <view :class="['category-tab', 'mine-tab', { active: activeView === 'mine' }]" @click="switchView('mine')">我的发布</view>
-        </view>
-      </scroll-view>
+    <!-- 主信息流 Tab：关注 / 发现 / 附近 / 精选 -->
+    <view class="feed-tabs">
+      <view
+        v-for="tab in feedTabs"
+        :key="tab.code"
+        :class="['feed-tab', { active: activeView === 'square' && activeFeed === tab.code }]"
+        @click="switchFeed(tab.code)"
+      >{{ tab.label }}</view>
+      <view :class="['feed-tab', 'mine-tab', { active: activeView === 'mine' }]" @click="switchView('mine')">我的</view>
     </view>
 
-    <scroll-view v-if="activeView === 'square'" class="tool-scroll" scroll-x :show-scrollbar="false" enhanced :bounces="false">
+    <scroll-view v-if="activeView === 'square'" class="sticky-bar" scroll-x :show-scrollbar="false" enhanced :bounces="false">
+      <view class="category-row">
+        <template v-if="activeFeed === 'discover'">
+          <view :class="['category-tab', { active: !activeCategory }]" @click="selectCategory('')">全部</view>
+          <view v-for="category in categories" :key="category.code" :class="['category-tab', { active: activeCategory === category.code }]" @click="selectCategory(category.code)">{{ category.label }}</view>
+        </template>
+        <view v-else class="feed-hint">{{ feedHint }}</view>
+      </view>
+    </scroll-view>
+
+    <scroll-view v-if="activeView === 'square' && activeFeed === 'discover'" class="tool-scroll" scroll-x :show-scrollbar="false" enhanced :bounces="false">
       <view class="tool-row">
         <view class="tool-chip guide-chip" @click="openTarget('legal')">
           <text class="chip-icon guide-check">✓</text>
@@ -51,16 +60,16 @@
     </scroll-view>
 
     <template v-if="activeView === 'square'">
-      <view v-for="(banner, index) in displayBanners" :key="index" class="feature-strip" @click="openTarget(banner.link_type)">
-        <image v-if="banner.image_url" class="feature-image" :src="communityHomeAssetUrl(banner.image_url)" mode="aspectFill" />
-        <view class="feature-copy">
-          <view class="feature-top"><text class="feature-badge">校园精选</text><text class="feature-title">{{ banner.title }}</text></view>
-          <text class="feature-subtitle">{{ banner.subtitle }}</text>
+      <view class="feed-heading">
+        <view class="feed-heading-left">
+          <text class="search-glyph" @click="searching = true">⌕</text>
+          <view><text class="feed-title">{{ keyword ? '搜索结果' : feedHeadingTitle }}</text><text class="feed-copy">{{ feedHeadingCopy }}</text></view>
         </view>
-        <text class="feature-arrow">›</text>
+        <view class="feed-heading-links">
+          <text class="group-link" @click="switchView('mine')">我的发布</text>
+          <text class="group-link" @click="openTarget('activities')">组团大厅 ›</text>
+        </view>
       </view>
-
-      <view class="feed-heading"><view><text class="feed-title">{{ keyword ? '搜索结果' : activeCategoryLabel }}</text><text class="feed-copy">校园真实动态 · 友善交流</text></view><view class="group-link" @click="openTarget('activities')">组团大厅 <text>›</text></view></view>
 
       <view v-if="publicError && !posts.length" class="state-card error-card">
         <view class="state-illustration">!</view><text class="state-title">内容暂时走丢了</text><text class="state-copy">{{ publicError }}</text><button @click="refreshSquare">重新加载</button>
@@ -70,10 +79,27 @@
         <view v-for="post in visiblePosts" :key="post.id" class="post-card">
           <view class="post-head">
             <view class="author-row">
-              <view class="author-avatar">{{ avatarText(post.author.nickname) }}</view>
-              <view class="author-info"><view><text class="author-name">{{ post.author.nickname }}</text><text class="campus-tag">校园伙伴</text></view><text class="post-time">{{ formatTime(post.published_at || post.created_at) }}</text></view>
+              <view class="author-avatar">
+                <image v-if="post.author.avatar_url" :src="post.author.avatar_url" mode="aspectFill" />
+                <text v-else>{{ avatarText(post.author.nickname) }}</text>
+              </view>
+              <view class="author-info">
+                <view class="author-name-row">
+                  <text class="author-name">{{ post.author.nickname }}</text>
+                  <text v-if="post.author.verified" class="verified-badge">校园认证</text>
+                </view>
+                <text class="post-time">{{ formatRelativeTime(post.published_at || post.created_at) }}<text v-if="post.location_name || post.author.campus_name"> · {{ post.location_name || post.author.campus_name }}</text></text>
+              </view>
             </view>
-            <text class="more" @click="report('post', post.id)">•••</text>
+            <view class="head-right">
+              <button
+                v-if="!post.author.is_self && post.author.id"
+                :class="['follow-btn', { followed: post.author.is_followed }]"
+                :disabled="followLoadingId === post.id"
+                @click="toggleFollow(post)"
+              >{{ post.author.is_followed ? '已关注' : '＋ 关注' }}</button>
+              <text class="more" @click="report('post', post.id)">•••</text>
+            </view>
           </view>
           <text class="post-title" @click="openPost(post.id)"><text class="topic-prefix">#{{ post.category_label }}</text> {{ post.title }}</text>
           <text :class="['post-content', { collapsed: !isExpanded(post.id) }]" @click="toggleExpanded(post.id)">{{ post.content }}</text>
@@ -81,7 +107,20 @@
           <view v-if="postImages(post).length" :class="['media-grid', `count-${Math.min(postImages(post).length, 3)}`]">
             <image v-for="(attachment, imageIndex) in postImages(post).slice(0, 6)" :key="attachment.file_id" class="post-image" :src="communityAttachmentUrl(attachment)" mode="aspectFill" @click="previewPostImages(post, imageIndex)" />
           </view>
-          <view class="post-meta"><text>◉ {{ postViewCount(post) }}</text><view><text :class="{ liked: post.liked_by_me }" @click="toggleLike(post)">{{ post.liked_by_me ? '♥' : '♡' }} {{ post.like_count || 0 }}</text><text @click="toggleComments(post)">▢ {{ post.comment_count }}</text></view></view>
+          <view v-if="post.location_name" class="loc-chip"><text class="loc-pin">⌖</text><text>{{ post.location_name }}</text></view>
+          <view class="post-meta">
+            <view class="meta-left">
+              <text @click="toggleComments(post)">💬 {{ post.comment_count }}</text>
+              <text :class="{ liked: post.liked_by_me }" @click="toggleLike(post)">{{ post.liked_by_me ? '♥' : '♡' }} {{ post.like_count || 0 }}</text>
+              <text :class="{ favored: post.favorited_by_me }" @click="toggleFavorite(post)">{{ post.favorited_by_me ? '★' : '☆' }} {{ post.favorite_count || 0 }}</text>
+            </view>
+            <!-- #ifdef MP-WEIXIN -->
+            <button class="share-btn" open-type="share" aria-label="分享">↗</button>
+            <!-- #endif -->
+            <!-- #ifndef MP-WEIXIN -->
+            <text class="share-glyph" @click="sharePost(post)">↗</text>
+            <!-- #endif -->
+          </view>
           <view v-if="openedPostId === post.id" class="comments-panel">
             <view class="comment-compose" @click="openCommentComposer(post)">友善评论，说说你的想法…</view>
             <view v-if="commentsLoading" class="comments-state">评论加载中…</view>
@@ -95,7 +134,24 @@
         </view>
 
         <view v-if="!visiblePosts.length" class="state-card">
-          <view class="state-illustration">✦</view><text class="state-title">还没有同学发过这类内容</text><text class="state-copy">分享校园新鲜事、学习经验或互助问题，成为第一个发帖的人。</text><button v-if="modules.isEnabled('module_community_post')" @click="openCompose(activeCategory || undefined)">发布第一条动态</button>
+          <template v-if="activeFeed === 'following'">
+            <view class="state-illustration">＋</view>
+            <text class="state-title">关注后，TA 的新动态会出现在这里</text>
+            <text class="state-copy">去发现页关注有趣的同学，第一时间收到校园新鲜事。</text>
+            <button @click="switchFeed('discover')">去发现同学</button>
+          </template>
+          <template v-else-if="activeFeed === 'nearby'">
+            <view class="state-illustration">⌖</view>
+            <text class="state-title">附近暂时没有同校动态</text>
+            <text class="state-copy">成为这栋楼第一个分享的人，让附近的同学看见你。</text>
+            <button v-if="modules.isEnabled('module_community_post')" @click="openCompose(activeCategory || undefined)">发布附近第一条</button>
+          </template>
+          <template v-else>
+            <view class="state-illustration">✦</view>
+            <text class="state-title">还没有同学发过这类内容</text>
+            <text class="state-copy">分享校园新鲜事、学习经验或互助问题，成为第一个发帖的人。</text>
+            <button v-if="modules.isEnabled('module_community_post')" @click="openCompose(activeCategory || undefined)">发布第一条动态</button>
+          </template>
         </view>
         <button v-else-if="hasMore && !keyword" class="load-more" :loading="loadingMore" @click="loadMore">{{ loadingMore ? '加载中…' : '加载更多校园动态' }}</button>
         <text v-else-if="visiblePosts.length" class="list-end">到底啦 · 先去校园里逛逛吧</text>
@@ -107,7 +163,7 @@
       <view class="mine-summary"><view><strong>{{ myPosts.length }}</strong><text>全部</text></view><view><strong>{{ pendingCount }}</strong><text>审核中</text></view><view><strong>{{ publishedCount }}</strong><text>已公开</text></view></view>
       <view v-if="mineError" class="state-card error-card"><text class="state-title">我的发布加载失败</text><text class="state-copy">{{ mineError }}</text><button @click="loadMine">重试</button></view>
       <view v-for="post in myPosts" v-else :key="post.id" class="mine-card">
-        <view class="mine-head"><text :class="['status-pill', `status-${displayStatus(post).tone}`]">{{ displayStatus(post).label }}</text><text>{{ formatTime(post.created_at) }}</text></view>
+        <view class="mine-head"><text :class="['status-pill', `status-${displayStatus(post).tone}`]">{{ displayStatus(post).label }}</text><text>{{ formatRelativeTime(post.created_at) }}</text></view>
         <text class="mine-title">{{ post.latest_version?.title || post.title }}</text><text class="mine-content">{{ post.latest_version?.content || post.content }}</text>
         <view v-if="post.latest_version?.review_status === 'rejected'" class="review-note">{{ post.latest_version.review_note || '内容暂未通过审核，请修改后重新提交。' }}</view>
         <view class="mine-actions"><button v-if="post.can_edit && modules.isEnabled('module_community_post')" @click="openCompose(undefined, post.id)">编辑</button><button v-if="post.can_delete" class="danger" @click="removePost(post)">删除</button></view>
@@ -142,7 +198,7 @@
       @submit="submitComment"
     />
 
-    <button v-if="modules.isEnabled('module_community_post')" class="publish-fab" aria-label="发布动态" @click="showPublishSheet = true">＋</button>
+    <button v-if="modules.isEnabled('module_community_post') && activeView === 'square'" class="publish-fab" aria-label="发布动态" @click="showPublishSheet = true">＋</button>
     </template>
 
     <AppTabBar current-target="community" @compose="showPublishSheet = true" />
@@ -150,17 +206,18 @@
 </template>
 
 <script setup lang="ts">
-import { formatDateTime as formatTime } from '@/utils/dateTime'
+import { formatRelativeTime } from '@/utils/dateTime'
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import AppTabBar from '@/components/AppTabBar.vue'
 import CommunityCommentComposer from '@/components/CommunityCommentComposer.vue'
 import {
-  communityAttachmentUrl, communityHomeAssetUrl, createCommunityComment, createCommunityRequestKey, deleteCommunityPost, likeCommunityPost,
+  communityAttachmentUrl, communityHomeAssetUrl, createCommunityComment, createCommunityRequestKey, deleteCommunityPost,
+  favoriteCommunityPost, followCommunityUser, likeCommunityPost,
   DEFAULT_COMMUNITY_PUBLISHING_RULES,
   listCommunityCategories, listCommunityComments, listCommunityPosts, listMyCommunityPosts,
-  loadCommunityHome, reportCommunityContent, unlikeCommunityPost,
-  type CommunityCategory, type CommunityComment,
+  loadCommunityHome, reportCommunityContent, unfavoriteCommunityPost, unlikeCommunityPost, unfollowCommunityUser,
+  type CommunityCategory, type CommunityComment, type CommunityFeed,
   type CommunityHomeConfig, type CommunityPost, type CommunityPublishingRules, type CommunityQuickEntry,
 } from '@/api/community'
 import { useAuthStore } from '@/stores/auth'
@@ -175,6 +232,13 @@ const topSafeAreaStyle = createTopSafeAreaStyle()
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_community'))
+
+const feedTabs: Array<{ code: CommunityFeed; label: string }> = [
+  { code: 'following', label: '关注' },
+  { code: 'discover', label: '发现' },
+  { code: 'nearby', label: '附近' },
+  { code: 'featured', label: '精选' },
+]
 
 const fallbackCategories: CommunityCategory[] = [
   { code: 'experience', label: '校园动态' }, { code: 'guide', label: '学习攻略' },
@@ -212,12 +276,14 @@ const commentSubmitting = ref(false)
 const commentSubmitError = ref('')
 const commentRequestKey = ref('')
 const activeView = ref<'square' | 'mine'>('square')
+const activeFeed = ref<CommunityFeed>('discover')
 const activeCategory = ref<CommunityCategory['code'] | ''>('')
 const keyword = ref('')
 const searching = ref(false)
 const showPublishSheet = ref(false)
 const openedPostId = ref('')
 const expandedIds = ref<string[]>([])
+const followLoadingId = ref('')
 const page = ref(1)
 const total = ref(0)
 const loadingPublic = ref(false)
@@ -229,10 +295,26 @@ const mineError = ref('')
 const commentsError = ref('')
 
 const hasMore = computed(() => posts.value.length < total.value)
-const displayBanners = computed(() => [home.value.banner])
 const quickEntries = computed(() => home.value.quick_entries.filter(item => item.enabled).sort((left, right) => (left.sort_order || 0) - (right.sort_order || 0)))
 const hotTopics = computed(() => home.value.hot_topics.filter(item => item.enabled))
-const activeCategoryLabel = computed(() => categories.value.find(item => item.code === activeCategory.value)?.label || '校园广场')
+const feedHint = computed(() => {
+  if (activeFeed.value === 'following') return '只看你关注的同学'
+  if (activeFeed.value === 'nearby') return '同校同学的动态'
+  if (activeFeed.value === 'featured') return '高赞热门内容'
+  return ''
+})
+const feedHeadingTitle = computed(() => {
+  if (activeFeed.value === 'following') return '关注动态'
+  if (activeFeed.value === 'nearby') return '附近'
+  if (activeFeed.value === 'featured') return '精选'
+  return categories.value.find(item => item.code === activeCategory.value)?.label || '校园广场'
+})
+const feedHeadingCopy = computed(() => {
+  if (activeFeed.value === 'following') return '关注同学的最新分享'
+  if (activeFeed.value === 'nearby') return '同校动态 · 就在身边'
+  if (activeFeed.value === 'featured') return '大家都在看的热门'
+  return '校园真实动态 · 友善交流'
+})
 const pendingCount = computed(() => myPosts.value.filter(post => post.latest_version?.review_status === 'pending').length)
 const publishedCount = computed(() => myPosts.value.filter(post => post.status === 'published').length)
 const visiblePosts = computed(() => {
@@ -242,6 +324,8 @@ const visiblePosts = computed(() => {
 })
 
 onLoad((options) => {
+  const feed = typeof options?.feed === 'string' ? options.feed : ''
+  if ((feedTabs.map(item => item.code) as string[]).includes(feed)) activeFeed.value = feed as CommunityFeed
   const category = typeof options?.category === 'string' ? options.category : ''
   if (category && fallbackCategories.some(item => item.code === category)) activeCategory.value = category as CommunityCategory['code']
   if (options?.view === 'mine') activeView.value = 'mine'
@@ -256,6 +340,14 @@ onShow(async () => {
 })
 onPullDownRefresh(async () => { try { await modules.ensureReady(); if (!moduleEnabled.value) return; await Promise.all([activeView.value === 'mine' ? loadMine() : refreshSquare(), loadHomeConfig(), loadCategories()]) } finally { uni.stopPullDownRefresh() } })
 
+onShareAppMessage(() => {
+  const post = posts.value.find(item => item.id === openedPostId.value)
+  return {
+    title: post ? `${post.author.nickname}：${post.title}` : '校园墙 · 同学都在这里',
+    path: '/pages/community/index',
+  }
+})
+
 async function loadHomeConfig() { try { const value = await loadCommunityHome(); home.value = { ...fallbackHome, ...value, brand: { ...fallbackHome.brand, ...(value.brand || {}) }, banner: value.banner?.title ? value.banner : fallbackHome.banner, quick_entries: value.quick_entries?.length ? value.quick_entries : fallbackHome.quick_entries, hot_topics: value.hot_topics?.length ? value.hot_topics : fallbackHome.hot_topics } } catch { home.value = fallbackHome } }
 async function loadCategories() {
   try {
@@ -267,17 +359,25 @@ async function loadCategories() {
     publishingRules.value = DEFAULT_COMMUNITY_PUBLISHING_RULES
   }
 }
-async function refreshSquare() { loadingPublic.value = true; publicError.value = ''; page.value = 1; try { const result = await listCommunityPosts(1, 10, activeCategory.value || undefined, auth.accessToken || undefined); posts.value = result.items; total.value = result.pagination.total } catch (error) { publicError.value = errorMessage(error) } finally { loadingPublic.value = false } }
-async function loadMore() { if (loadingMore.value || !hasMore.value) return; loadingMore.value = true; try { const next = page.value + 1; const result = await listCommunityPosts(next, 10, activeCategory.value || undefined, auth.accessToken || undefined); posts.value.push(...result.items); page.value = next; total.value = result.pagination.total } catch (error) { toast(error) } finally { loadingMore.value = false } }
+async function refreshSquare() { loadingPublic.value = true; publicError.value = ''; page.value = 1; try { const result = await listCommunityPosts(1, 10, activeFeed.value === 'discover' ? activeCategory.value || undefined : undefined, auth.accessToken || undefined, activeFeed.value); posts.value = result.items; total.value = result.pagination.total } catch (error) { publicError.value = errorMessage(error) } finally { loadingPublic.value = false } }
+async function loadMore() { if (loadingMore.value || !hasMore.value) return; loadingMore.value = true; try { const next = page.value + 1; const result = await listCommunityPosts(next, 10, activeFeed.value === 'discover' ? activeCategory.value || undefined : undefined, auth.accessToken || undefined, activeFeed.value); posts.value.push(...result.items); page.value = next; total.value = result.pagination.total } catch (error) { toast(error) } finally { loadingMore.value = false } }
 async function loadMine() { if (!auth.accessToken) return; loadingMine.value = true; mineError.value = ''; try { myPosts.value = (await listMyCommunityPosts(auth.accessToken)).items } catch (error) { mineError.value = errorMessage(error) } finally { loadingMine.value = false } }
-async function switchView(view: 'square' | 'mine') { if (view === 'mine' && !ensureAuth()) return; activeView.value = view; if (view === 'mine') await loadMine() }
+async function switchView(view: 'square' | 'mine') { if (view === 'mine' && !ensureAuth()) return; activeView.value = view; if (view === 'mine') await loadMine(); else await refreshSquare() }
+async function switchFeed(feed: CommunityFeed) {
+  if ((feed === 'following' || feed === 'nearby') && !ensureAuth()) return
+  activeView.value = 'square'
+  keyword.value = ''
+  if (activeFeed.value === feed) return
+  activeFeed.value = feed
+  openedPostId.value = ''
+  await refreshSquare()
+}
 async function selectCategory(category: CommunityCategory['code'] | '') { activeView.value = 'square'; if (activeCategory.value === category) return; activeCategory.value = category; await refreshSquare() }
 
 function quickStyle(entry: CommunityQuickEntry, index: number) { const colors = ['#aeeaff','#ffc2cc','#d7c3ff','#a9f1d5']; return { background: entry.color || colors[index % colors.length] } }
 function fallbackQuickIcon(index: number) { return ['助','团','任','＋'][index] || '校' }
 function fallbackQuickSubtitle(index: number) { return ['同学互助','一起出发','赚取奖励','发现服务'][index] || '校园服务' }
 function clearSearch() { if (keyword.value) keyword.value = ''; else searching.value = false }
-function showCampusTip() { uni.showToast({ title: '后续可切换已认证校园', icon: 'none' }) }
 function openTarget(target: string) {
   if (!target) return
   if (target.startsWith('/pages/')) return uni.navigateTo({ url: target })
@@ -287,7 +387,7 @@ function openTarget(target: string) {
   if (target === 'compose' || target === 'publish_post') return openCompose()
   if (target === 'posts') { void selectCategory(''); return }
   if (target === 'notifications') return uni.navigateTo({ url: '/pages/notifications/index?category=community' })
-  if (['experience','guide','question','showcase'].includes(target)) { void selectCategory(target as CommunityCategory['code']); return }
+  if (['experience','guide','question','showcase'].includes(target)) { activeFeed.value = 'discover'; void selectCategory(target as CommunityCategory['code']); return }
   if (['study','movie','dining','carpool','group_buy','gaming','sports','travel','other'].includes(target)) return uni.navigateTo({ url: `/pages/community-activities/index?category=${target}` })
   if (target === 'publish') { showPublishSheet.value = true; return }
   if (target === 'mine') { void switchView('mine'); return }
@@ -296,14 +396,53 @@ function openTarget(target: string) {
 }
 function openCompose(category?: CommunityCategory['code'], postId?: string) { if (!ensureAuth()) return; showPublishSheet.value = false; const suffix = buildQueryString({ category, postId }); uni.navigateTo({ url: `/pages/community-compose/index${suffix ? `?${suffix}` : ''}` }) }
 function openPost(id: string) { uni.navigateTo({ url: `/pages/community-detail/index?id=${encodeURIComponent(id)}` }) }
-function ensureAuth() { if (auth.isAuthenticated) return true; uni.showModal({ title: '登录后参与校园社区', content: '登录后可以发帖、点赞、评论和参加组团。', confirmText: '去登录', success: result => { if (result.confirm) navigateToLogin() } }); return false }
+function ensureAuth() { if (auth.isAuthenticated) return true; uni.showModal({ title: '登录后参与校园社区', content: '登录后可以发帖、点赞、关注、收藏和参加组团。', confirmText: '去登录', success: result => { if (result.confirm) navigateToLogin() } }); return false }
 function avatarText(name: string) { return (name || '同').trim().slice(0, 1) }
-function postViewCount(post: CommunityPost) { return Number((post as CommunityPost & { view_count?: number }).view_count || 0) }
 function postImages(post: CommunityPost) { return (post.attachments || []).filter(item => item.type === 'image') }
 function toggleExpanded(id: string) { expandedIds.value = expandedIds.value.includes(id) ? expandedIds.value.filter(item => item !== id) : [...expandedIds.value, id] }
 function isExpanded(id: string) { return expandedIds.value.includes(id) }
 function previewPostImages(post: CommunityPost, current: number) { const urls = postImages(post).map(communityAttachmentUrl).filter(Boolean); if (urls.length) uni.previewImage({ urls, current: urls[current] }) }
+function sharePost(post: CommunityPost) {
+  // #ifndef MP-WEIXIN
+  uni.setClipboardData({ data: `【${post.title}】来校园墙看看同学们的新鲜事` })
+  // #endif
+}
 async function toggleLike(post: CommunityPost) { if (!ensureAuth() || !auth.accessToken) return; const previous = { liked: post.liked_by_me, count: post.like_count || 0 }; post.liked_by_me = !previous.liked; post.like_count = Math.max(0, previous.count + (post.liked_by_me ? 1 : -1)); try { const result = post.liked_by_me ? await likeCommunityPost(auth.accessToken, post.id) : await unlikeCommunityPost(auth.accessToken, post.id); post.liked_by_me = result.liked_by_me; post.like_count = result.like_count } catch (error) { post.liked_by_me = previous.liked; post.like_count = previous.count; toast(error) } }
+async function toggleFavorite(post: CommunityPost) {
+  if (!ensureAuth() || !auth.accessToken) return
+  const previous = { favored: post.favorited_by_me, count: post.favorite_count || 0 }
+  post.favorited_by_me = !previous.favored
+  post.favorite_count = Math.max(0, previous.count + (post.favorited_by_me ? 1 : -1))
+  try {
+    const result = post.favorited_by_me ? await favoriteCommunityPost(auth.accessToken, post.id) : await unfavoriteCommunityPost(auth.accessToken, post.id)
+    post.favorited_by_me = result.favorited_by_me
+    post.favorite_count = result.favorite_count
+  } catch (error) {
+    post.favorited_by_me = previous.favored
+    post.favorite_count = previous.count
+    toast(error)
+  }
+}
+async function toggleFollow(post: CommunityPost) {
+  if (!ensureAuth() || !auth.accessToken || !post.author.id || followLoadingId.value) return
+  if (post.author.is_followed) {
+    const result = await uni.showModal({ title: '取消关注？', content: `取消后将不再优先看到「${post.author.nickname}」的动态。`, confirmText: '取消关注', confirmColor: '#e93f4f' })
+    if (!result.confirm) return
+  }
+  const userId = post.author.id
+  const previous = post.author.is_followed
+  followLoadingId.value = post.id
+  post.author.is_followed = !previous
+  try {
+    const state = post.author.is_followed ? await followCommunityUser(auth.accessToken, userId) : await unfollowCommunityUser(auth.accessToken, userId)
+    post.author.is_followed = state.is_followed
+  } catch (error) {
+    post.author.is_followed = previous
+    toast(error)
+  } finally {
+    followLoadingId.value = ''
+  }
+}
 async function toggleComments(post: CommunityPost) { if (openedPostId.value === post.id) { openedPostId.value = ''; comments.value = []; return } openedPostId.value = post.id; await loadComments(post.id) }
 async function loadComments(postId: string) { commentsLoading.value = true; commentsError.value = ''; try { comments.value = (await listCommunityComments(postId)).items } catch (error) { commentsError.value = errorMessage(error) } finally { commentsLoading.value = false } }
 function parentCommentAuthor(comment: CommunityComment) { return comments.value.find(item => item.id === comment.parent_comment_id)?.author.nickname || '原评论' }
@@ -355,36 +494,39 @@ function toast(error: unknown) { uni.showToast({ title: errorMessage(error), ico
 .page{--c-green:#0BBF63;--c-deep:#08A152;--c-soft:#E7F9EF;--c-softer:#F0FBF5;--c-line:#EDEFEF;--c-canvas:#F4F6F4;--t1:#191B1F;--t2:#767C85;--t3:#AEB3BB;--c-red:#FF3B30;--c-orange:#F2620A;min-height:100vh;padding:var(--tm-custom-header-top,calc(env(safe-area-inset-top) + 8px)) 22rpx 260rpx;box-sizing:border-box;background:radial-gradient(circle at 92% 2%,rgba(11,191,99,.1),transparent 300rpx),linear-gradient(180deg,#F2FAF5 0,#F4F6F4 420rpx);color:var(--t1)}
 text{box-sizing:border-box}
 
-/* 顶部品牌栏 */
-.campus-head{display:flex;align-items:center;justify-content:space-between;gap:16rpx;padding:6rpx 2rpx 4rpx}
-.campus-brand{display:flex;align-items:center;gap:14rpx;min-width:0}
-.campus-logo{display:flex;align-items:center;justify-content:center;width:72rpx;height:72rpx;flex:none;overflow:hidden;border-radius:22rpx;background:linear-gradient(145deg,#12D978,#08A152);box-shadow:0 10rpx 24rpx rgba(11,191,99,.24);color:#fff;font-size:18px;font-weight:900}
-.campus-logo image{width:100%;height:100%}
-.brand-copy{min-width:0}
-.campus-name{display:block;overflow:hidden;max-width:260rpx;color:var(--t1);font-size:17px;font-weight:850;text-overflow:ellipsis;white-space:nowrap}
-.campus-sub{display:block;margin-top:2rpx;color:var(--t2);font-size:11px}
-.chevron{color:var(--t3);font-size:14px}
-.head-actions{display:flex;align-items:center;gap:12rpx}
-.round-action{display:flex;align-items:center;justify-content:center;width:64rpx;height:64rpx;margin:0;padding:0;border:0;border-radius:50%;background:#fff;box-shadow:0 8rpx 22rpx rgba(23,26,23,.07);color:var(--t1);font-size:15px;font-weight:800;line-height:64rpx}
-.round-action::after{border:0}
-.round-action.has-dot{position:relative}
-.round-action.has-dot::before{content:'';position:absolute;right:14rpx;top:14rpx;width:12rpx;height:12rpx;border:3rpx solid #fff;border-radius:50%;background:var(--c-red)}
+/* 顶部标题栏 */
+.wall-head{display:flex;align-items:center;justify-content:space-between;gap:16rpx;padding:6rpx 2rpx 4rpx}
+.wall-title{color:var(--t1);font-size:22px;font-weight:900;letter-spacing:1rpx}
+.wall-actions{display:flex;align-items:center;gap:14rpx}
+.icon-action{display:flex;align-items:center;justify-content:center;width:64rpx;height:64rpx;margin:0;padding:0;border:0;border-radius:50%;background:#fff;box-shadow:0 8rpx 22rpx rgba(23,26,23,.07);line-height:64rpx}
+.icon-action::after{border:0}
+.bell-glyph{font-size:17px;line-height:1}
+.icon-action.has-dot{position:relative}
+.icon-action.has-dot::after{content:'';position:absolute;right:12rpx;top:12rpx;width:12rpx;height:12rpx;border:3rpx solid #fff;border-radius:50%;background:var(--c-red)}
+.publish-btn{height:64rpx;margin:0;padding:0 26rpx;border:0;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);box-shadow:0 10rpx 22rpx rgba(11,191,99,.28);color:#fff;font-size:14px;font-weight:800;line-height:64rpx}
+.publish-btn::after{border:0}
 
 /* 搜索面板 */
 .search-panel{display:flex;align-items:center;gap:16rpx;margin-top:14rpx;padding:10rpx 18rpx;border-radius:999rpx;background:#fff;box-shadow:0 10rpx 26rpx rgba(23,26,23,.06)}
 .search-panel input{height:60rpx;flex:1;font-size:14px}
 .search-panel>text{color:var(--c-deep);font-size:13px;font-weight:700}
 
+/* 主 Tab */
+.feed-tabs{display:flex;align-items:center;gap:34rpx;margin:18rpx 4rpx 4rpx}
+.feed-tab{position:relative;padding:8rpx 2rpx;color:var(--t2);font-size:16px;font-weight:700}
+.feed-tab.active{color:var(--t1);font-size:19px;font-weight:900}
+.feed-tab.active::after{content:'';position:absolute;left:50%;bottom:-8rpx;width:34rpx;height:6rpx;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);transform:translateX(-50%)}
+.feed-tab.mine-tab{margin-left:auto;padding:8rpx 20rpx;border:1rpx dashed #9FD8B6;border-radius:999rpx;background:var(--c-softer);color:var(--c-deep);font-size:12px}
+.feed-tab.mine-tab.active{border-color:transparent;background:linear-gradient(135deg,#12D978,#08A152);color:#fff}
+
 /* 吸顶分类栏 */
-.sticky-bar{position:sticky;z-index:60;top:var(--tm-custom-header-top,calc(env(safe-area-inset-top) + 8px));margin:14rpx -22rpx 0;padding:10rpx 22rpx 12rpx;background:rgba(243,250,245,.94);backdrop-filter:blur(10px)}
-.category-scroll{white-space:nowrap}
-.category-row{display:inline-flex;gap:12rpx;padding-right:28rpx}
+.sticky-bar{position:sticky;z-index:60;top:var(--tm-custom-header-top,calc(env(safe-area-inset-top) + 8px));margin:14rpx -22rpx 0;padding:10rpx 22rpx 12rpx;background:rgba(243,250,245,.94);backdrop-filter:blur(10px);white-space:nowrap}
+.category-row{display:inline-flex;align-items:center;gap:12rpx;padding-right:28rpx}
 .category-tab{padding:13rpx 26rpx;border-radius:999rpx;background:#fff;color:var(--t2);font-size:13px;font-weight:700;box-shadow:0 4rpx 12rpx rgba(23,26,23,.04)}
 .category-tab.active{background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-weight:800;box-shadow:0 8rpx 20rpx rgba(11,191,99,.24)}
-.category-tab.mine-tab{border:1rpx dashed #9FD8B6;background:var(--c-softer);color:var(--c-deep);box-shadow:none}
-.category-tab.mine-tab.active{border-color:transparent;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;box-shadow:0 8rpx 20rpx rgba(11,191,99,.24)}
+.feed-hint{padding:10rpx 6rpx;color:var(--t3);font-size:12px}
 
-/* 轻量工具条（公约/热榜/快捷入口合并横滑） */
+/* 轻量工具条（公约/热榜/快捷入口合并横滑，仅发现页） */
 .tool-scroll{margin:14rpx -22rpx 0;padding:0 22rpx;box-sizing:border-box;white-space:nowrap}
 .tool-row{display:inline-flex;gap:12rpx;padding:4rpx 28rpx 8rpx 2rpx}
 .tool-chip{display:inline-flex;align-items:center;gap:12rpx;padding:14rpx 20rpx 14rpx 14rpx;border-radius:18rpx;background:#fff;box-shadow:0 6rpx 16rpx rgba(23,26,23,.05);vertical-align:top}
@@ -398,36 +540,34 @@ text{box-sizing:border-box}
 .quick-icon image{width:34rpx;height:34rpx}
 .quick-icon text{font-size:13px;font-weight:900}
 
-/* 紧凑精选横幅 */
-.feature-strip{position:relative;display:flex;align-items:center;gap:16rpx;overflow:hidden;margin-top:12rpx;padding:20rpx 22rpx;border-radius:22rpx;background:linear-gradient(135deg,#E7F9EF,#F0FBF5);box-shadow:0 10rpx 24rpx rgba(11,191,99,.08)}
-.feature-strip::after{content:'';position:absolute;right:-36rpx;bottom:-56rpx;width:170rpx;height:170rpx;border-radius:50%;background:rgba(11,191,99,.12)}
-.feature-image{position:absolute;right:0;top:0;width:38%;height:100%;opacity:.6}
-.feature-copy{position:relative;z-index:1;min-width:0;flex:1}
-.feature-top{display:flex;align-items:center;gap:10rpx}
-.feature-badge{padding:4rpx 10rpx;flex:none;border-radius:8rpx;background:#fff;color:var(--c-deep);font-size:10px;font-weight:900}
-.feature-title{overflow:hidden;color:var(--t1);font-size:14px;font-weight:850;text-overflow:ellipsis;white-space:nowrap}
-.feature-subtitle{display:block;overflow:hidden;margin-top:6rpx;color:var(--t2);font-size:11px;text-overflow:ellipsis;white-space:nowrap}
-.feature-arrow{position:relative;z-index:1;color:var(--c-deep);font-size:18px;font-weight:700}
-
 /* Feed 标题 */
-.feed-heading{display:flex;align-items:center;justify-content:space-between;margin:26rpx 2rpx 6rpx}
+.feed-heading{display:flex;align-items:center;justify-content:space-between;gap:16rpx;margin:26rpx 2rpx 6rpx}
+.feed-heading-left{display:flex;align-items:center;gap:14rpx;min-width:0}
+.search-glyph{display:flex;align-items:center;justify-content:center;width:52rpx;height:52rpx;flex:none;border-radius:50%;background:#fff;color:var(--c-deep);font-size:18px;font-weight:800;box-shadow:0 6rpx 16rpx rgba(23,26,23,.06)}
 .feed-title{position:relative;display:block;padding-left:16rpx;color:var(--t1);font-size:17px;font-weight:900}
 .feed-title::before{content:'';position:absolute;left:0;top:6rpx;bottom:6rpx;width:6rpx;border-radius:999rpx;background:linear-gradient(180deg,#12D978,#08A152)}
 .feed-copy{display:block;margin-top:4rpx;color:var(--t3);font-size:11px}
-.group-link{padding:10rpx 18rpx;flex:none;border-radius:999rpx;background:var(--c-soft);color:var(--c-deep);font-size:12px;font-weight:800}
+.feed-heading-links{display:flex;align-items:center;gap:12rpx;flex:none}
+.group-link{padding:10rpx 16rpx;border-radius:999rpx;background:var(--c-soft);color:var(--c-deep);font-size:11px;font-weight:800}
 
 /* 帖子卡片 */
 .post-card,.mine-card{margin-top:14rpx;padding:26rpx;border-radius:24rpx;background:#fff;box-shadow:0 10rpx 28rpx rgba(23,26,23,.05)}
-.post-head{display:flex;align-items:center;justify-content:space-between}
+.post-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16rpx}
 .author-row{display:flex;align-items:center;gap:14rpx;min-width:0}
-.author-avatar,.comment-avatar{display:flex;align-items:center;justify-content:center;flex:none;border-radius:50%;background:linear-gradient(145deg,#DFF5E7,#E7F9EF);color:var(--c-deep);font-weight:900}
-.author-avatar{width:72rpx;height:72rpx;font-size:15px}
+.author-avatar,.comment-avatar{display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden;border-radius:50%;background:linear-gradient(145deg,#DFF5E7,#E7F9EF);color:var(--c-deep);font-weight:900}
+.author-avatar{width:76rpx;height:76rpx;font-size:15px}
+.author-avatar image{width:100%;height:100%}
 .author-info{min-width:0}
-.author-info>view{display:flex;align-items:center;gap:8rpx}
+.author-name-row{display:flex;align-items:center;gap:8rpx}
 .author-name{overflow:hidden;max-width:240rpx;color:var(--t1);font-size:14px;font-weight:850;text-overflow:ellipsis;white-space:nowrap}
-.campus-tag{padding:3rpx 10rpx;flex:none;border-radius:8rpx;background:var(--c-soft);color:var(--c-deep);font-size:10px;font-weight:700}
+.verified-badge{padding:3rpx 10rpx;flex:none;border-radius:8rpx;background:#FFF3E2;color:#D97706;font-size:10px;font-weight:800}
 .post-time{display:block;margin-top:4rpx;color:var(--t3);font-size:10px}
-.more{padding:10rpx;color:var(--t3);font-weight:900}
+.head-right{display:flex;align-items:center;gap:10rpx;flex:none}
+.follow-btn{height:52rpx;margin:0;padding:0 22rpx;border:1rpx solid var(--c-green);border-radius:999rpx;background:#fff;color:var(--c-deep);font-size:12px;font-weight:800;line-height:50rpx}
+.follow-btn::after{border:0}
+.follow-btn.followed{border-color:#C9E7D4;background:var(--c-softer);color:var(--t2)}
+.follow-btn[disabled]{opacity:.6}
+.more{padding:10rpx 6rpx;color:var(--t3);font-weight:900}
 .post-title{display:block;margin-top:18rpx;color:var(--t1);font-size:15px;font-weight:850;line-height:1.5}
 .topic-prefix{color:var(--c-green)}
 .post-content{display:block;margin-top:8rpx;color:#3E454D;font-size:14px;line-height:1.7;white-space:pre-wrap}
@@ -438,9 +578,15 @@ text{box-sizing:border-box}
 .media-grid.count-2{grid-template-columns:repeat(2,1fr)}
 .post-image{width:100%;height:180rpx;border-radius:14rpx;background:var(--c-canvas)}
 .count-1 .post-image{height:320rpx}
+.loc-chip{display:inline-flex;align-items:center;gap:8rpx;margin-top:14rpx;padding:8rpx 16rpx;border-radius:999rpx;background:#F2F6F4;color:var(--t2);font-size:11px}
+.loc-pin{color:var(--c-deep);font-size:12px}
 .post-meta{display:flex;align-items:center;justify-content:space-between;margin-top:18rpx;padding-top:16rpx;border-top:1rpx solid #F2F4F3;color:var(--t3);font-size:12px}
-.post-meta>view{display:flex;align-items:center;gap:32rpx}
+.meta-left{display:flex;align-items:center;gap:36rpx}
 .post-meta .liked{color:var(--c-red);font-weight:900}
+.post-meta .favored{color:#F5A623;font-weight:900}
+.share-btn{display:flex;align-items:center;justify-content:center;width:56rpx;height:48rpx;margin:0;padding:0;border:0;background:transparent;color:var(--t3);font-size:15px;line-height:48rpx}
+.share-btn::after{border:0}
+.share-glyph{padding:4rpx 8rpx;color:var(--t3);font-size:15px}
 
 /* 评论面板 */
 .comments-panel{margin-top:16rpx;padding:16rpx;border-radius:18rpx;background:#F7F9F7}

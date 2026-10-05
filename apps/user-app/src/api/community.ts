@@ -44,19 +44,34 @@ export interface CommunityPostVersion {
   attachments: CommunityAttachment[]
 }
 
+export type CommunityFeed = 'discover' | 'following' | 'nearby' | 'featured'
+
+export interface CommunityPostAuthor {
+  id: string | null
+  nickname: string
+  avatar_url: string | null
+  campus_name: string | null
+  verified: boolean
+  is_followed: boolean
+  is_self: boolean
+}
+
 export interface CommunityPost {
   id: string
-  author: { id: string; nickname: string }
+  author: CommunityPostAuthor
   title: string
   content: string
   category_code: CommunityCategory['code']
   category_label: string
+  location_name: string | null
   status: 'pending_review' | 'published' | 'rejected' | 'hidden' | 'deleted'
   current_version_no: number
   published_version_no: number | null
   comment_count: number
   like_count: number
   liked_by_me: boolean
+  favorite_count: number
+  favorited_by_me: boolean
   reward_granted: boolean
   attachments: CommunityAttachment[]
   latest_version: CommunityPostVersion | null
@@ -64,6 +79,12 @@ export interface CommunityPost {
   can_delete: boolean
   published_at: string | null
   created_at: string
+}
+
+export interface CommunitySocialStats {
+  follower_count: number
+  following_count: number
+  is_followed: boolean
 }
 
 export interface CommunityHomeBanner {
@@ -186,6 +207,7 @@ export interface CommunityPostPayload {
   title: string
   content: string
   category_code: CommunityCategory['code']
+  location_name?: string
   image_file_ids?: string[]
 }
 
@@ -208,8 +230,14 @@ export function communityHomeAssetUrl(value?: string | null) {
   return apiUrl(value.startsWith('/') ? value : `/${value}`)
 }
 
-export function listCommunityPosts(page = 1, pageSize = 10, category?: CommunityCategory['code'], token?: string) {
-  const query = buildQueryString({ page, page_size: pageSize, category })
+export function listCommunityPosts(
+  page = 1,
+  pageSize = 10,
+  category?: CommunityCategory['code'],
+  token?: string,
+  feed?: CommunityFeed,
+) {
+  const query = buildQueryString({ page, page_size: pageSize, category, feed })
   return apiRequest<PaginatedPosts>({ path: `/community/posts?${query}`, accessToken: token })
 }
 
@@ -266,6 +294,36 @@ export function unlikeCommunityPost(token: string, postId: string) {
   return apiRequest<{ post_id: string; like_count: number; liked_by_me: boolean }>({
     path: `/community/posts/${postId}/like`, method: 'DELETE', accessToken: token,
   })
+}
+
+export function favoriteCommunityPost(token: string, postId: string) {
+  return apiRequest<{ post_id: string; favorite_count: number; favorited_by_me: boolean }>({
+    path: `/community/posts/${postId}/favorite`, method: 'POST', accessToken: token,
+    headers: { 'Idempotency-Key': `community-favorite-${postId}-${Date.now()}` },
+  })
+}
+
+export function unfavoriteCommunityPost(token: string, postId: string) {
+  return apiRequest<{ post_id: string; favorite_count: number; favorited_by_me: boolean }>({
+    path: `/community/posts/${postId}/favorite`, method: 'DELETE', accessToken: token,
+  })
+}
+
+export function followCommunityUser(token: string, userId: string) {
+  return apiRequest<CommunitySocialStats & { user_id: string }>({
+    path: `/community/users/${userId}/follow`, method: 'POST', accessToken: token,
+    headers: { 'Idempotency-Key': `community-follow-${userId}-${Date.now()}` },
+  })
+}
+
+export function unfollowCommunityUser(token: string, userId: string) {
+  return apiRequest<CommunitySocialStats & { user_id: string }>({
+    path: `/community/users/${userId}/follow`, method: 'DELETE', accessToken: token,
+  })
+}
+
+export function getCommunitySocialStats(token: string) {
+  return apiRequest<CommunitySocialStats>({ path: '/community/social/stats', accessToken: token })
 }
 
 export function listCommunityActivityCategories() {

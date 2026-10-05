@@ -6,6 +6,7 @@ use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Community\Models\CommunityPost;
+use App\Modules\Community\Models\CommunityPostFavorite;
 use App\Modules\Community\Models\CommunityPostLike;
 use App\Modules\Notification\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
@@ -65,12 +66,55 @@ class CommunityEngagementController extends Controller
         return ApiResponse::success($this->state($request, $post->fresh()));
     }
 
+    public function favorite(Request $request, CommunityPost $post): JsonResponse
+    {
+        abort_unless($post->status === 'published', 404);
+        DB::transaction(function () use ($request, $post): void {
+            $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
+            $favorite = CommunityPostFavorite::query()->firstOrCreate([
+                'community_post_id' => $locked->id,
+                'user_id' => $request->user()->id,
+            ]);
+            if ($favorite->wasRecentlyCreated) {
+                $locked->increment('favorite_count');
+            }
+        }, 3);
+
+        return ApiResponse::success($this->favoriteState($request, $post->fresh()));
+    }
+
+    public function unfavorite(Request $request, CommunityPost $post): JsonResponse
+    {
+        abort_unless($post->status === 'published', 404);
+        DB::transaction(function () use ($request, $post): void {
+            $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
+            $deleted = CommunityPostFavorite::query()
+                ->where('community_post_id', $locked->id)
+                ->where('user_id', $request->user()->id)
+                ->delete();
+            if ($deleted > 0) {
+                $locked->update(['favorite_count' => max(0, (int) $locked->favorite_count - 1)]);
+            }
+        }, 3);
+
+        return ApiResponse::success($this->favoriteState($request, $post->fresh()));
+    }
+
     public function state(Request $request, CommunityPost $post): array
     {
         return [
             'post_id' => $post->public_id,
             'like_count' => $post->like_count,
             'liked_by_me' => CommunityPostLike::query()->where('community_post_id', $post->id)->where('user_id', $request->user()->id)->exists(),
+        ];
+    }
+
+    private function favoriteState(Request $request, CommunityPost $post): array
+    {
+        return [
+            'post_id' => $post->public_id,
+            'favorite_count' => (int) $post->favorite_count,
+            'favorited_by_me' => CommunityPostFavorite::query()->where('community_post_id', $post->id)->where('user_id', $request->user()->id)->exists(),
         ];
     }
 }

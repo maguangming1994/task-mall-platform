@@ -66,11 +66,15 @@
           <text class="frow-val topic">#{{ selectedCategoryLabel }}</text>
           <text class="spacer" />
         </view>
-        <view class="frow">
+        <view class="frow" @click="locationEditing = true">
           <view class="frow-ic orange">位</view>
-          <text class="frow-val dim">添加位置</text>
+          <text :class="['frow-val', { dim: !locationName }]">{{ locationName || '添加位置（选填）' }}</text>
           <text class="spacer" />
-          <text class="frow-arrow">›</text>
+          <text v-if="locationName" class="frow-clear" @click.stop="locationName = ''">×</text>
+          <text v-else class="frow-arrow">›</text>
+        </view>
+        <view v-if="locationEditing" class="loc-edit">
+          <input v-model="locationName" focus :maxlength="80" placeholder="如：图书馆三楼 / 8 号宿舍楼" @blur="locationEditing = false" @confirm="locationEditing = false" />
         </view>
         <view class="frow">
           <view class="frow-ic blue">见</view>
@@ -137,7 +141,7 @@ const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_community_post'))
 
 interface EditableImage { fileId: string; previewUrl: string }
-interface SavedDraft { title?: string; content?: string; categoryCode?: CommunityCategory['code']; images?: EditableImage[]; requestKey?: string }
+interface SavedDraft { title?: string; content?: string; categoryCode?: CommunityCategory['code']; locationName?: string; images?: EditableImage[]; requestKey?: string }
 interface TextareaEvent { detail?: { cursor?: number } }
 
 const fallbackCategories: CommunityCategory[] = [
@@ -151,6 +155,8 @@ const content = ref('')
 const contentCursor = ref(0)
 const emojiVisible = ref(false)
 const categoryCode = ref<CommunityCategory['code']>('experience')
+const locationName = ref('')
+const locationEditing = ref(false)
 const categories = ref<CommunityCategory[]>(fallbackCategories)
 const publishingRules = ref<CommunityPublishingRules>(DEFAULT_COMMUNITY_PUBLISHING_RULES)
 const images = ref<EditableImage[]>([])
@@ -198,6 +204,7 @@ async function loadEditing() {
     content.value = version?.content || post.content
     contentCursor.value = content.value.length
     categoryCode.value = version?.category_code || post.category_code
+    locationName.value = post.location_name || ''
     images.value = (version?.attachments || post.attachments).filter(item => item.type === 'image').map(item => ({ fileId: item.file_id, previewUrl: communityAttachmentUrl(item) }))
     reviewNote.value = version?.review_status === 'rejected' ? version.review_note || '内容暂未通过审核，请修改后重新提交。' : ''
     restoreDraft()
@@ -213,6 +220,7 @@ function restoreDraft() {
   content.value = draft.content ?? content.value
   contentCursor.value = content.value.length
   categoryCode.value = draft.categoryCode ?? categoryCode.value
+  locationName.value = draft.locationName ?? locationName.value
   images.value = Array.isArray(draft.images) ? draft.images : images.value
   submitRequestKey.value = draft.requestKey || submitRequestKey.value
 }
@@ -227,7 +235,7 @@ function validate() {
   if (contentLength > contentRule.max_length) return `正文最多输入 ${contentRule.max_length} 个字符`
   return ''
 }
-function persistDraft() { uni.setStorageSync(draftKey(), { title: title.value, content: content.value, categoryCode: categoryCode.value, images: images.value, requestKey: submitRequestKey.value, savedAt: Date.now() }) }
+function persistDraft() { uni.setStorageSync(draftKey(), { title: title.value, content: content.value, categoryCode: categoryCode.value, locationName: locationName.value, images: images.value, requestKey: submitRequestKey.value, savedAt: Date.now() }) }
 function saveDraft() { persistDraft(); uni.showToast({ title: '草稿已保存在本机', icon: 'success' }) }
 function preview() { const message = validate(); if (message) return uni.showToast({ title: message, icon: 'none' }); previewing.value = true }
 async function addImage() {
@@ -259,7 +267,7 @@ async function submit() {
   if (message) return uni.showToast({ title: message, icon: 'none' })
   if (!auth.isAuthenticated) return redirectToLogin()
   submitting.value = true; submitError.value = ''
-  const payload = { title: title.value.trim(), content: content.value.trim(), category_code: categoryCode.value, image_file_ids: images.value.map(item => item.fileId) }
+  const payload = { title: title.value.trim(), content: content.value.trim(), category_code: categoryCode.value, location_name: locationName.value.trim() || undefined, image_file_ids: images.value.map(item => item.fileId) }
   try {
     const post = editingId.value ? await updateCommunityPost(auth.accessToken, editingId.value, payload) : await createCommunityPost(auth.accessToken, payload, submitRequestKey.value)
     uni.removeStorageSync(draftKey())
@@ -326,6 +334,9 @@ function errorMessage(error: unknown) { return error instanceof Error ? error.me
 .frow-val.dim{color:#AEB3BB}
 .spacer{flex:1}
 .frow-arrow{color:#AEB3BB;font-size:30rpx}
+.frow-clear{display:flex;align-items:center;justify-content:center;width:44rpx;height:44rpx;border-radius:50%;background:#F2F4F3;color:#767C85;font-size:26rpx}
+.loc-edit{padding:0 0 20rpx;border-bottom:1rpx solid #F5F6F6}
+.loc-edit input{height:72rpx;padding:0 24rpx;border-radius:999rpx;background:#F4F8F5;font-size:26rpx}
 .reward-card{display:flex;align-items:center;gap:20rpx;margin:20rpx 24rpx 0;padding:24rpx 28rpx;border-radius:32rpx;background:#fff}
 .reward-ic{display:flex;align-items:center;justify-content:center;width:68rpx;height:68rpx;flex:none;border-radius:20rpx;background:#FFF2E5;color:#F2620A;font-size:28rpx;font-weight:800}
 .reward-copy{min-width:0;flex:1;color:#767C85;font-size:24rpx;line-height:1.5}

@@ -63,6 +63,7 @@ class CommunityContentService
                 'title' => $data['title'],
                 'content' => $data['content'],
                 'category_code' => $data['category_code'] ?? 'experience',
+                'location_name' => $this->normalizeLocation($data['location_name'] ?? null),
                 'status' => $auto ? 'published' : 'pending_review',
                 'published_version_no' => $auto ? 1 : null,
                 'idempotency_key_hash' => $hash,
@@ -119,7 +120,12 @@ class CommunityContentService
                 'reviewed_at' => $auto ? now() : null,
             ]);
             $this->attach($version, $files);
-            $updates = ['current_version_no' => $versionNo];
+            $updates = [
+                'current_version_no' => $versionNo,
+                'location_name' => array_key_exists('location_name', $data)
+                    ? $this->normalizeLocation($data['location_name'])
+                    : $locked->location_name,
+            ];
             if ($auto) {
                 $updates += ['title' => $data['title'], 'content' => $data['content'], 'category_code' => $data['category_code'] ?? $locked->category_code, 'status' => 'published', 'published_version_no' => $versionNo, 'published_at' => now()];
             } elseif ($locked->published_version_no === null) {
@@ -359,6 +365,16 @@ class CommunityContentService
         if ($model::withTrashed()->where('user_id', $user->id)->whereDate('created_at', today())->count() >= $limit) {
             throw ValidationException::withMessages(['limit' => '今日发布次数已达到后台配置上限。']);
         }
+    }
+
+    private function normalizeLocation(mixed $location): ?string
+    {
+        if (! is_string($location)) {
+            return null;
+        }
+        $location = trim($location);
+
+        return $location === '' ? null : mb_substr($location, 0, 80);
     }
 
     private function postRules(): array

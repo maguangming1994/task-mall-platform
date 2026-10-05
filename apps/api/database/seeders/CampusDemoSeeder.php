@@ -8,6 +8,11 @@ use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Assets\Services\AssetLedgerService;
 use App\Modules\Auth\Services\PhoneVerificationService;
+use App\Modules\Campus\Models\Campus;
+use App\Modules\Community\Models\CommunityPost;
+use App\Modules\Community\Models\CommunityPostFavorite;
+use App\Modules\Community\Models\CommunityPostLike;
+use App\Modules\Community\Models\UserFollow;
 use App\Modules\Community\Services\CommunityContentService;
 use App\Modules\Inventory\Services\InventoryService;
 use App\Modules\Inventory\Services\ShippingTemplateService;
@@ -15,6 +20,8 @@ use App\Modules\Product\Models\Product;
 use App\Modules\Product\Models\ProductCategory;
 use App\Modules\Product\Services\ProductCatalogService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -32,12 +39,14 @@ class CampusDemoSeeder extends Seeder
 
         $admin = $this->admin();
         $users = $this->users();
+        $campusId = $this->assignCampus($users);
 
         $this->assetsAndAddress($users[0], $admin);
         $this->products($admin);
-        $this->community($users, $admin);
+        $posts = $this->community($users, $admin, $campusId);
+        $this->socialGraph($users, $posts);
 
-        $this->command?->info('Campus demo data is ready: 7 products, 8 community posts with comments, and funded campus users.');
+        $this->command?->info('Campus demo data is ready: 7 products across 5 real categories, 8 community posts with comments/follows/favorites, and funded campus users.');
     }
 
     private function admin(): AdminUser
@@ -267,41 +276,154 @@ class CampusDemoSeeder extends Seeder
         }
     }
 
-    /** @param array<int, User> $users */
-    private function community(array $users, AdminUser $admin): void
+    /**
+     * 把演示用户归到真实用户最多的校园（通常即当前运营校园），
+     * 让「附近」Tab 与真实账号能互相看见。无校园数据时返回 null。
+     *
+     * @param  array<int, User>  $users
+     */
+    private function assignCampus(array $users): ?int
+    {
+        $campusId = User::query()->whereNotNull('campus_id')
+            ->selectRaw('campus_id, count(*) as aggregate')
+            ->groupBy('campus_id')->orderByDesc('aggregate')->value('campus_id');
+        $campusId = $campusId ?: Campus::query()->value('id');
+        if ($campusId === null) {
+            return null;
+        }
+        User::query()->whereIn('id', collect($users)->pluck('id'))->update(['campus_id' => $campusId]);
+
+        return (int) $campusId;
+    }
+
+    /**
+     * @param  array<int, User>  $users
+     * @return array<int, CommunityPost>
+     */
+    private function community(array $users, AdminUser $admin, ?int $campusId): array
     {
         $community = app(CommunityContentService::class);
 
         $posts = [
-            ['宿舍楼下的橘座又来巡逻了，今天心情好像不错，主动蹭了我三次 #校园日常', '一只橘座'],
-            ['出租屋下午四点的阳光真的绝了，周末宅家幸福感拉满 #周末日常', '阿澈'],
-            ['图书馆三楼靠窗的位置今天居然没人，学习效率直接翻倍', '小满同学'],
-            ['二食堂三楼的黄焖鸡米饭加辣加蛋，我可以连吃一周', '林小满'],
-            ['求带饭！二食堂三楼的黄焖鸡，送到 6 号楼 508，辛苦费好说～ #跑腿代办', '林小满'],
-            ['高数期中复习搭子，每晚 7-9 点图书馆，互相监督刷题', '小满同学'],
-            ['西门菜鸟驿站取 2 个快递，送到 3 号宿舍楼，加急', '阿澈'],
-            ['失物招领：图书馆三楼丢了一串钥匙，带棕色小熊挂件，拾到请联系', '一只橘座'],
+            ['宿舍楼下的橘座又来巡逻了，今天心情好像不错，主动蹭了我三次 #校园日常', '一只橘座', 'experience', '8 号宿舍楼'],
+            ['出租屋下午四点的阳光真的绝了，周末宅家幸福感拉满 #周末日常', '阿澈', 'showcase', '校外·滨江出租屋'],
+            ['图书馆三楼靠窗的位置今天居然没人，学习效率直接翻倍', '小满同学', 'guide', '图书馆三楼'],
+            ['二食堂三楼的黄焖鸡米饭加辣加蛋，我可以连吃一周', '林小满', 'experience', '二食堂三楼'],
+            ['求带饭！二食堂三楼的黄焖鸡，送到 6 号楼 508，辛苦费好说～ #跑腿代办', '林小满', 'question', '6 号宿舍楼'],
+            ['高数期中复习搭子，每晚 7-9 点图书馆，互相监督刷题', '小满同学', 'question', '图书馆二楼自习区'],
+            ['西门菜鸟驿站取 2 个快递，送到 3 号宿舍楼，加急', '阿澈', 'question', '3 号宿舍楼'],
+            ['失物招领：图书馆三楼丢了一串钥匙，带棕色小熊挂件，拾到请联系', '一只橘座', 'question', '图书馆三楼'],
         ];
 
-        foreach ($posts as $index => [$title, $nickname]) {
+        $comments = [
+            '这也太可爱了吧，明天我也去蹲点',
+            '阳光正好，适合发呆',
+            '三楼靠窗 yyds，就是插座有点少',
+            '黄焖鸡 +1，加蛋加辣是灵魂',
+            '已接，马上到',
+            '我来！每晚都能到',
+            '取件码私我',
+            '钥匙找到了，联系管理员领取',
+        ];
+
+        $created = [];
+        foreach ($posts as $index => [$title, $nickname, $category, $location]) {
             $author = collect($users)->firstWhere('nickname', $nickname) ?? $users[$index % count($users)];
-            $post = $community->createPost($author, ['title' => $title, 'content' => $title], 'campus-demo-community-post-v1-'.($index + 1));
+            $post = $community->createPost($author, [
+                'title' => $title,
+                'content' => $title,
+                'category_code' => $category,
+                'location_name' => $location,
+            ], 'campus-demo-community-post-v1-'.($index + 1));
             if ($post->status === 'pending_review') {
                 $post = $community->reviewPost($admin, $post, ['decision' => 'approve', 'note' => '校园演示内容审核通过。']);
             }
 
+            // 旧幂等键复用的历史帖子没有位置/校园/分类，显式补齐。
+            $post->forceFill(['category_code' => $category, 'location_name' => $location, 'campus_id' => $campusId])->save();
+
             $commenter = $users[($index + 1) % count($users)];
-            $comments = [
-                '这也太可爱了吧，明天我也去蹲点',
-                '阳光正好，适合发呆',
-                '三楼靠窗 yyds，就是插座有点少',
-                '黄焖鸡 +1，加蛋加辣是灵魂',
-                '已接，马上到',
-                '我来！每晚都能到',
-                '取件码私我',
-                '钥匙找到了，联系管理员领取',
-            ];
             $community->createComment($commenter, $post, ['content' => $comments[$index] ?? '顶一个'], 'campus-demo-community-comment-v1-'.($index + 1));
+            $created[] = $post->fresh();
+        }
+
+        return $created;
+    }
+
+    /**
+     * 关注、点赞、收藏、认证标识等社交演示关系（幂等，可重复执行）。
+     *
+     * @param  array<int, User>  $users
+     * @param  array<int, CommunityPost>  $posts
+     */
+    private function socialGraph(array $users, array $posts): void
+    {
+        // 校园认证：给两位活跃同学补一条已通过的实名记录（仅脱敏字段）。
+        $verifiedNames = ['一只橘座', '阿澈'];
+        foreach ($users as $user) {
+            if (! in_array($user->nickname, $verifiedNames, true)) {
+                continue;
+            }
+            $verification = [
+                'user_id' => $user->id,
+                'provider' => 'campus-dim',
+                'status' => 'verified',
+                'real_name_masked' => '同*',
+                'identity_number_masked' => '******************',
+                'identity_number_hash' => hash('sha256', 'campus-demo-identity-'.$user->id),
+                'verified_at' => now(),
+                'updated_at' => now(),
+            ];
+            $existingVerification = DB::table('user_identity_verifications')
+                ->where('user_id', $user->id)->where('provider', 'campus-dim')->exists();
+            if ($existingVerification) {
+                DB::table('user_identity_verifications')
+                    ->where('user_id', $user->id)->where('provider', 'campus-dim')
+                    ->update($verification);
+            } else {
+                DB::table('user_identity_verifications')->insert($verification + [
+                    'public_id' => (string) Str::ulid(),
+                    'created_at' => now(),
+                ]);
+            }
+        }
+
+        // 关注关系：大家都关注橘座和阿澈；小满关注林小满。
+        $followTargets = ['一只橘座', '阿澈'];
+        foreach ($users as $follower) {
+            foreach ($users as $target) {
+                $shouldFollow = in_array($target->nickname, $followTargets, true)
+                    || ($follower->nickname === '小满同学' && $target->nickname === '林小满');
+                if (! $shouldFollow || $follower->id === $target->id) {
+                    continue;
+                }
+                UserFollow::query()->firstOrCreate(['follower_id' => $follower->id, 'following_id' => $target->id]);
+            }
+        }
+
+        // 点赞与收藏：制造热度差异，供「精选」排序。
+        foreach ($posts as $index => $post) {
+            $likers = array_slice($users, 0, max(1, count($users) - ($index % 3)));
+            foreach ($likers as $liker) {
+                if ($liker->id === $post->user_id) {
+                    continue;
+                }
+                CommunityPostLike::query()->firstOrCreate(['community_post_id' => $post->id, 'user_id' => $liker->id]);
+            }
+            if (in_array($index, [0, 1, 2, 4], true)) {
+                $collector = $users[($index + 2) % count($users)];
+                if ($collector->id !== $post->user_id) {
+                    CommunityPostFavorite::query()->firstOrCreate(['community_post_id' => $post->id, 'user_id' => $collector->id]);
+                }
+            }
+        }
+
+        // 依据互动表重算计数，保证演示数据计数与关系一致。
+        foreach ($posts as $post) {
+            DB::table('community_posts')->where('id', $post->id)->update([
+                'like_count' => CommunityPostLike::query()->where('community_post_id', $post->id)->count(),
+                'favorite_count' => CommunityPostFavorite::query()->where('community_post_id', $post->id)->count(),
+            ]);
         }
     }
 }

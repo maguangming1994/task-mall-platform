@@ -4,12 +4,18 @@ namespace App\Modules\Community\Http\Controllers;
 
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Campus\Models\Campus;
 use App\Modules\Community\Models\CommunityPost;
+use App\Modules\Community\Models\CommunityPostFavorite;
+use App\Modules\Community\Models\UserFollow;
 use App\Modules\Community\Services\CommunityContentService;
+use App\Modules\Identity\Models\UserIdentityVerification;
 use App\Modules\Upload\Models\UploadedFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -24,33 +30,62 @@ class CommunityPostController extends Controller
         'showcase' => '成果展示',
     ];
 
+    private const FEEDS = ['discover', 'following', 'nearby', 'featured'];
+
     public function index(Request $request): JsonResponse
     {
         $data = $request->validate([
             'page' => ['nullable', 'integer', 'min:1'],
             'page_size' => ['nullable', 'integer', 'min:1', 'max:50'],
             'category' => ['nullable', Rule::in(array_keys(self::CATEGORIES))],
+            'feed' => ['nullable', Rule::in(self::FEEDS)],
         ]);
         $page = $data['page'] ?? 1;
         $size = $data['page_size'] ?? 20;
+        $feed = $data['feed'] ?? 'discover';
+        $viewer = $request->user();
+
         $query = CommunityPost::query()->where('status', 'published')
-            ->when($data['category'] ?? null, fn ($query, $category) => $query->where('category_code', $category))
-            ->orderByDesc('published_at')
-            ->orderByDesc('id');
+            ->when($data['category'] ?? null, fn ($query, $category) => $query->where('category_code', $category));
+
+        if ($feed === 'following') {
+            abort_unless($viewer !== null, 401);
+            $followingIds = UserFollow::query()->where('follower_id', $viewer->id)->pluck('following_id')->all();
+            if ($followingIds === []) {
+                return ApiResponse::success(['items' => [], 'pagination' => ['page' => $page, 'page_size' => $size, 'total' => 0]]);
+            }
+            $query->whereIn('user_id', $followingIds)->orderByDesc('published_at')->orderByDesc('id');
+        } elseif ($feed === 'nearby') {
+            abort_unless($viewer !== null, 401);
+            $campus = $viewer->campus_id !== null ? Campus::query()->find($viewer->campus_id) : null;
+            $nearbyUserIds = User::query()
+                ->when($campus !== null, fn ($q) => $q->where('campus_id', $campus->id))
+                ->pluck('id')->all();
+            if ($nearbyUserIds === []) {
+                return ApiResponse::success(['items' => [], 'pagination' => ['page' => $page, 'page_size' => $size, 'total' => 0]]);
+            }
+            $query->whereIn('user_id', $nearbyUserIds)->orderByDesc('published_at')->orderByDesc('id');
+        } elseif ($feed === 'featured') {
+            $query->orderByRaw('(like_count + comment_count * 2) desc, published_at desc');
+        } else {
+            $query->orderByDesc('published_at')->orderByDesc('id');
+        }
+
         $total = $query->count();
         $posts = $query->forPage($page, $size)->get();
-        $likedPostIds = $request->user() === null ? collect() : DB::table('community_post_likes')
-            ->where('user_id', $request->user()->id)->whereIn('community_post_id', $posts->pluck('id'))->pluck('community_post_id');
+        $meta = $this->viewerMeta($request, $posts);
 
-        return ApiResponse::success(['items' => $posts->map(fn (CommunityPost $post) => $this->data($post, likedByViewer: $likedPostIds->contains($post->id))), 'pagination' => ['page' => $page, 'page_size' => $size, 'total' => $total]]);
+        return ApiResponse::success([
+            'items' => $posts->map(fn (CommunityPost $post) => $this->data($post, meta: $meta)),
+            'pagination' => ['page' => $page, 'page_size' => $size, 'total' => $total],
+        ]);
     }
 
     public function show(Request $request, CommunityPost $post): JsonResponse
     {
         abort_unless($post->status === 'published', 404);
-        $liked = $request->user() !== null && DB::table('community_post_likes')->where('community_post_id', $post->id)->where('user_id', $request->user()->id)->exists();
 
-        return ApiResponse::success($this->data($post, likedByViewer: $liked));
+        return ApiResponse::success($this->data($post, meta: $this->viewerMeta($request, collect([$post]))));
     }
 
     public function categories(CommunityContentService $service): JsonResponse
@@ -140,6 +175,7 @@ class CommunityPostController extends Controller
             'title' => ['required', 'string', 'max:120'],
             'content' => ['required', 'string', 'max:20000'],
             'category_code' => ['nullable', Rule::in(array_keys(self::CATEGORIES))],
+            'location_name' => ['nullable', 'string', 'max:80'],
             'image_file_ids' => ['nullable', 'array', 'max:9'],
             'image_file_ids.*' => ['string', 'size:26'],
             'video_file_id' => ['nullable', 'string', 'size:26'],
@@ -154,9 +190,67 @@ class CommunityPostController extends Controller
         return $key;
     }
 
-    private function data(CommunityPost $post, bool $includeLatestVersion = false, bool $includeOwnerActions = false, bool $likedByViewer = false): array
+    /**
+     * 批量预加载当前请求 viewer 对这批帖子的互动状态与作者信息，避免 N+1。
+     *
+     * @param  Collection<int,CommunityPost>  $posts
+     * @return array{liked:array<int,bool>,favorited:array<int,bool>,authors:array<int,array<string,mixed>>}
+     */
+    private function viewerMeta(Request $request, $posts): array
     {
-        $author = DB::table('users')->where('id', $post->user_id)->first();
+        $viewer = $request->user();
+        $postIds = $posts->pluck('id')->all();
+        $userIds = $posts->pluck('user_id')->unique()->values()->all();
+
+        $liked = [];
+        $favorited = [];
+        $followedIds = [];
+        if ($viewer !== null) {
+            $liked = DB::table('community_post_likes')
+                ->where('user_id', $viewer->id)->whereIn('community_post_id', $postIds)
+                ->pluck('community_post_id')->mapWithKeys(fn ($id) => [(int) $id => true])->all();
+            $favorited = CommunityPostFavorite::query()
+                ->where('user_id', $viewer->id)->whereIn('community_post_id', $postIds)
+                ->pluck('community_post_id')->mapWithKeys(fn ($id) => [(int) $id => true])->all();
+            $followedIds = UserFollow::query()
+                ->where('follower_id', $viewer->id)->whereIn('following_id', $userIds)
+                ->pluck('following_id')->all();
+        }
+
+        $users = User::query()->whereIn('id', $userIds)->get(['id', 'public_id', 'nickname', 'avatar_file_id', 'campus_id']);
+        $avatarIds = $users->pluck('avatar_file_id')->filter()->unique()->all();
+        $avatarFiles = UploadedFile::query()->whereIn('id', $avatarIds)->get();
+        $verifiedUserIds = UserIdentityVerification::query()
+            ->whereIn('user_id', $userIds)->where('status', 'verified')
+            ->pluck('user_id')->unique()->all();
+        $campusNames = Campus::query()
+            ->whereIn('id', $users->pluck('campus_id')->filter()->unique()->all())
+            ->pluck('name', 'id');
+
+        $authors = [];
+        foreach ($users as $user) {
+            $avatar = $avatarFiles->firstWhere('id', $user->avatar_file_id);
+            $authors[(int) $user->id] = [
+                'id' => $user->public_id,
+                'nickname' => $user->nickname ?: '社区用户',
+                'avatar_url' => $avatar === null ? null : rtrim((string) config('app.url'), '/').route('user-avatars.show', ['file' => $avatar], false),
+                'campus_name' => $user->campus_id !== null ? ($campusNames[$user->campus_id] ?? null) : null,
+                'verified' => in_array($user->id, $verifiedUserIds, true),
+                'is_followed' => in_array($user->id, $followedIds, true),
+                'is_self' => $viewer !== null && $user->id === $viewer->id,
+            ];
+        }
+
+        return ['liked' => $liked, 'favorited' => $favorited, 'authors' => $authors];
+    }
+
+    private function data(CommunityPost $post, bool $includeLatestVersion = false, bool $includeOwnerActions = false, array $meta = []): array
+    {
+        $author = $meta['authors'][$post->user_id] ?? null;
+        if ($author === null) {
+            $fallback = DB::table('users')->where('id', $post->user_id)->first();
+            $author = ['id' => $fallback?->public_id, 'nickname' => $fallback?->nickname ?: '社区用户', 'avatar_url' => null, 'campus_name' => null, 'verified' => false, 'is_followed' => false, 'is_self' => false];
+        }
         $latestVersion = $includeLatestVersion
             ? DB::table('community_post_versions')->where('community_post_id', $post->id)->where('version_no', $post->current_version_no)->first()
             : null;
@@ -173,17 +267,20 @@ class CommunityPostController extends Controller
 
         return [
             'id' => $post->public_id,
-            'author' => ['id' => $author?->public_id, 'nickname' => $author?->nickname ?: '社区用户'],
+            'author' => $author,
             'title' => $post->title,
             'content' => $post->content,
             'category_code' => $post->category_code,
             'category_label' => self::CATEGORIES[$post->category_code] ?? '经验分享',
+            'location_name' => $post->location_name,
             'status' => $post->trashed() ? 'deleted' : $post->status,
             'current_version_no' => $post->current_version_no,
             'published_version_no' => $post->published_version_no,
             'comment_count' => $post->comment_count,
             'like_count' => $post->like_count,
-            'liked_by_me' => $likedByViewer,
+            'liked_by_me' => (bool) ($meta['liked'][$post->id] ?? false),
+            'favorite_count' => (int) ($post->favorite_count ?? 0),
+            'favorited_by_me' => (bool) ($meta['favorited'][$post->id] ?? false),
             'reward_granted' => $post->reward_granted,
             'attachments' => $this->attachments($post, $post->published_version_no),
             'latest_version' => $latestVersionData,
