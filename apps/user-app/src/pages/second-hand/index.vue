@@ -2,7 +2,6 @@
   <view class="page">
     <view class="head">
       <text class="title">闲置市场</text>
-      <view class="publish-btn" @click="goPublish"><text class="publish-plus">＋</text>发布</view>
     </view>
 
     <view class="search-box" @click.stop>
@@ -53,6 +52,8 @@
       </view>
     </view>
     <view v-else class="empty"><text>暂无闲置物品</text></view>
+
+    <view class="fab-publish" @click="goPublish"><text class="fab-plus">＋</text><text>发布</text></view>
   </view>
 </template>
 
@@ -125,13 +126,15 @@ onShow(() => {
 </script>
 
 <style lang="scss" scoped>
-.page { min-height: 100vh; background: #F4F6F4; padding-bottom: 40rpx; }
+.page { min-height: 100vh; background: #F4F6F4; padding-bottom: 160rpx; }
 
-/* 头部 */
-.head { display: flex; justify-content: space-between; align-items: center; padding: 24rpx 24rpx 16rpx; }
+/* 头部（自定义导航：避开状态栏与右上角胶囊区） */
+.head { display: flex; justify-content: space-between; align-items: center; padding: calc(var(--status-bar-height) + 16rpx) 24rpx 16rpx; }
 .title { font-size: 40rpx; font-weight: 800; color: #191B1F; }
-.publish-btn { display: flex; align-items: center; gap: 4rpx; height: 56rpx; padding: 0 26rpx; border-radius: 28rpx; background: linear-gradient(135deg, #12D978, #08A152); color: #fff; font-size: 24rpx; font-weight: 700; box-shadow: 0 8rpx 20rpx rgba(11, 191, 99, .25); }
-.publish-plus { font-size: 26rpx; line-height: 1; }
+
+/* 发布悬浮按钮（右下角，避开小程序胶囊） */
+.fab-publish { position: fixed; right: 32rpx; bottom: calc(48rpx + env(safe-area-inset-bottom)); z-index: 20; display: flex; align-items: center; gap: 6rpx; height: 84rpx; padding: 0 34rpx; border-radius: 42rpx; background: linear-gradient(135deg, #12D978, #08A152); color: #fff; font-size: 28rpx; font-weight: 700; box-shadow: 0 12rpx 28rpx rgba(11, 191, 99, .35); }
+.fab-plus { font-size: 34rpx; line-height: 1; }
 
 /* 搜索 */
 .search-box { margin: 0 24rpx 16rpx; background: #F2F4F3; border-radius: 34rpx; padding: 0 24rpx; height: 68rpx; display: flex; align-items: center; gap: 10rpx; }
