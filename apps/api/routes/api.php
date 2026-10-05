@@ -12,6 +12,7 @@ use App\Modules\Admin\Http\Controllers\AdminMfaController;
 use App\Modules\Admin\Http\Controllers\AdminRoleController;
 use App\Modules\Admin\Http\Controllers\AdminUserManagementController;
 use App\Modules\Admin\Http\Controllers\IdentityConflictController;
+use App\Modules\Admin\Http\Controllers\ReviewWorkbenchController;
 use App\Modules\Assets\Http\Controllers\AdminAssetAdjustmentController;
 use App\Modules\Assets\Http\Controllers\AdminCouponTemplateController;
 use App\Modules\Assets\Http\Controllers\AdminWalletRechargeController;
@@ -40,6 +41,7 @@ use App\Modules\Community\Http\Controllers\CommunitySocialController;
 use App\Modules\Fulfillment\Http\Controllers\FulfillmentController;
 use App\Modules\Growth\Http\Controllers\DailyCheckInController;
 use App\Modules\Growth\Http\Controllers\ReferralController;
+use App\Modules\Identity\Http\Controllers\AdminIdentityVerificationController;
 use App\Modules\Identity\Http\Controllers\AdminIdentityVerificationSettingsController;
 use App\Modules\Identity\Http\Controllers\UserIdentityVerificationController;
 use App\Modules\Inventory\Http\Controllers\AdminInventoryController;
@@ -464,6 +466,10 @@ Route::prefix('admin')->group(function () {
             ->middleware('admin.permission:settings.manage');
         Route::put('/identity-verification/settings', [AdminIdentityVerificationSettingsController::class, 'update'])
             ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::get('/identity-verifications', [AdminIdentityVerificationController::class, 'index'])
+            ->middleware('admin.permission:identity.review');
+        Route::post('/identity-verifications/{verification}/review', [AdminIdentityVerificationController::class, 'review'])
+            ->middleware('admin.permission:identity.review');
         Route::get('/media/storage/providers', [AdminMediaController::class, 'providers'])->middleware('admin.permission:settings.manage');
         Route::put('/media/storage/providers/{mediaStorageProvider}', [AdminMediaController::class, 'configure'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
         Route::post('/media/storage/providers/{mediaStorageProvider}/test', [AdminMediaController::class, 'test'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
@@ -569,7 +575,9 @@ Route::prefix('admin')->group(function () {
         Route::post('/community/activities/{activity}/close', [CommunityActivityController::class, 'close'])->middleware('admin.permission:community.review');
         Route::post('/community/activities/{activity}/participants/{participant}/remove', [CommunityActivityController::class, 'removeParticipant'])->middleware('admin.permission:community.review');
         Route::get('/community/config', [CommunityHomepageController::class, 'adminShow'])->middleware('admin.permission:community.review');
+        Route::get('/review-workbench/summary', [ReviewWorkbenchController::class, 'summary'])->middleware('admin.permission:community.review|task.review|identity.review|after_sale.review');
         Route::get('/second-hand/items', [SecondHandItemController::class, 'adminIndex'])->middleware('admin.permission:community.review');
+        Route::get('/second-hand/items/{item}', [SecondHandItemController::class, 'adminShow'])->middleware('admin.permission:community.review');
         Route::post('/second-hand/items/{item}/review', [SecondHandItemController::class, 'adminReview'])->middleware('admin.permission:community.review');
         Route::get('/second-hand/refunds', [SecondHandRefundController::class, 'adminIndex'])->middleware('admin.permission:after_sale.review');
         Route::post('/second-hand/refunds/{refund}/arbitrate', [SecondHandRefundController::class, 'arbitrate'])->middleware('admin.permission:after_sale.review');

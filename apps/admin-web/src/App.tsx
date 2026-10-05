@@ -72,6 +72,7 @@ const DataBoardPage = lazy(() => import('./features/operations/DataBoardPage').t
 const UserOperationsPage = lazy(() => import('./features/users/UserOperationsPage').then((module) => ({ default: module.UserOperationsPage })))
 const SupportTicketPage = lazy(() => import('./features/support/SupportTicketPage').then((module) => ({ default: module.SupportTicketPage })))
 const CampusManagementPage = lazy(() => import('./features/campuses/CampusManagementPage').then((module) => ({ default: module.CampusManagementPage })))
+const IdentityReviewPage = lazy(() => import('./features/identity/IdentityReviewPage').then((module) => ({ default: module.IdentityReviewPage })))
 
 const iconMap: Record<string, ReactNode> = {
   DashboardOutlined: <DashboardOutlined />,
@@ -288,6 +289,7 @@ function Workbench({ onNavigate }: { onNavigate: (code: string) => void }) {
 
 function Workspace({ item, onNavigate }: { item: NavigationItem; onNavigate: (code: string) => void }) {
   if (item.code === 'campuses') return <CampusManagementPage />
+  if (item.code === 'identity_review') return <IdentityReviewPage />
   if (item.code === 'users') return <UserOperationsPage />
   if (item.code === 'settings') return <SettingsPage />
   if (item.code === 'security') return <SecurityPage />

@@ -5,6 +5,8 @@ namespace App\Modules\SecondHand\Http\Controllers;
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Identity\Models\UserIdentityVerification;
 use App\Modules\SecondHand\Models\SecondHandCategory;
 use App\Modules\SecondHand\Models\SecondHandItem;
@@ -226,29 +228,90 @@ class SecondHandItemController extends Controller
             ->when($data['audit_status'] ?? null, fn ($q, $s) => $q->where('audit_status', $s))
             ->latest('id');
         $total = $query->count();
-        $items = $query->forPage($page, $size)->with('seller')->get();
+        $items = $query->forPage($page, $size)
+            ->with(['seller', 'category', 'reviewer'])
+            ->get();
+
+        // 批量汇总卖家信用/在售成交/实名信息，供移动与后台审核卡片展示（避免 N+1）
+        $sellerStats = $this->batchSellerStats($items->pluck('seller_user_id')->all());
 
         return ApiResponse::success([
-            'items' => $items->map(fn (SecondHandItem $i) => $this->present($i)),
+            'items' => $items->map(fn (SecondHandItem $i) => $this->presentAdminItem($i, $sellerStats[$i->seller_user_id] ?? [])),
             'pagination' => ['page' => $page, 'page_size' => $size, 'total' => $total],
         ]);
     }
 
-    public function adminReview(Request $request, SecondHandItem $item): JsonResponse
+    public function adminShow(SecondHandItem $item): JsonResponse
+    {
+        $item->loadMissing(['seller', 'category', 'reviewer']);
+        $sellerStats = $this->batchSellerStats([$item->seller_user_id]);
+
+        return ApiResponse::success($this->presentAdminItem($item, $sellerStats[$item->seller_user_id] ?? []));
+    }
+
+    public function adminReview(Request $request, SecondHandItem $item, AuditLogger $audit): JsonResponse
     {
         $data = $request->validate([
             'decision' => ['required', 'in:approve,reject'],
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
 
-        if ($data['decision'] === 'approve') {
-            $item->update(['audit_status' => 'approved', 'rejected_reason' => null]);
-        } else {
-            $item->update(['audit_status' => 'rejected', 'rejected_reason' => $data['reason'] ?? '未通过审核']);
+        /** @var AdminUser $admin */
+        $admin = $request->user();
+        $before = $this->presentAdminItem($item);
+
+        // 事务内行锁 + 终态判定，避免并发重复审核（TOCTOU）导致双写、双通知
+        $finished = false;
+        DB::transaction(function () use ($item, $data, $admin, &$finished): void {
+            $locked = SecondHandItem::query()->lockForUpdate()->find($item->id);
+            if ($locked->audit_status !== 'pending') {
+                $finished = true;
+
+                return;
+            }
+
+            if ($data['decision'] === 'approve') {
+                $locked->update([
+                    'audit_status' => 'approved',
+                    'rejected_reason' => null,
+                    'reviewed_by' => $admin->id,
+                    'reviewed_at' => now(),
+                ]);
+            } else {
+                $locked->update([
+                    'audit_status' => 'rejected',
+                    'rejected_reason' => $data['reason'] ?? '未通过审核',
+                    'reviewed_by' => $admin->id,
+                    'reviewed_at' => now(),
+                ]);
+            }
+            $item->setRawAttributes($locked->getAttributes(), true);
+        });
+
+        if ($finished) {
+            return ApiResponse::error(
+                'REVIEW_ALREADY_FINISHED',
+                '该商品已经完成审核，不能重复操作。',
+                409,
+            );
         }
+
+        $item->loadMissing(['seller', 'category', 'reviewer']);
+        $sellerStats = $this->batchSellerStats([$item->seller_user_id]);
+        $after = $this->presentAdminItem($item, $sellerStats[$item->seller_user_id] ?? []);
+
+        $audit->record(
+            $admin,
+            'second_hand.'.$data['decision'],
+            'second_hand_item',
+            $item->public_id,
+            $before,
+            $after,
+            $data['reason'] ?? null,
+        );
         $this->notify->itemReviewed($item, $data['decision'] === 'approve', $data['reason'] ?? null);
 
-        return ApiResponse::success($this->present($item, true));
+        return ApiResponse::success($after);
     }
 
     public function mine(Request $request): JsonResponse
@@ -330,5 +393,78 @@ class SecondHandItemController extends Controller
             'nickname' => $user->nickname,
             'avatar' => $user->avatar_file_id,
         ];
+    }
+
+    /**
+     * 管理端（后台/移动工作台）商品视图：在用户视图基础上补充卖家信用资料与审核留痕。
+     *
+     * @param  array<string, mixed>  $sellerStats  batchSellerStats() 预加载的卖家统计
+     */
+    private function presentAdminItem(SecondHandItem $item, array $sellerStats = []): array
+    {
+        $data = $this->present($item, true, false);
+        $seller = $data['seller'] !== null ? array_merge($data['seller'], [
+            'identity_verified' => (bool) ($sellerStats['identity_verified'] ?? false),
+            'on_sale_count' => (int) ($sellerStats['on_sale_count'] ?? 0),
+            'sold_count' => (int) ($sellerStats['sold_count'] ?? 0),
+            'rating_average' => isset($sellerStats['rating_average']) ? round((float) $sellerStats['rating_average'], 1) : null,
+            'rating_count' => (int) ($sellerStats['rating_count'] ?? 0),
+        ]) : null;
+
+        $data['seller'] = $seller;
+        $data['submitted_at'] = $item->created_at?->toIso8601String();
+        $data['reviewed_at'] = $item->reviewed_at?->toIso8601String();
+        $data['reviewed_by_name'] = $item->relationLoaded('reviewer')
+            ? $item->reviewer?->display_name
+            : null;
+
+        return $data;
+    }
+
+    /**
+     * 批量统计卖家信用资料。
+     *
+     * @param  array<int, int|null>  $userIds
+     * @return array<int, array<string, mixed>> 以 user_id 为键
+     */
+    private function batchSellerStats(array $userIds): array
+    {
+        $ids = collect($userIds)->filter()->unique()->values()->all();
+        if ($ids === []) {
+            return [];
+        }
+
+        $ratings = SecondHandRating::query()
+            ->whereIn('ratee_user_id', $ids)
+            ->selectRaw('ratee_user_id, AVG(score) AS avg_score, COUNT(*) AS cnt')
+            ->groupBy('ratee_user_id')
+            ->get()
+            ->keyBy('ratee_user_id');
+        $itemStats = SecondHandItem::query()
+            ->whereIn('seller_user_id', $ids)
+            ->selectRaw(
+                'seller_user_id, '
+                ."SUM(CASE WHEN status = 'on_sale' AND audit_status = 'approved' THEN 1 ELSE 0 END) AS on_sale_count, "
+                ."SUM(CASE WHEN status = 'sold' THEN 1 ELSE 0 END) AS sold_count",
+            )
+            ->groupBy('seller_user_id')
+            ->get()
+            ->keyBy('seller_user_id');
+        $verifiedIds = UserIdentityVerification::query()
+            ->whereIn('user_id', $ids)->where('status', 'verified')
+            ->pluck('user_id')->unique();
+
+        $result = [];
+        foreach ($ids as $id) {
+            $result[$id] = [
+                'identity_verified' => $verifiedIds->contains($id),
+                'on_sale_count' => (int) ($itemStats[$id]->on_sale_count ?? 0),
+                'sold_count' => (int) ($itemStats[$id]->sold_count ?? 0),
+                'rating_average' => $ratings[$id]->avg_score ?? null,
+                'rating_count' => (int) ($ratings[$id]->cnt ?? 0),
+            ];
+        }
+
+        return $result;
     }
 }

@@ -15,6 +15,7 @@
         <text class="guest-copy">登录后查看任务进度、校园钱包、积分和订单。</text>
         <button class="guest-login-button" @click.stop="goLogin">{{ guestActionText }}</button>
       </view>
+      <text class="guest-admin-entry" @click="openAdminWorkbench">🛡️ 审核管理员入口</text>
     </view>
 
     <template v-else>
@@ -115,6 +116,7 @@
       <view class="fn" @click="openSupport"><view class="fn-ic" style="background:#EAF2FF">🎧</view><text class="fn-label">客服中心</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view class="fn" @click="openSupport"><view class="fn-ic" style="background:#F1EAFF">💬</view><text class="fn-label">意见反馈</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view class="fn" @click="openPrivacy"><view class="fn-ic" style="background:#EEF1F5">⚙️</view><text class="fn-label">设置</text><view class="sp" /><text class="fn-arrow">›</text></view>
+      <view class="fn" @click="openAdminWorkbench"><view class="fn-ic" style="background:#E9F7EF">🛡️</view><text class="fn-label">审核工作台</text><view class="sp" /><text v-if="admin.isLoggedIn" class="fn-note">{{ admin.displayName }}</text><text class="fn-arrow">›</text></view>
     </view>
 
     <view v-if="moreServices.length" class="fn-list">
@@ -143,6 +145,7 @@ import { loadAppearanceContent, type AccountAppearance } from '@/api/appearance'
 import { resolveApiAssetUrl } from '@/api/http'
 import { chooseAndUploadAvatar, uploadAvatarFromPath } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
+import { useAdminStore } from '@/stores/admin'
 import { useModulesStore } from '@/stores/modules'
 import { useIconConfigStore } from '@/stores/icons'
 import type { ModuleCode } from '@/platform/modules'
@@ -151,6 +154,7 @@ import { navigateToLogin } from '@/utils/authRedirect'
 declare const wx: { canIUse(schema: string): boolean }
 
 const auth = useAuthStore()
+const admin = useAdminStore()
 const modules = useModulesStore()
 const icons = useIconConfigStore()
 const nickname = ref(auth.user?.nickname ?? '')
@@ -436,6 +440,11 @@ function openMySecondHand() { uni.navigateTo({ url: '/pages/second-hand-my/index
 function openSecondHandOrders(role?: 'buyer' | 'seller') { uni.navigateTo({ url: `/pages/second-hand-orders/index${role ? `?role=${role}` : ''}` }) }
 function openChat() { uni.navigateTo({ url: '/pages/chat/index' }) }
 function openPrivacy() { uni.navigateTo({ url: '/pages/privacy/index' }) }
+function openAdminWorkbench() {
+  // 管理员会话与普通用户会话独立：已登录直接进工作台，否则进管理员登录页
+  const url = admin.isLoggedIn ? '/pages/admin/review/index' : '/pages/admin/login/index'
+  uni.navigateTo({ url })
+}
 function openIdentityVerification() { uni.navigateTo({ url: '/pages/identity-verification/index' }) }
 function openAddresses() { uni.navigateTo({ url: '/pages/addresses/index' }) }
 function openLegal() { uni.navigateTo({ url: '/pages/legal/index' }) }
@@ -529,4 +538,5 @@ async function logout() {
 .guest-copy{display:block;max-width:520rpx;margin-top:16rpx;color:rgba(255,255,255,.85);font-size:26rpx;line-height:1.6}
 .guest-login-button{position:relative;width:100%;height:88rpx;margin-top:56rpx;border-radius:44rpx;background:#fff;color:var(--green-deep);font-size:30rpx;font-weight:800;line-height:88rpx}
 .guest-login-button::after{border:0}
+.guest-admin-entry{display:block;margin-top:32rpx;color:#767C85;font-size:24rpx;text-align:center}
 </style>

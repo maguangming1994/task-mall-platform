@@ -5,6 +5,7 @@ namespace App\Modules\Community\Http\Controllers;
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Community\Models\CommunityComment;
 use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Community\Models\ContentAppeal;
@@ -52,7 +53,7 @@ class CommunityModerationController extends Controller
         })]);
     }
 
-    public function moderate(Request $request, string $contentType, string $contentId, CommunityModerationService $service): JsonResponse
+    public function moderate(Request $request, string $contentType, string $contentId, CommunityModerationService $service, AuditLogger $audit): JsonResponse
     {
         abort_unless(in_array($contentType, ['post', 'comment'], true), 404);
         $data = $request->validate([
@@ -66,15 +67,50 @@ class CommunityModerationController extends Controller
         $admin = $request->user();
         $action = $service->moderate($admin, $contentType, $contentId, $data, $this->key($request));
 
+        // 幂等键命中时服务返回既有处置单，不重复写审计
+        if ($action->wasRecentlyCreated) {
+            $audit->record(
+                $admin,
+                'community.moderate.'.$data['decision'],
+                'community_'.$contentType,
+                $contentId,
+                null,
+                $this->actionData($action),
+                $data['note'].'（原因码：'.$data['reason_code'].'）',
+            );
+        }
+
         return ApiResponse::success($this->actionData($action));
     }
 
-    public function reviewAppeal(Request $request, ContentAppeal $appeal, CommunityModerationService $service): JsonResponse
+    public function reviewAppeal(Request $request, ContentAppeal $appeal, CommunityModerationService $service, AuditLogger $audit): JsonResponse
     {
         $data = $request->validate(['decision' => ['required', 'in:approve,reject'], 'note' => ['required', 'string', 'max:500']]); /** @var AdminUser $admin */
         $admin = $request->user();
 
-        return ApiResponse::success($this->appealData($service->reviewAppeal($admin, $appeal, $data)));
+        // 终态保护：只有已提交的申诉可复核
+        if ($appeal->status !== 'submitted') {
+            return ApiResponse::error(
+                'APPEAL_ALREADY_FINISHED',
+                '该申诉已经完成复核，不能重复操作。',
+                409,
+            );
+        }
+
+        $before = $this->appealData($appeal);
+        $reviewed = $service->reviewAppeal($admin, $appeal, $data);
+        $after = $this->appealData($reviewed);
+        $audit->record(
+            $admin,
+            'community.appeal.'.$data['decision'],
+            'community_appeal',
+            $appeal->public_id,
+            $before,
+            $after,
+            $data['note'],
+        );
+
+        return ApiResponse::success($after);
     }
 
     private function key(Request $request): string
@@ -95,7 +131,11 @@ class CommunityModerationController extends Controller
 
     private function actionData(ModerationAction $action): array
     {
-        return ['id' => $action->public_id, 'content_type' => $action->content_type, 'content_id' => $action->content_id, 'action_type' => $action->action_type, 'reason_code' => $action->reason_code, 'status' => $action->status, 'reward_revoked' => $action->reward_revoked, 'appeal_deadline_at' => $action->appeal_deadline_at?->toIso8601String(), 'created_at' => $action->created_at->toIso8601String()];
+        // content_id 对外解析为公开 ULID，与 reportData 口径一致，不泄露内部自增 ID
+        $contentModel = $action->content_type === 'post' ? CommunityPost::class : CommunityComment::class;
+        $contentPublicId = $contentModel::query()->whereKey($action->content_id)->value('public_id');
+
+        return ['id' => $action->public_id, 'content_type' => $action->content_type, 'content_id' => $contentPublicId, 'action_type' => $action->action_type, 'reason_code' => $action->reason_code, 'status' => $action->status, 'reward_revoked' => $action->reward_revoked, 'appeal_deadline_at' => $action->appeal_deadline_at?->toIso8601String(), 'created_at' => $action->created_at->toIso8601String()];
     }
 
     private function appealData(ContentAppeal $appeal): array

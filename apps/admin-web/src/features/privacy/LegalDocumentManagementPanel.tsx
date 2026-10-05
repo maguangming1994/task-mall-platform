@@ -9,7 +9,8 @@ import { RichTextEditor } from '../../components/RichTextEditor'
 import { useAdminAuth } from '../auth/AdminAuthContext'
 
 const documentTypeNames: Record<string, string> = {
-  user_agreement: '用户协议', privacy_policy: '隐私政策', task_rules: '任务参与规则', points_rules: '积分规则',
+  user_agreement: '用户协议', privacy_policy: '隐私政策', identity_service: '实名认证服务协议', payment_service: '支付服务协议',
+  task_rules: '任务参与规则', points_rules: '积分规则',
   wallet_rules: '余额与提现规则', mall_after_sale: '商城售后规则', community_rules: '社区规则', cancellation_rules: '账号注销规则',
 }
 const documentTypeOptions = Object.entries(documentTypeNames).map(([value, label]) => ({ value, label }))

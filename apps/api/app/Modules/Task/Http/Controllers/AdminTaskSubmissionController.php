@@ -85,13 +85,15 @@ class AdminTaskSubmissionController extends Controller
 
     public function review(Request $request, TaskSubmission $taskSubmission, TaskSubmissionService $submissions, AuditLogger $audit): JsonResponse
     {
+        // 驳回原因码必须命中启用中的原因字典，防止脏数据进入审核留痕
+        $activeReasonCodes = TaskReviewReason::query()->where('status', 'active')->pluck('code')->all();
         $data = $request->validate([
-            'decision' => ['required', 'in:approve,reject'], 'reason_code' => ['sometimes', 'nullable', 'string', 'max:64'],
+            'decision' => ['required', 'in:approve,reject'], 'reason_code' => ['sometimes', 'nullable', 'string', 'max:64', 'in:'.implode(',', $activeReasonCodes)],
             'note' => ['sometimes', 'nullable', 'string', 'max:500'],
             'step_results' => ['sometimes', 'array', 'max:50'],
             'step_results.*.step_id' => ['required', 'string', 'max:80'],
             'step_results.*.decision' => ['required', 'in:approve,reject'],
-            'step_results.*.reason_code' => ['sometimes', 'nullable', 'string', 'max:64'],
+            'step_results.*.reason_code' => ['sometimes', 'nullable', 'string', 'max:64', 'in:'.implode(',', $activeReasonCodes)],
             'step_results.*.note' => ['sometimes', 'nullable', 'string', 'max:500'],
         ]);
         /** @var AdminUser $admin */ $admin = $request->user();

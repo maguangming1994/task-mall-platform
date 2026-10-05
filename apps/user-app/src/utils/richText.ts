@@ -29,3 +29,25 @@ export function compactRichTextContent(value?: string | null): string {
       return `<${tag}${remainingAttributes} style="${existingStyle};margin:0;padding:0;font-size:inherit;line-height:inherit">`
     })
 }
+
+export type MarkdownLineKind = 'h1' | 'h2' | 'h3' | 'quote' | 'list' | 'plain'
+export interface MarkdownLine { text: string; kind: MarkdownLineKind }
+
+/* 轻量 Markdown 按行解析（无第三方依赖）：识别标题、引用、列表、正文，并去除简单加粗标记 */
+export function markdownLines(content?: string | null): MarkdownLine[] {
+  if (!content) return []
+  return content.split(/\r?\n/).reduce<MarkdownLine[]>((lines, raw) => {
+    const text = raw.trim()
+    if (!text) return lines
+    let kind: MarkdownLineKind = 'plain'
+    let body = text
+    if (body.startsWith('### ')) { kind = 'h3'; body = body.slice(4) }
+    else if (body.startsWith('## ')) { kind = 'h2'; body = body.slice(3) }
+    else if (body.startsWith('# ')) { kind = 'h1'; body = body.slice(2) }
+    else if (body.startsWith('> ')) { kind = 'quote'; body = body.slice(2) }
+    else if (/^[-*]\s+/.test(body)) { kind = 'list'; body = body.replace(/^[-*]\s+/, '· ') }
+    else if (/^\d+\.\s+/.test(body)) { kind = 'list' }
+    lines.push({ text: body.replace(/\*\*(.+?)\*\*/g, '$1'), kind })
+    return lines
+  }, [])
+}

@@ -21,7 +21,9 @@
           </view>
           <view v-if="expandedIndex === index" class="document-content">
             <rich-text v-if="document.content_format === 'rich_text_html'" :nodes="document.content" />
-            <text v-else selectable>{{ document.content }}</text>
+            <view v-else>
+              <text v-for="(line, lineIndex) in markdownLines(document.content)" :key="lineIndex" :class="['md-line', `md-${line.kind}`]" selectable>{{ line.text }}</text>
+            </view>
           </view>
           <label v-if="!readOnly" class="consent-row">
             <checkbox :value="document.id" color="#0BBF63" />
@@ -46,6 +48,7 @@ import { ApiError } from '@/api/http'
 import { acceptLegalDocument, loadCurrentLegalDocuments, loadPendingLegalDocuments, type LegalDocument } from '@/api/legal'
 import { useAuthStore } from '@/stores/auth'
 import { clearReturnUrl, redirectToLogin, resolveReturnUrl } from '@/utils/authRedirect'
+import { markdownLines } from '@/utils/richText'
 
 const auth = useAuthStore()
 const documents = ref<LegalDocument[]>([])
@@ -171,6 +174,7 @@ function showError(error: unknown) {
 .state-card.success{background:#F0FBF5}.document-card:nth-child(even){background:#fff}
 .toggle{padding:7rpx 12rpx;border:1rpx solid #9FD8B6;border-radius:10rpx;background:#E7F9EF;color:#08A152}
 .document-content{border:1rpx solid #EDEFEF;background:#F7F9F8}.consent-row{background:#F4FBF7}
+.md-line{display:block;font-size:15px;line-height:1.85}.md-h1{margin:8rpx 0 12rpx;color:#191B1F;font-size:20px;font-weight:900}.md-h2{margin:18rpx 0 8rpx;color:#191B1F;font-size:17px;font-weight:800}.md-h3{margin:12rpx 0 6rpx;color:#191B1F;font-size:16px;font-weight:700}.md-quote{padding:10rpx 16rpx;border-left:6rpx solid #9FD8B6;background:#EFF8F2}.md-list{padding-left:8rpx}
 .notice{padding:18rpx;border:1rpx solid #CDE8D2;border-radius:16rpx;background:#F0FBF5;color:#767C85}
 .accept-button{border:0;background:linear-gradient(135deg,#12D978,#08A152);box-shadow:0 12rpx 28rpx rgba(11,191,99,.22)}
 .retry-button{height:64rpx;margin:20rpx auto 0;padding:0 24rpx;border:0;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:13px;line-height:64rpx}.retry-button::after{border:0}

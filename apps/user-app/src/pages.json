@@ -13,6 +13,48 @@
 			}
 		},
 		{
+			"path": "pages/admin/login/index",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/admin/review/index",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/admin/second-hand/index",
+			"style": {
+				"navigationBarTitleText": "闲置审核"
+			}
+		},
+		{
+			"path": "pages/admin/second-hand-detail/index",
+			"style": {
+				"navigationBarTitleText": "商品审核详情"
+			}
+		},
+		{
+			"path": "pages/admin/community/index",
+			"style": {
+				"navigationBarTitleText": "社区审核"
+			}
+		},
+		{
+			"path": "pages/admin/tasks/index",
+			"style": {
+				"navigationBarTitleText": "任务审核"
+			}
+		},
+		{
+			"path": "pages/admin/task-detail/index",
+			"style": {
+				"navigationBarTitleText": "提交审核详情"
+			}
+		},
+		{
 			"path": "pages/legal-consent/index",
 			"style": {
 				"navigationBarTitleText": "协议确认"

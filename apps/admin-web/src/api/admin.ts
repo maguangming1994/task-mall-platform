@@ -2007,9 +2007,54 @@ export interface ManagedSecondHandItem {
   images: string[]
   view_count: number
   favorite_count: number
-  seller: { id: string; nickname: string; avatar: string | null }
+  seller: {
+    id: string
+    nickname: string
+    avatar: string | null
+    identity_verified?: boolean
+    on_sale_count?: number
+    sold_count?: number
+    rating_average?: number | null
+    rating_count?: number
+  }
   category: { id: string; name: string } | null
+  submitted_at?: string | null
+  reviewed_at?: string | null
+  reviewed_by_name?: string | null
   created_at: string
+}
+
+/** 实名认证人工审核记录（脱敏视图） */
+export interface IdentityVerificationRecord {
+  id: string
+  status: 'pending' | 'verified' | 'failed' | 'provider_error'
+  provider: string
+  real_name_masked: string | null
+  identity_number_masked: string | null
+  failure_code: string | null
+  submitted_at: string | null
+  verified_at: string | null
+  reviewed_at: string | null
+  review_note: string | null
+  reviewed_by_name: string | null
+  user: { id: string; nickname: string; avatar: string | null }
+}
+
+export interface IdentityVerificationList {
+  items: IdentityVerificationRecord[]
+  pagination: { page: number; page_size: number; total: number; last_page?: number }
+}
+
+export async function listIdentityVerifications(filters: { status?: string; page?: number; page_size?: number } = {}): Promise<IdentityVerificationList> {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  })
+  return request(`/admin/identity-verifications${query.size ? `?${query.toString()}` : ''}`)
+}
+
+export async function reviewIdentityVerification(id: string, input: { decision: 'approve' | 'reject'; note?: string }): Promise<IdentityVerificationRecord> {
+  return request(`/admin/identity-verifications/${encodeURIComponent(id)}/review`, { method: 'POST', body: JSON.stringify(input) })
 }
 
 export interface ManagedSecondHandRefund {

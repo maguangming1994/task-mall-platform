@@ -14,6 +14,7 @@ class RbacSeeder extends Seeder
             ['code' => 'user.view_masked', 'name' => '查看脱敏用户', 'group' => 'user'],
             ['code' => 'user.view_sensitive', 'name' => '查看完整敏感资料', 'group' => 'user'],
             ['code' => 'identity.resolve', 'name' => '处理身份合并冲突', 'group' => 'user'],
+            ['code' => 'identity.review', 'name' => '审核实名认证', 'group' => 'user'],
             ['code' => 'privacy.manage', 'name' => '处理隐私请求与账号注销', 'group' => 'user'],
             ['code' => 'legal.manage', 'name' => '管理协议版本与发布', 'group' => 'system'],
             ['code' => 'task.view', 'name' => '查看任务', 'group' => 'task'],
@@ -42,12 +43,12 @@ class RbacSeeder extends Seeder
 
         $rolePermissions = [
             'super_admin' => array_column($permissions, 'code'),
-            'platform_admin' => ['user.view_masked', 'privacy.manage', 'legal.manage', 'task.view', 'task.manage', 'task.frontend_publish', 'audit.view_own'],
+            'platform_admin' => ['user.view_masked', 'identity.review', 'privacy.manage', 'legal.manage', 'task.view', 'task.manage', 'task.frontend_publish', 'audit.view_own'],
             'operations_admin' => ['user.view_masked', 'task.view', 'task.manage', 'product.manage', 'operations.manage', 'audit.view_own'],
-            'campus_agent' => ['user.view_masked', 'task.view', 'task.manage', 'task.review', 'community.review', 'product.manage', 'campus.manage', 'audit.view_own'],
+            'campus_agent' => ['user.view_masked', 'identity.review', 'task.view', 'task.manage', 'task.review', 'community.review', 'product.manage', 'campus.manage', 'audit.view_own'],
             'task_reviewer' => ['user.view_masked', 'task.view', 'task.review', 'after_sale.review', 'audit.view_own'],
             'community_reviewer' => ['user.view_masked', 'community.review', 'audit.view_own'],
-            'customer_service' => ['user.view_masked', 'privacy.manage', 'task.view', 'after_sale.review', 'audit.view_own'],
+            'customer_service' => ['user.view_masked', 'identity.review', 'privacy.manage', 'task.view', 'after_sale.review', 'audit.view_own'],
             'warehouse' => ['user.view_sensitive', 'product.manage', 'fulfillment.manage', 'audit.view_own'],
             'finance' => ['user.view_masked', 'finance.manage', 'after_sale.review', 'audit.view'],
             'auditor' => ['user.view_masked', 'task.view', 'audit.view'],

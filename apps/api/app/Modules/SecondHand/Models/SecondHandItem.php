@@ -3,6 +3,7 @@
 namespace App\Modules\SecondHand\Models;
 
 use App\Models\User;
+use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Campus\Models\Concerns\BelongsToCampus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,11 +18,18 @@ class SecondHandItem extends Model
         'public_id', 'campus_id', 'seller_user_id', 'category_id',
         'title', 'description', 'price', 'condition', 'cover_file_public_id',
         'images', 'trade_type', 'location', 'status', 'audit_status', 'rejected_reason',
+        'reviewed_by', 'reviewed_at',
         'view_count', 'favorite_count',
         'idempotency_key_hash',
     ];
 
-    protected $casts = ['images' => 'array', 'price' => 'integer', 'view_count' => 'integer', 'favorite_count' => 'integer'];
+    protected $casts = [
+        'images' => 'array',
+        'price' => 'integer',
+        'view_count' => 'integer',
+        'favorite_count' => 'integer',
+        'reviewed_at' => 'datetime',
+    ];
 
     protected static function booted(): void
     {
@@ -41,6 +49,12 @@ class SecondHandItem extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(SecondHandCategory::class, 'category_id');
+    }
+
+    /** 最近一次执行审核的管理员 */
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'reviewed_by');
     }
 
     public function orders(): HasMany

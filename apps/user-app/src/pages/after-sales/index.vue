@@ -6,51 +6,103 @@
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="commerce-hero" aria-label="售后服务">
-      <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
-      <view class="commerce-hero-copy">
-        <text class="commerce-hero-kicker">AFTER SALES</text>
-        <text class="commerce-hero-title">售后服务</text>
-        <text class="commerce-hero-sub">退款、退货、换货，处理进度与责任规则一目了然</text>
-      </view>
-    </view>
-    <view class="heading"><text class="eyebrow">AFTER SALES</text><text class="title">售后服务</text><text class="sub">按订单项申请退款、退货或同 SKU 换货，责任、寄回方式与运费承担按原因逐单裁决。</text></view>
-    <view class="rule-strip"><view><text>未发货</text><text>无需填写退货物流</text></view><view><text>已发货</text><text>数量与原因必填</text></view><view><text>超时</text><text>7 天未操作自动关闭</text></view></view>
-
-    <view v-if="loading" class="loading-state"><view v-for="index in 3" :key="index" class="loading-line tm-skeleton" /></view>
-    <view v-else-if="loadError" class="error-state"><text>售后信息加载失败</text><small>{{ loadError }}</small><button @click="load">重新加载</button></view>
-
-    <view v-if="!loading && !loadError" class="section-head"><text>可申请售后</text><text>{{ eligibleOrders.length }} 个订单</text></view>
-    <view v-if="!loading && !loadError" v-for="order in eligibleOrders" :key="order.id" class="card">
-      <view class="row"><text class="number">{{ order.order_no }}</text><text class="status" :class="{ pending: order.status === 'pending_fulfillment', success: ['fulfilled', 'completed'].includes(order.status) }">{{ orderStatusText(order.status) }}</text></view>
-      <view v-for="item in eligibleItems(order)" :key="item.id" class="item">
-        <text>{{ item.product_name }} · {{ item.sku_name }} × {{ item.quantity }}</text>
-        <text class="remaining">剩余可退 {{ item.remaining_refundable_quantity }} 件 · 可换 {{ item.remaining_exchangeable_quantity }} 件</text>
-        <view class="actions">
-          <button v-if="item.remaining_refundable_quantity > 0" size="mini" @click="openApplication(order, item, 'refund_only')">仅退款</button>
-          <button v-if="order.status !== 'pending_fulfillment' && item.remaining_refundable_quantity > 0" size="mini" @click="openApplication(order, item, 'return_and_refund')">退货退款</button>
-          <button v-if="['fulfilled','completed'].includes(order.status) && item.remaining_exchangeable_quantity > 0" size="mini" @click="openApplication(order, item, 'exchange')">同 SKU 换货</button>
+      <!-- 顶部横幅 -->
+      <view class="hero">
+        <view class="hero-copy">
+          <text class="hero-kicker">AFTER SALES</text>
+          <text class="hero-title">售后服务</text>
+          <text class="hero-sub">退款、退货、换货，处理进度与责任规则一目了然</text>
+        </view>
+        <view class="hero-badge">
+          <text class="hero-badge-num">{{ processingCount }}</text>
+          <text class="hero-badge-label">处理中</text>
         </view>
       </view>
-    </view>
-    <view v-if="!loading && !loadError && !eligibleOrders.length" class="empty-inline"><text>暂无可申请售后的订单</text><text>订单完成后仍可在规则期限内发起申请</text></view>
 
-    <view v-if="!loading && !loadError" class="section-head second"><text>退款 / 退货进度</text><text>{{ refunds.length }} 条</text></view>
-    <view v-if="!loading && !loadError" v-for="item in refunds" :key="item.id" class="card" @click="openDetail(item.id, 'refund')">
-      <view class="row"><text>{{ item.refund_no }}</text><text class="status" :class="{ pending: !['succeeded', 'rejected', 'closed', 'cancelled'].includes(item.status), success: item.status === 'succeeded', danger: ['rejected', 'closed', 'cancelled'].includes(item.status) }">{{ statusText(item.status) }}</text></view>
-      <text class="meta">{{ item.reason_name }} · {{ partyText(item.responsibility_party) }}承担责任</text>
-      <text class="meta">退款 ¥{{ money(item.refund_cash_amount) }} + {{ item.refund_points }} 积分</text>
-      <button class="primary" @click.stop="openDetail(item.id, 'refund')">{{ item.status === 'awaiting_return' ? '填写退货物流' : '查看售后进度' }}</button>
-    </view>
+      <!-- Tabs -->
+      <view class="tabs">
+        <view :class="['tab', activeTab === 'all' && 'active']" @click="activeTab = 'all'">全部</view>
+        <view :class="['tab', activeTab === 'processing' && 'active']" @click="activeTab = 'processing'">处理中</view>
+        <view :class="['tab', activeTab === 'finished' && 'active']" @click="activeTab = 'finished'">已完成</view>
+      </view>
 
-    <view v-if="!loading && !loadError" class="section-head second"><text>换货进度</text><text>{{ exchanges.length }} 条</text></view>
-    <view v-if="!loading && !loadError" v-for="item in exchanges" :key="item.id" class="card" @click="openDetail(item.id, 'exchange')">
-      <view class="row"><text>{{ item.exchange_no }}</text><text class="status" :class="{ pending: !['completed', 'rejected', 'closed', 'cancelled'].includes(item.status), success: item.status === 'completed', danger: ['rejected', 'closed', 'cancelled'].includes(item.status) }">{{ statusText(item.status) }}</text></view>
-      <text class="meta">{{ item.reason_name }} · 数量 {{ item.quantity }}</text>
-      <text class="meta">寄回运费：{{ partyText(item.return_shipping_payer) }} · 补发运费：{{ partyText(item.replacement_shipping_payer) }}</text>
-      <button class="primary" @click.stop="openDetail(item.id, 'exchange')">{{ item.status === 'waiting_return' ? '填写寄回物流' : item.status === 'replacement_shipped' ? '跟踪并确认收货' : '查看换货进度' }}</button>
-    </view>
-    <view v-if="!loading && !loadError && !refunds.length && !exchanges.length" class="empty-inline"><text>暂无售后记录</text><text>提交后可在这里查看审核、寄回、补发、退款及补偿进度</text></view>
+      <view v-if="loading" class="loading-state"><view v-for="index in 3" :key="index" class="loading-line tm-skeleton" /></view>
+      <view v-else-if="loadError" class="error-state">
+        <text>售后信息加载失败</text>
+        <small>{{ loadError }}</small>
+        <button @click="load">重新加载</button>
+      </view>
+
+      <template v-else>
+        <!-- 售后入口 -->
+        <view class="entry-card" @click="showEligible = !showEligible">
+          <view class="entry-icon refund">退</view>
+          <view class="entry-main">
+            <text class="entry-title">申请售后</text>
+            <text class="entry-sub">{{ eligibleOrders.length ? `${eligibleOrders.length} 个订单可申请退款/退货/换货` : '暂无可申请售后的订单' }}</text>
+          </view>
+          <text :class="['entry-arrow', showEligible && 'up']">›</text>
+        </view>
+
+        <view v-if="showEligible">
+          <view v-for="order in eligibleOrders" :key="order.id" class="card eligible-card">
+            <view class="row">
+              <text class="number">{{ order.order_no }}</text>
+              <text class="status neutral">{{ orderStatusText(order.status) }}</text>
+            </view>
+            <view v-for="item in eligibleItems(order)" :key="item.id" class="item">
+              <text class="item-name">{{ item.product_name }} · {{ item.sku_name }} × {{ item.quantity }}</text>
+              <text class="remaining">剩余可退 {{ item.remaining_refundable_quantity }} 件 · 可换 {{ item.remaining_exchangeable_quantity }} 件</text>
+              <view class="actions">
+                <button v-if="item.remaining_refundable_quantity > 0" size="mini" @click="openApplication(order, item, 'refund_only')">仅退款</button>
+                <button v-if="order.status !== 'pending_fulfillment' && item.remaining_refundable_quantity > 0" size="mini" @click="openApplication(order, item, 'return_and_refund')">退货退款</button>
+                <button v-if="['fulfilled','completed'].includes(order.status) && item.remaining_exchangeable_quantity > 0" size="mini" @click="openApplication(order, item, 'exchange')">同 SKU 换货</button>
+              </view>
+            </view>
+          </view>
+          <view v-if="!eligibleOrders.length" class="empty-inline">
+            <text>暂无可申请售后的订单</text>
+            <text>订单完成后仍可在规则期限内发起申请</text>
+          </view>
+        </view>
+
+        <!-- 闲置售后入口 -->
+        <view class="entry-card" @click="openSecondHandOrders">
+          <view class="entry-icon idle">闲</view>
+          <view class="entry-main">
+            <text class="entry-title">闲置交易售后</text>
+            <text class="entry-sub">二手订单退款协商与平台仲裁入口</text>
+          </view>
+          <text class="entry-arrow">›</text>
+        </view>
+
+        <!-- 统一售后单列表 -->
+        <view v-if="visibleRecords.length">
+          <view v-for="record in visibleRecords" :key="record.key" class="card record-card" @click="openRecord(record)">
+            <view class="record-head">
+              <view :class="['record-icon', record.kind]">{{ record.kind === 'refund' ? '退' : '换' }}</view>
+              <view class="record-main">
+                <view class="row">
+                  <text class="record-title">{{ record.typeLabel }}</text>
+                  <text :class="['status', record.finished ? (record.bad ? 'danger' : 'success') : 'pending']">{{ record.statusLabel }}</text>
+                </view>
+                <text class="record-no">{{ record.no }}</text>
+                <text class="record-reason">{{ record.reason }}</text>
+                <view class="record-foot">
+                  <text class="record-money">{{ record.moneyText }}</text>
+                  <text class="record-time">{{ formatRelativeTime(record.createdAt) }}</text>
+                </view>
+              </view>
+            </view>
+            <view v-if="record.actionText" class="record-action" @click.stop="openRecord(record)">{{ record.actionText }}</view>
+          </view>
+        </view>
+        <view v-else class="empty-inline">
+          <text>{{ activeTab === 'processing' ? '暂无处理中的售后' : '暂无售后记录' }}</text>
+          <text>提交后可在这里查看审核、寄回、补发、退款及补偿进度</text>
+          <text class="empty-retry" @click="load">重新加载</text>
+        </view>
+      </template>
     </template>
   </view>
 </template>
@@ -64,6 +116,25 @@ import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
+import { formatRelativeTime } from '../admin/format'
+
+type TabKey = 'all' | 'processing' | 'finished'
+
+interface UnifiedRecord {
+  key: string
+  kind: 'refund' | 'exchange'
+  id: string
+  no: string
+  typeLabel: string
+  reason: string
+  status: string
+  statusLabel: string
+  finished: boolean
+  bad: boolean
+  moneyText: string
+  createdAt: string
+  actionText: string
+}
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_after_sale'))
@@ -74,47 +145,170 @@ const refunds = ref<Refund[]>([])
 const exchanges = ref<Exchange[]>([])
 const loading = ref(false)
 const loadError = ref('')
+const activeTab = ref<TabKey>('all')
+const showEligible = ref(false)
+
+const REFUND_FINISHED = ['succeeded', 'rejected', 'closed', 'cancelled']
+const EXCHANGE_FINISHED = ['completed', 'rejected', 'closed', 'cancelled']
+const BAD_FINISHED = ['rejected', 'closed', 'cancelled']
+
 const eligibleOrders = computed(() => orders.value.filter(order => ['pending_fulfillment', 'fulfilled', 'completed'].includes(order.status) && eligibleItems(order).length > 0))
+
+/** 退款与换货合并，按提交时间倒序 */
+const allRecords = computed<UnifiedRecord[]>(() => {
+  const refundRecords = refunds.value.map((item): UnifiedRecord => {
+    const finished = REFUND_FINISHED.includes(item.status)
+    return {
+      key: `refund-${item.id}`,
+      kind: 'refund',
+      id: item.id,
+      no: item.refund_no,
+      typeLabel: item.service_type === 'return_and_refund' ? '退货退款' : '仅退款',
+      reason: item.reason_name,
+      status: item.status,
+      statusLabel: statusText(item.status),
+      finished,
+      bad: BAD_FINISHED.includes(item.status),
+      moneyText: `退款 ¥${money(item.refund_cash_amount)}${item.refund_points ? ` + ${item.refund_points} 积分` : ''}`,
+      createdAt: item.created_at || '',
+      actionText: item.status === 'awaiting_return' ? '填写退货物流' : (!finished ? '查看售后进度' : ''),
+    }
+  })
+  const exchangeRecords = exchanges.value.map((item): UnifiedRecord => {
+    const finished = EXCHANGE_FINISHED.includes(item.status)
+    return {
+      key: `exchange-${item.id}`,
+      kind: 'exchange',
+      id: item.id,
+      no: item.exchange_no,
+      typeLabel: '换货',
+      reason: `${item.reason_name} · 数量 ${item.quantity}`,
+      status: item.status,
+      statusLabel: statusText(item.status),
+      finished,
+      bad: BAD_FINISHED.includes(item.status),
+      moneyText: `寄回运费：${partyText(item.return_shipping_payer)} · 补发：${partyText(item.replacement_shipping_payer)}`,
+      createdAt: item.created_at || '',
+      actionText: item.status === 'waiting_return' ? '填写寄回物流' : item.status === 'replacement_shipped' ? '跟踪并确认收货' : (!finished ? '查看换货进度' : ''),
+    }
+  })
+  return refundRecords.concat(exchangeRecords).sort((a, b) => Date.parse(b.createdAt || '0') - Date.parse(a.createdAt || '0'))
+})
+
+const processingCount = computed(() => allRecords.value.filter(record => !record.finished).length)
+
+const visibleRecords = computed(() => {
+  if (activeTab.value === 'processing') return allRecords.value.filter(record => !record.finished)
+  if (activeTab.value === 'finished') return allRecords.value.filter(record => record.finished)
+  return allRecords.value
+})
+
 onShow(async () => {
   await modules.ensureReady()
   if (!moduleEnabled.value) return
   await load()
 })
+
 async function load() {
   if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true; loadError.value = ''
   try {
     const [orderResult, refundResult, exchangeResult] = await Promise.all([listOrders(auth.accessToken), listRefunds(auth.accessToken), listExchanges(auth.accessToken)])
     orders.value = orderResult.items; refunds.value = refundResult.items; exchanges.value = exchangeResult.items
-  } catch (error) { loadError.value = error instanceof Error ? error.message : '请检查网络后重试' }
-  finally { loading.value = false }
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : '请检查网络后重试'
+  } finally {
+    loading.value = false
+  }
 }
-function openApplication(order: Order, item: OrderItem, type: 'refund_only' | 'return_and_refund' | 'exchange') { uni.navigateTo({ url: `/pages/after-sale-apply/index?orderId=${encodeURIComponent(order.id)}&itemId=${encodeURIComponent(item.id)}&type=${type}` }) }
-function eligibleItems(order: Order) { return order.items.filter(item => item.remaining_refundable_quantity > 0 || (['fulfilled', 'completed'].includes(order.status) && item.remaining_exchangeable_quantity > 0)) }
-function openDetail(id: string, type: 'refund' | 'exchange') { uni.navigateTo({ url: `/pages/after-sale-detail/index?id=${encodeURIComponent(id)}&type=${type}` }) }
-function toast(error: unknown) { uni.showToast({ title: error instanceof Error ? error.message : '操作失败', icon: 'none' }) }
+
+function openApplication(order: Order, item: OrderItem, type: 'refund_only' | 'return_and_refund' | 'exchange') {
+  uni.navigateTo({ url: `/pages/after-sale-apply/index?orderId=${encodeURIComponent(order.id)}&itemId=${encodeURIComponent(item.id)}&type=${type}` })
+}
+function eligibleItems(order: Order) {
+  return order.items.filter(item => item.remaining_refundable_quantity > 0 || (['fulfilled', 'completed'].includes(order.status) && item.remaining_exchangeable_quantity > 0))
+}
+function openRecord(record: UnifiedRecord) {
+  uni.navigateTo({ url: `/pages/after-sale-detail/index?id=${encodeURIComponent(record.id)}&type=${record.kind}` })
+}
+function openSecondHandOrders() {
+  uni.navigateTo({ url: '/pages/second-hand-orders/index' })
+}
 function money(cents: number) { return (cents / 100).toFixed(2) }
-function statusText(status: string) { return ({ submitted: '待审核', awaiting_return: '待寄回', waiting_return: '待寄回', return_in_transit: '寄回运输中', replacement_pending: '待补发', replacement_shipped: '补发运输中', processing: '退款处理中', succeeded: '已完成', completed: '已完成', rejected: '已拒绝', cancelled: '已撤销', closed: '已关闭' } as Record<string, string>)[status] || '售后处理中' }
+function statusText(status: string) {
+  return ({ submitted: '待审核', awaiting_return: '待寄回', waiting_return: '待寄回', return_in_transit: '寄回运输中', replacement_pending: '待补发', replacement_shipped: '补发运输中', processing: '退款处理中', succeeded: '已退款', completed: '已完成', rejected: '已拒绝', cancelled: '已撤销', closed: '已关闭' } as Record<string, string>)[status] || '售后处理中'
+}
 function orderStatusText(status: string) { return ({ pending_fulfillment: '待履约', fulfilled: '待确认', completed: '已完成' } as Record<string, string>)[status] || '订单处理中' }
 function partyText(value: string) { return ({ buyer: '买家', seller: '卖家', carrier: '物流方', pending: '待裁决', negotiated: '协商确定' } as Record<string, string>)[value] || '待平台确认' }
 </script>
 
 <style scoped>
-.page{min-height:100vh;padding:32rpx 28rpx 90rpx;background:#F4F6F4;box-sizing:border-box}.heading{padding:22rpx 8rpx 16rpx}.eyebrow,.title,.sub,.meta,.remaining,.empty-inline text{display:block}.eyebrow{color:#08A152;font-size:13px;font-weight:800;letter-spacing:2.5rpx}.title{margin-top:10rpx;font-size:24px;font-weight:850;color:#191B1F}.sub{margin-top:10rpx;color:#767C85;font-size:14px;line-height:1.6}.rule-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10rpx;margin-top:8rpx}.rule-strip view{padding:20rpx 10rpx;text-align:center;border-radius:20rpx;background:#E7F9EF}.rule-strip text{display:block}.rule-strip text:first-child{color:#08A152;font-size:14px;font-weight:800}.rule-strip text:last-child{margin-top:6rpx;color:var(--tm-ink-500);font-size:12px}.section-head{display:flex;align-items:center;justify-content:space-between;margin:30rpx 4rpx 4rpx;font-size:17px;font-weight:850}.section-head text:last-child{color:#767C85;font-size:13px;font-weight:500}.second{margin-top:38rpx}.card{margin-top:18rpx;padding:28rpx;border:1rpx solid var(--tm-line);border-radius:26rpx;background:#fff;box-shadow:var(--tm-shadow-sm)}.row{display:flex;justify-content:space-between;gap:20rpx}.item{display:block;margin-top:20rpx;padding-top:20rpx;border-top:1rpx solid var(--tm-line)}.number{font-size:14px;font-weight:750}.status{padding:6rpx 12rpx;border-radius:10rpx;background:var(--tm-reward-100);color:var(--tm-reward-600);font-size:13px;font-weight:750}.meta{margin-top:10rpx;color:#767C85;font-size:14px}.remaining{margin-top:8rpx;color:#08A152;font-size:13px;font-weight:750}.actions{display:flex;gap:12rpx;margin-top:18rpx;flex-wrap:wrap}.actions button{margin:0;border-radius:14rpx;border-color:#dbe3f4;background:#f7f9fd;color:var(--tm-brand-700)}.primary{height:72rpx;margin-top:20rpx;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);box-shadow:0 12rpx 28rpx rgba(11,191,99,.22);color:#fff;line-height:72rpx}.primary::after{border:0}.empty-inline{margin-top:18rpx;padding:38rpx 28rpx;text-align:center;border:1rpx dashed #DDE3DE;border-radius:24rpx;background:rgba(255,255,255,.72)}.empty-inline text:first-child{font-size:15px;font-weight:750;color:#191B1F}.empty-inline text:last-child{margin-top:8rpx;color:#767C85;font-size:13px;line-height:1.5}
- .loading-state{margin-top:24rpx}.loading-line{height:180rpx;margin-top:18rpx;border-radius:26rpx}.error-state{margin-top:24rpx;padding:50rpx 28rpx;text-align:center;border:1rpx solid rgba(255,59,48,.2);border-radius:26rpx;background:#FFEEEA;box-shadow:none}.error-state text,.error-state small{display:block}.error-state text{font-size:17px;font-weight:900;color:#FF3B30}.error-state small{margin-top:9rpx;color:#767C85;font-size:13px}.error-state button{height:66rpx;margin:22rpx auto 0;border:0;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-weight:800;line-height:66rpx}.error-state button::after{border:0}
-/* V09 campus after-sales surface */
-.commerce-hero{position:relative;min-height:250rpx;overflow:hidden;margin-bottom:18rpx;border:1rpx solid rgba(11,191,99,.16);border-radius:var(--tm-radius-lg);background:linear-gradient(135deg,#E7F9EF 0,#F0FBF5 58%,#E7F9EF 100%);box-shadow:var(--tm-shadow-sm)}
-.commerce-hero-art{position:absolute;right:-16rpx;top:0;width:68%;height:100%;opacity:.84;object-position:right center}.commerce-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(231,249,239,.98) 0,rgba(231,249,239,.9) 34%,rgba(231,249,239,.12) 78%,rgba(231,249,239,0) 100%)}
-.commerce-hero-copy{position:relative;z-index:1;width:57%;padding:28rpx 24rpx}.commerce-hero-kicker,.commerce-hero-title,.commerce-hero-sub{display:block}.commerce-hero-kicker{color:#08A152;font-size:13px;font-weight:850;letter-spacing:2.4rpx}.commerce-hero-title{margin-top:10rpx;color:#191B1F;font-size:22px;font-weight:950;line-height:1.2}.commerce-hero-sub{margin-top:10rpx;color:#767C85;font-size:13px;line-height:1.55}.page > .heading{display:none}
-.page{background:#F4F6F4;color:#191B1F}
-.heading{padding:26rpx 24rpx;border:1rpx solid var(--tm-line);border-radius:var(--tm-radius-lg);background:var(--tm-surface);box-shadow:var(--tm-shadow-sm)}
-.eyebrow,.title{color:var(--tm-ink-900)}.sub{color:var(--tm-ink-500);font-weight:500}
-.rule-strip view{border:1rpx solid var(--tm-line);box-shadow:none}.rule-strip view:nth-child(1){background:#E7F9EF}.rule-strip view:nth-child(2){background:#FFF2E5}.rule-strip view:nth-child(3){background:#F2F4F3}
-.rule-strip text:first-child{color:var(--tm-ink-900)}
-.card,.empty-inline,.error-state{border:1rpx solid var(--tm-line);box-shadow:var(--tm-shadow-sm);background:var(--tm-surface)}
-.status{border:0;background:#FFF2E5;color:#F2620A}.status.pending{background:#EAF2FF;color:#3B82F6}.status.success{background:#E7F9EF;color:#08A152}.status.danger{background:#FFEEEA;color:#FF3B30}
-.actions button{border:1rpx solid #CDE8D2;background:#E7F9EF;color:#08A152;box-shadow:none}.primary{border:1rpx solid transparent;background:linear-gradient(135deg,#12D978,#08A152);box-shadow:0 12rpx 28rpx rgba(11,191,99,.22)}
-.empty-inline{background:var(--tm-surface-soft)}
-.empty-inline{position:relative;padding:48rpx 28rpx 40rpx}.empty-inline::before{content:'';display:block;width:128rpx;height:88rpx;margin:0 auto 20rpx;border-radius:28rpx;background:linear-gradient(145deg,#E7F9EF,#F0FBF5);box-shadow:inset 0 0 0 4rpx rgba(11,191,99,.16)}.empty-inline::after{content:'⌕';display:flex;align-items:center;justify-content:center;width:42rpx;height:42rpx;margin:-52rpx auto 18rpx;border:5rpx solid #08A152;border-radius:50%;background:#fff;color:#08A152;font-size:19px;font-weight:900;box-sizing:border-box}.empty-inline text:first-child{position:relative;z-index:1}
-.error-state{border-color:rgba(255,59,48,.2);background:#FFEEEA}
+.page { min-height: 100vh; padding: 24rpx 24rpx 90rpx; background: #F4F6F4; box-sizing: border-box; }
+
+.hero { display: flex; align-items: center; justify-content: space-between; padding: 36rpx 32rpx; border-radius: 28rpx; background: linear-gradient(135deg, #12D978, #08A152); box-shadow: 0 14rpx 34rpx rgba(11,191,99,.26); }
+.hero-copy { display: flex; flex-direction: column; }
+.hero-kicker { color: rgba(255,255,255,.85); font-size: 20rpx; font-weight: 800; letter-spacing: 3rpx; }
+.hero-title { margin-top: 8rpx; color: #fff; font-size: 40rpx; font-weight: 900; }
+.hero-sub { margin-top: 10rpx; color: rgba(255,255,255,.88); font-size: 23rpx; line-height: 1.5; }
+.hero-badge { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 120rpx; height: 120rpx; border-radius: 28rpx; background: rgba(255,255,255,.2); }
+.hero-badge-num { color: #fff; font-size: 44rpx; font-weight: 900; line-height: 1.1; }
+.hero-badge-label { margin-top: 4rpx; color: rgba(255,255,255,.9); font-size: 20rpx; }
+
+.tabs { display: flex; margin: 24rpx 0 8rpx; }
+.tab { flex: 1; text-align: center; padding: 20rpx 0; margin: 0 8rpx; border-radius: 20rpx; color: #767C85; font-size: 27rpx; font-weight: 600; }
+.tab.active { background: #fff; color: #08A152; box-shadow: 0 2rpx 8rpx rgba(8,161,82,.12); }
+
+.entry-card { display: flex; align-items: center; margin-top: 16rpx; padding: 26rpx 28rpx; border: 1rpx solid #EDEFEF; border-radius: 24rpx; background: #fff; box-shadow: 0 2rpx 4rpx rgba(23,26,23,.03), 0 8rpx 28rpx rgba(23,26,23,.04); }
+.entry-icon { display: flex; align-items: center; justify-content: center; width: 76rpx; height: 76rpx; flex: none; border-radius: 20rpx; font-size: 32rpx; font-weight: 800; }
+.entry-icon.refund { background: #E7F9EF; color: #08A152; }
+.entry-icon.idle { background: #FFF2E5; color: #F2620A; }
+.entry-main { flex: 1; min-width: 0; margin-left: 20rpx; }
+.entry-title { display: block; color: #191B1F; font-size: 28rpx; font-weight: 700; }
+.entry-sub { display: block; margin-top: 6rpx; color: #AEB3BB; font-size: 22rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entry-arrow { color: #C6CBC6; font-size: 40rpx; font-weight: 300; transition: transform .2s; }
+.entry-arrow.up { transform: rotate(90deg); }
+
+.card { margin-top: 16rpx; padding: 28rpx; border: 1rpx solid #EDEFEF; border-radius: 24rpx; background: #fff; box-shadow: 0 2rpx 4rpx rgba(23,26,23,.03), 0 8rpx 28rpx rgba(23,26,23,.04); }
+.eligible-card .item { display: block; margin-top: 20rpx; padding-top: 20rpx; border-top: 1rpx solid #F2F4F3; }
+.item-name { display: block; color: #191B1F; font-size: 26rpx; line-height: 1.5; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; }
+.number { font-size: 25rpx; font-weight: 700; color: #191B1F; }
+.status { padding: 6rpx 16rpx; border-radius: 16rpx; font-size: 20rpx; flex: none; }
+.status.pending { background: #EAF2FF; color: #3B82F6; }
+.status.success { background: #E7F9EF; color: #08A152; }
+.status.danger { background: #FFEEEA; color: #FF3B30; }
+.status.neutral { background: #F4F6F4; color: #767C85; }
+.remaining { display: block; margin-top: 8rpx; color: #08A152; font-size: 22rpx; font-weight: 600; }
+.actions { display: flex; gap: 12rpx; margin-top: 16rpx; flex-wrap: wrap; }
+.actions button { margin: 0; border: 1rpx solid #CDE8D2; border-radius: 14rpx; background: #E7F9EF; color: #08A152; font-size: 22rpx; }
+.actions button::after { border: 0; }
+
+.record-card { padding: 26rpx 28rpx; }
+.record-head { display: flex; align-items: flex-start; }
+.record-icon { display: flex; align-items: center; justify-content: center; width: 84rpx; height: 84rpx; flex: none; border-radius: 20rpx; font-size: 34rpx; font-weight: 800; }
+.record-icon.refund { background: #E7F9EF; color: #08A152; }
+.record-icon.exchange { background: #EAF2FF; color: #3B82F6; }
+.record-main { flex: 1; min-width: 0; margin-left: 20rpx; }
+.record-title { color: #191B1F; font-size: 28rpx; font-weight: 700; }
+.record-no { display: block; margin-top: 8rpx; color: #AEB3BB; font-size: 21rpx; }
+.record-reason { display: block; margin-top: 8rpx; color: #50565C; font-size: 24rpx; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.record-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12rpx; }
+.record-money { color: #E54D42; font-size: 24rpx; font-weight: 700; }
+.record-time { color: #AEB3BB; font-size: 20rpx; }
+.record-action { margin-top: 18rpx; height: 72rpx; border-radius: 999rpx; background: linear-gradient(135deg, #12D978, #08A152); box-shadow: 0 12rpx 28rpx rgba(11,191,99,.22); color: #fff; font-size: 26rpx; font-weight: 700; line-height: 72rpx; text-align: center; }
+
+.empty-inline { margin-top: 16rpx; padding: 60rpx 28rpx; text-align: center; border: 1rpx dashed #DDE3DE; border-radius: 24rpx; background: rgba(255,255,255,.72); }
+.empty-inline text { display: block; }
+.empty-inline text:first-child { font-size: 28rpx; font-weight: 700; color: #191B1F; }
+.empty-inline text:nth-child(2) { margin-top: 10rpx; color: #767C85; font-size: 23rpx; line-height: 1.5; }
+.empty-retry { display: inline-block; margin-top: 24rpx; padding: 12rpx 48rpx; border-radius: 36rpx; background: #08A152; color: #fff; font-size: 24rpx; }
+
+.loading-state { margin-top: 8rpx; }
+.loading-line { height: 180rpx; margin-top: 16rpx; border-radius: 24rpx; }
+.error-state { margin-top: 16rpx; padding: 50rpx 28rpx; text-align: center; border: 1rpx solid rgba(255,59,48,.2); border-radius: 24rpx; background: #FFEEEA; }
+.error-state text, .error-state small { display: block; }
+.error-state text { font-size: 30rpx; font-weight: 900; color: #FF3B30; }
+.error-state small { margin-top: 9rpx; color: #767C85; font-size: 23rpx; }
+.error-state button { height: 66rpx; margin: 22rpx auto 0; border: 0; border-radius: 999rpx; background: linear-gradient(135deg,#12D978,#08A152); color: #fff; font-weight: 800; line-height: 66rpx; }
+.error-state button::after { border: 0; }
 </style>

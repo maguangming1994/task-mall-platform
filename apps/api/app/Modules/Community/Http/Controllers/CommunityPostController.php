@@ -6,13 +6,16 @@ use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Campus\Models\Campus;
 use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Community\Models\CommunityPostFavorite;
+use App\Modules\Community\Models\CommunityPostVersion;
 use App\Modules\Community\Models\UserFollow;
 use App\Modules\Community\Services\CommunityContentService;
 use App\Modules\Identity\Models\UserIdentityVerification;
 use App\Modules\Upload\Models\UploadedFile;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -154,19 +157,62 @@ class CommunityPostController extends Controller
         return ApiResponse::success(['items' => $query->forPage($page, $size)->get()->map(fn (CommunityPost $post) => $this->data($post, true, true)), 'pagination' => ['page' => $page, 'page_size' => $size, 'total' => $total]]);
     }
 
-    public function adminIndex(): JsonResponse
+    public function adminIndex(Request $request): JsonResponse
     {
-        return ApiResponse::success(['items' => CommunityPost::query()
+        // 待审核帖子列表：预载作者资料（含实名状态），供移动端/后台展示「已实名」标识
+        $posts = CommunityPost::query()
             ->whereHas('versions', fn ($query) => $query->where('review_status', 'pending')->whereColumn('community_post_versions.version_no', 'community_posts.current_version_no'))
-            ->latest()->limit(100)->get()->map(fn (CommunityPost $post) => $this->data($post, true))]);
+            ->latest()->limit(100)->get();
+        $meta = $this->viewerMeta($request, $posts);
+
+        return ApiResponse::success(['items' => $posts->map(fn (CommunityPost $post) => $this->data($post, true, false, $meta))]);
     }
 
-    public function review(Request $request, CommunityPost $post, CommunityContentService $service): JsonResponse
+    public function review(Request $request, CommunityPost $post, CommunityContentService $service, AuditLogger $audit): JsonResponse
     {
-        $data = $request->validate(['decision' => ['required', 'in:approve,reject'], 'reason_code' => ['nullable', 'required_if:decision,reject', 'string', 'max:64'], 'note' => ['required', 'string', 'max:500']]); /** @var AdminUser $admin */
+        $data = $request->validate(['decision' => ['required', 'in:approve,reject'], 'reason_code' => ['nullable', 'required_if:decision,reject', 'string', 'max:64', 'in:spam,sexual,fraud,abuse,infringement,illegal,other'], 'note' => ['required', 'string', 'max:500']]); /** @var AdminUser $admin */
         $admin = $request->user();
 
-        return ApiResponse::success($this->data($service->reviewPost($admin, $post, $data)));
+        // 路由模型绑定可能早于校园 scope 中间件执行，此处借已生效的全局 scope 复核可见性，跨校访问维持 404
+        abort_unless(CommunityPost::query()->whereKey($post->id)->exists(), 404);
+
+        // 终态保护：当前版本不在待审核状态时拒绝重复审核
+        $pendingVersionExists = CommunityPostVersion::query()
+            ->where('community_post_id', $post->id)
+            ->where('version_no', $post->current_version_no)
+            ->where('review_status', 'pending')
+            ->exists();
+        if (! $pendingVersionExists) {
+            return ApiResponse::error(
+                'REVIEW_ALREADY_FINISHED',
+                '该帖子当前版本已经完成审核，不能重复操作。',
+                409,
+            );
+        }
+
+        $before = $this->data($post, true);
+        try {
+            $reviewed = $service->reviewPost($admin, $post, $data);
+        } catch (ModelNotFoundException) {
+            // 并发竞态：其他审核员已完成该版本审核，统一返回 409 终态码（否则服务层抛 404）
+            return ApiResponse::error(
+                'REVIEW_ALREADY_FINISHED',
+                '该帖子当前版本已经完成审核，不能重复操作。',
+                409,
+            );
+        }
+        $after = $this->data($reviewed, true);
+        $audit->record(
+            $admin,
+            'community.post.'.$data['decision'],
+            'community_post',
+            $post->public_id,
+            $before,
+            $after,
+            $data['note'].(! empty($data['reason_code']) ? '（原因码：'.$data['reason_code'].'）' : ''),
+        );
+
+        return ApiResponse::success($after);
     }
 
     private function input(Request $request): array
