@@ -20,6 +20,11 @@ class ModuleGateService
     private const CACHE_PREFIX = 'campus:module-overrides:';
 
     /**
+     * 请求作用域令牌在 Request attributes 中的键名，由 AssignModuleGateScope 中间件写入。
+     */
+    public const REQUEST_SCOPE_ATTRIBUTE = 'module_gate_scope';
+
+    /**
      * 请求内 effective 结果 memo，key = code|campus|subject|platform。
      *
      * @var array<string, bool>
@@ -41,10 +46,15 @@ class ModuleGateService
     private array $publicIdMemo = [];
 
     /**
-     * 当前 memo 所属请求对象 id。Laravel Route 会缓存控制器实例（Octane/测试中同样跨请求存活），
-     * 故请求级 memo 必须随请求对象切换自动清空，避免上一请求的判定值泄漏。
+     * 当前 memo 所属请求的唯一作用域令牌。
+     *
+     * Laravel 的 Route 会缓存控制器实例（PHP-FPM 长生命周期测试、Octane 下均跨请求存活），
+     * 注入其中的本服务实例也随之复用，故请求级 memo 必须在请求边界显式作废。
+     * 不能使用 spl_object_id($request) 判定请求切换：请求对象析构后其句柄会被回收复用，
+     * 新请求可能拿到与旧请求相同的 id，导致 memo 被错误保留。改由全局中间件
+     * AssignModuleGateScope 在每个 HTTP 请求开始时写入随机令牌（见该中间件）。
      */
-    private ?int $memoRequestId = null;
+    private ?string $memoScope = null;
 
     public function __construct(
         private readonly ReleaseControlService $releases,
@@ -150,12 +160,14 @@ class ModuleGateService
      */
     private function syncRequestScope(): void
     {
-        $requestId = spl_object_id(app('request'));
-        if ($this->memoRequestId !== $requestId) {
+        // 每个 HTTP 请求由全局中间件写入唯一随机令牌；CLI/队列等非 HTTP 场景无令牌（null），
+        // 此时同一实例的 memo 在其生命周期内保持（这些场景实例本身不会跨任务复用）。
+        $scope = app('request')->attributes->get(self::REQUEST_SCOPE_ATTRIBUTE);
+        if ($this->memoScope !== $scope) {
             $this->effectiveMemo = [];
             $this->overridesMemo = [];
             $this->publicIdMemo = [];
-            $this->memoRequestId = $requestId;
+            $this->memoScope = $scope;
         }
     }
 

@@ -13,6 +13,7 @@ use App\Modules\Auth\Http\Middleware\AuthenticateOptionalAccessToken;
 use App\Modules\Campus\Http\Middleware\EnforceAdminCampusScope;
 use App\Modules\Campus\Http\Middleware\ResolveCampusContext;
 use App\Modules\Legal\Http\Middleware\RequireLegalConsent;
+use App\Modules\Operations\Http\Middleware\AssignModuleGateScope;
 use App\Modules\Operations\Http\Middleware\RequireModuleEnabled;
 use App\Modules\Privacy\Exceptions\PrivacyException;
 use App\Modules\Refund\Exceptions\RefundException;
@@ -44,6 +45,8 @@ return Application::configure(basePath: dirname(__DIR__))
             at: $trustedProxies,
             headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO,
         );
+        // 最早写入模块门禁的请求作用域令牌（gate memo 须按请求边界作废）
+        $middleware->append(AssignModuleGateScope::class);
         $middleware->append(AttachRequestId::class);
         $middleware->append(AddSecurityHeaders::class);
         $middleware->append(MeasureRequestPerformance::class);
