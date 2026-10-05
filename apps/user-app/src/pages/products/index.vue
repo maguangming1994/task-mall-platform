@@ -40,8 +40,14 @@
         </view>
       </view>
 
-      <view class="king king5">
-        <view v-for="(item, idx) in kingCategories" :key="item.id" class="k">
+      <view class="king" :style="kingGridStyle">
+        <view
+          v-for="(item, idx) in kingCategories"
+          :key="item.id"
+          class="k"
+          :class="{ 'k-active': categoryId === item.id }"
+          @click="selectCategory(item.id)"
+        >
           <view class="k-icon" :style="kingIconStyle(idx)">
             <text class="k-icon-text">{{ categoryEmoji(item.name) }}</text>
           </view>
@@ -54,11 +60,11 @@
           <text class="sec-h2">限时秒杀</text>
           <view class="count">
             <text>距结束</text>
-            <text class="cd-num">02</text>
+            <text class="cd-num">{{ flashCountdown.hours }}</text>
             <text>:</text>
-            <text class="cd-num">14</text>
+            <text class="cd-num">{{ flashCountdown.minutes }}</text>
             <text>:</text>
-            <text class="cd-num">33</text>
+            <text class="cd-num">{{ flashCountdown.seconds }}</text>
           </view>
         </view>
         <scroll-view class="flash-scroll" scroll-x :show-scrollbar="false">
@@ -126,8 +132,8 @@
           <view class="g-body">
             <text class="g-name">{{ product.name }}</text>
             <view class="g-tags">
-              <text v-if="idx % 3 === 0" class="tag tag-orange">包邮</text>
-              <text v-else-if="idx % 3 === 1" class="tag tag-green">新品</text>
+              <text v-if="hasFreeShipping(product)" class="tag tag-orange">包邮</text>
+              <text v-else-if="idx % 2 === 0" class="tag tag-green">新品</text>
               <text v-else class="tag tag-red">HOT</text>
             </view>
             <view class="g-foot">
@@ -148,10 +154,11 @@
 
 <script setup lang="ts">
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import AppTabBar from '@/components/AppTabBar.vue'
 import { loadAppearanceContent, type MallAppearance } from '@/api/appearance'
 import { getCart } from '@/api/cart'
+import { resolveApiAssetUrl } from '@/api/http'
 import { listProductCategories, listProducts, type MallProduct, type ProductCategory, type PurchaseOption } from '@/api/products'
 import { useAuthStore } from '@/stores/auth'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
@@ -189,12 +196,29 @@ const filteredProducts = computed(() => {
 
 const flashProducts = computed(() => products.value.slice(0, 3))
 const rankProducts = computed(() => products.value.slice(0, 3))
-const kingCategories = computed(() => {
-  const list = categories.value.slice(0, 5)
-  while (list.length < 5) {
-    list.push({ id: `fill-${list.length}`, name: '分类' } as ProductCategory)
+// 金刚区直接展示后端返回的真实分类（含在售商品才会返回），最多 5 个，按数量自适应列宽。
+const kingCategories = computed(() => categories.value.slice(0, 5))
+const kingGridStyle = computed(() => ({ gridTemplateColumns: `repeat(${Math.max(1, kingCategories.value.length)}, 1fr)` }))
+
+// 限时秒杀：真实倒计时到当日 24 点结束，每秒刷新。
+const flashRemainSeconds = ref(0)
+function syncFlashRemain() {
+  const now = new Date()
+  const end = new Date()
+  end.setHours(24, 0, 0, 0)
+  flashRemainSeconds.value = Math.max(0, Math.floor((end.getTime() - now.getTime()) / 1000))
+}
+syncFlashRemain()
+const flashTimer = setInterval(syncFlashRemain, 1000)
+onUnmounted(() => clearInterval(flashTimer))
+const flashCountdown = computed(() => {
+  const total = flashRemainSeconds.value
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return {
+    hours: pad(Math.floor(total / 3600)),
+    minutes: pad(Math.floor((total % 3600) / 60)),
+    seconds: pad(total % 60),
   }
-  return list
 })
 
 onShow(async () => {
@@ -224,8 +248,18 @@ async function load() {
 }
 
 function allOptions(product: MallProduct) { return product.skus.flatMap((sku) => sku.purchase_options.filter((option) => option.enabled)) }
-async function selectCategory(id: string) { if (categoryId.value === id) return; categoryId.value = id; await load() }
-function cover(product: MallProduct) { return product.gallery_images?.[0]?.url || '' }
+// 点击金刚区分类按分类筛选；再次点击同一个分类则取消筛选回到全部商品。
+async function selectCategory(id: string) {
+  const next = categoryId.value === id ? '' : id
+  if (next === categoryId.value) return
+  categoryId.value = next
+  await load()
+}
+function cover(product: MallProduct) { return resolveApiAssetUrl(product.gallery_images?.[0]?.url) || '' }
+// 虚拟券/无需物流的商品真实包邮，实体物流商品不显示包邮标签。
+function hasFreeShipping(product: MallProduct) {
+  return product.skus.some((sku) => sku.fulfillment_type === 'virtual_delivery' || sku.fulfillment_type === 'no_logistics')
+}
 function optionPrice(option: PurchaseOption) {
   if (option.purchase_mode === 'cash') return `¥${(option.cash_amount / 100).toFixed(2)}`
   if (option.purchase_mode === 'points') return `${option.points.toLocaleString()} 积分`
@@ -309,11 +343,13 @@ function kingIconStyle(index: number) {
 .c-txt { font-size: 20rpx; opacity: 0.92; border-left: 1rpx dashed rgba(255,255,255,0.5); padding-left: 16rpx; margin-left: 4rpx; line-height: 1.5; display: flex; flex-direction: column; }
 .coupon-more { flex: 0 0 112rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border-radius: 24rpx; font-size: 20rpx; color: #767C85; gap: 6rpx; }
 .coupon-more-icon { font-size: 36rpx; }
-.king { background: #fff; border-radius: 32rpx; margin: 20rpx 24rpx 0; padding: 32rpx 20rpx 24rpx; display: grid; grid-template-columns: repeat(5, 1fr); row-gap: 28rpx; box-shadow: 0 1rpx 2rpx rgba(23,26,23,0.03), 0 12rpx 40rpx rgba(23,26,23,0.05); }
+.king { background: #fff; border-radius: 32rpx; margin: 20rpx 24rpx 0; padding: 32rpx 20rpx 24rpx; display: grid; row-gap: 28rpx; box-shadow: 0 1rpx 2rpx rgba(23,26,23,0.03), 0 12rpx 40rpx rgba(23,26,23,0.05); }
 .k { display: flex; flex-direction: column; align-items: center; gap: 12rpx; font-size: 22rpx; color: #3A3D43; }
-.k-icon { width: 84rpx; height: 84rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.k-icon { width: 84rpx; height: 84rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: box-shadow 0.2s ease, transform 0.2s ease; }
 .k-icon-text { font-size: 36rpx; }
 .k-label { font-size: 22rpx; }
+.k-active .k-icon { box-shadow: 0 0 0 4rpx rgba(11,191,99,0.22); transform: translateY(-2rpx); }
+.k-active .k-label { color: #08A152; font-weight: 700; }
 .flash { background: #fff; border-radius: 32rpx; margin: 20rpx 24rpx 0; padding-bottom: 24rpx; box-shadow: 0 1rpx 2rpx rgba(23,26,23,0.03), 0 12rpx 40rpx rgba(23,26,23,0.05); }
 .sec-title { display: flex; align-items: center; justify-content: space-between; padding: 28rpx 28rpx 20rpx; }
 .sec-title.sec-title-goods { padding-left: 32rpx; padding-right: 24rpx; }

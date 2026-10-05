@@ -22,6 +22,14 @@ const jobs = [
   { id: 'student-girl', dir: 'personas' },
   { id: 'student-boy-blue', dir: 'personas' },
   { id: 'student-boy-orange', dir: 'personas' },
+  // 商品图会在详情页整屏轮播展示，按 2 倍密度光栅化（480 逻辑像素 → 960 实际像素）。
+  { id: 'lemon-tea', dir: 'products', scale: 2 },
+  { id: 'hand-drip-coffee', dir: 'products', scale: 2 },
+  { id: 'energy-salad-bowl', dir: 'products', scale: 2 },
+  { id: 'thermos-bottle', dir: 'products', scale: 2 },
+  { id: 'noise-cancelling-headphones', dir: 'products', scale: 2 },
+  { id: 'english-vocab-book', dir: 'products', scale: 2 },
+  { id: 'print-voucher', dir: 'products', scale: 2 },
 ];
 
 function resolveChromium() {
@@ -41,11 +49,15 @@ function resolveChromium() {
 (async () => {
   const browser = await chromium.launch({ executablePath: resolveChromium() });
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 1 });
-  await page.goto('file:///' + path.join(dir, 'gen.html').replace(/\\/g, '/'), { waitUntil: 'load' });
+  // 商品图使用 2 倍密度输出，保证详情页整屏轮播在高分屏手机上清晰。
+  const page2x = await browser.newPage({ viewport: { width: 480, height: 480 }, deviceScaleFactor: 2 });
+  const fileUrl = 'file:///' + path.join(dir, 'gen.html').replace(/\\/g, '/');
+  await page.goto(fileUrl, { waitUntil: 'load' });
+  await page2x.goto(fileUrl, { waitUntil: 'load' });
   for (const job of jobs) {
     const target = path.join(outRoot, job.dir);
     fs.mkdirSync(target, { recursive: true });
-    const handle = await page.$('#' + job.id);
+    const handle = await (job.scale === 2 ? page2x : page).$('#' + job.id);
     await handle.screenshot({ path: path.join(target, job.id + '.png') });
     console.log('done', job.dir + '/' + job.id + '.png');
   }

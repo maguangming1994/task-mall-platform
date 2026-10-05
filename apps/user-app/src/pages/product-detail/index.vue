@@ -20,7 +20,7 @@
     <template v-else-if="product">
       <view class="detail-hero">
         <swiper v-if="product.gallery_images.length" class="hero-swiper" circular :indicator-dots="product.gallery_images.length > 1" :autoplay="product.gallery_images.length > 1">
-          <swiper-item v-for="image in product.gallery_images" :key="image.url"><image class="hero-img" :src="image.url" mode="aspectFill" /></swiper-item>
+          <swiper-item v-for="image in product.gallery_images" :key="image.url"><image class="hero-img" :src="resolveApiAssetUrl(image.url)" mode="aspectFill" /></swiper-item>
         </swiper>
         <view v-else class="hero-img hero-placeholder"><text>{{ product.name.slice(0, 1) }}</text></view>
         <view class="hero-nav">
@@ -94,6 +94,7 @@
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { addCartItem } from '@/api/cart'
+import { resolveApiAssetUrl } from '@/api/http'
 import { getProduct, type MallProduct, type PurchaseMode, type PurchaseOption } from '@/api/products'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
