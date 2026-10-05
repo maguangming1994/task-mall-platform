@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Modules\Account\Models\UserAddress;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Assets\Services\AssetLedgerService;
 use App\Modules\Auth\Services\PhoneVerificationService;
 use App\Modules\Community\Services\CommunityContentService;
@@ -59,7 +60,7 @@ class CampusDemoSeeder extends Seeder
             ['display_name' => '预览管理员', 'password' => 'TaskMall2026!Preview', 'status' => 'active'],
         );
         $admin->roles()->syncWithoutDetaching(
-            \App\Modules\Admin\Models\Role::query()->whereIn('code', ['platform_admin', 'super_admin'])->pluck('id')
+            Role::query()->whereIn('code', ['platform_admin', 'super_admin'])->pluck('id')
         );
 
         return $admin;
