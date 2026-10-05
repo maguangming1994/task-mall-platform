@@ -1,5 +1,6 @@
 import {
   ApartmentOutlined,
+  AppstoreOutlined,
   BankOutlined,
   BookOutlined,
   CheckCircleOutlined,
@@ -53,6 +54,7 @@ import {
   type ManagedCampusList,
 } from '../../api/admin'
 import { ImageSourceModal, type ImageSourceValue } from '../../components/ImageSourceModal'
+import { CampusModuleDrawer } from './CampusModuleDrawer'
 
 type CampusImageValue = ImageSourceValue | null
 type CampusForm = Pick<ManagedCampus, 'code' | 'name' | 'province' | 'city' | 'district' | 'address' | 'latitude' | 'longitude' | 'status' | 'sort_order'> & {
@@ -157,6 +159,8 @@ export function CampusManagementPage() {
   const { admin } = useAdminAuth()
   const canGovernAgents = admin?.permissions.includes('rbac.manage') ?? false
   const canManageCampuses = admin?.permissions.includes('campus.manage') ?? false
+  // 功能模块矩阵写入仅平台超管（campus.module_manage）；代理只读
+  const canManageModules = admin?.permissions.includes('campus.module_manage') ?? false
   const [campusData, setCampusData] = useState<ManagedCampusList | null>(null)
   const [agentData, setAgentData] = useState<ManagedCampusAgentList | null>(null)
   const [agentOptions, setAgentOptions] = useState<CampusAgentOption[]>([])
@@ -169,6 +173,7 @@ export function CampusManagementPage() {
   const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState<ManagedCampus | null | undefined>(undefined)
   const [agentCampus, setAgentCampus] = useState<ManagedCampus | null>(null)
+  const [moduleCampus, setModuleCampus] = useState<ManagedCampus | null>(null)
   const [creatingAgent, setCreatingAgent] = useState(false)
   const [agentStatusTarget, setAgentStatusTarget] = useState<ManagedCampusAgentList['items'][number] | null>(null)
   const [campusForm] = Form.useForm<CampusForm>()
@@ -393,7 +398,7 @@ export function CampusManagementPage() {
         rowKey="id"
         loading={campusLoading}
         dataSource={campusData?.items ?? []}
-        scroll={{ x: 1740 }}
+        scroll={{ x: 1820 }}
         pagination={{
           current: campusData?.pagination.page ?? campusFilters.page,
           pageSize: campusData?.pagination.page_size ?? campusFilters.page_size,
@@ -414,7 +419,7 @@ export function CampusManagementPage() {
           { title: '用户', dataIndex: 'users_count', width: 90, render: (value: number) => `${value} 人` },
           { title: '学校代理', width: 285, render: (_, row) => row.agents.length ? <Space wrap>{row.agents.map((agent) => <Tag key={agent.id} color={agent.is_primary ? 'blue' : undefined}>{agent.display_name}{agent.is_primary ? ' · 主代理' : ''}</Tag>)}</Space> : <Typography.Text type="secondary">尚未分配</Typography.Text> },
           { title: '更新时间', width: 170, render: (_, row) => formatTime(row.updated_at) },
-          { title: '操作', fixed: 'right', width: 176, render: (_, row) => <Space>{canManageCampuses && <Button size="small" onClick={() => openEdit(row)}>编辑</Button>}{canGovernAgents && <Button size="small" icon={<TeamOutlined />} onClick={() => openAgents(row)}>分配代理</Button>}</Space> },
+          { title: '操作', fixed: 'right', width: 252, render: (_, row) => <Space><Button size="small" icon={<AppstoreOutlined />} onClick={() => setModuleCampus(row)}>功能模块</Button>{canManageCampuses && <Button size="small" onClick={() => openEdit(row)}>编辑</Button>}{canGovernAgents && <Button size="small" icon={<TeamOutlined />} onClick={() => openAgents(row)}>分配代理</Button>}</Space> },
         ]}
       />
     </Card>
@@ -555,6 +560,14 @@ export function CampusManagementPage() {
         {admin?.requires_mfa && <Form.Item name="mfa_code" label="动态验证码或恢复码" rules={[{ required: true }]}><Input autoComplete="one-time-code" /></Form.Item>}
       </Form>
     </Modal>
+
+    <CampusModuleDrawer
+      open={Boolean(moduleCampus)}
+      campus={moduleCampus}
+      canWrite={canManageModules}
+      requiresMfa={admin?.requires_mfa}
+      onClose={() => setModuleCampus(null)}
+    />
 
     <Modal title={agentStatusTarget?.status === 'active' ? '停用代理账号' : '恢复代理账号'} open={Boolean(agentStatusTarget)} onCancel={() => { setAgentStatusTarget(null); agentStatusForm.resetFields() }} onOk={() => agentStatusForm.submit()} confirmLoading={saving} okText="验证并确认" destroyOnHidden>
       <Form form={agentStatusForm} layout="vertical" onFinish={changeAgentStatus}>

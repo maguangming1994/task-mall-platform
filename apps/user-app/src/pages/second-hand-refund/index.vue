@@ -1,4 +1,11 @@
 <template>
+  <view>
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_second_hand" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
   <view class="page" v-if="order && loaded">
     <!-- ===== 退款状态视图 ===== -->
     <template v-if="refund">
@@ -108,6 +115,8 @@
       </view>
     </template>
   </view>
+    </template>
+  </view>
 </template>
 
 <script setup lang="ts">
@@ -123,6 +132,11 @@ import { ensureChatConversation } from '@/api/chat'
 import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { ApiError, resolveApiAssetUrl } from '@/api/http'
 import { formatDateTime } from '@/utils/dateTime'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 
 const auth = useAuthStore()
 const order = ref<SecondHandOrder | null>(null)
@@ -240,6 +254,8 @@ onLoad((q) => {
 onUnload(() => { if (timer) clearInterval(timer) })
 
 async function load() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.accessToken || !orderId.value) return
   try {
     const o = await getSecondHandOrder(auth.accessToken, orderId.value)

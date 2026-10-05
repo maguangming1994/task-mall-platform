@@ -78,6 +78,7 @@ class TaskDataBatchFlowTest extends TestCase
         $this->assertSame('CODE-001', $service->presentClaim($thirdClaim)['data_item']['payload']['code']);
         $fourthClaim = $service->claim($this->eligibleUser(), $task, 'batch-fourth-claim');
         $this->assertSame('CODE-002', $service->presentClaim($fourthClaim)['data_item']['payload']['code']);
+        $this->flushHeaders();
         $this->assertSame(0, $this->getJson("/api/v1/tasks/{$taskId}")->assertOk()->json('data.remaining_reward_slots'));
 
         $export = $this->withToken($token)->get("/api/v1/admin/task-data-batches/{$batchId}/export")->assertOk();

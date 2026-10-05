@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_second_hand" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="tabs">
       <view :class="['tab', { active: role === 'buyer' }]" @click="role = 'buyer'; load()">我买到的</view>
       <view :class="['tab', { active: role === 'seller' }]" @click="role = 'seller'; load()">我卖出的</view>
@@ -27,16 +33,22 @@
       </view>
     </view>
     <view v-else class="empty"><text>暂无订单</text></view>
+    </template>
   </view>
 </template>
 
 <script setup lang="ts">
 import { onShow } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { listSecondHandOrders, type SecondHandOrder } from '@/api/second-hand'
 import { resolveApiAssetUrl } from '@/api/http'
 import { formatDate } from '@/utils/dateTime'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 
 const auth = useAuthStore()
 const role = ref<'buyer' | 'seller'>('buyer')
@@ -51,6 +63,8 @@ function statusText(s: string) {
 }
 
 async function load() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.accessToken) return
   loading.value = true
   try {
@@ -61,7 +75,7 @@ async function load() {
 
 function openDetail(id: string) { uni.navigateTo({ url: `/pages/second-hand-order-detail/index?id=${id}` }) }
 
-onShow(() => load())
+onShow(load)
 </script>
 
 <style lang="scss" scoped>

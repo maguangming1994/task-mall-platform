@@ -1,4 +1,11 @@
 <template>
+  <view>
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_second_hand" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
   <view class="page" v-if="order">
     <view class="status-card">
       <text class="status-text">{{ statusText }}</text>
@@ -54,6 +61,8 @@
       <button v-if="canRate" class="btn primary" @click="goRate">评价</button>
     </view>
   </view>
+    </template>
+  </view>
 </template>
 
 <script setup lang="ts">
@@ -67,6 +76,11 @@ import {
 import { ensureChatConversation } from '@/api/chat'
 import { resolveApiAssetUrl } from '@/api/http'
 import { formatDateTime } from '@/utils/dateTime'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 
 const auth = useAuthStore()
 const order = ref<SecondHandOrder | null>(null)
@@ -138,9 +152,11 @@ function resolveCover(id: string | null) { return resolveApiAssetUrl(id) }
 function formatTime(s: string | null) { return formatDateTime(s, '') }
 
 onLoad((q) => { orderId.value = q?.id || '' })
-onShow(() => { if (orderId.value) load() })
+onShow(load)
 
 async function load() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.accessToken || !orderId.value) return
   try { order.value = await getSecondHandOrder(auth.accessToken, orderId.value) } catch { uni.showToast({ title: '加载失败', icon: 'none' }) }
 }

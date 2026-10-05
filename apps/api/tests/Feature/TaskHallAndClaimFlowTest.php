@@ -25,6 +25,8 @@ class TaskHallAndClaimFlowTest extends TestCase
         $draftPools = [$this->pool($token, '草稿积分池', 'points', 1000, 'draft-points-pool-01'), $this->pool($token, '草稿余额池', 'wallet_cash', 10000, 'draft-wallet-pool-01')];
         $this->withToken($token)->withHeaders(['Idempotency-Key' => 'draft-task-hidden-001'])->postJson('/api/v1/admin/tasks', $this->task([$draftPools[0]['id'], $draftPools[1]['id']], 2))->assertCreated();
 
+        // 公开大厅为匿名访问，清理 withToken 残留的管理员默认头
+        $this->flushHeaders();
         $hall = $this->getJson('/api/v1/tasks')->assertOk()->assertJsonCount(1, 'data.items');
         $this->assertSame($task->public_id, $hall->json('data.items.0.id'));
         $this->assertSame(2, $hall->json('data.items.0.remaining_reward_slots'));
@@ -127,6 +129,7 @@ class TaskHallAndClaimFlowTest extends TestCase
             $claim = $service->claim($user, $task, 'auto-enroll-system-event', 'system');
             $this->assertSame('system', $claim->enrollment_source);
             $this->assertDatabaseCount('task_reward_reservations', 2);
+            $this->flushHeaders();
             $this->assertFalse($this->getJson('/api/v1/tasks/'.$task->public_id)->json('data.can_claim'));
         }
     }

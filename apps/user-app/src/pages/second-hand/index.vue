@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_second_hand" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="head">
       <text class="title">闲置市场</text>
     </view>
@@ -54,15 +60,21 @@
     <view v-else class="empty"><text>暂无闲置物品</text></view>
 
     <view class="fab-publish" @click="goPublish"><text class="fab-plus">＋</text><text>发布</text></view>
+    </template>
   </view>
 </template>
 
 <script setup lang="ts">
 import { onShow } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { listSecondHandCategories, listSecondHandItems, type SecondHandCategory, type SecondHandItem } from '@/api/second-hand'
 import { resolveApiAssetUrl } from '@/api/http'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 
 const auth = useAuthStore()
 const items = ref<SecondHandItem[]>([])
@@ -119,10 +131,14 @@ function goPublish() {
   uni.navigateTo({ url: '/pages/second-hand-publish/index' })
 }
 
-onShow(() => {
+onShow(handleShow)
+
+async function handleShow() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   loadCategories()
   load()
-})
+}
 </script>
 
 <style lang="scss" scoped>

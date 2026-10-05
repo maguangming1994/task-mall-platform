@@ -51,6 +51,7 @@ use App\Modules\Legal\Http\Controllers\UserLegalConsentController;
 use App\Modules\Media\Http\Controllers\AdminMediaController;
 use App\Modules\Media\Http\Controllers\MediaAssetController;
 use App\Modules\Notification\Http\Controllers\NotificationController;
+use App\Modules\Operations\Http\Controllers\AdminCampusModuleController;
 use App\Modules\Operations\Http\Controllers\AdminOperationsController;
 use App\Modules\Operations\Http\Controllers\AdminProductionReadinessController;
 use App\Modules\Operations\Http\Controllers\HealthController;
@@ -108,7 +109,8 @@ Route::get('/health/live', [HealthController::class, 'live'])->name('api.health.
 Route::get('/health/ready', [HealthController::class, 'ready'])->name('api.health.ready');
 Route::get('/internal/metrics', [MonitoringController::class, 'metrics'])->middleware('throttle:60,1');
 
-Route::get('/client-capabilities', [ClientCapabilitiesController::class, 'show']);
+// auth.optional：登录用户的模块判定必须以其账号校区为准，防止伪造 X-Campus-Id 绕过本校关闭策略
+Route::get('/client-capabilities', [ClientCapabilitiesController::class, 'show'])->middleware('auth.optional');
 Route::get('/campuses', [CampusController::class, 'index'])->middleware('throttle:campus-list');
 Route::post('/campuses/nearby', [CampusController::class, 'nearby'])->middleware('throttle:campus-nearby');
 Route::get('/home-content', [HomeContentController::class, 'show']);
@@ -116,30 +118,38 @@ Route::get('/appearance-content', [AppearanceContentController::class, 'show']);
 Route::get('/app-navigation', [AppNavigationController::class, 'show']);
 Route::get('/icon-configs', [IconConfigController::class, 'index']);
 Route::get('/legal-documents', [LegalDocumentController::class, 'index']);
-Route::get('/tasks', [TaskHallController::class, 'index']);
-Route::get('/tasks/{task}', [TaskHallController::class, 'show']);
-Route::get('/products', [ProductController::class, 'index']);
-Route::get('/product-categories', [ProductController::class, 'categories']);
-Route::get('/products/{product}', [ProductController::class, 'show']);
-Route::get('/second-hand/categories', [SecondHandItemController::class, 'categories']);
-Route::get('/second-hand/sellers/{user}', [SecondHandItemController::class, 'sellerProfile']);
-Route::get('/second-hand/items', [SecondHandItemController::class, 'index']);
-Route::get('/second-hand/items/{item}', [SecondHandItemController::class, 'show'])->middleware('auth.optional');
+Route::middleware(['auth.optional', 'module.gate:module_tasks'])->group(function () {
+    Route::get('/tasks', [TaskHallController::class, 'index']);
+    Route::get('/tasks/{task}', [TaskHallController::class, 'show']);
+});
+Route::middleware(['auth.optional', 'module.gate:module_mall'])->group(function () {
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/product-categories', [ProductController::class, 'categories']);
+    Route::get('/products/{product}', [ProductController::class, 'show']);
+});
+Route::middleware(['auth.optional', 'module.gate:module_second_hand'])->group(function () {
+    Route::get('/second-hand/categories', [SecondHandItemController::class, 'categories']);
+    Route::get('/second-hand/sellers/{user}', [SecondHandItemController::class, 'sellerProfile']);
+    Route::get('/second-hand/items', [SecondHandItemController::class, 'index']);
+    Route::get('/second-hand/items/{item}', [SecondHandItemController::class, 'show']);
+});
 Route::get('/media/assets/{mediaAsset}', [MediaAssetController::class, 'show']);
 Route::get('/avatars/{file}', [UserAvatarController::class, 'show'])
     ->middleware('throttle:120,1')
     ->name('user-avatars.show');
-Route::get('/community/home', [CommunityHomepageController::class, 'show']);
-Route::get('/community/categories', [CommunityPostController::class, 'categories']);
-Route::get('/community/posts', [CommunityPostController::class, 'index'])->middleware('auth.optional');
-Route::get('/community/posts/{post}/comments', [CommunityCommentController::class, 'index']);
-Route::get('/community/posts/{post}', [CommunityPostController::class, 'show'])->middleware('auth.optional');
-Route::get('/community/media/{file}', [CommunityPostController::class, 'media']);
-Route::get('/community/activity-categories', [CommunityActivityController::class, 'categories']);
-Route::get('/community/activities', [CommunityActivityController::class, 'index'])->middleware('auth.optional');
-Route::get('/community/activities/media/{file}', [CommunityActivityController::class, 'media']);
-Route::get('/community/activities/{activity}', [CommunityActivityController::class, 'show'])->middleware('auth.optional');
-Route::get('/after-sale-reasons', [AfterSaleReasonController::class, 'index']);
+Route::middleware(['auth.optional', 'module.gate:module_community'])->group(function () {
+    Route::get('/community/home', [CommunityHomepageController::class, 'show']);
+    Route::get('/community/categories', [CommunityPostController::class, 'categories']);
+    Route::get('/community/posts', [CommunityPostController::class, 'index']);
+    Route::get('/community/posts/{post}/comments', [CommunityCommentController::class, 'index']);
+    Route::get('/community/posts/{post}', [CommunityPostController::class, 'show']);
+    Route::get('/community/media/{file}', [CommunityPostController::class, 'media']);
+    Route::get('/community/activity-categories', [CommunityActivityController::class, 'categories']);
+    Route::get('/community/activities', [CommunityActivityController::class, 'index']);
+    Route::get('/community/activities/media/{file}', [CommunityActivityController::class, 'media']);
+    Route::get('/community/activities/{activity}', [CommunityActivityController::class, 'show']);
+});
+Route::get('/after-sale-reasons', [AfterSaleReasonController::class, 'index'])->middleware(['auth.optional', 'module.gate:module_after_sale']);
 Route::put('/files/{file}/content', [UploadController::class, 'proxyUpload'])->middleware('throttle:30,1');
 Route::post('/payment-notifications/wechat', [WechatPaymentNotificationController::class, 'store'])->middleware('throttle:120,1');
 Route::post('/refund-notifications/wechat', [WechatRefundNotificationController::class, 'store'])->middleware('throttle:120,1');
@@ -156,8 +166,8 @@ Route::prefix('auth')->group(function () {
         ->middleware('throttle:20,1');
 });
 
-Route::post('/task-publisher/session', [TaskPublisherAuthController::class, 'store'])->middleware('throttle:10,1');
-Route::middleware('auth.publisher')->prefix('task-publisher')->group(function () {
+Route::post('/task-publisher/session', [TaskPublisherAuthController::class, 'store'])->middleware(['module.gate:module_task_publish', 'throttle:10,1']);
+Route::middleware(['auth.publisher', 'module.gate:module_task_publish'])->prefix('task-publisher')->group(function () {
     Route::delete('/session', [TaskPublisherAuthController::class, 'destroy']);
     Route::get('/profile', [TaskPublisherAuthController::class, 'profile']);
     Route::get('/budget-pools', [TaskPublisherTaskController::class, 'budgets']);
@@ -175,37 +185,50 @@ Route::middleware('auth.publisher')->prefix('task-publisher')->group(function ()
 Route::middleware('auth.access')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/me', [CurrentUserController::class, 'show']);
-    Route::post('/me/task-publisher-session', [TaskPublisherAuthController::class, 'storeForUser'])->middleware('throttle:10,1');
+    Route::post('/me/task-publisher-session', [TaskPublisherAuthController::class, 'storeForUser'])->middleware(['module.gate:module_task_publish', 'throttle:10,1']);
     Route::put('/me', [UserProfileController::class, 'update'])->middleware('legal.consent:account');
     Route::put('/me/campus', [CampusController::class, 'select']);
     Route::get('/me/identity-verification', [UserIdentityVerificationController::class, 'show'])
         ->middleware('legal.consent:account');
     Route::post('/me/identity-verification', [UserIdentityVerificationController::class, 'store'])
         ->middleware(['legal.consent:account', 'throttle:5,60']);
-    Route::get('/me/asset-overview', [UserAssetOverviewController::class, 'show'])->middleware('legal.consent:account');
-    Route::get('/points/account', [UserAssetLedgerController::class, 'pointAccount'])->middleware('legal.consent:account');
-    Route::get('/points/batches', [UserAssetLedgerController::class, 'pointBatches'])->middleware('legal.consent:account');
-    Route::get('/points/transactions', [UserAssetLedgerController::class, 'pointTransactions'])->middleware('legal.consent:account');
-    Route::get('/points/debts', [UserAssetLedgerController::class, 'pointDebts'])->middleware('legal.consent:account');
-    Route::get('/wallet/account', [UserAssetLedgerController::class, 'walletAccount'])->middleware('legal.consent:wallet');
-    Route::get('/wallet/transactions', [UserAssetLedgerController::class, 'walletTransactions'])->middleware('legal.consent:wallet');
-    Route::get('/wallet/withdrawals', [UserAssetLedgerController::class, 'withdrawals'])->middleware('legal.consent:wallet');
-    Route::get('/wallet/withdrawal-quote', [UserAssetLedgerController::class, 'withdrawalQuote'])->middleware('legal.consent:wallet');
-    Route::post('/wallet/withdrawals', [UserAssetLedgerController::class, 'createWithdrawal'])->middleware(['legal.consent:wallet', 'throttle:10,1']);
-    Route::get('/wallet/bank-cards', [UserBankCardController::class, 'index'])->middleware('legal.consent:wallet');
-    Route::post('/wallet/bank-cards', [UserBankCardController::class, 'store'])->middleware(['legal.consent:wallet', 'throttle:10,1']);
-    Route::put('/wallet/bank-cards/{userBankCard}/default', [UserBankCardController::class, 'setDefault'])->middleware('legal.consent:wallet');
-    Route::delete('/wallet/bank-cards/{userBankCard}', [UserBankCardController::class, 'destroy'])->middleware('legal.consent:wallet');
-    Route::get('/wallet/recharges', [WalletRechargeController::class, 'index'])->middleware('legal.consent:wallet');
-    Route::post('/wallet/recharges', [WalletRechargeController::class, 'store'])->middleware(['legal.consent:wallet', 'throttle:10,1']);
-    Route::get('/wallet/recharges/{walletRecharge}', [WalletRechargeController::class, 'show'])->middleware('legal.consent:wallet');
-    Route::post('/wallet/recharges/{walletRecharge}/payments', [WalletRechargeController::class, 'pay'])->middleware(['legal.consent:wallet', 'throttle:20,1']);
+    // 钱包资产（总览/积分/钱包账户流水）
+    Route::middleware('module.gate:module_wallet')->group(function () {
+        Route::get('/me/asset-overview', [UserAssetOverviewController::class, 'show'])->middleware('legal.consent:account');
+        Route::get('/points/account', [UserAssetLedgerController::class, 'pointAccount'])->middleware('legal.consent:account');
+        Route::get('/points/batches', [UserAssetLedgerController::class, 'pointBatches'])->middleware('legal.consent:account');
+        Route::get('/points/transactions', [UserAssetLedgerController::class, 'pointTransactions'])->middleware('legal.consent:account');
+        Route::get('/points/debts', [UserAssetLedgerController::class, 'pointDebts'])->middleware('legal.consent:account');
+        Route::get('/wallet/account', [UserAssetLedgerController::class, 'walletAccount'])->middleware('legal.consent:wallet');
+        Route::get('/wallet/transactions', [UserAssetLedgerController::class, 'walletTransactions'])->middleware('legal.consent:wallet');
+    });
+    // 提现（含银行卡管理）
+    Route::middleware('module.gate:module_withdraw')->group(function () {
+        Route::get('/wallet/withdrawals', [UserAssetLedgerController::class, 'withdrawals'])->middleware('legal.consent:wallet');
+        Route::get('/wallet/withdrawal-quote', [UserAssetLedgerController::class, 'withdrawalQuote'])->middleware('legal.consent:wallet');
+        Route::post('/wallet/withdrawals', [UserAssetLedgerController::class, 'createWithdrawal'])->middleware(['legal.consent:wallet', 'throttle:10,1']);
+        Route::get('/wallet/bank-cards', [UserBankCardController::class, 'index'])->middleware('legal.consent:wallet');
+        Route::post('/wallet/bank-cards', [UserBankCardController::class, 'store'])->middleware(['legal.consent:wallet', 'throttle:10,1']);
+        Route::put('/wallet/bank-cards/{userBankCard}/default', [UserBankCardController::class, 'setDefault'])->middleware('legal.consent:wallet');
+        Route::delete('/wallet/bank-cards/{userBankCard}', [UserBankCardController::class, 'destroy'])->middleware('legal.consent:wallet');
+    });
+    // 余额充值
+    Route::middleware('module.gate:module_wallet_recharge')->group(function () {
+        Route::get('/wallet/recharges', [WalletRechargeController::class, 'index'])->middleware('legal.consent:wallet');
+        Route::post('/wallet/recharges', [WalletRechargeController::class, 'store'])->middleware(['legal.consent:wallet', 'throttle:10,1']);
+        Route::get('/wallet/recharges/{walletRecharge}', [WalletRechargeController::class, 'show'])->middleware('legal.consent:wallet');
+        Route::post('/wallet/recharges/{walletRecharge}/payments', [WalletRechargeController::class, 'pay'])->middleware(['legal.consent:wallet', 'throttle:20,1']);
+    });
     Route::get('/coupons', [UserAssetLedgerController::class, 'coupons'])->middleware('legal.consent:account');
     Route::get('/coupon-center', [UserAssetLedgerController::class, 'couponCenter'])->middleware('legal.consent:account');
     Route::post('/coupon-center/{couponTemplate}/claim', [UserAssetLedgerController::class, 'claimCoupon'])->middleware(['legal.consent:account', 'throttle:10,1']);
-    Route::get('/growth/referrals', [ReferralController::class, 'index'])->middleware('legal.consent:account');
-    Route::get('/growth/check-in', [DailyCheckInController::class, 'show'])->middleware('legal.consent:account');
-    Route::post('/growth/check-in', [DailyCheckInController::class, 'store'])->middleware(['legal.consent:account', 'throttle:10,1']);
+    Route::middleware('module.gate:module_referrals')->group(function () {
+        Route::get('/growth/referrals', [ReferralController::class, 'index'])->middleware('legal.consent:account');
+    });
+    Route::middleware('module.gate:module_checkin')->group(function () {
+        Route::get('/growth/check-in', [DailyCheckInController::class, 'show'])->middleware('legal.consent:account');
+        Route::post('/growth/check-in', [DailyCheckInController::class, 'store'])->middleware(['legal.consent:account', 'throttle:10,1']);
+    });
     Route::get('/notifications', [NotificationController::class, 'index'])->middleware('legal.consent:account');
     Route::get('/support-tickets', [SupportTicketController::class, 'index'])->middleware('legal.consent:account');
     Route::post('/support-tickets', [SupportTicketController::class, 'store'])->middleware(['legal.consent:account', 'throttle:10,1']);
@@ -218,64 +241,77 @@ Route::middleware('auth.access')->group(function () {
     Route::put('/notification-preferences', [NotificationController::class, 'updatePreference'])->middleware('legal.consent:account');
     Route::get('/notification-subscriptions/wechat', [NotificationController::class, 'wechatSubscriptionOptions'])->middleware('legal.consent:account');
     Route::post('/notification-subscriptions/wechat', [NotificationController::class, 'recordWechatSubscriptions'])->middleware(['legal.consent:account', 'throttle:20,1']);
-    Route::post('/growth/referrals', [ReferralController::class, 'bind'])->middleware(['legal.consent:account', 'throttle:5,1']);
-    Route::get('/community/my-posts', [CommunityPostController::class, 'mine'])->middleware('legal.consent:community');
-    Route::post('/community/posts', [CommunityPostController::class, 'store'])->middleware(['legal.consent:community', 'throttle:20,1']);
-    Route::put('/community/posts/{post}', [CommunityPostController::class, 'update'])->middleware('legal.consent:community');
-    Route::delete('/community/posts/{post}', [CommunityPostController::class, 'destroy'])->middleware('legal.consent:community');
-    Route::post('/community/posts/{post}/comments', [CommunityCommentController::class, 'store'])->middleware(['legal.consent:community', 'throttle:60,1']);
-    Route::post('/community/posts/{post}/like', [CommunityEngagementController::class, 'like'])->middleware(['legal.consent:community', 'throttle:120,1']);
-    Route::delete('/community/posts/{post}/like', [CommunityEngagementController::class, 'unlike'])->middleware(['legal.consent:community', 'throttle:120,1']);
-    Route::post('/community/posts/{post}/favorite', [CommunityEngagementController::class, 'favorite'])->middleware(['legal.consent:community', 'throttle:120,1']);
-    Route::delete('/community/posts/{post}/favorite', [CommunityEngagementController::class, 'unfavorite'])->middleware(['legal.consent:community', 'throttle:120,1']);
-    Route::get('/community/social/stats', [CommunitySocialController::class, 'stats'])->middleware('legal.consent:community');
-    Route::post('/community/users/{userId}/follow', [CommunitySocialController::class, 'follow'])->middleware(['legal.consent:community', 'throttle:120,1']);
-    Route::delete('/community/users/{userId}/follow', [CommunitySocialController::class, 'unfollow'])->middleware(['legal.consent:community', 'throttle:120,1']);
-    Route::post('/community/activities', [CommunityActivityController::class, 'store'])->middleware(['legal.consent:community', 'throttle:10,1']);
-    Route::post('/community/activities/{activity}/join', [CommunityActivityController::class, 'join'])->middleware(['legal.consent:community', 'throttle:30,1']);
-    Route::delete('/community/activities/{activity}/join', [CommunityActivityController::class, 'leave'])->middleware(['legal.consent:community', 'throttle:30,1']);
-    Route::get('/community/my-activities', [CommunityActivityController::class, 'mine'])->middleware('legal.consent:community');
+    Route::post('/growth/referrals', [ReferralController::class, 'bind'])->middleware(['module.gate:module_referrals', 'legal.consent:account', 'throttle:5,1']);
+    // 社区发帖/互动（浏览门禁在公开区；父链 module_community 关闭时由 gate 服务级联关闭）
+    Route::middleware('module.gate:module_community_post')->group(function () {
+        Route::get('/community/my-posts', [CommunityPostController::class, 'mine'])->middleware('legal.consent:community');
+        Route::post('/community/posts', [CommunityPostController::class, 'store'])->middleware(['legal.consent:community', 'throttle:20,1']);
+        Route::put('/community/posts/{post}', [CommunityPostController::class, 'update'])->middleware('legal.consent:community');
+        Route::delete('/community/posts/{post}', [CommunityPostController::class, 'destroy'])->middleware('legal.consent:community');
+        Route::post('/community/posts/{post}/comments', [CommunityCommentController::class, 'store'])->middleware(['legal.consent:community', 'throttle:60,1']);
+        Route::post('/community/posts/{post}/like', [CommunityEngagementController::class, 'like'])->middleware(['legal.consent:community', 'throttle:120,1']);
+        Route::delete('/community/posts/{post}/like', [CommunityEngagementController::class, 'unlike'])->middleware(['legal.consent:community', 'throttle:120,1']);
+        Route::post('/community/posts/{post}/favorite', [CommunityEngagementController::class, 'favorite'])->middleware(['legal.consent:community', 'throttle:120,1']);
+        Route::delete('/community/posts/{post}/favorite', [CommunityEngagementController::class, 'unfavorite'])->middleware(['legal.consent:community', 'throttle:120,1']);
+        Route::get('/community/social/stats', [CommunitySocialController::class, 'stats'])->middleware('legal.consent:community');
+        Route::post('/community/users/{userId}/follow', [CommunitySocialController::class, 'follow'])->middleware(['legal.consent:community', 'throttle:120,1']);
+        Route::delete('/community/users/{userId}/follow', [CommunitySocialController::class, 'unfollow'])->middleware(['legal.consent:community', 'throttle:120,1']);
+        Route::post('/community/activities', [CommunityActivityController::class, 'store'])->middleware(['legal.consent:community', 'throttle:10,1']);
+        Route::post('/community/activities/{activity}/join', [CommunityActivityController::class, 'join'])->middleware(['legal.consent:community', 'throttle:30,1']);
+        Route::delete('/community/activities/{activity}/join', [CommunityActivityController::class, 'leave'])->middleware(['legal.consent:community', 'throttle:30,1']);
+        Route::get('/community/my-activities', [CommunityActivityController::class, 'mine'])->middleware('legal.consent:community');
+    });
+    // 举报/申诉属于安全治理通道，任何时候都可用，不挂模块门禁
     Route::post('/community/content/{contentType}/{contentId}/reports', [CommunityModerationController::class, 'report'])->middleware(['legal.consent:community', 'throttle:20,1']);
     Route::post('/community/moderation-actions/{action}/appeals', [CommunityModerationController::class, 'appeal'])->middleware(['legal.consent:community', 'throttle:10,1']);
     Route::get('/community/my-moderation-actions', [CommunityModerationController::class, 'mine'])->middleware('legal.consent:community');
-    Route::post('/tasks/{task}/claims', [TaskHallController::class, 'claim'])->middleware(['legal.consent:task', 'throttle:20,1']);
-    Route::post('/tasks/{task}/reports', [TaskRiskController::class, 'report'])->middleware(['legal.consent:task', 'throttle:10,1']);
-    Route::get('/task-claims', [TaskHallController::class, 'myClaims'])->middleware('legal.consent:task');
-    Route::get('/task-claims/{taskClaim}', [TaskHallController::class, 'showClaim'])->middleware('legal.consent:task');
-    Route::post('/task-claims/{taskClaim}/cancel', [TaskHallController::class, 'cancel'])->middleware('legal.consent:task');
-    Route::get('/task-claims/{taskClaim}/submissions', [UserTaskSubmissionController::class, 'index'])->middleware('legal.consent:task');
-    Route::post('/task-claims/{taskClaim}/submissions', [UserTaskSubmissionController::class, 'store'])->middleware(['legal.consent:task', 'throttle:20,1']);
-    Route::post('/task-submissions/{taskSubmission}/withdraw', [UserTaskSubmissionController::class, 'withdraw'])->middleware('legal.consent:task');
-    Route::get('/task-claims/{taskClaim}/rewards', [UserTaskSubmissionController::class, 'rewards'])->middleware('legal.consent:task');
-    Route::post('/task-claims/{taskClaim}/appeals', [TaskAppealController::class, 'store'])->middleware(['legal.consent:task', 'throttle:10,1']);
+    // 任务领取/提交/申诉
+    Route::middleware('module.gate:module_tasks')->group(function () {
+        Route::post('/tasks/{task}/claims', [TaskHallController::class, 'claim'])->middleware(['legal.consent:task', 'throttle:20,1']);
+        Route::post('/tasks/{task}/reports', [TaskRiskController::class, 'report'])->middleware(['legal.consent:task', 'throttle:10,1']);
+        Route::get('/task-claims', [TaskHallController::class, 'myClaims'])->middleware('legal.consent:task');
+        Route::get('/task-claims/{taskClaim}', [TaskHallController::class, 'showClaim'])->middleware('legal.consent:task');
+        Route::post('/task-claims/{taskClaim}/cancel', [TaskHallController::class, 'cancel'])->middleware('legal.consent:task');
+        Route::get('/task-claims/{taskClaim}/submissions', [UserTaskSubmissionController::class, 'index'])->middleware('legal.consent:task');
+        Route::post('/task-claims/{taskClaim}/submissions', [UserTaskSubmissionController::class, 'store'])->middleware(['legal.consent:task', 'throttle:20,1']);
+        Route::post('/task-submissions/{taskSubmission}/withdraw', [UserTaskSubmissionController::class, 'withdraw'])->middleware('legal.consent:task');
+        Route::get('/task-claims/{taskClaim}/rewards', [UserTaskSubmissionController::class, 'rewards'])->middleware('legal.consent:task');
+        Route::post('/task-claims/{taskClaim}/appeals', [TaskAppealController::class, 'store'])->middleware(['legal.consent:task', 'throttle:10,1']);
+    });
     Route::get('/addresses', [UserAddressController::class, 'index'])->middleware('legal.consent:account');
     Route::post('/addresses', [UserAddressController::class, 'store'])->middleware('legal.consent:account');
     Route::put('/addresses/{address}', [UserAddressController::class, 'update'])->middleware('legal.consent:account');
     Route::delete('/addresses/{address}', [UserAddressController::class, 'destroy'])->middleware('legal.consent:account');
-    Route::get('/cart', [CartController::class, 'show'])->middleware('legal.consent:account');
-    Route::post('/cart/items', [CartController::class, 'store'])->middleware('legal.consent:account');
-    Route::put('/cart/items/{cartItem}', [CartController::class, 'update'])->middleware('legal.consent:account');
-    Route::delete('/cart/items/{cartItem}', [CartController::class, 'destroy'])->middleware('legal.consent:account');
-    Route::post('/shipping/quote', [ShippingQuoteController::class, 'show'])->middleware('legal.consent:account');
-    Route::post('/checkout/preview', [CheckoutController::class, 'preview'])->middleware('legal.consent:account');
-    Route::get('/orders', [OrderController::class, 'index'])->middleware('legal.consent:account');
-    Route::post('/orders', [CheckoutController::class, 'store'])->middleware('legal.consent:account');
-    Route::get('/orders/{order}', [OrderController::class, 'show'])->middleware('legal.consent:account');
-    Route::post('/orders/{order}/complete', [FulfillmentController::class, 'complete'])->middleware('legal.consent:account');
-    Route::get('/orders/{order}/payments', [PaymentController::class, 'index'])->middleware('legal.consent:account');
-    Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
-    Route::get('/payments/{payment}', [PaymentController::class, 'show'])->middleware('legal.consent:account');
-    Route::get('/refunds', [RefundController::class, 'index'])->middleware('legal.consent:account');
-    Route::post('/refunds', [RefundController::class, 'store'])->middleware('legal.consent:account');
-    Route::post('/refunds/{refund}/return-shipment', [RefundController::class, 'submitReturn'])->middleware('legal.consent:account');
-    Route::post('/refunds/{refund}/cancel', [RefundController::class, 'cancel'])->middleware('legal.consent:account');
-    Route::post('/exchanges', [ExchangeController::class, 'store'])->middleware('legal.consent:account');
-    Route::get('/exchanges', [ExchangeController::class, 'index'])->middleware('legal.consent:account');
-    Route::get('/exchanges/{exchange}', [ExchangeController::class, 'show'])->middleware('legal.consent:account');
-    Route::post('/exchanges/{exchange}/return-shipment', [ExchangeController::class, 'submitReturn'])->middleware('legal.consent:account');
-    Route::post('/exchanges/{exchange}/complete', [ExchangeController::class, 'complete'])->middleware('legal.consent:account');
-    Route::post('/exchanges/{exchange}/cancel', [ExchangeController::class, 'cancel'])->middleware('legal.consent:account');
-    Route::get('/order-batches/{orderBatch}', [OrderController::class, 'batch'])->middleware('legal.consent:account');
+    // 商城交易：购物车/结算/订单/支付（父链 module_mall 关闭时级联关闭）
+    Route::middleware('module.gate:module_mall_trade')->group(function () {
+        Route::get('/cart', [CartController::class, 'show'])->middleware('legal.consent:account');
+        Route::post('/cart/items', [CartController::class, 'store'])->middleware('legal.consent:account');
+        Route::put('/cart/items/{cartItem}', [CartController::class, 'update'])->middleware('legal.consent:account');
+        Route::delete('/cart/items/{cartItem}', [CartController::class, 'destroy'])->middleware('legal.consent:account');
+        Route::post('/shipping/quote', [ShippingQuoteController::class, 'show'])->middleware('legal.consent:account');
+        Route::post('/checkout/preview', [CheckoutController::class, 'preview'])->middleware('legal.consent:account');
+        Route::get('/orders', [OrderController::class, 'index'])->middleware('legal.consent:account');
+        Route::post('/orders', [CheckoutController::class, 'store'])->middleware('legal.consent:account');
+        Route::get('/orders/{order}', [OrderController::class, 'show'])->middleware('legal.consent:account');
+        Route::post('/orders/{order}/complete', [FulfillmentController::class, 'complete'])->middleware('legal.consent:account');
+        Route::get('/orders/{order}/payments', [PaymentController::class, 'index'])->middleware('legal.consent:account');
+        Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
+        Route::get('/payments/{payment}', [PaymentController::class, 'show'])->middleware('legal.consent:account');
+        Route::get('/order-batches/{orderBatch}', [OrderController::class, 'batch'])->middleware('legal.consent:account');
+    });
+    // 售后服务（退款/换货；父链 mall_trade → mall 关闭时级联关闭）
+    Route::middleware('module.gate:module_after_sale')->group(function () {
+        Route::get('/refunds', [RefundController::class, 'index'])->middleware('legal.consent:account');
+        Route::post('/refunds', [RefundController::class, 'store'])->middleware('legal.consent:account');
+        Route::post('/refunds/{refund}/return-shipment', [RefundController::class, 'submitReturn'])->middleware('legal.consent:account');
+        Route::post('/refunds/{refund}/cancel', [RefundController::class, 'cancel'])->middleware('legal.consent:account');
+        Route::post('/exchanges', [ExchangeController::class, 'store'])->middleware('legal.consent:account');
+        Route::get('/exchanges', [ExchangeController::class, 'index'])->middleware('legal.consent:account');
+        Route::get('/exchanges/{exchange}', [ExchangeController::class, 'show'])->middleware('legal.consent:account');
+        Route::post('/exchanges/{exchange}/return-shipment', [ExchangeController::class, 'submitReturn'])->middleware('legal.consent:account');
+        Route::post('/exchanges/{exchange}/complete', [ExchangeController::class, 'complete'])->middleware('legal.consent:account');
+        Route::post('/exchanges/{exchange}/cancel', [ExchangeController::class, 'cancel'])->middleware('legal.consent:account');
+    });
     Route::get('/me/legal-consents', [UserLegalConsentController::class, 'index']);
     Route::get('/me/legal-consents/pending', [UserLegalConsentController::class, 'pending']);
     Route::post('/me/legal-consents', [UserLegalConsentController::class, 'store']);
@@ -294,40 +330,42 @@ Route::middleware('auth.access')->group(function () {
     Route::get('/files/{file}', [UploadController::class, 'show']);
     Route::get('/files/{file}/content', [UploadController::class, 'download'])->middleware('throttle:60,1');
 
-    // 二手闲置
-    Route::post('/second-hand/items', [SecondHandItemController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
-    Route::put('/second-hand/items/{item}', [SecondHandItemController::class, 'update'])->middleware('legal.consent:account');
-    Route::delete('/second-hand/items/{item}', [SecondHandItemController::class, 'destroy'])->middleware('legal.consent:account');
-    Route::post('/second-hand/items/{item}/relist', [SecondHandItemController::class, 'relist'])->middleware('legal.consent:account');
-    Route::get('/second-hand/my-items', [SecondHandItemController::class, 'mine'])->middleware('legal.consent:account');
-    Route::get('/second-hand/orders', [SecondHandOrderController::class, 'index'])->middleware('legal.consent:account');
-    Route::post('/second-hand/orders', [SecondHandOrderController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
-    Route::get('/second-hand/orders/{order}', [SecondHandOrderController::class, 'show'])->middleware('legal.consent:account');
-    Route::post('/second-hand/orders/{order}/pay', [SecondHandOrderController::class, 'pay'])->middleware(['legal.consent:account', 'throttle:10,1']);
-    Route::post('/second-hand/orders/{order}/ship', [SecondHandOrderController::class, 'ship'])->middleware('legal.consent:account');
-    Route::post('/second-hand/orders/{order}/complete', [SecondHandOrderController::class, 'complete'])->middleware('legal.consent:account');
-    Route::post('/second-hand/orders/{order}/cancel', [SecondHandOrderController::class, 'cancel'])->middleware('legal.consent:account');
-    Route::post('/second-hand/orders/{order}/rate', [SecondHandRatingController::class, 'store'])->middleware('legal.consent:account');
-    Route::get('/second-hand/orders/{order}/ratings', [SecondHandRatingController::class, 'index'])->middleware('legal.consent:account');
-    Route::put('/second-hand/ratings/{rating}/reply', [SecondHandRatingController::class, 'reply'])->middleware('legal.consent:account');
-    Route::get('/users/{user}/second-hand-ratings', [SecondHandRatingController::class, 'userRatings']);
-    Route::post('/second-hand/orders/{order}/refund', [SecondHandRefundController::class, 'request'])->middleware('legal.consent:account');
-    Route::post('/second-hand/orders/{order}/refund/respond', [SecondHandRefundController::class, 'respond'])->middleware('legal.consent:account');
-    Route::get('/second-hand/orders/{order}/refund', [SecondHandRefundController::class, 'show'])->middleware('legal.consent:account');
-    Route::post('/second-hand/orders/{order}/refund/cancel', [SecondHandRefundController::class, 'cancel'])->middleware('legal.consent:account');
-    Route::post('/second-hand/orders/{order}/refund/escalate', [SecondHandRefundController::class, 'escalate'])->middleware('legal.consent:account');
+    // 二手闲置（含 IM 聊天：会话依附闲置/交易场景）
+    Route::middleware('module.gate:module_second_hand')->group(function () {
+        Route::post('/second-hand/items', [SecondHandItemController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
+        Route::put('/second-hand/items/{item}', [SecondHandItemController::class, 'update'])->middleware('legal.consent:account');
+        Route::delete('/second-hand/items/{item}', [SecondHandItemController::class, 'destroy'])->middleware('legal.consent:account');
+        Route::post('/second-hand/items/{item}/relist', [SecondHandItemController::class, 'relist'])->middleware('legal.consent:account');
+        Route::get('/second-hand/my-items', [SecondHandItemController::class, 'mine'])->middleware('legal.consent:account');
+        Route::get('/second-hand/orders', [SecondHandOrderController::class, 'index'])->middleware('legal.consent:account');
+        Route::post('/second-hand/orders', [SecondHandOrderController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
+        Route::get('/second-hand/orders/{order}', [SecondHandOrderController::class, 'show'])->middleware('legal.consent:account');
+        Route::post('/second-hand/orders/{order}/pay', [SecondHandOrderController::class, 'pay'])->middleware(['legal.consent:account', 'throttle:10,1']);
+        Route::post('/second-hand/orders/{order}/ship', [SecondHandOrderController::class, 'ship'])->middleware('legal.consent:account');
+        Route::post('/second-hand/orders/{order}/complete', [SecondHandOrderController::class, 'complete'])->middleware('legal.consent:account');
+        Route::post('/second-hand/orders/{order}/cancel', [SecondHandOrderController::class, 'cancel'])->middleware('legal.consent:account');
+        Route::post('/second-hand/orders/{order}/rate', [SecondHandRatingController::class, 'store'])->middleware('legal.consent:account');
+        Route::get('/second-hand/orders/{order}/ratings', [SecondHandRatingController::class, 'index'])->middleware('legal.consent:account');
+        Route::put('/second-hand/ratings/{rating}/reply', [SecondHandRatingController::class, 'reply'])->middleware('legal.consent:account');
+        Route::get('/users/{user}/second-hand-ratings', [SecondHandRatingController::class, 'userRatings']);
+        Route::post('/second-hand/orders/{order}/refund', [SecondHandRefundController::class, 'request'])->middleware('legal.consent:account');
+        Route::post('/second-hand/orders/{order}/refund/respond', [SecondHandRefundController::class, 'respond'])->middleware('legal.consent:account');
+        Route::get('/second-hand/orders/{order}/refund', [SecondHandRefundController::class, 'show'])->middleware('legal.consent:account');
+        Route::post('/second-hand/orders/{order}/refund/cancel', [SecondHandRefundController::class, 'cancel'])->middleware('legal.consent:account');
+        Route::post('/second-hand/orders/{order}/refund/escalate', [SecondHandRefundController::class, 'escalate'])->middleware('legal.consent:account');
+
+        // IM 聊天
+        Route::get('/chat/conversations', [ChatController::class, 'conversations'])->middleware('legal.consent:account');
+        Route::post('/chat/conversations', [ChatController::class, 'store'])->middleware('legal.consent:account');
+        Route::get('/chat/conversations/{conversation}/messages', [ChatController::class, 'messages'])->middleware('legal.consent:account');
+        Route::post('/chat/conversations/{conversation}/messages', [ChatController::class, 'send'])->middleware(['legal.consent:account', 'throttle:30,1']);
+        Route::post('/chat/conversations/{conversation}/read', [ChatController::class, 'read'])->middleware('legal.consent:account');
+    });
 
     // 广播鉴权（WebSocket 私有频道）
     Route::post('/broadcasting/auth', function (Request $request) {
         return Broadcast::auth($request);
     });
-
-    // IM 聊天
-    Route::get('/chat/conversations', [ChatController::class, 'conversations'])->middleware('legal.consent:account');
-    Route::post('/chat/conversations', [ChatController::class, 'store'])->middleware('legal.consent:account');
-    Route::get('/chat/conversations/{conversation}/messages', [ChatController::class, 'messages'])->middleware('legal.consent:account');
-    Route::post('/chat/conversations/{conversation}/messages', [ChatController::class, 'send'])->middleware(['legal.consent:account', 'throttle:30,1']);
-    Route::post('/chat/conversations/{conversation}/read', [ChatController::class, 'read'])->middleware('legal.consent:account');
 });
 
 Route::prefix('admin')->group(function () {
@@ -350,6 +388,12 @@ Route::prefix('admin')->group(function () {
         Route::put('/campuses/{campus}/agents', [AdminCampusController::class, 'agents'])->middleware('admin.permission:rbac.manage');
         Route::get('/campus-agents', [AdminCampusController::class, 'agentIndex'])->middleware('admin.permission:rbac.manage');
         Route::get('/campus-agent-options', [AdminCampusController::class, 'agentOptions'])->middleware('admin.permission:rbac.manage');
+        // 校区功能模块矩阵：学校代理可读（只读）；写入仅持 campus.module_manage 的平台超管 + 近期二次验证
+        Route::get('/campuses/{campus}/modules', [AdminCampusModuleController::class, 'show']);
+        Route::put('/campuses/{campus}/modules/{code}', [AdminCampusModuleController::class, 'update'])
+            ->middleware(['admin.permission:campus.module_manage', 'admin.recent_verification']);
+        Route::post('/campuses/{campus}/module-packages/{package}', [AdminCampusModuleController::class, 'applyPackage'])
+            ->middleware(['admin.permission:campus.module_manage', 'admin.recent_verification']);
         Route::get('/user-center/overview', [AdminUserCenterController::class, 'overview'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
         Route::get('/user-center/users', [AdminUserCenterController::class, 'users'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
         Route::put('/user-center/users/{user:public_id}/task-publishing-permission', [AdminUserCenterController::class, 'updateTaskPublishingPermission'])

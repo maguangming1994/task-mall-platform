@@ -988,6 +988,10 @@ export class ApiError extends Error {
 }
 
 const validationFieldLabels: Record<string, string> = {
+  expected_version: '模块配置版本',
+  status: '模块状态',
+  code: '功能模块',
+  package: '功能套餐',
   provider: '微信应用配置',
   driver: '运行模式',
   app_id: 'AppID',
@@ -1927,6 +1931,64 @@ export async function updateManagedCampus(id: string, input: ManagedCampusWriteI
 }
 export async function updateManagedCampusAgents(id: string, adminUserIds: string[], primaryAdminUserId?: string): Promise<ManagedCampus> {
   return request(`/admin/campuses/${encodeURIComponent(id)}/agents`, { method: 'PUT', body: JSON.stringify({ admin_user_ids: adminUserIds, primary_admin_user_id: primaryAdminUserId || null }) })
+}
+
+// ===== 校区功能模块矩阵（全局开关 × 校区三态覆盖 × 阶段套餐）=====
+
+export type CampusModuleOverrideStatus = 'inherit' | 'enabled' | 'disabled'
+export type CampusModulePackageCode = 'basic' | 'standard' | 'full'
+
+export interface CampusModuleMatrixRow {
+  code: string
+  name: string
+  group: string
+  parent: string | null
+  status: CampusModuleOverrideStatus
+  version: number
+  global: { mode: string | null; enabled: boolean; rollout_percentage: number | null }
+  effective: boolean
+  updated_by_admin: { id: string; display_name: string } | null
+  updated_at: string | null
+}
+
+export interface CampusModulePackageInfo {
+  code: CampusModulePackageCode
+  name: string
+  description: string
+  modules: string[]
+}
+
+export interface CampusModuleMatrix {
+  campus: { id: string; name: string; status: 'active' | 'disabled' }
+  groups: Record<string, string>
+  modules: CampusModuleMatrixRow[]
+  packages: CampusModulePackageInfo[]
+}
+
+export async function getCampusModuleMatrix(campusId: string): Promise<CampusModuleMatrix> {
+  return request(`/admin/campuses/${encodeURIComponent(campusId)}/modules`)
+}
+
+export async function updateCampusModule(
+  campusId: string,
+  code: string,
+  input: { status: CampusModuleOverrideStatus; expected_version: number; reason?: string },
+): Promise<CampusModuleMatrix> {
+  return request(`/admin/campuses/${encodeURIComponent(campusId)}/modules/${encodeURIComponent(code)}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export async function applyCampusModulePackage(
+  campusId: string,
+  packageCode: CampusModulePackageCode,
+  reason?: string,
+): Promise<CampusModuleMatrix> {
+  return request(`/admin/campuses/${encodeURIComponent(campusId)}/module-packages/${encodeURIComponent(packageCode)}`, {
+    method: 'POST',
+    body: JSON.stringify({ reason: reason ?? null }),
+  })
 }
 
 export interface ManagedSecondHandItem {

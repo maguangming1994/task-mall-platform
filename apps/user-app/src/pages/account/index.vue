@@ -72,7 +72,7 @@
       <view class="d" @click="openAssets"><b>0</b><span>足迹</span></view>
     </view>
 
-    <view class="my-task">
+    <view v-if="modules.isEnabled('module_second_hand')" class="my-task">
       <view class="sec-title"><text class="sec-h">我的闲置</text><text class="sec-more" @click="openSecondHand">闲置市场 ›</text></view>
       <view class="mt-row">
         <view class="mt-chip" @click="openMySecondHand"><b>0</b><span>我发布的</span></view>
@@ -222,6 +222,9 @@ const serviceModuleMap: Record<string, ModuleCode> = {
   tasks: 'module_tasks',
   publisher: 'module_task_publish',
   orders: 'module_mall_trade',
+  second_hand: 'module_second_hand',
+  second_hand_orders: 'module_second_hand',
+  chat: 'module_second_hand',
   after_sales: 'module_after_sale',
   referrals: 'module_referrals',
   check_in: 'module_checkin',

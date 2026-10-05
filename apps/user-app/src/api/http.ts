@@ -1,4 +1,5 @@
 import { clientPlatform } from '@/platform/runtime'
+import { handleModuleDisabled } from '@/utils/moduleDisabled'
 
 export interface ApiEnvelope<T> {
   code: string
@@ -106,6 +107,13 @@ export function apiRequest<T>(options: ApiRequestOptions): Promise<T> {
         }
 
         const payload = response.data as ApiErrorPayload
+        // 模块门禁：统一中性提示 + 刷新开关 + 广播占位事件，随后照常 reject 供调用方终止流程
+        if (payload.code === 'MODULE_DISABLED') {
+          const moduleCode = payload.details && typeof payload.details.module === 'string'
+            ? payload.details.module
+            : undefined
+          handleModuleDisabled(moduleCode)
+        }
         reject(new ApiError(
           payload.code || 'REQUEST_FAILED',
           payload.message || '请求失败，请稍后重试。',

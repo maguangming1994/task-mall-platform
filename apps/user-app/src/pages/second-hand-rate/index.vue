@@ -1,4 +1,11 @@
 <template>
+  <view>
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_second_hand" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
   <view class="page" v-if="order">
     <!-- 商品回顾 -->
     <view class="card goods">
@@ -44,16 +51,23 @@
       <button class="ab-main full" :disabled="submitting || score === 0" @click="submit">提交评价</button>
     </view>
   </view>
+    </template>
+  </view>
 </template>
 
 <script setup lang="ts">
 import { onLoad } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { getSecondHandOrder, rateSecondHandOrder, type SecondHandOrder } from '@/api/second-hand'
 import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { resolveApiAssetUrl } from '@/api/http'
 import { formatDate } from '@/utils/dateTime'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 
 const auth = useAuthStore()
 const order = ref<SecondHandOrder | null>(null)
@@ -69,6 +83,8 @@ function resolveCover(id: string | null) { return resolveApiAssetUrl(id) }
 onLoad((q) => { orderId.value = q?.id || ''; load() })
 
 async function load() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.accessToken || !orderId.value) return
   try {
     const data = await getSecondHandOrder(auth.accessToken, orderId.value)

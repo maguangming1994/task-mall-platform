@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_second_hand" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="subnav">
       <view class="back" @click="goBack"><text>‹</text></view>
       <text class="nav-title">我发布的</text>
@@ -60,6 +66,7 @@
     </view>
 
     <text class="foot-tip">下架后宝贝不再展示，可随时重新上架</text>
+    </template>
   </view>
 </template>
 
@@ -73,6 +80,11 @@ import {
 } from '@/api/second-hand'
 import { resolveApiAssetUrl } from '@/api/http'
 import { formatDate } from '@/utils/dateTime'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 
 const auth = useAuthStore()
 const tabs = [
@@ -91,7 +103,14 @@ const emptySub = computed(() => ({ on_sale: '发布闲置，让同学看到你�
 
 function resolveCover(id: string | null) { return resolveApiAssetUrl(id) }
 
-onShow(() => { load(); loadCounts() })
+onShow(handleShow)
+
+async function handleShow() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
+  load()
+  loadCounts()
+}
 
 async function load() {
   if (!auth.accessToken) return

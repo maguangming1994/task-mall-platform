@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_second_hand" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="page-title">{{ editingId ? '编辑闲置' : '发布闲置' }}</view>
 
     <view class="form-card">
@@ -73,6 +79,7 @@
     <view class="action-bar">
       <button class="ab-main" :loading="submitting" :disabled="!canSubmit" @click="submit">{{ editingId ? '保存修改' : '确认发布' }}</button>
     </view>
+    </template>
   </view>
 </template>
 
@@ -86,6 +93,11 @@ import {
   listSecondHandCategories, type SecondHandCategory, type SecondHandCondition,
 } from '@/api/second-hand'
 import { resolveApiAssetUrl } from '@/api/http'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 
 const auth = useAuthStore()
 const submitting = ref(false)
@@ -120,8 +132,15 @@ const canSubmit = computed(() => form.title.trim().length >= 2 && Number(form.pr
 
 onLoad((q) => {
   editingId.value = typeof q?.id === 'string' ? q.id : ''
-  loadCategories().then(() => { if (editingId.value) loadEditingItem() })
+  void init()
 })
+
+async function init() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
+  await loadCategories()
+  if (editingId.value) loadEditingItem()
+}
 
 async function loadEditingItem() {
   if (!auth.accessToken || !editingId.value) return

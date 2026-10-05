@@ -60,7 +60,8 @@ class SecondHandAuditRatingRefundFlowTest extends TestCase
             'decision' => 'approve',
         ])->assertOk()->assertJsonPath('data.audit_status', 'approved');
 
-        // 审核后出现在公开列表
+        // 审核后出现在公开列表（匿名访问：上一行管理员令牌残留在默认头，需显式去掉）
+        unset($this->defaultHeaders['Authorization']);
         $this->getJson('/api/v1/second-hand/items')->assertOk()
             ->assertJsonCount(1, 'data.items')
             ->assertJsonPath('data.items.0.id', $itemId);

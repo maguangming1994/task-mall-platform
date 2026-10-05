@@ -68,22 +68,36 @@ class ReleaseControlService
 
     public function enabled(string $code, string $subject, ?string $platform = null): bool
     {
+        return $this->evaluation($code, $subject, $platform)['enabled'];
+    }
+
+    /**
+     * 全局开关判定的单一实现：同时返回模式与布尔结果。
+     * mode=null 表示开关记录缺失（按关闭处理，且校区覆盖不可开启）。
+     *
+     * @return array{mode: ?string, enabled: bool}
+     */
+    public function evaluation(string $code, string $subject, ?string $platform = null): array
+    {
         $flag = FeatureFlag::query()->where('code', $code)->first();
         if (! $flag || $flag->mode === 'disabled') {
-            return false;
+            return ['mode' => $flag?->mode, 'enabled' => false];
         }
         if ($flag->mode === 'enabled') {
-            return true;
+            return ['mode' => 'enabled', 'enabled' => true];
         }
         $audience = $flag->audience ?? [];
         if (! empty($audience['platforms']) && ! in_array($platform, $audience['platforms'], true)) {
-            return false;
+            return ['mode' => 'percentage', 'enabled' => false];
         }
         if (in_array($subject, $audience['subject_allowlist'] ?? [], true)) {
-            return true;
+            return ['mode' => 'percentage', 'enabled' => true];
         }
 
-        return hexdec(substr(hash('sha256', $code.':'.$subject), 0, 8)) % 100 < $flag->rollout_percentage;
+        return [
+            'mode' => 'percentage',
+            'enabled' => hexdec(substr(hash('sha256', $code.':'.$subject), 0, 8)) % 100 < $flag->rollout_percentage,
+        ];
     }
 
     public function registerRelease(string $version, string $commitSha, string $artifactHash, string $configurationHash, ?AdminUser $admin = null): DeploymentRelease

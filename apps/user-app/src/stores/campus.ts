@@ -7,6 +7,7 @@ import {
   type CampusListParams,
   type NearbyCampusParams,
 } from '@/api/campuses'
+import { useModulesStore } from './modules'
 
 export const campusStorageKey = 'task_mall_selected_campus'
 
@@ -113,8 +114,12 @@ export const useCampusStore = defineStore('campus', {
       return match
     },
     setLocal(campus: Campus) {
+      // 校区发生变化时联动重置功能模块开关（旧校区缓存不得沿用）；
+      // 仅品牌信息刷新等同校区写入不触发。
+      const campusChanged = this.selected?.id !== campus.id
       this.selected = campus
       uni.setStorageSync(campusStorageKey, campus)
+      if (campusChanged) useModulesStore().reloadForCampus()
     },
   },
 })

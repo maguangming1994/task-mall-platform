@@ -13,6 +13,7 @@ use App\Modules\Auth\Http\Middleware\AuthenticateOptionalAccessToken;
 use App\Modules\Campus\Http\Middleware\EnforceAdminCampusScope;
 use App\Modules\Campus\Http\Middleware\ResolveCampusContext;
 use App\Modules\Legal\Http\Middleware\RequireLegalConsent;
+use App\Modules\Operations\Http\Middleware\RequireModuleEnabled;
 use App\Modules\Privacy\Exceptions\PrivacyException;
 use App\Modules\Refund\Exceptions\RefundException;
 use App\Modules\Settings\Exceptions\SettingException;
@@ -56,6 +57,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.campus' => EnforceAdminCampusScope::class,
             'legal.consent' => RequireLegalConsent::class,
             'auth.publisher' => AuthenticateTaskPublisher::class,
+            'module.gate' => RequireModuleEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

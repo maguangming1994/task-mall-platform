@@ -58,6 +58,7 @@ class ProductCatalogFlowTest extends TestCase
         $shippingTemplate = $this->shippingTemplate($token);
         $created = $this->createProduct($token, $category, 'PUBLIC-001', 'public-product-create-01', $shippingTemplate);
         $id = $created['id'];
+        $this->flushHeaders();
         $this->getJson('/api/v1/products')->assertOk()->assertJsonCount(0, 'data.items');
 
         $headers = ['Idempotency-Key' => 'product-publish-action-001'];
@@ -66,6 +67,7 @@ class ProductCatalogFlowTest extends TestCase
         $this->withToken($token)->withHeaders($headers)->postJson("/api/v1/admin/products/{$id}/status", ['action' => 'publish', 'reason' => '重复发布请求。'])
             ->assertOk()->assertJsonPath('data.status', 'on_sale');
 
+        $this->flushHeaders();
         $mini = $this->withHeader('X-Client-Platform', 'wechat_mini')->getJson("/api/v1/products/{$id}")->assertOk()->json('data.skus.0.purchase_options');
         $inside = $this->withHeader('X-Client-Platform', 'wechat_h5')->getJson("/api/v1/products/{$id}")->assertOk()->json('data.skus.0.purchase_options');
         $outside = $this->withHeader('X-Client-Platform', 'web_h5')->getJson("/api/v1/products/{$id}")->assertOk()->json('data.skus.0.purchase_options');
@@ -75,6 +77,7 @@ class ProductCatalogFlowTest extends TestCase
 
         $this->withToken($token)->withHeaders(['Idempotency-Key' => 'product-off-shelf-000001'])->postJson("/api/v1/admin/products/{$id}/status", ['action' => 'off_shelf', 'reason' => '运营主动下架。'])
             ->assertOk()->assertJsonPath('data.status', 'off_shelf');
+        $this->flushHeaders();
         $this->getJson("/api/v1/products/{$id}")->assertNotFound();
         $this->withToken($token)->getJson("/api/v1/admin/products/{$id}")->assertOk()->assertJsonPath('data.status', 'off_shelf');
     }
@@ -152,6 +155,7 @@ class ProductCatalogFlowTest extends TestCase
                 ->assertOk();
         }
 
+        $this->flushHeaders();
         $this->getJson('/api/v1/product-categories')->assertOk()->assertJsonCount(2, 'data.items')
             ->assertJsonPath('data.items.0.id', $daily)->assertJsonPath('data.items.0.product_count', 1);
         $this->getJson('/api/v1/products?category_id='.$daily)->assertOk()->assertJsonCount(1, 'data.items')
@@ -160,6 +164,7 @@ class ProductCatalogFlowTest extends TestCase
         $this->withToken($token)->putJson('/api/v1/admin/product-categories/'.$daily, [
             'parent_id' => null, 'name' => '生活补给', 'slug' => 'daily-products', 'status' => 'inactive', 'sort_order' => 10,
         ])->assertOk()->assertJsonPath('data.status', 'inactive');
+        $this->flushHeaders();
         $this->getJson('/api/v1/products?category_id='.$daily)->assertOk()->assertJsonCount(0, 'data.items');
         $this->getJson('/api/v1/products/'.$dailyProduct['id'])->assertNotFound();
         $this->withToken($token)->deleteJson('/api/v1/admin/product-categories/'.$daily)->assertUnprocessable();

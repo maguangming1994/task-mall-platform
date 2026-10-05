@@ -21,6 +21,8 @@ export interface ModulePlaceholderCopy {
 export interface ClientCapabilities {
   version: number
   platform: ClientPlatform
+  /** 本次判定所属校区 public_id（无 X-Campus-Id 时为 null） */
+  campus_id?: string | null
   visitor_browsing: boolean
   login_methods: LoginMethod[]
   wechat_official_account_app_id: string | null

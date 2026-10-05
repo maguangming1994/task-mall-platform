@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_second_hand" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="head"><text class="title">消息</text></view>
 
     <view v-if="loading && !items.length" class="list">
@@ -28,16 +34,22 @@
       </view>
     </view>
     <view v-else class="empty"><text>暂无会话</text><text class="sub">去闲置市场逛逛，和卖家聊聊吧</text></view>
+    </template>
   </view>
 </template>
 
 <script setup lang="ts">
 import { onShow } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { listChatConversations, type ChatConversation } from '@/api/chat'
 import { resolveApiAssetUrl } from '@/api/http'
 import { formatDate, formatDateTime } from '@/utils/dateTime'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 
 const auth = useAuthStore()
 const items = ref<ChatConversation[]>([])
@@ -52,6 +64,8 @@ function formatTime(s: string | null) {
 }
 
 async function load() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.accessToken) return
   loading.value = true
   try {
@@ -63,7 +77,7 @@ async function load() {
 function openChat(id: string) { uni.navigateTo({ url: `/pages/chat-detail/index?id=${id}` }) }
 function openItem(id: string) { uni.navigateTo({ url: `/pages/second-hand-detail/index?id=${id}` }) }
 
-onShow(() => load())
+onShow(load)
 </script>
 
 <style lang="scss" scoped>

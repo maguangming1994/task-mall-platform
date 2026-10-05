@@ -5,6 +5,7 @@ namespace App\Modules\Campus\Models;
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Media\Models\MediaAsset;
+use App\Modules\Operations\Models\CampusFeatureFlag;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -53,6 +54,11 @@ class Campus extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function featureFlags(): HasMany
+    {
+        return $this->hasMany(CampusFeatureFlag::class);
     }
 
     public function emblemAsset(): BelongsTo

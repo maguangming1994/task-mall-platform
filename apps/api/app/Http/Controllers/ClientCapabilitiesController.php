@@ -6,6 +6,7 @@ use App\Common\Support\ApiResponse;
 use App\Modules\Auth\Services\WechatIdentityProvider;
 use App\Modules\Auth\Services\WechatProviderSettingsService;
 use App\Modules\Notification\Services\NotificationSceneConfigService;
+use App\Modules\Operations\Services\ModuleGateService;
 use App\Modules\Operations\Services\ReleaseControlService;
 use App\Modules\Payment\Services\PaymentCapabilityService;
 use Illuminate\Http\JsonResponse;
@@ -13,18 +14,16 @@ use Illuminate\Http\Request;
 
 class ClientCapabilitiesController extends Controller
 {
-    private const MODULE_FLAG_CODES = [
-        'module_tasks', 'module_task_publish',
-        'module_mall', 'module_mall_trade', 'module_after_sale',
-        'module_community', 'module_community_post',
-        'module_wallet', 'module_wallet_recharge', 'module_withdraw',
-        'module_referrals', 'module_checkin', 'module_second_hand',
-    ];
+    /**
+     * 非模块的实验性开关：仍走全局灰度，不受校区覆盖影响。
+     */
+    private const EXPERIMENTAL_FLAG_CODES = ['checkout_v2', 'community_video', 'external_notifications'];
 
     public function show(
         Request $request,
         WechatIdentityProvider $wechat,
         ReleaseControlService $releases,
+        ModuleGateService $gates,
         PaymentCapabilityService $payments,
         WechatProviderSettingsService $wechatSettings,
         NotificationSceneConfigService $notificationScenes,
@@ -52,11 +51,22 @@ class ClientCapabilitiesController extends Controller
             $notificationChannels[] = 'wechat_mini';
         }
 
-        $reviewing = $releases->enabled('review_in_progress', (string) ($request->header('X-Device-Id') ?: 'anonymous'), $platform);
+        $subject = (string) ($request->header('X-Device-Id') ?: 'anonymous');
+        $reviewing = $releases->enabled('review_in_progress', $subject, $platform);
         $reviewStatus = $reviewing ? 'reviewing' : 'reviewed';
 
+        // 13 个功能模块按「全局开关 × 校区覆盖 × 父链」合并（与后端门禁同一口径）；
+        // 校区上下文与门禁中间件一致：登录用户 campus_id 优先，否则取 X-Campus-Id 解析值。
+        $resolvedCampusId = $gates->campusIdFromRequest($request);
+        $moduleFlags = $gates->allEffective($resolvedCampusId, $subject, $platform);
+        $experimentalFlags = collect(self::EXPERIMENTAL_FLAG_CODES)
+            ->mapWithKeys(fn (string $code) => [$code => $releases->enabled($code, $subject, $platform)])
+            ->all();
+
         return ApiResponse::success([
-            'version' => 4,
+            'version' => 5,
+            // 本次模块判定实际使用的校区（public_id；登录用户以账号校区为准），无校区上下文时为 null
+            'campus_id' => $gates->campusPublicIdFromRequest($request),
             'platform' => $platform,
             'visitor_browsing' => true,
             'login_methods' => $loginMethods,
@@ -84,7 +94,7 @@ class ClientCapabilitiesController extends Controller
             'open_in_wechat_url' => null,
             'notification_channels' => $notificationChannels,
             'review_status' => $reviewStatus,
-            'feature_flags' => collect([...self::MODULE_FLAG_CODES, 'checkout_v2', 'community_video', 'external_notifications'])->mapWithKeys(fn (string $code) => [$code => $releases->enabled($code, (string) ($request->header('X-Device-Id') ?: 'anonymous'), $platform)]),
+            'feature_flags' => $moduleFlags + $experimentalFlags,
             'module_placeholders' => $releases->modulePlaceholders($reviewStatus),
         ]);
     }

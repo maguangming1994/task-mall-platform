@@ -70,6 +70,7 @@ class TaskDefinitionAndBudgetFlowTest extends TestCase
         $this->assertDatabaseCount('task_reward_budgets', 2);
         $this->assertDatabaseCount('reward_budget_transactions', 4);
         $this->assertDatabaseHas('operation_logs', ['action' => 'task.publish', 'subject_id' => $taskId]);
+        $this->flushHeaders();
         $this->getJson("/api/v1/tasks/{$taskId}")->assertOk()->assertJsonPath('data.view_count', 121);
 
         $this->withToken($token)->withHeaders(['Idempotency-Key' => 'task-pause-action-0001'])->postJson("/api/v1/admin/tasks/{$taskId}/status", [

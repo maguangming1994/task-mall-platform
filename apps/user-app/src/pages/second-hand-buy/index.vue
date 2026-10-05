@@ -1,5 +1,11 @@
 <template>
   <view class="page">
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_second_hand" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
     <view class="subnav">
       <view class="back" @click="goBack"><text>‹</text></view>
       <text class="nav-title">确认购买</text>
@@ -108,6 +114,7 @@
       <text class="error-sub">{{ loadError || '商品可能已被售出或下架' }}</text>
       <button class="back-btn" @click="goBack">返回</button>
     </view>
+    </template>
   </view>
 </template>
 
@@ -121,6 +128,11 @@ import { listAddresses, type UserAddress } from '@/api/account'
 import { resolveApiAssetUrl } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 
 type TradeChoice = 'meetup' | 'mail'
 const auth = useAuthStore()
@@ -153,12 +165,14 @@ const canSubmit = computed(() => {
 })
 
 onLoad((query) => {
-  if (!auth.isAuthenticated) return navigateToLogin()
   itemId.value = typeof query?.id === 'string' ? query.id : ''
-  load()
+  void load()
 })
 
 async function load() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
+  if (!auth.isAuthenticated) return navigateToLogin()
   if (!auth.accessToken || !itemId.value) return
   loading.value = true
   loadError.value = ''

@@ -1,13 +1,22 @@
 import { defineStore } from 'pinia'
 import { loadClientCapabilities, type ModulePlaceholderCopy } from '@/platform/capabilities'
 import { MODULE_CODES, type ModuleCode, MODULE_REGISTRY } from '@/platform/modules'
+import { campusStorageKey } from './campus'
 
 const STORAGE_KEY = 'task_mall_module_flags'
 
 interface StoredFlags {
+  /** 缓存所属校区 id；切换校区后旧缓存不得复用 */
+  campusId: string
   flags: Partial<Record<ModuleCode, boolean>>
   placeholders: Partial<Record<ModuleCode, ModulePlaceholderCopy>>
   savedAt: number
+}
+
+/** 当前本地选中的校区 id（直接读缓存，避免 store 间循环依赖） */
+function currentCampusId(): string {
+  const campus = uni.getStorageSync(campusStorageKey)
+  return campus && typeof campus === 'object' && typeof campus.id === 'string' ? campus.id : ''
 }
 
 function isValidStoredFlags(raw: unknown): raw is StoredFlags {
@@ -30,36 +39,61 @@ export const useModulesStore = defineStore('app-modules', {
     loadedAt: 0,
     loading: false,
     pending: null as Promise<void> | null,
+    campusId: '',
+    // 请求序号：切换校区强制刷新时，作废在途的旧校区响应，防止其晚返回覆盖新开关
+    loadSeq: 0,
   }),
   actions: {
     hydrate() {
       try {
         const raw = uni.getStorageSync(STORAGE_KEY)
-        if (raw && isValidStoredFlags(raw)) {
+        // 仅当缓存与当前选中校区一致时才复用，防止切校区后沿用旧开关
+        if (raw && isValidStoredFlags(raw) && raw.campusId === currentCampusId()) {
           this.flags = raw.flags
           this.placeholders = raw.placeholders || {}
+          this.campusId = raw.campusId
           this.resolved = true
         }
       } catch {
         // ignore storage errors
       }
     },
+    /**
+     * 切换校区：立即进入未解析态（受控页展示骨架而非旧校区开关），
+     * 并强制重新拉取新校区的 capabilities。
+     */
+    reloadForCampus() {
+      this.resolved = false
+      this.flags = {}
+      this.placeholders = {}
+      this.loadedAt = 0
+      this.pending = null
+      void this.load(true)
+    },
     async load(force = false) {
       if (!force && this.resolved && Date.now() - this.loadedAt < 30000) return
-      if (this.pending) return this.pending
+      // 非强制刷新时复用在途请求；强制刷新（如切校区）允许并发新请求，旧请求由 loadSeq 作废
+      if (this.pending && !force) return this.pending
 
+      const seq = ++this.loadSeq
       this.loading = true
-      this.pending = this._doLoad()
+      const promise = this._doLoad(seq)
+      this.pending = promise
       try {
-        await this.pending
+        await promise
       } finally {
-        this.loading = false
-        this.pending = null
+        // 仅最新一次请求负责收尾，避免旧请求清空新请求的 pending/loading
+        if (this.loadSeq === seq) {
+          this.loading = false
+          this.pending = null
+        }
       }
     },
-    async _doLoad() {
+    async _doLoad(seq: number) {
       try {
         const caps = await loadClientCapabilities()
+        // 在途期间发生了切校区/强制刷新：丢弃旧校区响应
+        if (seq !== this.loadSeq) return
         const incoming = caps.feature_flags || {}
         const next: Partial<Record<ModuleCode, boolean>> = {}
         for (const code of MODULE_CODES) {
@@ -69,20 +103,23 @@ export const useModulesStore = defineStore('app-modules', {
         }
         this.flags = next
         this.placeholders = caps.module_placeholders || {}
+        const campusId = caps.campus_id ?? currentCampusId()
+        this.campusId = campusId ?? ''
         try {
-          uni.setStorageSync(STORAGE_KEY, { flags: next, placeholders: this.placeholders, savedAt: Date.now() })
+          uni.setStorageSync(STORAGE_KEY, { campusId: this.campusId, flags: next, placeholders: this.placeholders, savedAt: Date.now() })
         } catch {
           // ignore storage errors
         }
         this.loadedAt = Date.now()
       } catch {
+        if (seq !== this.loadSeq) return
         // request failed: keep existing flags (fail-open)
         if (!this.resolved) {
           // first ever load failed: open all modules so user is not blocked
           this.flags = {}
         }
       } finally {
-        this.resolved = true
+        if (seq === this.loadSeq) this.resolved = true
       }
     },
     async ensureReady() {

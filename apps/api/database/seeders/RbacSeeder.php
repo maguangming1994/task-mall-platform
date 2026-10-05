@@ -27,6 +27,7 @@ class RbacSeeder extends Seeder
             ['code' => 'finance.manage', 'name' => '管理支付与对账', 'group' => 'finance'],
             ['code' => 'operations.manage', 'name' => '管理通知与运营', 'group' => 'operations'],
             ['code' => 'campus.manage', 'name' => '管理学校与代理', 'group' => 'campus'],
+            ['code' => 'campus.module_manage', 'name' => '配置校区功能模块与套餐', 'group' => 'campus'],
             ['code' => 'deployment.manage', 'name' => '管理发布、灰度与回滚', 'group' => 'system'],
             ['code' => 'settings.manage', 'name' => '管理系统配置', 'group' => 'system'],
             ['code' => 'settings.approve', 'name' => '审核高风险系统配置', 'group' => 'system'],

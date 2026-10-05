@@ -1,4 +1,11 @@
 <template>
+  <view>
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_second_hand" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
   <view class="page" v-if="order">
     <!-- 订单与买家 -->
     <view class="card">
@@ -30,6 +37,8 @@
       <button class="ab-main" :disabled="submitting" @click="confirmShip">{{ order.trade_type === 'meetup' ? '确认交付' : '确认发货' }}</button>
     </view>
   </view>
+    </template>
+  </view>
 </template>
 
 <script setup lang="ts">
@@ -39,6 +48,11 @@ import { useAuthStore } from '@/stores/auth'
 import { getSecondHandOrder, shipSecondHandOrder, type SecondHandOrder } from '@/api/second-hand'
 import { ensureChatConversation } from '@/api/chat'
 import { resolveApiAssetUrl } from '@/api/http'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 
 const auth = useAuthStore()
 const order = ref<SecondHandOrder | null>(null)
@@ -59,6 +73,8 @@ function resolveCover(id: string | null) { return resolveApiAssetUrl(id) }
 onLoad((q) => { orderId.value = q?.id || ''; load() })
 
 async function load() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.accessToken || !orderId.value) return
   try {
     const data = await getSecondHandOrder(auth.accessToken, orderId.value)

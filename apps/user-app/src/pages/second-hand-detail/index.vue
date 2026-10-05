@@ -1,4 +1,11 @@
 <template>
+  <view>
+    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_second_hand" />
+    <view v-else-if="!modules.resolved" class="mp-skeleton">
+      <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
+      <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
+    </view>
+    <template v-else>
   <view class="page" v-if="item">
     <scroll-view scroll-y class="scroll">
       <swiper class="gallery" :indicator-dots="item.images.length > 1" circular indicator-color="rgba(255,255,255,.45)" indicator-active-color="#fff">
@@ -61,6 +68,8 @@
       <button class="ab-main" @click="buy">立即购买 ¥{{ item.price }}</button>
     </view>
   </view>
+    </template>
+  </view>
 </template>
 
 <script setup lang="ts">
@@ -71,6 +80,11 @@ import { getSecondHandItem, type SecondHandItem } from '@/api/second-hand'
 import { ensureChatConversation } from '@/api/chat'
 import { resolveApiAssetUrl } from '@/api/http'
 import { formatDate } from '@/utils/dateTime'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+
+const modules = useModulesStore()
+const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 
 const auth = useAuthStore()
 const item = ref<SecondHandItem | null>(null)
@@ -101,6 +115,8 @@ onLoad((q) => {
 })
 
 async function load() {
+  await modules.ensureReady()
+  if (!moduleEnabled.value) return
   if (!auth.accessToken || !itemId.value) return
   try {
     item.value = await getSecondHandItem(auth.accessToken, itemId.value)
