@@ -301,7 +301,7 @@ function productSold(product: MallProduct) {
 }
 function categoryEmoji(name: string) {
   const map: Record<string, string> = {
-    '零食饮料': '🍿', '数码配件': '🔌', '学习用品': '📚', '生活日用': '🧴', '卡券中心': '🎫',
+    '零食饮料': '🥤', '数码配件': '🎧', '学习用品': '📖', '生活日用': '🧴', '卡券中心': '🎫',
     '食品': '🍔', '饮料': '🥤', '电子': '💻', '图书': '📖', '美妆': '💄', '运动': '⚽',
   }
   for (const key in map) {
