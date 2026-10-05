@@ -120,9 +120,9 @@ jobs:
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       vars.PRODUCTION_DEPLOY_ENABLED == 'true'
-    # 自建 runner 位于国内生产服务器：构建与 TCR 推送全程国内网络，层缓存常驻本机，
-    # 根治 GitHub 境外 runner 跨境推送 44+ 分钟且易被腰斩的问题。
-    runs-on: [self-hosted, linux, x64]
+    # 回退为 GitHub 官方 runner：自建国内 runner 拉取 docker.io 基础镜像（composer/php）超时，
+    # 跨境推送已由 b9a4e1a 的仓库侧复制策略（imagetools create）+ 延长超时解决。
+    runs-on: ubuntu-latest
     environment: production
     permissions:
       contents: read
