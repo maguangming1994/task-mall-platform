@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>在线UI 设计稿 vs 实际实现 核对表（83屏）</title>
+<style>
+  :root{--g:#16a34a;--g-dark:#15803d;--bg:#f4f6f5;--ink:#1f2937;--muted:#6b7280;--line:#e5e7eb;
+        --sev-bad:#dc2626;--sev-mid:#d97706;--sev-ok:#16a34a;--sev-empty:#64748b;--sev-info:#2563eb;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6}
+  header{background:linear-gradient(135deg,#15803d,#22c55e);color:#fff;padding:22px 28px}
+  header h1{font-size:20px;margin-bottom:6px}
+  header p{opacity:.92;font-size:13px}
+  .wrap{padding:20px 28px 60px;max-width:1500px;margin:0 auto}
+  .notice{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px}
+  .notice b{color:#92400e}
+  .notice ul{margin:6px 0 0 18px}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-size:13px;display:flex;align-items:center;gap:8px}
+  .stat b{font-size:20px}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .filters button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 16px;cursor:pointer;font-size:13px;color:#374151}
+  .filters button.active{background:var(--g);border-color:var(--g);color:#fff}
+  h2.section{font-size:16px;margin:22px 0 10px;padding-left:10px;border-left:4px solid var(--g)}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  th,td{border-bottom:1px solid var(--line);padding:10px 12px;vertical-align:top;text-align:left}
+  th{background:#f0fdf4;color:#14532d;font-size:13px;white-space:nowrap;position:sticky;top:0}
+  tr:last-child td{border-bottom:none}
+  .id{font-weight:700;color:#14532d;white-space:nowrap}
+  .name{font-weight:600;white-space:nowrap}
+  .route{font-family:Consolas,monospace;font-size:11px;color:var(--muted);word-break:break-all;max-width:170px}
+  .shot{width:150px}
+  .shot img{width:150px;border:1px solid var(--line);border-radius:6px;cursor:zoom-in;display:block;background:#f9fafb}
+  .shot .cap{font-size:11px;color:var(--muted);margin-top:3px;text-align:center}
+  .shot .img-fail{width:150px;height:100px;display:flex;align-items:center;justify-content:center;border:1px dashed #cbd5e1;border-radius:6px;background:#f8fafc;color:#94a3b8;font-size:12px}
+  .diffs{min-width:320px;max-width:520px}
+  .diffs li{margin:3px 0 3px 18px;font-size:13px}
+  .tag{display:inline-block;border-radius:6px;padding:2px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+  .t-bad{background:#fee2e2;color:var(--sev-bad)}
+  .t-mid{background:#fef3c7;color:#92400e}
+  .t-ok{background:#dcfce7;color:#166534}
+  .t-empty{background:#e2e8f0;color:#334155}
+  .t-info{background:#dbeafe;color:#1e40af}
+  .kind{font-size:11px;border-radius:4px;padding:0 5px;margin-right:3px;white-space:nowrap}
+  .k-func{background:#fee2e2;color:#b91c1c}
+  .k-icon{background:#ffedd5;color:#c2410c}
+  .k-ui{background:#e0e7ff;color:#3730a3}
+  .k-data{background:#f1f5f9;color:#475569}
+  .k-brand{background:#fae8ff;color:#86198f}
+  .k-bug{background:#fecaca;color:#991b1b}
+  .deploy-note{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;border-radius:10px;padding:10px 16px;margin-bottom:10px;font-size:13px}
+  table.deploy{margin-bottom:12px}
+  table.deploy th,table.deploy td{font-size:12.5px;padding:8px 10px}
+  table.deploy .sub{color:var(--muted);font-size:11.5px}
+  table.deploy .ci-ok{color:#16a34a;font-weight:700;white-space:nowrap}
+  table.deploy .ci-fail{color:#dc2626;font-weight:700;white-space:nowrap}
+  table.deploy tr.row-fail td{background:#fef2f2}
+  table.deploy tr.row-live td{background:#f0fdf4}
+  ol.timeline{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px 12px 34px;margin-bottom:22px;font-size:13px}
+  ol.timeline li{margin:4px 0}
+  #lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:99;cursor:zoom-out}
+  #lightbox img{max-width:94vw;max-height:94vh;border-radius:8px}
+  #lightbox .lbcap{position:fixed;bottom:18px;left:0;right:0;text-align:center;color:#d1fae5;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>在线UI 设计稿 × 实际实现 逐屏核对表（用户端 57 屏 + 管理后台 26 屏，共 83 屏）</h1>
+  <p>设计稿：design/在线UI-1/images ｜ 实际截图：design/audit/actual/{user,admin}（H5 390×844 @2x，后台 1440×900）｜ 截图环境：本地 dev（2026-02 数据快照，演示账号 13800000001 / preview_admin）｜ 点击任意图片可放大</p>
+</header>
+<div class="wrap">
+  <div class="notice">
+    <b>复核前必读（口径说明）</b>
+    <ul>
+      <li>差异按性质标注：<span class="kind k-func">功能</span>功能/入口缺失或流程不同　<span class="kind k-icon">图标</span>图标/按钮/角标缺失　<span class="kind k-ui">界面</span>布局/字段/视觉形态不同　<span class="kind k-data">数据</span>仅演示数据/图片素材/文案不同　<span class="kind k-brand">品牌</span>校圈 vs 任务商城/TM　<span class="kind k-bug">缺陷</span>接口报错/白屏/空列表</li>
+      <li><b>全局品牌差异：</b>设计稿品牌为「校圈 / 校圈 Admin v1.2.3」，实际为「任务商城 TM / 校园任务商城」（49 邀请海报页实际又用了"校圈"Logo，品牌本身不统一）。</li>
+      <li><b>全局素材差异：</b>设计稿商品/任务多为实拍图，实际本地数据大量为插画或"轻/手/i/M"文字占位图（商品未配图）。</li>
+      <li><b>后台重构（第四轮，2026-10-06）：</b>管理后台已按设计稿整体重构——深绿侧栏（校圈 Admin v3.2.0）+白色密集表格+独立 hash 路由（#/workbench、#/tasks/audit 等 26 页），逐页状态见下表【已按设计稿重构】标记；重构前「无 URL 路由、只截到默认 Tab」的局限已消除。</li>
+      <li><b>数据复核（第二轮）：</b>已为专用测试用户「麻广明」（手机 13911112222，南昌大学，用户 id=6，AuditScreenshotDataSeeder 生成，可整体清理）造齐 商城订单/二手订单(买卖)/售后单/退款单/活动/会话消息/优惠券/购物车/发布的闲置，原 15 个"空态待数据"页面已全部带数据重截并更新结论（差异条目前带【已补数据复核】标记）。</li>
+      <li><b>审计中发现的环境问题（均已闭环）：</b>①登录态社区页曾 500——漏跑 <code>community_social_tables</code> 等迁移（community_post_favorites 表缺失）：<b>生产已于 2026-10-05 13:53 随 fa2cd88 部署自动迁移完成，接口实测通过</b>；②演示账号缺任务发布权限/发布主体，已通过后台授权服务开通（含服务号主体）。</li>
+      <li><b>第三轮更新（2026-10-05 晚）：</b>校园墙 04 / 发布页 16 / 我的 05 已按本轮上线（commit 1f42668，生产 13:53）修订结论；<b>04 的实际截图仍为 13:27 旧版（新版 13:53 才上线），需用新版小程序重截替换</b>。</li>
+    </ul>
+  </div>
+
+  <h2 class="section" id="deploy">Git 提交与生产部署进度（2026-10-05，北京时间）</h2>
+  <div class="deploy-note">数据核实时间 <b>2026-10-05 21:10</b>：来源为 <code>git log</code> + GitHub Actions API + 生产 <code>release.json</code> 实测快照（非实时刷新）。当前生产版本 <b>fa2cd88</b>，健康检查全绿、migrations ready。</div>
+  <table class="deploy">
+    <thead><tr><th style="width:80px">Commit</th><th style="width:72px">提交时间</th><th>内容</th><th style="width:180px">CI 起止 → 耗时</th><th style="width:110px">结果</th><th style="width:150px">上线生产</th></tr></thead>
+    <tbody>
+      <tr class="row-fail">
+        <td class="id">652e8b5</td><td>20:37</td>
+        <td>并行会话：部署流水线自动同步 seeder + 生产冒烟脚本</td>
+        <td>20:37 → 20:40（3 分钟）</td>
+        <td><span class="ci-fail">❌ 失败</span><br><span class="sub">php artisan test 未过</span></td>
+        <td><span class="sub">否，不影响线上</span></td>
+      </tr>
+      <tr>
+        <td class="id">3994303</td><td>16:13</td>
+        <td>并行会话：校区级功能模块三态开关与阶段套餐，按校灰度</td>
+        <td>无独立运行（被后续提交顶掉）</td><td>—</td><td><span class="sub">否</span></td>
+      </tr>
+      <tr class="row-live">
+        <td class="id">fa2cd88</td><td>12:38</td>
+        <td>并行会话：金刚区分类图标对齐设计稿</td>
+        <td>12:45 → 13:53（68 分钟）</td>
+        <td><span class="ci-ok">✅ 成功</span></td>
+        <td><span class="ci-ok">✅ 13:53 上线</span><br><span class="sub">当前线上版本</span></td>
+      </tr>
+      <tr class="row-live">
+        <td class="id">1f42668</td><td>12:37</td>
+        <td><b>本次：校园墙四 Tab（关注/发现/附近/精选）+ 关注 + 收藏 + 位置</b></td>
+        <td>含在 fa2cd88 同一条流水线</td>
+        <td><span class="ci-ok">✅ 通过</span></td>
+        <td><span class="ci-ok">✅ 13:53 已上线</span><br><span class="sub">接口与 Seeder 已实测</span></td>
+      </tr>
+      <tr>
+        <td class="id">3a9857f</td><td>12:32</td>
+        <td>并行会话：积分商城真实商品图与校园真实分类</td>
+        <td>12:32 触发，排队至 15:10（158 分钟）</td>
+        <td><span class="ci-fail">△ 单跑失败</span></td>
+        <td><span class="ci-ok">✅ 代码随 fa2cd88 上线</span></td>
+      </tr>
+      <tr>
+        <td class="id">dcfdbe3</td><td>10:18</td>
+        <td>fix(user-app)：任务领取误报失败与重复领取参数错误</td>
+        <td>10:18 → 10:25（7 分钟）</td>
+        <td><span class="ci-ok">✅ 成功</span></td>
+        <td><span class="sub">10:25 上线（13:53 已被替换）</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <ol class="timeline">
+    <li><b>12:37</b> 校园墙改造提交 <code>1f42668</code></li>
+    <li><b>12:45</b> 推送成功，CI 流水线启动（含 Pint 门禁 → TCR 镜像 → SSH 部署）</li>
+    <li><b>13:53</b> 生产 <code>release.json</code> 切到 <code>fa2cd88</code>，数据库迁移随部署自动执行（user_follows / community_post_favorites / location_name 等生效）</li>
+    <li><b>14:08</b> 「Production maintenance」工作流尝试自动跑 Seeder 失败：服务器 SSH 强制命令只接受 <code>deploy &lt;提交号&gt;</code>，docker exec 被拒</li>
+    <li><b>当晚</b> 你手动在容器内执行 <code>CampusDemoSeeder</code> 成功：8 帖位置、校园认证、关注关系、点赞/收藏数据全部生效（四 feed 与关注/收藏接口随后实测通过）</li>
+    <li><b>20:37</b> 并行会话最新提交 CI 3 分钟失败（测试未过，与校园墙功能无关，未上线）</li>
+  </ol>
+
+  <div class="stats" id="stats"></div>
+  <div class="filters" id="filters">
+    <button data-f="all" class="active">全部</button>
+    <button data-f="bad">严重不一致（缺陷/缺功能）</button>
+    <button data-f="mid">有差异（布局/字段/形态）</button>
+    <button data-f="ok">基本一致</button>
+    <button data-f="info">说明</button>
+    <button data-f="empty" id="filter-empty">空态待数据</button>
+  </div>
+  <h2 class="section">用户端（57 屏）</h2>
+  <table id="t-user"></table>
+  <h2 class="section">管理后台（26 屏）— 已按设计稿重构：深绿侧栏+白色密集表格+独立路由（2026-10-06）</h2>
+  <table id="t-admin"></table>
+</div>
+<div id="lightbox"><img id="lbimg" alt=""><div class="lbcap" id="lbcap"></div></div>
+
+<script>
+const D='../在线UI-1/images/', U='actual/user/', A='actual/admin/';
+const K={func:['k-func','功能'],icon:['k-icon','图标'],ui:['k-ui','界面'],data:['k-data','数据'],brand:['k-brand','品牌'],bug:['k-bug','缺陷']};
+const S={bad:['t-bad','严重不一致'],mid:['t-mid','有差异'],ok:['t-ok','基本一致'],empty:['t-empty','空态待数据'],info:['t-info','说明']};
+// [id,名称,路由,实际图(相对audit), 状态, [ [类型, 文本]... ]]
+const user=[
+["01-home","首页","pages/index/index",U+"01-home.png","mid",[
+ ["ui","首启实际弹「欢迎来到任务商城」新人弹窗（设计稿无，截图时已关闭）"],
+ ["ui","顶部为「选择学校」，设计稿为已选「滨江校区」+铃铛"],
+ ["data","积分/校区等为新账号初始值（0），设计稿 1,280"],
+ ["ui","金刚区、横幅、信息流、底部中间发布按钮结构一致"]]],
+["02-tasks","任务大厅","pages/tasks/index",U+"02-tasks.png","mid",[
+ ["func","实际顶部多「任务大厅/我的任务」分段 Tab（设计稿无）"],
+ ["icon","设计稿有跑马灯公告条，实际公告位置/样式不同"],
+ ["data","任务卡片实际用货架/饭菜/打印机插画占位，设计稿为实拍图"]]],
+["03-mall","积分商城","pages/products/index",U+"03-mall.png","mid",[
+ ["data","商品图为「轻/手/i」文字占位（商品未配图），设计稿实拍"],
+ ["icon","分类图标缺图（橙色「校」字占位）"],
+ ["ui","秒杀、热卖分区与卡片结构一致"]]],
+["04-community","校园墙社区","pages/community/index",U+"04-community.png","mid",[
+ ["data","⚠ 实际截图为 10-05 13:27 旧版；四 Tab 重构 13:53 才上线（commit 1f42668），本图待按新版小程序重截，以下结论以线上新版代码为准"],
+ ["ui","【已重构上线】顶部改为「校园墙」标题+铃铛+绿色「＋发布」，信息流为「关注/发现/附近/精选」四 Tab（设计稿形态）；原分类 chips 与「校园广场」仅保留在「发现」页"],
+ ["func","【已补齐】卡片右上角「+关注/已关注」接通真实关注接口（未登录引导登录、取消有二次确认）；作者行显示校园认证橙色标识（橘座/阿澈已认证）"],
+ ["icon","【已修复】互动行点赞/收藏/评论为真实计数（生产实测如 4赞/1藏/1评），收藏☆为金色；分享走微信原生转发，不再显示「—」"],
+ ["ui","【已补齐】时间行为「相对时间 · 位置」（如 8分钟前 · 8 号宿舍楼），位置来自发帖时填写的 location_name"],
+ ["data","演示帖子仍均为纯文字无图（素材差异，非功能问题）；右下绿色悬浮「+」发布按钮一致"]]],
+["05-account","我的","pages/account/index",U+"05-account.png","bad",[
+ ["func","【2026-10-05 已部分修复】「关注/粉丝」已接 /community/social/stats 真实统计；但「收藏」「足迹」「信用分」「我的闲置」（我发布的/我卖出的/我买到的）「我的任务」计数在 account/index.vue 中仍硬编码为 0，未接统计接口——数据充盈（该用户已有 2 件在售闲置）也显示 0；设计稿对应 42/128、750、12/3/1、3/5/2/1"],
+ ["func","实际多出「我的订单」区块（计数为真实数据）；设计稿无此区块（设计稿此处为收货地址/积分明细入口，实际滚动后同样存在 ✓ 已 DOM 验证）"],
+ ["icon","右上角消息铃铛、设置齿轮均在 ✓；已按微信胶囊矩形把图标定位到胶囊左侧避让（真机待复验）"],
+ ["ui","PLUS 会员卡、头像/昵称/学校区、四格统计结构与设计稿一致；首次登录会被协议确认页拦截"]]],
+["06-login","登录","pages/login/index",U+"06-login.png","bad",[
+ ["func","设计稿为绿色欢迎页，含「微信一键登录 / 手机号登录」两个入口；实际直接是手机号+验证码表单，无微信一键登录入口"],
+ ["brand","Logo/名称：设计稿「校圈」，实际「TM 任务商城」"],
+ ["ui","底部协议勾选与 DEV 固定验证码 246810 提示为本地调试内容"]]],
+["07-search","搜索","pages/search/index",U+"07-search.png","bad",[
+ ["func","实际空态只有「热门搜索」标签；缺设计稿的「搜索结果 36 条」结果列表"],
+ ["func","缺带搜索量排名的「热门搜索」榜单（1~6 名+热度数字）"],
+ ["func","缺「搜索历史」区（代取快递/黄焖鸡米饭…+清空）"]]],
+["08-task-detail","任务详情","pages/task-detail/index",U+"08-task-detail.png","mid",[
+ ["func","实际多出「任务步骤/流程」区块（①填写完成情况 ②上传送达凭证，均标必填），设计稿无"],
+ ["ui","信息字段不同：实际为 限时完成/领取截止/通过率/联系方式；设计稿为 期望完成时间/取件地点/联系方式"],
+ ["data","头图为货架插画占位，设计稿为仓库实拍；标签「加急/热抢/学办任务」vs「加急/加锁/小件快递」"],
+ ["icon","底部接单主按钮一致（登录态：我要接单·+15积分）"]]],
+["09-task-publish","发布任务","pages/publisher/index",U+"09-task-publish.png","mid",[
+ ["func","实际为 5 步向导（基础信息→时限频率→奖励预算→任务步骤→发布确认）+发布身份卡+三种任务类型（发布悬赏/平台任务/成长挑战）；设计稿为单页表单，类型为 4 个图标（跑腿代取/学习助力/二手闲置/技能服务）"],
+ ["ui","设计稿字段：标题/描述/图片/悬赏积分步进器/期望时间/取件地点/存草稿+确认发布；实际拆分为分步表单，信息架构差异大"],
+ ["func","进入需任务发布权限+发布主体（已为演示账号开通；未开通时显示「无法进入任务发布中心」拦截页）"]]],
+["10-task-confirm","任务确认提交","pages/task-claim/index",U+"10-task-confirm.png","bad",[
+ ["bug","实际为「任务状态加载失败，请先无法处理/重试」整页错误态，无法呈现设计稿的「确认接单」底部弹层"],
+ ["ui","设计稿弹层含：任务摘要（图/标题/积分/时间）+3 条接单须知+再想想/确认接单；实际未能核对，需排查 task-claim 数据加载（该任务领取截止 2026-10-18）"]]],
+["11-goods-detail","商品详情","pages/product-detail/index",U+"11-goods-detail.png","bad",[
+ ["func","商品/SKU 模型差异大：设计稿 ins 保温杯有「颜色（薄荷绿/珍珠白/曜石黑）、容量（350/500ml）」规格选择；实际轻食能量碗为 方式（现金/积分/组合）/规格/热量/配送，无颜色容量选择"],
+ ["func","设计稿有「用户评价(1.2k)」评价区（头像+星级+评语），实际完全无评价区"],
+ ["data","价格 320积分(原价959) ⇄ ¥15.90；商品图为「轻」字占位"],
+ ["icon","底部 收藏/加入购物车/立即兑换 按钮一致"]]],
+["12-exchange","确认订单兑换","pages/checkout/index",U+"12-exchange.png","bad",[
+ ["func","结算页依赖购物车上下文，用 product_id 直链进入显示「购物车还是空的 / 返回购物车」，直链参数未生效；需经「立即兑换/购物车结算」进入"],
+ ["ui","未能核对设计稿的：收货地址卡、商品行、优惠券 2 张可用、订单备注、配送方式、积分余额 1,280、合计 320、提交订单"]]],
+["13-exchange-success","兑换成功","pages/payment-result/index",U+"13-exchange-success.png","mid",[
+ ["ui","【已补数据复核】实际完整渲染：绿色成功勾+「支付成功」+3200积分/支付方式/订单编号/当前状态+积分变动提示+继续逛逛/查看订单"],
+ ["ui","标题「支付成功」⇄ 设计稿「兑换成功」；设计稿展示 消耗320/余额960/收货地址 三行，实际为 支付方式/现金金额/当前状态"],
+ ["func","设计稿有「发货说明」提示条（订单记录查看物流），实际为积分变动提示"]]],
+["14-orders","我的订单","pages/orders/index",U+"14-orders.png","bad",[
+ ["func","实际只有商城订单：全部/待支付/待履约/待确认/已完成 + 售后服务入口；DOM 验证无「兑换订单 / 任务记录」双 Tab"],
+ ["func","设计稿「任务记录」下的任务类订单（联系对方/上传完成凭证/立即评价、进行中/待评价/已完成子 Tab）在本页缺失，疑似改道「我的-我的任务」"],
+ ["ui","【已补数据复核】商城订单列表正常渲染（商品图/名称/积分金额/已完成状态/查看订单详情），卡片结构与设计稿兑换订单卡接近"]]],
+["15-post-detail","帖子详情","pages/community-detail/index",U+"15-post-detail.png","bad",[
+ ["icon","作者区无「+关注」按钮（右上角只有分享）——详情页关注入口缺失（用户重点关注项）"],
+ ["ui","缺设计稿作者行的「来自8楼·滨江校区」地点来源"],
+ ["data","底部点赞/收藏/分享图标在，但计数全 0（设计稿 328赞/45评论/66收藏）；演示帖为纯文字失物招领，设计稿为三图猫帖"],
+ ["ui","评论区「全部评论」样式与设计稿的楼层卡片式不同"]]],
+["16-post-publish","发布帖子","pages/community-compose/index",U+"16-post-publish.png","mid",[
+ ["func","【2026-10-05 已补齐】「添加位置（选填）」已接通：可输入如「图书馆三楼 / 8 号宿舍楼」，随发帖/编辑提交（location_name）；仍非地图选点，也未按校区联动"],
+ ["func","仍缺「#话题」选择入口（设计稿：#校园日常+添加话题）；当前以「内容分类」必选 chips（经验分享/攻略/问答/展示）替代"],
+ ["ui","「可见范围（所有人可见）」行为静态展示，无实际范围设置；实际另有「帖子标题」必填项与「预览」按钮"],
+ ["func","「带话题发布并通过审核可获 2 积分奖励」提示条实际已存在 ✓"]]],
+["17-signin","每日签到","pages/check-in/index",U+"17-signin.png","mid",[
+ ["ui","签到历设计稿为整月日历（10月），实际为本周日历"],
+ ["ui","实际多「签到规则」全文与 查看积分记录/去任务大厅 按钮；连续签到奖励条两者都有"],
+ ["data","积分数值/连续天数为演示数据差异"]]],
+["18-points","积分明细资产","pages/assets/index",U+"18-points.png","mid",[
+ ["ui","同一「我的资产」组件实际默认展示：钱包余额卡+可用积分卡+积分到期计划；设计稿为「积分明细」：累计获取/累计消耗/信用分750+全部/收入/支出 Tab+流水列表"],
+ ["func","积分流水需滚动/切换查看，默认落点与设计稿不同；积分卡上未展示信用分"]]],
+["19-coupons","我的优惠券","pages/coupons/index",U+"19-coupons.png","mid",[
+ ["ui","【已补数据复核】3 张券正常渲染（100积分抵扣/满10减2/满20减5，含有效期+去使用按钮），Tab 结构一致"],
+ ["icon","设计稿 Tab 带数量角标（可用6/已使用3/已过期2），实际 Tab 无数量角标"],
+ ["ui","券样式：设计稿为彩色宽幅品牌券（全场通用积分券/免邮券/折扣券，左侧大面额色块），实际为白底绿字简洁卡"]]],
+["20-messages","消息中心","pages/notifications/index",U+"20-messages.png","mid",[
+ ["func","实际多一排类型筛选 chips（全部/任务/订单/售后/资产/社区/系统），设计稿无"],
+ ["func","设计稿分「互动消息」（用户头像+内容预览）与「通知」（闲置助手/校园官方/物流助手）两区；实际合并为单一时序「全部消息」列表，无分区、无用户互动消息（多为审核通知）"],
+ ["icon","顶部 5 个功能图标行一致（互动消息角标在）"]]],
+["21-sh-market","闲置市场","pages/second-hand/index",U+"21-sh-market.png","mid",[
+ ["bug","【已定位】登录态列表空是因为账号未选校区被过滤（选校区后正常显示 5 件）；但空态文案「暂无闲置物品」有误导性，建议未选校区时引导选校区"],
+ ["icon","设计稿顶部为搜索图标+「发布」文字按钮；实际发布入口在右下悬浮「+发布」，无顶部搜索图标"],
+ ["ui","【已补数据复核】分类 chips 实际存在（全部/教材书籍/生活日用/数码…）✓；商品卡（图/全新·九成新标签/价格/卖家行）结构与设计稿一致"],
+ ["data","设计稿 5 件实拍商品（iPad/耳机/键盘/自行车/资料）与本地演示数据不同"]]],
+["22-sh-publish","发布闲置","pages/second-hand-publish/index",U+"22-sh-publish.png","mid",[
+ ["ui","成色选项文案不同：实际 全新/几乎全新/轻微使用/正常使用/明显使用；设计稿 全新未拆/99新/95新/9成新/明显使用痕迹"],
+ ["icon","设计稿右上有「规则」入口，实际无"],
+ ["ui","图片（首图+最多9张）/标题/描述/分类/价格/存草稿+确认发布结构一致"]]],
+["23-sh-detail","闲置详情","pages/second-hand-detail/index",U+"23-sh-detail.png","bad",[
+ ["bug","带真实商品 id 进入仍整页空白（仅有「闲置详情」标题），详情内容完全不渲染——确认缺陷，需排查"],
+ ["ui","设计稿含：大图/价格¥2,399/成色交易方式标签/成色·交易方式·发布时间信息行/描述/卖家卡（林小满 信用720 在售6件）/底部 收藏+分享+聊一聊+立即购买"]]],
+["24-sh-buy","闲置下单确认","pages/second-hand-buy/index",U+"24-sh-buy.png","ok",[
+ ["ui","字段结构与设计稿一致：商品卡、卖家+聊一聊、交易方式（校内面交/移动收货/快递邮寄）、面交地点、联系电话（虚拟号保护）、钱包余额、买家留言、平台担保提示、合计、确认支付"],
+ ["data","演示商品为 MacBook Pro ¥20000（图为「M」占位），设计稿为 iPad Air ¥2,399"]]],
+["25-sh-orders","闲置订单","pages/second-hand-orders/index",U+"25-sh-orders.png","ok",[
+ ["ui","【已补数据复核】「我买到的」4 张订单卡正常渲染，覆盖 待付款/待收货/已完成 状态，卡片（图/标题/价格/状态/操作按钮）与设计稿一致"],
+ ["ui","主 Tab「我买到的/我卖出的」+子筛选 chips 一致；设计稿操作按钮 去支付/确认收货/立即评价 均有对应"]]],
+["26-chat-list","聊天会话列表","pages/chat/index",U+"26-chat-list.png","mid",[
+ ["bug","【已澄清】此前 404 是截图脚本路径错误（正确为 /chat/conversations），非缺陷"],
+ ["ui","【已补数据复核】2 个会话正常渲染（头像/昵称/最后一条预览/时间/未读红点），结构与设计稿一致"],
+ ["data","设计稿另有 张同学/桃子汽水/校圈小助手（平台通知）3 个会话"],
+ ["ui","标题「消息」⇄ 设计稿「私信」+全部已读；设计稿顶部平台安全提示条在实际会话列表未见（聊天详情页内有）"]]],
+["27-chat","聊天窗口","pages/chat-detail/index",U+"27-chat.png","ok",[
+ ["ui","【已补数据复核】完整渲染：顶部商品卡（九成新蓝牙耳机 ¥45+立即购买）+安全提示条+双向聊天气泡（含对方头像）+快捷语（还在吗/能刀一点吗/什么时候方便交收）+底部 +/输入框/发送"],
+ ["data","设计稿商品卡为 iPad Air（买家视角），演示数据为卖家视角耳机会话"]]],
+["28-sh-my-list","我的闲置","pages/second-hand-my/index",U+"28-sh-my-list.png","ok",[
+ ["ui","【已补数据复核】在售 2 件正常渲染（图/标题/价格/浏览量/下架按钮），已售 1/已下架 1 在各 Tab 下"],
+ ["icon","设计稿卡片带「待审核/售罄」状态标签，演示数据均为已通过审核未覆盖该形态"],
+ ["ui","在售/已售/已下架 Tab 与底部提示一致"]]],
+["29-sh-order-detail","闲置订单详情","pages/second-hand-order-detail/index",U+"29-sh-order-detail.png","ok",[
+ ["ui","【已补数据复核】完整渲染：待收货状态横幅+订单进度时间线（等待买家确认收货/卖家确认交付/买家已支付/订单创建）+商品卡+订单编号/交易方式/下单·支付·发货时间+底部 客服/申请退款/确认收货"],
+ ["icon","底部按钮 客服/申请退款/确认收货 ⇄ 设计稿 取消订单/联系卖家/确认收货（状态不同按钮不同，形态一致）"]]],
+["30-sh-rate","闲置评价","pages/second-hand-rate/index",U+"30-sh-rate.png","bad",[
+ ["func","【已补数据复核】表单已渲染（商品卡+总体评价星级+文字框+上传图片+提交评价），但缺设计稿的三项细分评分：宝贝描述相符/卖家服务态度/交易顺畅度 三个星级行"],
+ ["ui","其余结构（商品卡/星级/图片上传/提交按钮）与设计稿一致"]]],
+["31-sh-ship","闲置发货","pages/second-hand-ship/index",U+"31-sh-ship.png","mid",[
+ ["func","【已补数据复核】渲染订单卡+交易方式（校内面交）+面交地点+联系买家/确认交付；但缺设计稿的「发货方式」切换 chips（校内面交/移动代发/快递）、「约定时间」、「发货凭证」图片上传"],
+ ["ui","订单卡（图/标题/成色/价格/待发货标签）与设计稿一致"]]],
+["32-sh-refund","闲置退款售后","pages/second-hand-refund/index",U+"32-sh-refund.png","ok",[
+ ["ui","【已补数据复核】完整渲染：退款处理中横幅+倒计时（剩23小时）+退款进度时间线（提交退款申请/等待卖家处理）+退款金额¥500退回钱包余额/退款原因+撤销申请/联系卖家"],
+ ["data","设计稿时间线多「平台退款/退款完成」预告步骤、含凭证图片（演示退款单未传图）"],
+ ["ui","注意：本页参数 id 传的是订单 id（非退款单 id），入口依赖订单上下文"]]],
+["33-sh-user","卖家主页","pages/sh-user/index",U+"33-sh-user.png","bad",[
+ ["icon","缺「+关注」按钮，实际只有「私信」——关注功能缺失（用户重点关注项）"],
+ ["func","缺设计稿的「获赞 712」「好评率 98%」指标（实际好评率显示「—」，无获赞列）"],
+ ["icon","缺认证标签（认证成员/大使）、校区、「评价2小时内响应」等信誉信息"],
+ ["data","实际 在售2/已售1/评价0，列表 2 件商品（图为 M/i 占位）；设计稿 712赞/12在售/38已售+3 件实拍商品"]]],
+["34-wallet","我的钱包","pages/assets/index?tab=wallet",U+"34-wallet.png","mid",[
+ ["ui","实际为「我的资产」合并页（钱包卡+积分卡+到期计划）；设计稿为独立钱包页：余额卡+提现中/待提现 1 笔+「收支明细」流水（+35/-2,399/+150/+100）"],
+ ["func","收支明细需滚动确认是否在该页下方；提现/充值按钮一致"]]],
+["35-recharge","余额充值","pages/wallet-recharge/index",U+"35-recharge.png","mid",[
+ ["func","实际默认落在「卡密兑换」（输入充值卡密+立即兑换+充值记录），支付方式分为 卡密兑换/线上支付/线下支付 三个 Tab"],
+ ["ui","设计稿为金额快捷选择（¥10/50/100/200）+自定义+微信支付+确认充值；微信支付/快捷金额需切到「线上支付」Tab，入口更深"]]],
+["36-withdraw","提现","pages/withdraw/index",U+"36-withdraw.png","mid",[
+ ["func","实际到账方式为银行卡（需绑卡，可提现/冻结额分开），设计稿到账账户为「微信零钱（当前登录微信）」"],
+ ["ui","实际多出提现规则（最低¥1/最高¥5000）、手续费说明表、到账时间、银行卡管理；信息更完整"],
+ ["data","可提余额 ¥56.80 vs 设计稿 ¥86.50"]]],
+["37-address","收货地址","pages/addresses/index",U+"37-address.png","mid",[
+ ["func","设计稿地址卡有「设为默认」单选控件，实际卡片无单选（仅「默认」徽章）"],
+ ["ui","设计稿底部固定「+新增收货地址」大按钮，实际改为右上「+新建」胶囊"],
+ ["ui","实际页下方聚合「隐私与数据管理」（数据说明/权限设置/信息导出/注销账户）+联系客服，设计稿无这些（设计稿在独立隐私页）"]]],
+["38-admin-audit","闲置审核（设计稿为手机端样式，实际仅后台实现）","ADMIN → a04-sh-audit",A+"a04-sh-audit.png","mid",[
+ ["ui","设计稿是手机端审核页：待审核5/已通过/已拒绝 Tab+商品卡+拒绝/通过上架；实际对应后台 a04 闲置审核页（Web 表格/卡片形态），见后台部分"],
+ ["func","用户端内无该入口，与设计稿的端形态不同"]]],
+["39-as-list","售后列表","pages/after-sales/index",U+"39-as-list.png","mid",[
+ ["ui","【已修改复核】页面已翻新：绿色 AFTER SALES 横幅（无插画，右侧处理中数量徽章）+设计稿的「全部/处理中/已完成」Tab 已补齐+申请售后入口+闲置交易售后入口+售后单卡（仅退款/查看售后进度）"],
+ ["ui","与设计稿剩余差异：设计稿 Tab 下直接是售后商品卡列表（商品图+标题+退款/换货状态标签+金额），实际为「申请售后」折叠入口 + 售后单记录卡两种形态"],
+ ["data","【已补数据复核】可申请售后 1 单、进行中售后 1 单均正常展示"]]],
+["40-as-apply","申请售后","pages/after-sale-apply/index",U+"40-as-apply.png","ok",[
+ ["ui","【已补数据复核】完整渲染：商品卡（含预计退 1200 积分）+售后类型（仅退款/退货退款/换货）+申请数量+申请原因+补充描述+上传凭证+提示+提交申请，与设计稿字段一一对应"],
+ ["ui","设计稿「退款金额 ¥680」独立行 ⇄ 实际并入商品卡「预计退 1200 积分」；申请原因 chips 文案不同"],
+ ["ui","注意：本页需 orderId+itemId 两个参数（仅 orderId 会显示「售后申请暂不可用」）"]]],
+["41-as-detail","售后进度详情","pages/after-sale-detail/index",U+"41-as-detail.png","ok",[
+ ["ui","【已按要求修改】顶部 AFTER SALES 插画横幅已删除，绿色状态横幅（等待平台审核+售后单号）直接置顶，与设计稿「审核中」绿色横幅结构一致"],
+ ["ui","完整渲染：处理进度时间线（提交申请/平台审核/退款到账）+售后类型/售后原因/责任归属/寄回方式/寄回运费/预计退回 3200 积分"],
+ ["data","设计稿另有 退款金额¥680/售后单号/关联订单 三行 kv，实际信息以汇总卡 kv 展示（字段更全）；底部 联系客服/撤销申请 固定操作栏结构一致"]]],
+["42-act-list","校园组团列表","pages/community-activities/index",U+"42-act-list.png","mid",[
+ ["func","筛选维度不同：实际=分类 chips（全部/运动/自习…）+发现活动/我发起的/我的参与；设计稿=状态（进行中/即将开始/已结束）"],
+ ["ui","【已补数据复核】2 个活动卡正常渲染（封面图/标题/时间地点/已报名人数），「校园活动季·参与赢积分」横幅与发布入口一致"],
+ ["data","设计稿活动卡带「进行中/即将开始」状态角标，实际卡片未见状态角标"]]],
+["43-act-detail","组团详情","pages/community-activity-detail/index",U+"43-act-detail.png","mid",[
+ ["ui","【已补数据复核】完整渲染：封面图+活动名+活动时间/集合地点+报名情况（1/20人）+参加的同学（头像墙）+活动详情+分享给同学"],
+ ["func","缺设计稿的「活动奖励」区块（冠军+200/亚军+120/季军+80 积分三档）——发起组团页也无奖励设置字段，功能链路缺失"],
+ ["icon","设计稿底部主按钮为「立即报名」，实际首屏为「分享给同学」（报名按钮需滚动确认）"],
+ ["data","设计稿信息行含「请提前15分钟到场」提示与 64队/已报326人 大数字"]]],
+["44-act-compose","发起组团","pages/community-activity-compose/index",U+"44-act-compose.png","mid",[
+ ["func","实际多「活动主题」必选项（自习/电影/聚餐/拼车/球类/游戏/运动/旅行/其他）"],
+ ["ui","时间实际拆为「活动日期+开始时间」两项且无结束时间；设计稿为起止时间区间"],
+ ["func","缺设计稿的「奖励设置」（冠军200积分/参与50积分）"],
+ ["ui","人数上限实际 2–100 人；设计稿 0 为不限；提交按钮「同意规范后提交」⇄「提交审核」"]]],
+["45-legal-consent","协议确认","pages/legal-consent/index",U+"45-legal-consent.png","info",[
+ ["ui","已接受全部协议后该页自动跳走（无待确认项），首登拦截形态见 05 实际图"],
+ ["data","实际协议为开发环境占位文档（双开环境用户协议/隐私政策，标注不可用于生产）；设计稿为《用户协议》《隐私政策》正式两份+同意并继续/暂不同意"]]],
+["46-privacy","隐私与账号","pages/privacy/index",U+"46-privacy.png","bad",[
+ ["func","信息架构不同：设计稿为聚合设置列表（账号与安全/个人信息管理/权限管理/清除缓存12.6MB/关于校圈v1.3.0/注销账号）；实际是「隐私与账号注销」专页（个人数据副本申请+注销条件 checklist，当前因钱包余额不为零不可注销）"],
+ ["func","设计稿的账号与安全、权限管理、清除缓存、版本号等入口在本页缺失（部分被挪到 37 收货地址页下方的隐私管理区，无统一设置入口）"]]],
+["47-realname","实名认证","pages/identity-verification/index",U+"47-realname.png","bad",[
+ ["func","实际显示「认证服务商尚未开放（管理员完成阿里云配置并启用后即可认证）」，实名认证表单整体不可用"],
+ ["ui","设计稿为完整表单：真实姓名/身份证号/手机号（获取验证码）/验证码+协议勾选+提交认证；当前环境无法核对"]]],
+["48-referrals","我的推荐","pages/referrals/index",U+"48-referrals.png","mid",[
+ ["func","缺设计稿「邀请奖励」明细卡（好友注册+50/首单+100/连续签到7天+30）"],
+ ["func","缺设计稿「邀请榜单」（好友排名+注册时间+已得积分）"],
+ ["ui","实际含邀请码（500积分/人）、生成邀请海报/复制链接、如何获得奖励三步、绑定邀请码、邀请进度，为另一种完整形态"]]],
+["49-ref-poster","邀请海报","pages/referral-poster/index",U+"49-ref-poster.png","ok",[
+ ["ui","绿色海报+Logo+二维码+保存图片/分享给好友结构一致；实际下方多邀请奖励卡（500积分/人+生成海报/复制链接）"],
+ ["brand","此处实际海报使用「校圈」Logo，与全局 TM 品牌不统一"]]],
+["50-cart","购物车","pages/cart/index",U+"50-cart.png","mid",[
+ ["ui","【已补数据复核】2 件商品正常渲染（图/名称/单价/步进器/勾选框）+配送地址行+合计（¥64.00 + 1200 积分，支持现金积分混合）+结算(3)"],
+ ["func","设计稿按店铺分组（校园自营·积分优选 / 林小满的闲置铺 两组带店名头），实际无店铺分组、商品直接平铺"],
+ ["ui","全选/步进器/结算栏结构一致"]]],
+["51-support","帮助与反馈","pages/support/index",U+"51-support.png","ok",[
+ ["ui","FAQ 4 条（如何接单/积分获取/提现到账/联系卖家）、在线客服（在线角标）、客服电话 400 与设计稿一致（已补全页截图）"],
+ ["func","「意见反馈」文本框+「提交反馈」按钮在首屏下方，滚动后可见 ✓（曾疑似缺失，已 DOM 验证存在）；上传图片为图标按钮"],
+ ["data","客服二维码实际「待配置」"]]],
+["52-pub-detail","发布任务详情（发布方视角）","pages/publisher-task-detail/index",U+"52-pub-detail.png","bad",[
+ ["bug","实际「发布任务加载失败/请求无法处理」：演示发布主体不拥有该任务（任务归属其他发布方），无权查看"],
+ ["ui","设计稿含：进行中·截止上翻状态卡、任务信息（分类/时限/地点/积分托管）、接单情况 2 人（去收款/催一催）、结算说明、下架任务/编辑任务；需用任务归属的发布方账号复核"]]],
+["53-bank-cards","银行卡","pages/bank-cards/index",U+"53-bank-cards.png","mid",[
+ ["data","本地暂无绑卡：空态（卡图标+暂无绑定银行卡+添加银行卡）结构一致"],
+ ["ui","缺设计稿底部三行说明（仅支持本人实名卡/单笔单日限额¥1,000-50,000/新卡进入入卡管理）"]]],
+["54-bank-card-add","添加银行卡","pages/bank-card-add/index",U+"54-bank-card-add.png","ok",[
+ ["ui","字段一致：持卡人/卡号/银行选择/银行预留手机号/获取验证码+双协议勾选+「同意协议并绑卡」（未勾选时置灰）"],
+ ["data","设计稿持卡人预填「陈同学（实名认证）」，实际为空"]]],
+["55-order-detail","订单详情","pages/order-detail/index",U+"55-order-detail.png","ok",[
+ ["ui","【已按要求修改】顶部 ORDER DETAIL 插画横幅已删除，绿色状态横幅（等待确认完成+说明）直接置顶，与设计稿「待收货·运输中」绿色横幅结构一致"],
+ ["ui","完整渲染：收货信息（麻广明 139****2222 南昌大学前湖校区）+商品信息（规格/数量/3200积分）+履约进度（运输中+中通快递单号，带时间线节点）+费用明细（商品现金/积分/运费/实付）+订单信息"],
+ ["data","设计稿费用明细含优惠券积分抵扣行，演示订单未用券故无该行；底部 全部订单/确认完成 固定操作栏与设计稿 联系客服/申请售后/确认收货 随状态变化，形态一致"]]],
+["56-coupon-center","领券中心","pages/coupon-center/index",U+"56-coupon-center.png","ok",[
+ ["ui","【已补数据复核】6 个券模板正常渲染（免运费券/100积分抵扣/满50减10/150积分抵扣/满10减2/满20减5，含 立即领取/已领取 按钮态）"],
+ ["ui","「校园福利券」banner 与「我的券」入口一致；设计稿 5 张券样式为彩色面额卡，实际白底简洁卡"]]],
+["57-legal","协议隐私文档","pages/legal/index",U+"57-legal.png","mid",[
+ ["data","实际仅 2 份开发环境占位协议（双开环境隐私政策/用户协议，标注不可用于生产，版本 dev-1.0）；设计稿 4 份：用户协议 v3.2/隐私政策 v3.2/实名认证服务协议 v2.1/支付服务协议 v1.5"],
+ ["ui","底部实际「已是最新版本」，设计稿为「确认并继续(2)」；隐私政策摘要+授权管理（微信基础信息/相册相机/消息通知）区块一致"]]]
+];
+const admin=[
+["a01-login","后台登录","admin-web #/login",A+"a01-login.png","ok",[
+ ["ui","【已按设计稿重构 2026-10-06】左绿渐变品牌区（校圈·校园任务商城/运营管理平台/最小权限·全程审计·双因素认证 chips）+右白表单（账号/密码/绿色登录按钮/记住我/忘记密码），与设计稿一致"],
+ ["brand","品牌已统一为「校圈」"],
+ ["data","保留 MFA 二次验证流程（设计稿未体现，属安全增强）"]]],
+["a02-dashboard","运营工作台","admin-web #/workbench",A+"a02-dashboard.png","ok",[
+ ["ui","【已按设计稿重构 2026-10-06】深绿侧栏 10 分组+面包屑+4 统计卡+近7天趋势柱状图+待办事项+快捷入口，结构与设计稿一致"],
+ ["data","今日新增任务取「已发布任务总量」（无今日新增口径）；待审核事项=任务+闲置实时合计；今日订单金额=商城GMV；趋势图本地数据稀疏显示 0（数据差异非界面差异）"],
+ ["func","侧栏分组可展开子菜单进入 26 个独立路由页（设计稿仅画收起态）"]]],
+["a03-task-audit","任务审核","admin-web #/tasks/audit",A+"a03-task-audit.png","ok",[
+ ["ui","【已按设计稿重构 2026-10-06】统计卡+筛选（状态/类型/关键词）+密集审核表（任务/提交人/状态/时间/操作），通过/驳回已接 reviewTaskSubmission"],
+ ["data","本地审核队列为空（无待审提交，空表为真实状态）；「类型/积分」列接口未返回显示「—」"]]],
+["a04-sh-audit","闲置审核","admin-web #/mall/second-hand",A+"a04-sh-audit.png","ok",[
+ ["ui","【已按设计稿重构】统计卡+筛选+审核表（商品/卖家/价格/状态/操作），通过/驳回已接接口；对应用户端 38"],
+ ["data","待审队列为空（本地无 pending 闲置）"]]],
+["a05-product","商品管理","admin-web #/mall/products",A+"a05-product.png","ok",[
+ ["ui","【已按设计稿重构】真实数据验证：商品表（图/SKU/售价/库存/上下架状态）+新增/编辑/下架已接"],
+ ["data","「分类」列接口未返回显示「—」；商品图为占位素材"]]],
+["a06-order","订单管理","admin-web #/orders",A+"a06-order.png","ok",[
+ ["ui","【已按设计稿重构】统计卡+状态/关键词筛选+订单表（单号/商品/金额/状态/操作）+详情弹层"],
+ ["data","本地订单量少的分页/金额均为真实数据"]]],
+["a07-aftersale","售后管理","admin-web #/after-sales",A+"a07-aftersale.png","ok",[
+ ["ui","【已按设计稿重构】退款/换货双列表+审核操作已接（reviewRefund/Exchange）"],
+ ["data","「订单号/用户」接口未返回显示「—」；本地售后单量少"]]],
+["a08-withdraw","提现审核","admin-web #/finance/withdrawals",A+"a08-withdraw.png","ok",[
+ ["ui","【已按设计稿重构】独立提现审核表+统计卡；审核通过/驳回已接，银行卡通道「人工打款登记」（manual-result+二次验证）同页完成"],
+ ["data","本地无待审提现单（空表为真实状态）"]]],
+["a09-user","用户管理","admin-web #/users",A+"a09-user.png","mid",[
+ ["ui","【已按设计稿重构】密集用户表（头像/账号/手机/校区/积分/状态/操作）+筛选，真实数据渲染"],
+ ["func","「禁用/启用」操作后端未开放接口，操作列未提供该按钮（设计稿有）"]]],
+["a10-community","社区内容管理","admin-web #/community",A+"a10-community.png","ok",[
+ ["ui","【已按设计稿重构】帖子/评论待审列表+通过/驳回已接"],
+ ["data","待审队列为空（本地无 pending 帖子/评论）"]]],
+["a11-support","客服工单","admin-web #/support/tickets",A+"a11-support.png","ok",[
+ ["ui","【已按设计稿重构】工单表（状态/优先级/处理人）+回复/关闭已接"],
+ ["data","本地无工单（空表为真实状态）"]]],
+["a12-operations","活动运营","admin-web #/operations/campaigns",A+"a12-operations.png","mid",[
+ ["ui","【已按设计稿重构】活动位列表+新增活动位已接"],
+ ["func","推荐位置顶/催办等运营动作为 UI 占位，后端接口未开放"]]],
+["a13-config","系统配置","admin-web #/config",A+"a13-config.png","ok",[
+ ["ui","【已按设计稿重构】配置项列表+草稿保存/发布已接（saveSettingDraft/publishSetting）"],
+ ["data","配置分组为本地真实数据"]]],
+["a14-permissions","角色权限","admin-web #/security/roles",A+"a14-permissions.png","mid",[
+ ["ui","【已按设计稿重构】角色表+管理员账号表已接（listAdminRoles/listManagedAdmins）"],
+ ["func","角色删除无后端接口，未提供"]]],
+["a15-task-list","任务列表","admin-web #/tasks/list",A+"a15-task-list.png","ok",[
+ ["ui","【已按设计稿重构】任务数据表（标题/发布方/奖励/状态/时间）+状态流转操作已接，真实数据渲染"]]],
+["a16-task-template","任务模板中心","admin-web #/tasks/templates",A+"a16-task-template.png","ok",[
+ ["ui","【已按设计稿重构】模板表格列表形态对齐"],
+ ["data","本地模板为空"]]],
+["a17-category","商品分类","admin-web #/mall/categories",A+"a17-category.png","ok",[
+ ["ui","【已按设计稿重构】独立分类管理表（名称/排序/图标/状态）+新增/编辑已接"]]],
+["a18-inventory","库存管理","admin-web #/mall/inventory",A+"a18-inventory.png","ok",[
+ ["ui","【已按设计稿重构】SKU 库存表+库存调整已接（adjustInventory），真实数据渲染"]]],
+["a19-points","积分管理","admin-web #/finance/points",A+"a19-points.png","ok",[
+ ["ui","【已按设计稿重构】积分调整记录表（listAssetAdjustments）"],
+ ["data","本地调整记录为空"]]],
+["a20-coupon","优惠券模板","admin-web #/mall/coupons",A+"a20-coupon.png","ok",[
+ ["ui","【已按设计稿重构】券模板数据表（面额/门槛/库存/状态）+创建/上下架已接"]]],
+["a21-reconcile","对账中心","admin-web #/finance/reconcile",A+"a21-reconcile.png","ok",[
+ ["ui","【已按设计稿重构】统计卡（平台流水/渠道流水/差异/一致率）+批次列表+差异条目+导出对账单（CSV 真实导出）"],
+ ["data","本地无对账批次（空态为真实状态）"]]],
+["a22-report","举报处理","admin-web #/community/reports",A+"a22-report.png","mid",[
+ ["ui","【已按设计稿重构·二次修正 2026-10-06】首轮误判为「运营报表」，已按设计稿（面包屑 首页/社区内容/举报处理）重写：4 统计卡（待处理举报/今日已处理/被处罚用户/申诉待处理）+状态/类型/关键词筛选+举报表（内容/类型/状态/时间/操作）+申诉复核弹窗（撤销/维持原处置，已接 reviewCommunityAppeal）；路由同步迁至 #/community/reports"],
+ ["func","单条举报的「屏蔽/处罚」处置接口未开放（仅可查看）；「被处罚用户」统计接口未开放显示「—」"],
+ ["data","被举报人/举报人字段接口未返回显示「—」；本地无举报/申诉数据（空表）"]]],
+["a23-notify","消息通知短信","admin-web #/operations/notify",A+"a23-notify.png","mid",[
+ ["ui","【已按设计稿重构】消息推送页：统计卡（今日发送/今日点击/模板总数/退订用户）+推送记录表+模板表+订阅规则开关，新建推送已接"],
+ ["data","「点击率/退订用户」渠道未回传显示「—」；本地无推送记录"]]],
+["a24-data","数据看板","admin-web #/operations/data-board",A+"a24-data.png","ok",[
+ ["ui","【已按设计稿重构】近7日趋势柱状图/任务转化漏斗/类型占比/校区TOP5/实时告警均有对应"],
+ ["data","指标数值为本地演示数据"]]],
+["a25-campus","校区管理","admin-web #/security/campuses",A+"a25-campus.png","ok",[
+ ["ui","【已按设计稿重构】统计卡（已开通校区/校园代理/校区总用户）+校区表（名称/代理/用户数/状态）+新增/编辑/开通已接"],
+ ["data","「已开通校区 3197」经核实为本地院校目录真实导入数据（summary.active），非缺陷；进行中任务/今日订单/待审核代理申请无接口显示「—」"]]],
+["a26-auditlog","审计日志","admin-web #/security/logs",A+"a26-auditlog.png","ok",[
+ ["ui","【已按设计稿重构】筛选（模块/操作人/风险/关键词/日期）+日志表+导出 CSV 已接，真实日志渲染"],
+ ["func","【二次修正】风险分级规则已修正（登录/退出归「普通」，仅角色权限/配置发布等归「高危」）；模块/操作已补中文标签映射（admin.auth.login→管理员登录、admin_user→管理员）"],
+ ["data","IP 列接口未返回显示「—」；当前日志几乎全为登录记录（数据差异）"]]]
+];
+
+function tags(ks){return ks.map(([k,t])=>`<span class="kind ${K[k][0]}" title="${K[k][1]}">${t}</span>`).join('')}
+function row(r){
+  const [id,name,route,shot,st,diff]=r;
+  return `<tr data-s="${st}">
+    <td class="id">${id}</td>
+    <td><span class="name">${name}</span></td>
+    <td><span class="tag ${S[st][0]}">${S[st][1]}</span></td>
+    <td class="route">${route}</td>
+    <td class="shot"><img src="${D}${id.replace(/^a/,'a')}.png" data-hi="${D}${id}.png" alt="设计稿 ${id}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'img-fail',textContent:'截图缺失'}))"><div class="cap">设计稿</div></td>
+    <td class="shot"><img src="${shot}" data-hi="${shot}" alt="实际 ${id}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'img-fail',textContent:'截图缺失'}))"><div class="cap">实际页面</div></td>
+    <td class="diffs"><ul>${diff.map(d=>`<li>${tags([d])}${d[1]}</li>`).join('')}</ul></td>
+  </tr>`;
+}
+const HEAD=`<tr><th style="width:60px">编号</th><th style="width:130px">名称</th><th style="width:92px">状态</th><th style="width:150px">路由/入口</th><th class="shot">设计稿</th><th class="shot">实际页面</th><th>差异点（标签区分性质）</th></tr>`;
+document.getElementById('t-user').innerHTML=HEAD+user.map(row).join('');
+document.getElementById('t-admin').innerHTML=HEAD+admin.map(row).join('');
+const all=[...user,...admin];
+const cnt=k=>all.filter(r=>r[4]===k).length;
+document.getElementById('stats').innerHTML=[
+ ['bad','#dc2626',cnt('bad')],['mid','#d97706',cnt('mid')],['ok','#16a34a',cnt('ok')],['empty','#64748b',cnt('empty')],['info','#2563eb',cnt('info')]
+].map(([k,c,n])=>`<div class="stat" data-f="${k}" title="只看「${S[k][1]}」" style="cursor:pointer"><b style="color:${c}">${n}</b><span>${S[k][1]}</span></div>`).join('')+
+ `<div class="stat"><b>${all.length}</b><span>总屏数</span></div>`;
+// 第二轮补数据后已无空态屏，数量为 0 的筛选按钮直接隐藏，避免点出全空表格。
+if(cnt('empty')===0){document.getElementById('filter-empty').style.display='none';}
+function applyFilter(f){
+  document.querySelectorAll('#filters button').forEach(b=>b.classList.toggle('active',b.dataset.f===f));
+  document.querySelectorAll('table tr[data-s]').forEach(tr=>{
+    tr.style.display=(f==='all'||tr.dataset.s===f)?'':'none';
+  });
+}
+document.getElementById('filters').addEventListener('click',e=>{
+  const f=e.target.dataset.f;if(!f)return;
+  applyFilter(f);
+});
+// 点击顶部统计卡片等同于点对应筛选；点「总屏数」回到全部。
+document.getElementById('stats').addEventListener('click',e=>{
+  const card=e.target.closest('.stat');if(!card)return;
+  applyFilter(card.dataset.f||'all');
+});
+const lb=document.getElementById('lightbox'),lbi=document.getElementById('lbimg'),lbcap=document.getElementById('lbcap');
+document.addEventListener('click',e=>{
+  if(e.target.tagName==='IMG'&&e.target.dataset.hi){lbi.src=e.target.dataset.hi;lbcap.textContent=e.target.alt;lb.style.display='flex';}
+});
+lb.addEventListener('click',()=>{lb.style.display='none'});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')lb.style.display='none';});
+</script>
+</body>
+</html>
