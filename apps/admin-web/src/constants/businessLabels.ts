@@ -147,6 +147,8 @@ export const shippingPayerLabels: Record<string, string> = {
 export const auditActionLabels: Record<string, string> = {
   'admin.login': '管理员登录',
   'admin.logout': '管理员退出',
+  'admin.auth.login': '管理员登录',
+  'admin.auth.logout': '管理员退出',
   'admin.role.created': '新建角色',
   'admin.role.updated': '调整角色权限',
   'admin.user.created': '新建管理员',
