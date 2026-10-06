@@ -209,3 +209,22 @@
 .xq-page .ant-btn-primary:hover { background: var(--xq-green-deep) !important; }
 
 .xq-empty { color: #9ca3af; text-align: center; padding: 42px 0; font-size: 13px; }
+
+/* 角色权限：分组→权限 两级勾选树 */
+.perm-tree-field { display: flex; flex-direction: column; gap: 8px; }
+.perm-tree-toolbar { display: flex; align-items: center; gap: 4px; }
+.perm-tree-spacer { flex: 1; }
+.perm-tree-box {
+  border: 1px solid #e3e7e5; border-radius: 8px; background: #fff;
+  padding: 8px 8px 8px 4px; max-height: 380px; overflow: auto;
+}
+.perm-tree-box.is-locked { background: #fafbfa; }
+.perm-tree-box .ant-tree { background: transparent; }
+.perm-tree-box .ant-tree-title { display: flex; flex: 1; align-items: center; }
+.perm-tree-group { font-weight: 600; }
+.perm-tree-leaf { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.perm-tree-name { color: var(--xq-text); }
+.perm-tree-code { margin-left: auto; color: #98a09c; font-size: 12px; font-family: var(--xq-mono, ui-monospace, SFMono-Regular, Menlo, monospace); }
+.perm-tree-footer { font-size: 12px; color: var(--xq-muted); }
+.perm-tree-footer strong { color: var(--xq-green-deep); font-weight: 700; }
+

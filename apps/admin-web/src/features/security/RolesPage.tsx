@@ -1,5 +1,6 @@
-import { Button, Form, Input, Modal, Popconfirm, Select, Table, message } from 'antd'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Button, Form, Input, Modal, Popconfirm, Select, Table, Tree, message } from 'antd'
+import type { TreeProps } from 'antd'
+import { useCallback, useEffect, useMemo, useState, type Key, type ReactNode } from 'react'
 import {
   ApiError,
   createAdminRole,
@@ -22,7 +23,125 @@ type TabKey = 'roles' | 'accounts' | 'logs'
 
 const permissionGroupNames: Record<string, string> = {
   user: '用户与隐私', task: '任务', community: '社区', mall: '商城与履约', after_sale: '售后',
-  finance: '财务', operations: '运营', system: '系统治理', audit: '审计',
+  finance: '财务', operations: '运营', campus: '校区', system: '系统治理', audit: '审计',
+}
+
+// 固定分组展示顺序，与权限树原型一致
+const permissionGroupOrder = ['user', 'task', 'community', 'mall', 'after_sale', 'finance', 'operations', 'campus', 'system', 'audit']
+
+// 分组节点 key 前缀，保证不会与真实权限编码混淆，也不会被提交给后端
+const GROUP_KEY_PREFIX = 'group::'
+
+interface PermissionTreeNode {
+  key: string
+  title: ReactNode
+  disabled?: boolean
+  children?: PermissionTreeNode[]
+}
+
+/** 角色表单内的权限树字段：分组→权限两级勾选，提交时只回传末级权限编码。 */
+function PermissionTreeField({ value, onChange, permissions, locked }: {
+  value?: string[]
+  onChange?: (codes: string[]) => void
+  permissions: AdminPermission[]
+  locked?: boolean
+}) {
+  const selected = value ?? []
+
+  // 按固定顺序聚合权限分组
+  const grouped = useMemo(() => {
+    const byGroup = new Map<string, AdminPermission[]>()
+    permissions.forEach((permission) => {
+      const list = byGroup.get(permission.group) ?? []
+      list.push(permission)
+      byGroup.set(permission.group, list)
+    })
+    const orderedGroups = Array.from(byGroup.keys()).sort(
+      (a, b) => (permissionGroupOrder.indexOf(a) === -1 ? 99 : permissionGroupOrder.indexOf(a))
+        - (permissionGroupOrder.indexOf(b) === -1 ? 99 : permissionGroupOrder.indexOf(b)),
+    )
+    return orderedGroups.map((group) => ({ group, items: byGroup.get(group) ?? [] }))
+  }, [permissions])
+
+  const groupKeys = useMemo(() => grouped.map(({ group }) => `${GROUP_KEY_PREFIX}${group}`), [grouped])
+  const allLeafKeys = useMemo(() => permissions.map((permission) => permission.code), [permissions])
+
+  const treeData = useMemo<PermissionTreeNode[]>(() => grouped.map(({ group, items }) => ({
+    key: `${GROUP_KEY_PREFIX}${group}`,
+    title: <span className="perm-tree-group">{permissionGroupNames[group] ?? group}</span>,
+    disabled: locked,
+    children: items.map((permission) => ({
+      key: permission.code,
+      title: (
+        <span className="perm-tree-leaf" title={permission.description || undefined}>
+          <span className="perm-tree-name">{permission.name}</span>
+          <span className="perm-tree-code">{permission.code}</span>
+        </span>
+      ),
+      disabled: locked,
+    })),
+  })), [grouped, locked])
+
+  // 弹窗 destroyOnHidden，组件每次打开重新挂载：默认展开含已选权限的分组
+  const [expandedKeys, setExpandedKeys] = useState<Key[]>(() =>
+    grouped.filter(({ items }) => items.some((item) => selected.includes(item.code))).map(({ group }) => `${GROUP_KEY_PREFIX}${group}`))
+  const [keyword, setKeyword] = useState('')
+
+  const effectiveExpandedKeys = keyword.trim() ? groupKeys : expandedKeys
+
+  const handleCheck: TreeProps['onCheck'] = (checked) => {
+    if (locked) return
+    const keys = Array.isArray(checked) ? checked : checked.checked
+    onChange?.(keys.map(String).filter((key) => !key.startsWith(GROUP_KEY_PREFIX)))
+  }
+
+  const allExpanded = expandedKeys.length === groupKeys.length && groupKeys.length > 0
+
+  return (
+    <div className="perm-tree-field">
+      <div className="perm-tree-toolbar">
+        <Input.Search
+          allowClear
+          size="small"
+          placeholder="搜索权限名 / 编码"
+          style={{ width: 220 }}
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
+          disabled={locked}
+        />
+        <span className="perm-tree-spacer" />
+        <Button size="small" type="link" disabled={locked || groupKeys.length === 0} onClick={() => setExpandedKeys(allExpanded ? [] : groupKeys)}>
+          {allExpanded ? '折叠全部' : '展开全部'}
+        </Button>
+        <Button size="small" type="link" disabled={locked} onClick={() => onChange?.(allLeafKeys)}>全选</Button>
+        <Button size="small" type="link" disabled={locked || selected.length === 0} onClick={() => onChange?.([])}>清空</Button>
+      </div>
+      <div className={`perm-tree-box${locked ? ' is-locked' : ''}`}>
+        <Tree<PermissionTreeNode>
+          checkable
+          blockNode
+          selectable={false}
+          treeData={treeData}
+          checkedKeys={selected}
+          onCheck={handleCheck}
+          expandedKeys={effectiveExpandedKeys}
+          onExpand={(keys) => setExpandedKeys(keys)}
+          filterTreeNode={(node) => {
+            const word = keyword.trim().toLowerCase()
+            if (!word) return false
+            if (node.key.startsWith(GROUP_KEY_PREFIX)) return true
+            const permission = permissions.find((item) => item.code === node.key)
+            return Boolean(permission && (`${permission.name}${permission.code}`.toLowerCase().includes(word)))
+          }}
+        />
+      </div>
+      <div className="perm-tree-footer">
+        {locked
+          ? '超级管理员默认拥有全部权限，不可调整。'
+          : <>当前已选 <strong>{selected.length}</strong> / {allLeafKeys.length} 项权限</>}
+      </div>
+    </div>
+  )
 }
 
 const subjectLabels: Record<string, string> = {
@@ -88,14 +207,6 @@ export function RolesPage() {
 
   useEffect(() => { void load() }, [load])
   useEffect(() => { if (tab === 'logs') void loadLogs(logPage) }, [tab, logPage, loadLogs])
-
-  const permissionOptions = useMemo(() => Object.entries(permissions.reduce<Record<string, AdminPermission[]>>((groups, permission) => {
-    ;(groups[permission.group] ??= []).push(permission)
-    return groups
-  }, {})).map(([group, items]) => ({
-    label: permissionGroupNames[group] ?? group,
-    options: items.map((permission) => ({ value: permission.code, label: `${permission.name}（${permission.code}）` })),
-  })), [permissions])
 
   const filteredRoles = useMemo(
     () => roles.filter((role) => !appliedKw || role.name.includes(appliedKw) || role.code.includes(appliedKw)),
@@ -258,7 +369,7 @@ export function RolesPage() {
         onOk={() => void saveRole()}
         okText={editingRole === 'new' ? '创建角色' : '保存修改'}
         confirmLoading={submitting}
-        width={720}
+        width={860}
         destroyOnHidden
       >
         <Form form={roleForm} layout="vertical">
@@ -267,8 +378,16 @@ export function RolesPage() {
             <Input disabled={editingRole !== 'new'} placeholder="product_operator" />
           </Form.Item>
           <Form.Item name="description" label="描述"><Input.TextArea rows={2} maxLength={500} placeholder="说明该角色适用的岗位和职责边界" /></Form.Item>
-          <Form.Item name="permission_codes" label="权限码" rules={[{ required: true, type: 'array', min: 1, message: '至少选择一项权限' }]}>
-            <Select mode="multiple" allowClear showSearch optionFilterProp="label" maxTagCount="responsive" placeholder="选择最小必要权限" options={permissionOptions} />
+          <Form.Item
+            name="permission_codes"
+            label="功能权限"
+            extra="勾选分组可整组选择；分组复选框显示「−」表示仅选中部分权限，提交时只保存末级权限编码。"
+            rules={[{ required: true, type: 'array', min: 1, message: '至少选择一项权限' }]}
+          >
+            <PermissionTreeField
+              permissions={permissions}
+              locked={editingRole !== null && editingRole !== 'new' && editingRole.code === 'super_admin'}
+            />
           </Form.Item>
           <Form.Item name="reason" label="新增或调整原因" rules={[{ required: true, min: 4, max: 500 }]}><Input.TextArea rows={2} /></Form.Item>
         </Form>
