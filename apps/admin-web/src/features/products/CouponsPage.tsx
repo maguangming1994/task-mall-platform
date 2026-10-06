@@ -141,7 +141,7 @@ export function CouponsPage() {
       <div className="xq-card xq-filter" style={{ marginBottom: 16 }}>
         <Select
           value={status || undefined}
-          onChange={(v) => setStatus(v ?? '')}
+          onChange={(v) => { const next = v ?? ''; setStatus(next); setApplied((prev) => ({ ...prev, status: next })) }}
           allowClear
           placeholder="全部状态"
           style={{ minWidth: 120 }}

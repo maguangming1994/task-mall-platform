@@ -94,7 +94,7 @@ export function UsersPage() {
       <div className="xq-card xq-filter" style={{ marginBottom: 16 }}>
         <Select
           value={status || undefined}
-          onChange={(v) => setStatus(v ?? '')}
+          onChange={(v) => { const next = v ?? ''; setStatus(next); setApplied((prev) => ({ ...prev, status: next })) }}
           allowClear
           placeholder="全部状态"
           style={{ minWidth: 120 }}
@@ -106,7 +106,7 @@ export function UsersPage() {
         />
         <Select
           value={role || undefined}
-          onChange={(v) => setRole(v ?? '')}
+          onChange={(v) => { const next = v ?? ''; setRole(next); setAppliedRole(next) }}
           allowClear
           placeholder="全部角色"
           style={{ minWidth: 120 }}

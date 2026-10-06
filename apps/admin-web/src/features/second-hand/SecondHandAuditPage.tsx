@@ -149,7 +149,7 @@ export function SecondHandAuditPage() {
         />
         <Select
           value={category || undefined}
-          onChange={(v) => setCategory(v ?? '')}
+          onChange={(v) => { const next = v ?? ''; setCategory(next); setPage(1); setApplied((prev) => ({ ...prev, category: next })) }}
           allowClear
           placeholder="全部分类"
           style={{ minWidth: 120 }}

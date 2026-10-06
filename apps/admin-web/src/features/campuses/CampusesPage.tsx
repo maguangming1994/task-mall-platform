@@ -132,7 +132,7 @@ export function CampusesPage() {
       </div>
 
       <div className="xq-card xq-filter" style={{ marginBottom: 16 }}>
-        <Select allowClear placeholder="全部状态" value={status || undefined} onChange={(value) => setStatus(value ?? '')} options={[{ value: 'active', label: '运营中' }, { value: 'disabled', label: '已暂停' }]} />
+        <Select allowClear placeholder="全部状态" value={status || undefined} onChange={(value) => { const next = value ?? ''; setStatus(next); setPage(1); setApplied((prev) => ({ ...prev, status: next })) }} options={[{ value: 'active', label: '运营中' }, { value: 'disabled', label: '已暂停' }]} />
         <Input allowClear placeholder="校区名称/代理" value={kw} onChange={(event) => setKw(event.target.value)} onPressEnter={() => { setPage(1); setApplied({ status, kw: kw.trim() }) }} />
         <Button type="primary" onClick={() => { setPage(1); setApplied({ status, kw: kw.trim() }) }}>查询</Button>
       </div>

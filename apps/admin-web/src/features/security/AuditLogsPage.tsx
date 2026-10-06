@@ -113,11 +113,11 @@ export function AuditLogsPage() {
       <PageHead title="操作日志" extra={<Button onClick={exportCsv}>导出日志</Button>} />
 
       <div className="xq-card xq-filter" style={{ marginBottom: 16 }}>
-        <Select allowClear placeholder="全部模块" value={subjectType || undefined} onChange={(value) => setSubjectType(value ?? '')} options={Object.entries(subjectLabels).map(([value, label]) => ({ value, label }))} />
+        <Select allowClear placeholder="全部模块" value={subjectType || undefined} onChange={(value) => { const next = value ?? ''; setSubjectType(next); setPage(1); setApplied((prev) => ({ ...prev, subjectType: next })) }} options={Object.entries(subjectLabels).map(([value, label]) => ({ value, label }))} />
         <Input allowClear placeholder="操作人" style={{ maxWidth: 160 }} value={actor} onChange={(event) => setActor(event.target.value)} />
-        <Select allowClear placeholder="风险等级" value={risk || undefined} onChange={(value) => setRisk(value ?? '')} options={(Object.entries(riskMeta) as Array<[Risk, (typeof riskMeta)[Risk]]>).map(([value, meta]) => ({ value, label: meta.label }))} />
+        <Select allowClear placeholder="风险等级" value={risk || undefined} onChange={(value) => { const next = value ?? ''; setRisk(next); setPage(1); setApplied((prev) => ({ ...prev, risk: next })) }} options={(Object.entries(riskMeta) as Array<[Risk, (typeof riskMeta)[Risk]]>).map(([value, meta]) => ({ value, label: meta.label }))} />
         <Input allowClear placeholder="操作内容/对象" value={keyword} onChange={(event) => setKeyword(event.target.value)} onPressEnter={search} />
-        <DatePicker onChange={(value) => setDay(value ? { start: value.startOf('day').toISOString(), end: value.endOf('day').toISOString() } : null)} placeholder="年 / 月 / 日" />
+        <DatePicker onChange={(value) => { const next = value ? { start: value.startOf('day').toISOString(), end: value.endOf('day').toISOString() } : null; setDay(next); setPage(1); setApplied((prev) => ({ ...prev, day: next })) }} placeholder="年 / 月 / 日" />
         <Button type="primary" onClick={search}>查询</Button>
         <Button onClick={reset}>重置</Button>
       </div>

@@ -136,7 +136,7 @@ export function NotifyPage() {
       <StatCard title="退订用户" value="—" delta="暂无退订统计数据" />
     </div>
     <div className="xq-card xq-filter" style={{ marginBottom: 16 }}>
-      <Select allowClear placeholder="全部类型" value={channel || undefined} onChange={(value) => setChannel(value ?? '')} options={Object.entries(channelLabels).map(([value, label]) => ({ value, label }))} />
+      <Select allowClear placeholder="全部类型" value={channel || undefined} onChange={(value) => { const next = value ?? ''; setChannel(next); setApplied((prev) => ({ ...prev, channel: next })) }} options={Object.entries(channelLabels).map(([value, label]) => ({ value, label }))} />
       <Input allowClear placeholder="推送标题" value={kw} onChange={(event) => setKw(event.target.value)} onPressEnter={() => setApplied({ channel, kw: kw.trim() })} />
       <Button type="primary" onClick={() => setApplied({ channel, kw: kw.trim() })}>查询</Button>
     </div>

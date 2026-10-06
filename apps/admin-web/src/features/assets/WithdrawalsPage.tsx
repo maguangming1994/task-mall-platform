@@ -167,7 +167,7 @@ export function WithdrawalsPage() {
         <Select value={status} onChange={setStatus} style={{ minWidth: 120 }} options={statusOptions} />
         <Select
           value={channel || undefined}
-          onChange={(v) => setChannel(v ?? '')}
+          onChange={(v) => { const next = v ?? ''; setChannel(next); setApplied((prev) => ({ ...prev, channel: next })) }}
           allowClear
           placeholder="全部方式"
           style={{ minWidth: 120 }}

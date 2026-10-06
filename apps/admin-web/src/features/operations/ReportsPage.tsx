@@ -133,7 +133,7 @@ export function ReportsPage() {
           allowClear
           placeholder="全部状态"
           value={status || undefined}
-          onChange={(value) => setStatus(value ?? '')}
+          onChange={(value) => { const next = value ?? ''; setStatus(next); setApplied((prev) => ({ ...prev, status: next })) }}
           options={[
             { value: 'pending', label: '待处理' },
             { value: 'resolved', label: '已处理' },
@@ -141,7 +141,7 @@ export function ReportsPage() {
             { value: 'appeal_done', label: '申诉已复核' },
           ]}
         />
-        <Select allowClear placeholder="举报类型" value={reason || undefined} onChange={(value) => setReason(value ?? '')} options={Object.entries(reasonLabels).map(([value, label]) => ({ value, label }))} />
+        <Select allowClear placeholder="举报类型" value={reason || undefined} onChange={(value) => { const next = value ?? ''; setReason(next); setApplied((prev) => ({ ...prev, reason: next })) }} options={Object.entries(reasonLabels).map(([value, label]) => ({ value, label }))} />
         <Input allowClear placeholder="被举报内容/用户" value={kw} onChange={(event) => setKw(event.target.value)} onPressEnter={() => setApplied({ status, reason, kw: kw.trim() })} />
         <Button type="primary" onClick={() => setApplied({ status, reason, kw: kw.trim() })}>查询</Button>
       </div>
