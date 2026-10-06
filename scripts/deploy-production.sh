@@ -68,47 +68,53 @@ verify_service() {
   fi
 }
 
-echo "[1/11] 校验生产 Compose 配置"
+echo "[1/14] 校验生产 Compose 配置"
 compose config --quiet
 
-echo "[2/11] 拉取 GitHub 已构建的版本镜像：$RELEASE_VERSION"
+echo "[2/14] 拉取 GitHub 已构建的版本镜像：$RELEASE_VERSION"
 bash "$ROOT_DIR/scripts/pull-production-images.sh"
 
-echo "[3/11] 等待 PostgreSQL 与 Redis"
+echo "[3/14] 等待 PostgreSQL 与 Redis"
 compose up -d --no-build --pull never --wait --wait-timeout 180 postgres redis
 
-echo "[4/11] 执行前向数据库迁移"
+echo "[4/14] 执行前向数据库迁移"
 compose run --rm --no-deps api php artisan migrate --force
 
-echo "[5/11] 同步 RBAC 权限（幂等：updateOrCreate + sync）"
+echo "[5/14] 同步 RBAC 权限（幂等：updateOrCreate + sync）"
 compose run --rm --no-deps api php artisan db:seed --class=RbacSeeder --force
 
-echo "[6/11] 同步全局功能开关（幂等：确保 13 模块 flag 存在）"
+echo "[6/14] 同步全局功能开关（幂等：确保 13 模块 flag 存在）"
 compose run --rm --no-deps api php artisan db:seed --class=ReleaseControlSeeder --force
 
+echo "[7/14] 启用人工实名认证（幂等：目标状态已满足则跳过）"
+compose run --rm --no-deps api php artisan db:seed --class=ProductionEnableIdentityVerificationSeeder --force
+
+echo "[8/14] 同步正式法律协议（幂等：按类型+版本判重）"
+compose run --rm --no-deps api php artisan db:seed --class=ProductionLegalDocumentSeeder --force
+
 if [ "${SYNC_CAMPUS_DATA_ON_DEPLOY:-false}" = "true" ]; then
-  echo "[7/11] 同步全国高校公开名录"
+  echo "[9/14] 同步全国高校公开名录"
   compose run --rm --no-deps api php artisan campuses:sync-directory
 
-  echo "[8/11] 转存已核验的学校校徽"
+  echo "[10/14] 转存已核验的学校校徽"
   compose run --rm --no-deps api php artisan campuses:sync-branding
 else
-  echo "[7-8/11] 跳过高校目录和校徽全量同步（常规发布）"
+  echo "[9-10/14] 跳过高校目录和校徽全量同步（常规发布）"
 fi
 
 if [ "${SYNC_CAMPUS_BRANDING_SUPPLEMENT_ON_DEPLOY:-true}" = "true" ] \
   && [ -f "$ROOT_DIR/apps/api/database/data/campus-emblems-supplement/manifest.json" ]; then
-  echo "[8/11] 导入新增校徽包（同一清单只处理一次，限时 600 秒）"
+  echo "[11/14] 导入新增校徽包（同一清单只处理一次，限时 600 秒）"
   compose run --rm --no-deps api timeout 600 php artisan campuses:sync-branding --supplement --once
 fi
 
-echo "[9/11] 启动 API、队列、调度器和 Web"
+echo "[12/14] 启动 API、队列、调度器和 Web"
 compose up -d --no-build --pull never --remove-orphans --wait --wait-timeout 240
 
-echo "[10/11] 生成 Laravel 生产缓存"
+echo "[13/14] 生成 Laravel 生产缓存"
 compose exec -T api php artisan optimize
 
-echo "[11/11] 验证全部服务与页面"
+echo "[14/14] 验证全部服务与页面"
 for service in postgres redis api queue scheduler nginx; do
   verify_service "$service"
 done
