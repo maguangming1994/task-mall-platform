@@ -61,11 +61,14 @@
     </scroll-view>
 
     <view class="action-bar">
-      <view class="ab-ic" @click="goChat">
-        <text class="ab-ic-glyph">✎</text>
-        <text class="ab-ic-text">聊一聊</text>
-      </view>
-      <button class="ab-main" @click="buy">立即购买 ¥{{ item.price }}</button>
+      <view v-if="item?.is_owner" class="owner-tip">这是你发布的商品，可到「我的闲置」管理</view>
+      <template v-else>
+        <view class="ab-ic" @click="goChat">
+          <text class="ab-ic-glyph">✎</text>
+          <text class="ab-ic-text">聊一聊</text>
+        </view>
+        <button class="ab-main" @click="buy">立即购买 ¥{{ item.price }}</button>
+      </template>
     </view>
   </view>
     </template>
@@ -131,8 +134,8 @@ async function goChat() {
   try {
     const conv = await ensureChatConversation(auth.accessToken, { user_id: item.value.seller.id, item_id: item.value.id })
     uni.navigateTo({ url: `/pages/chat-detail/index?id=${conv.id}` })
-  } catch {
-    uni.showToast({ title: '发起聊天失败', icon: 'none' })
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '发起聊天失败', icon: 'none' })
   }
 }
 
@@ -189,6 +192,7 @@ async function buy() {
 
 /* 底部操作栏 */
 .action-bar { background: #fff; border-top: 1rpx solid #EDEFEF; display: flex; align-items: center; padding: 12rpx 24rpx calc(12rpx + env(safe-area-inset-bottom)); gap: 12rpx; }
+.owner-tip { flex: 1; text-align: center; font-size: 26rpx; color: #767C85; padding: 18rpx 0; }
 .ab-ic { width: 96rpx; display: flex; flex-direction: column; align-items: center; gap: 4rpx; }
 .ab-ic-glyph { font-size: 36rpx; color: #767C85; line-height: 1; }
 .ab-ic-text { font-size: 20rpx; color: #767C85; }

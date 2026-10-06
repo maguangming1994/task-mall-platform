@@ -866,11 +866,12 @@ function kingIconStyle(tone: string) {
 .home-v13-pc-sign.signed{background:rgba(255,255,255,.25);color:#fff;box-shadow:none}
 .home-v13-pc-sign-icon{font-size:22rpx;font-weight:900}
 .home-v13-sign-strip{position:relative;display:flex;margin-top:28rpx;background:rgba(255,255,255,.14);border-radius:24rpx;padding:18rpx 12rpx}
-.home-v13-sign-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:8rpx;font-size:20rpx;color:rgba(255,255,255,.85)}
-.home-v13-sign-day-badge{width:44rpx;height:44rpx;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:20rpx}
+.home-v13-sign-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:8rpx;font-size:20rpx;color:rgba(255,255,255,.85);background:transparent}
+.home-v13-sign-day-badge{width:48rpx;height:48rpx;border:3rpx solid transparent;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:20rpx}
+.home-v13-sign-day-check{font-size:24rpx;font-weight:800;line-height:1}
 .home-v13-sign-day.done .home-v13-sign-day-badge{background:#fff;color:#08A152}
-.home-v13-sign-day.today .home-v13-sign-day-badge{background:#FFB020;color:#7A4A00;box-shadow:0 0 0 6rpx rgba(255,176,32,.35)}
-.home-v13-sign-day.done.today .home-v13-sign-day-badge{background:#fff;color:#08A152;box-shadow:0 0 0 6rpx rgba(255,255,255,.35)}
+.home-v13-sign-day.today .home-v13-sign-day-badge{background:#FFB020;color:#7A4A00;border-color:rgba(255,255,255,.85)}
+.home-v13-sign-day.done.today .home-v13-sign-day-badge{width:54rpx;height:54rpx;background:#fff;color:#08A152;border-color:rgba(255,255,255,.9)}
 .home-v13-sign-day.today{color:#fff;font-weight:700}
 
 /* ============ 金刚区 ============ */

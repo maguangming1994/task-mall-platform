@@ -6,14 +6,6 @@
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
     </view>
     <template v-else>
-    <view class="commerce-hero" aria-label="售后进度">
-      <image class="commerce-hero-art" src="/static/home/hero-campus-reward.png" mode="aspectFill" />
-      <view class="commerce-hero-copy">
-        <text class="commerce-hero-kicker">AFTER SALES</text>
-        <text class="commerce-hero-title">售后进度</text>
-        <text class="commerce-hero-sub">责任、物流与退款节点，按时间线清晰记录</text>
-      </view>
-    </view>
     <view v-if="loading" class="state-card tm-panel"><text class="state-title">正在加载售后进度</text><text class="state-copy">请稍候，正在获取最新处理结果。</text></view>
     <view v-if="loadError" class="state-card error-card tm-panel">
       <text class="state-title">售后进度加载失败</text>
@@ -281,7 +273,6 @@ function isTerminalFailure(error: unknown) { return error instanceof ApiError &&
 .service-note{border:1rpx solid rgba(242,98,10,.18);background:#FFF2E5}
 .tm-primary-button{border:1rpx solid transparent;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);box-shadow:0 12rpx 28rpx rgba(11,191,99,.22);color:#fff}.tm-primary-button::after{border:0}.tm-primary-button[disabled]{opacity:.46;filter:saturate(.55)}
 .error-card{border-color:rgba(255,59,48,.2);background:#FFEEEA}.error-card .state-title{color:#FF3B30}
-.commerce-hero{position:relative;min-height:250rpx;overflow:hidden;margin-bottom:18rpx;border:1rpx solid rgba(11,191,99,.16);border-radius:var(--tm-radius-lg);background:linear-gradient(135deg,#E7F9EF 0,#F0FBF5 58%,#E7F9EF 100%);box-shadow:var(--tm-shadow-sm)}.commerce-hero-art{position:absolute;right:-16rpx;top:0;width:68%;height:100%;opacity:.84;object-position:right center}.commerce-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(231,249,239,.98) 0,rgba(231,249,239,.9) 34%,rgba(231,249,239,.12) 78%,rgba(231,249,239,0) 100%)}.commerce-hero-copy{position:relative;z-index:1;width:57%;padding:28rpx 24rpx}.commerce-hero-kicker,.commerce-hero-title,.commerce-hero-sub{display:block}.commerce-hero-kicker{color:#08A152;font-size:13px;font-weight:850;letter-spacing:2.4rpx}.commerce-hero-title{margin-top:10rpx;color:#191B1F;font-size:22px;font-weight:950;line-height:1.2}.commerce-hero-sub{margin-top:10rpx;color:#767C85;font-size:13px;line-height:1.55}
 .page{padding-bottom:180rpx}
 .timeline{margin-top:22rpx;padding:26rpx}.section-title{position:relative;padding-left:20rpx}.section-title::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:8rpx;height:30rpx;border-radius:4rpx;background:#0BBF63}.tl-li{display:flex;gap:18rpx}.tl-rail{display:flex;flex-direction:column;align-items:center;width:28rpx;flex:none}.tl-rail .dot{width:20rpx;height:20rpx;margin-top:6rpx;border-radius:50%;background:#DDE3DE;border:4rpx solid #EEF1EE}.tl-rail .line{width:4rpx;flex:1;min-height:48rpx;margin:4rpx 0;background:#E7EBE7}.tl-body{padding-bottom:28rpx}.tl-li.last .tl-body{padding-bottom:0}.tl-title,.tl-desc{display:block}.tl-title{font-size:14px;font-weight:900;color:#AEB3BB}.tl-desc{margin-top:6rpx;color:#AEB3BB;font-size:12px;line-height:1.5}
 .tl-li.done .dot{background:#0BBF63;border-color:#E7F9EF}.tl-li.done .line{background:#CDE8D2}.tl-li.done .tl-title{color:#191B1F}
