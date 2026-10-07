@@ -2,6 +2,7 @@
 
 namespace App\Modules\Campus\Models\Concerns;
 
+use App\Modules\Product\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 
 trait BelongsToCampus
@@ -18,7 +19,7 @@ trait BelongsToCampus
                 // strict 模式下无校区上下文：fail-close 空集
                 if ($request->attributes->get('campus_strict', false)) {
                     $model = $builder->getModel();
-                    if ($model instanceof \App\Modules\Product\Models\Product) {
+                    if ($model instanceof Product) {
                         // D4：商品目录一期平台统一，strict 下不隔离
                         return;
                     }
@@ -28,6 +29,7 @@ trait BelongsToCampus
                         $builder->whereRaw('1 = 0');
                     }
                 }
+
                 return;
             }
 
@@ -43,7 +45,7 @@ trait BelongsToCampus
 
             // strict：D3 UGC 无 NULL 兜底，仅显式豁免模型可跨校
             $model = $builder->getModel();
-            if ($model instanceof \App\Modules\Product\Models\Product) {
+            if ($model instanceof Product) {
                 // D4：商品目录一期平台统一，strict 下不隔离
                 return;
             }

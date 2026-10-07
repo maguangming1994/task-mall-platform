@@ -12,7 +12,6 @@ use App\Modules\Auth\Http\Middleware\AuthenticateAccessToken;
 use App\Modules\Auth\Http\Middleware\AuthenticateOptionalAccessToken;
 use App\Modules\Campus\Http\Middleware\EnforceAdminCampusScope;
 use App\Modules\Campus\Http\Middleware\RequireBoundCampus;
-use App\Modules\Campus\Http\Middleware\ResolveCampusContext;
 use App\Modules\Campus\Http\Middleware\ResolveCampusScope;
 use App\Modules\Legal\Http\Middleware\RequireLegalConsent;
 use App\Modules\Operations\Http\Middleware\AssignModuleGateScope;

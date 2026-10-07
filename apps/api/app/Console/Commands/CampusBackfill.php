@@ -5,11 +5,11 @@ namespace App\Console\Commands;
 use App\Models\User;
 use App\Modules\Campus\Models\Campus;
 use App\Modules\Campus\Models\CampusMembershipChange;
+use App\Modules\Chat\Models\ChatConversation;
 use App\Modules\Community\Models\CommunityActivity;
 use App\Modules\Community\Models\CommunityPost;
 use App\Modules\SecondHand\Models\SecondHandItem;
 use App\Modules\SecondHand\Models\SecondHandOrder;
-use App\Modules\Chat\Models\ChatConversation;
 use App\Modules\Task\Models\Task;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -26,8 +26,11 @@ class CampusBackfill extends Command
     protected $description = '校区强隔离存量数据回填：用户/UGC/任务/冗余字段';
 
     private array $report = [];
+
     private array $rollback = [];
+
     private string $batch;
+
     private bool $dryRun;
 
     public function handle(): int
@@ -129,11 +132,13 @@ class CampusBackfill extends Command
             $author = $content->user ?? $content->author ?? null;
             if ($author === null) {
                 $conflicts++;
+
                 continue;
             }
             $authorCampusId = $author->campus_id;
             if ($authorCampusId === null) {
                 $conflicts++;
+
                 continue;
             }
 

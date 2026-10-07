@@ -3,6 +3,7 @@
 namespace App\Modules\Task\Models;
 
 use App\Modules\Campus\Models\Concerns\BelongsToCampus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -23,7 +24,7 @@ class Task extends Model
     /**
      * strict 校区下，平台投放任务（is_platform_wide=true）可跨校可见（D3 显式豁免）。
      */
-    protected function applyCampusScope(\Illuminate\Database\Eloquent\Builder $builder, ?int $campusId): void
+    protected function applyCampusScope(Builder $builder, ?int $campusId): void
     {
         if ($campusId === null) {
             $builder->whereRaw('1 = 0');

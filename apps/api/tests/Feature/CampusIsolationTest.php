@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Campus\Http\Controllers\CampusController;
+use App\Modules\Campus\Http\Middleware\RequireBoundCampus;
+use App\Modules\Campus\Http\Middleware\ResolveCampusScope;
 use App\Modules\Campus\Models\Campus;
 use App\Modules\Campus\Models\CampusMembershipChange;
 use App\Modules\Community\Models\CommunityPost;
@@ -11,6 +14,9 @@ use App\Modules\SecondHand\Models\SecondHandItem;
 use App\Modules\SecondHand\Models\SecondHandOrder;
 use App\Modules\Task\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CampusIsolationTest extends TestCase
@@ -18,6 +24,7 @@ class CampusIsolationTest extends TestCase
     use RefreshDatabase;
 
     private Campus $campusA;
+
     private Campus $campusB;
 
     protected function setUp(): void
@@ -103,7 +110,7 @@ class CampusIsolationTest extends TestCase
 
         // 验证 strict 下无 NULL 兜底：绕过 creating 盖章钩子写入一条 NULL 任务，应不可见
         $nullTask = Task::withoutEvents(fn () => Task::query()->create([
-            'public_id' => (string) \Illuminate\Support\Str::ulid(),
+            'public_id' => (string) Str::ulid(),
             'campus_id' => null,
             'created_by_admin_id' => $this->admin()->id,
             'status' => 'published',
@@ -142,7 +149,7 @@ class CampusIsolationTest extends TestCase
         ]);
 
         // 未绑校时 campus_scope_bound = false（通过中间件直接验证）
-        $request = \Illuminate\Http\Request::create('/api/v1/community/posts', 'POST');
+        $request = Request::create('/api/v1/community/posts', 'POST');
         $request->setUserResolver(fn () => $user);
         $request->attributes->set('campus_scope_bound', false);
         $this->assertFalse($request->attributes->get('campus_scope_bound'));
@@ -159,14 +166,14 @@ class CampusIsolationTest extends TestCase
         $this->createTask($this->campusA, true);
 
         // A 校 strict 下可见
-        $requestA = \Illuminate\Http\Request::create('/api/v1/tasks', 'GET', [], [], [], ['HTTP_X_CAMPUS_ID' => $this->campusA->public_id]);
-        $middleware = new \App\Modules\Campus\Http\Middleware\ResolveCampusScope();
-        $middleware->handle($requestA, fn () => new \Illuminate\Http\Response());
+        $requestA = Request::create('/api/v1/tasks', 'GET', [], [], [], ['HTTP_X_CAMPUS_ID' => $this->campusA->public_id]);
+        $middleware = new ResolveCampusScope;
+        $middleware->handle($requestA, fn () => new Response);
         $this->assertTrue($requestA->attributes->get('campus_strict'));
 
         // B 校 strict 下也可见
-        $requestB = \Illuminate\Http\Request::create('/api/v1/tasks', 'GET', [], [], [], ['HTTP_X_CAMPUS_ID' => $this->campusB->public_id]);
-        $middleware->handle($requestB, fn () => new \Illuminate\Http\Response());
+        $requestB = Request::create('/api/v1/tasks', 'GET', [], [], [], ['HTTP_X_CAMPUS_ID' => $this->campusB->public_id]);
+        $middleware->handle($requestB, fn () => new Response);
         $this->assertTrue($requestB->attributes->get('campus_strict'));
     }
 
@@ -190,7 +197,7 @@ class CampusIsolationTest extends TestCase
         $user = User::factory()->create(['campus_id' => $this->campusA->id]);
 
         // BelongsToCampus creating 钩子会盖 campus_id
-        $post = new CommunityPost();
+        $post = new CommunityPost;
         $post->campus_id = $this->campusB->id; // 伪造 B 校
         $post->user_id = $user->id;
         $post->title = '测试';
@@ -218,9 +225,9 @@ class CampusIsolationTest extends TestCase
             'created_at' => now()->subDays(10),
         ]);
 
-        $controller = app(\App\Modules\Campus\Http\Controllers\CampusController::class);
+        $controller = app(CampusController::class);
 
-        $request = \Illuminate\Http\Request::create('/api/v1/me/campus', 'PUT', [
+        $request = Request::create('/api/v1/me/campus', 'PUT', [
             'campus_id' => $this->campusA->public_id,
         ]);
         $request->setUserResolver(fn () => $user);
@@ -255,9 +262,9 @@ class CampusIsolationTest extends TestCase
             'idempotency_key_hash' => 'test-'.uniqid(),
         ]);
 
-        $controller = app(\App\Modules\Campus\Http\Controllers\CampusController::class);
+        $controller = app(CampusController::class);
 
-        $request = \Illuminate\Http\Request::create('/api/v1/me/campus', 'PUT', [
+        $request = Request::create('/api/v1/me/campus', 'PUT', [
             'campus_id' => $this->campusB->public_id,
         ]);
         $request->setUserResolver(fn () => $user);
@@ -345,12 +352,12 @@ class CampusIsolationTest extends TestCase
         ]);
 
         // 通过中间件直接验证
-        $request = \Illuminate\Http\Request::create('/api/v1/community/posts', 'POST');
+        $request = Request::create('/api/v1/community/posts', 'POST');
         $request->setUserResolver(fn () => $user);
         $request->attributes->set('campus_scope_bound', true);
 
-        $middleware = new \App\Modules\Campus\Http\Middleware\RequireBoundCampus();
-        $response = $middleware->handle($request, fn () => new \Illuminate\Http\Response());
+        $middleware = new RequireBoundCampus;
+        $response = $middleware->handle($request, fn () => new Response);
 
         $this->assertEquals(403, $response->getStatusCode());
     }
