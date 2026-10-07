@@ -32,6 +32,9 @@ class User extends Authenticatable
     protected $fillable = [
         'public_id',
         'campus_id',
+        'grade_year',
+        'major',
+        'college',
         'nickname',
         'avatar_file_id',
         'phone',
@@ -144,6 +147,7 @@ class User extends Authenticatable
             'can_publish_tasks' => 'boolean',
             'task_publish_permission_granted_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'grade_year' => 'integer',
         ];
     }
 }

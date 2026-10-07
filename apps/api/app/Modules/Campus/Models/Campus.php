@@ -19,7 +19,7 @@ class Campus extends Model
         'education_level', 'supervising_authority', 'official_note', 'catalog_status',
         'catalog_version', 'catalog_source_url', 'catalog_synced_at', 'province', 'city',
         'district', 'address', 'latitude', 'longitude', 'emblem_asset_id', 'emblem_url',
-        'logo_asset_id', 'logo_url', 'status', 'sort_order',
+        'logo_asset_id', 'logo_url', 'status', 'sort_order', 'isolation_mode',
     ];
 
     protected static function booted(): void

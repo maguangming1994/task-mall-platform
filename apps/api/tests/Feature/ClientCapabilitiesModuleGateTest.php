@@ -26,13 +26,15 @@ class ClientCapabilitiesModuleGateTest extends TestCase
         return $headers;
     }
 
-    public function test_payload_is_version_5_with_13_modules_and_experimental_flags(): void
+    public function test_payload_is_version_6_with_13_modules_and_experimental_flags(): void
     {
         $response = $this->getJson('/api/v1/client-capabilities', $this->baseHeaders('cap-device-1'));
 
         $response->assertOk()
-            ->assertJsonPath('data.version', 5)
-            ->assertJsonPath('data.campus_id', null);
+            ->assertJsonPath('data.version', 6)
+            ->assertJsonPath('data.campus_id', null)
+            ->assertJsonPath('data.campus_required', false)
+            ->assertJsonPath('data.campus_profile', null);
 
         $flags = $response->json('data.feature_flags');
         foreach (app(ModuleRegistry::class)->codes() as $code) {

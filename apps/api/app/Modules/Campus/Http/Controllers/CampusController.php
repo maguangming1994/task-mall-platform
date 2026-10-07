@@ -6,8 +6,11 @@ use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Campus\Models\Campus;
+use App\Modules\Campus\Models\CampusMembershipChange;
 use App\Modules\Campus\Services\CampusBrandingUrl;
 use App\Modules\Campus\Services\CampusLocationResolver;
+use App\Modules\SecondHand\Models\SecondHandOrder;
+use App\Modules\Settings\Services\SystemSettingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -15,7 +18,11 @@ use Illuminate\Validation\Rule;
 
 class CampusController extends Controller
 {
-    public function __construct(private readonly CampusLocationResolver $locations, private readonly CampusBrandingUrl $branding) {}
+    public function __construct(
+        private readonly CampusLocationResolver $locations,
+        private readonly CampusBrandingUrl $branding,
+        private readonly SystemSettingService $settings,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -108,6 +115,7 @@ class CampusController extends Controller
 
     public function select(Request $request): JsonResponse
     {
+        $currentYear = (int) date('Y');
         $data = $request->validate([
             'campus_id' => [
                 'required',
@@ -115,6 +123,10 @@ class CampusController extends Controller
                     ->where('status', 'active')
                     ->whereIn('catalog_status', ['manual', 'listed']),
             ],
+            // 档案三字段（选填；grade_year 须在 1900~当年区间）
+            'grade_year' => ['sometimes', 'integer', 'min:1900', 'max:'.$currentYear],
+            'major' => ['sometimes', 'string', 'max:30'],
+            'college' => ['sometimes', 'nullable', 'string', 'max:60'],
         ]);
         /** @var User $user */
         $user = $request->user();
@@ -123,9 +135,79 @@ class CampusController extends Controller
             ->where('status', 'active')
             ->whereIn('catalog_status', ['manual', 'listed'])
             ->firstOrFail();
-        $user->update(['campus_id' => $campus->id]);
 
-        return ApiResponse::success($this->present($campus), 200, '学校已切换。');
+        $fromCampusId = $user->campus_id;
+
+        // 未变更（同校且未提交档案字段）→ 直接返回成功
+        $profileKeys = ['grade_year', 'major', 'college'];
+        $hasProfileInput = count(array_intersect($profileKeys, array_keys($data))) > 0;
+        if ($fromCampusId === $campus->id && ! $hasProfileInput) {
+            return ApiResponse::success($this->present($campus), 200, '学校已切换。');
+        }
+
+        if ($fromCampusId !== null && $fromCampusId !== $campus->id) {
+            // 1. 未履约闲置订单检查
+            $openOrders = SecondHandOrder::query()
+                ->whereIn('status', ['pending', 'paid', 'shipped'])
+                ->where(function ($q) use ($user): void {
+                    $q->where('buyer_user_id', $user->id)->orWhere('seller_user_id', $user->id);
+                })
+                ->exists();
+            if ($openOrders) {
+                return ApiResponse::error(
+                    'CAMPUS_CHANGE_BLOCKED_ORDERS',
+                    '您有未完成的闲置订单，履约完成后才能更换学校。',
+                    422,
+                );
+            }
+
+            // 2. 换校冷却校验（配置缺失时回退默认 30 天，不阻断换校流程）
+            try {
+                $cooldownDays = (int) ($this->settings->read('campus.change_cooldown_days')['value'] ?? 30);
+            } catch (\Throwable) {
+                $cooldownDays = 30;
+            }
+            $lastChange = CampusMembershipChange::query()
+                ->where('user_id', $user->id)
+                ->whereNull('changed_by_admin_id')
+                ->where('reason', '!=', 'backfill_default')
+                ->latest('created_at')
+                ->first();
+            if ($lastChange !== null && $cooldownDays > 0) {
+                $nextAvailableAt = $lastChange->created_at->copy()->addDays($cooldownDays);
+                if ($nextAvailableAt->isFuture()) {
+                    return ApiResponse::error(
+                        'CAMPUS_CHANGE_TOO_FREQUENT',
+                        '换校过于频繁，请稍后再试。',
+                        422,
+                        ['next_available_at' => $nextAvailableAt->toIso8601String()],
+                    );
+                }
+            }
+
+            // 3. 写换校审计
+            CampusMembershipChange::query()->create([
+                'user_id' => $user->id,
+                'from_campus_id' => $fromCampusId,
+                'to_campus_id' => $campus->id,
+                'reason' => 'self',
+            ]);
+        }
+
+        // 4. 更新校区 + 档案字段（年级/专业/学院随账号保留，仅在显式提交时更新）
+        $updates = ['campus_id' => $campus->id];
+        foreach ($profileKeys as $key) {
+            if (array_key_exists($key, $data)) {
+                $updates[$key] = $data[$key];
+            }
+        }
+        $user->update($updates);
+
+        return ApiResponse::success(
+            $this->present($campus) + ['require_restart' => $fromCampusId !== $campus->id],
+            200,
+            '学校已切换。',
+        );
     }
 
     /**

@@ -11,13 +11,28 @@ class Task extends Model
 {
     use BelongsToCampus;
 
-    protected $fillable = ['public_id', 'campus_id', 'created_by_admin_id', 'creation_channel', 'source_task_template_id', 'source_task_template_version_no', 'status', 'current_version_no', 'published_version_no', 'lock_version', 'view_count', 'idempotency_key_hash', 'scheduled_at', 'published_at', 'closed_at'];
+    protected $fillable = ['public_id', 'campus_id', 'is_platform_wide', 'created_by_admin_id', 'creation_channel', 'source_task_template_id', 'source_task_template_version_no', 'status', 'current_version_no', 'published_version_no', 'lock_version', 'view_count', 'idempotency_key_hash', 'scheduled_at', 'published_at', 'closed_at'];
 
     protected $hidden = ['idempotency_key_hash'];
 
     protected static function booted(): void
     {
         static::creating(fn (Task $task) => $task->public_id ??= (string) Str::ulid());
+    }
+
+    /**
+     * strict 校区下，平台投放任务（is_platform_wide=true）可跨校可见（D3 显式豁免）。
+     */
+    protected function applyCampusScope(\Illuminate\Database\Eloquent\Builder $builder, ?int $campusId): void
+    {
+        if ($campusId === null) {
+            $builder->whereRaw('1 = 0');
+
+            return;
+        }
+        $builder->where(function ($q) use ($campusId) {
+            $q->where('campus_id', $campusId)->orWhere('is_platform_wide', true);
+        });
     }
 
     protected function casts(): array

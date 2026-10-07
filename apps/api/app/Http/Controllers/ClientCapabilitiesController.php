@@ -63,10 +63,24 @@ class ClientCapabilitiesController extends Controller
             ->mapWithKeys(fn (string $code) => [$code => $releases->enabled($code, $subject, $platform)])
             ->all();
 
+        // 校园档案完整性：登录用户未绑校或档案不完整（grade_year/major 为空）时前端弹门禁
+        $user = $request->user();
+        $campusRequired = $user !== null && (
+            $user->campus_id === null
+            || $user->grade_year === null
+            || $user->major === null
+        );
+
         return ApiResponse::success([
-            'version' => 5,
+            'version' => 6,
             // 本次模块判定实际使用的校区（public_id；登录用户以账号校区为准），无校区上下文时为 null
             'campus_id' => $gates->campusPublicIdFromRequest($request),
+            'campus_required' => $campusRequired,
+            'campus_profile' => $user !== null ? [
+                'grade_year' => $user->grade_year,
+                'major' => $user->major,
+                'college' => $user->college,
+            ] : null,
             'platform' => $platform,
             'visitor_browsing' => true,
             'login_methods' => $loginMethods,

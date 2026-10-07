@@ -11,7 +11,9 @@ use App\Modules\Admin\Http\Middleware\RequireRecentAdminVerification;
 use App\Modules\Auth\Http\Middleware\AuthenticateAccessToken;
 use App\Modules\Auth\Http\Middleware\AuthenticateOptionalAccessToken;
 use App\Modules\Campus\Http\Middleware\EnforceAdminCampusScope;
+use App\Modules\Campus\Http\Middleware\RequireBoundCampus;
 use App\Modules\Campus\Http\Middleware\ResolveCampusContext;
+use App\Modules\Campus\Http\Middleware\ResolveCampusScope;
 use App\Modules\Legal\Http\Middleware\RequireLegalConsent;
 use App\Modules\Operations\Http\Middleware\AssignModuleGateScope;
 use App\Modules\Operations\Http\Middleware\RequireModuleEnabled;
@@ -50,7 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(AttachRequestId::class);
         $middleware->append(AddSecurityHeaders::class);
         $middleware->append(MeasureRequestPerformance::class);
-        $middleware->append(ResolveCampusContext::class);
+        $middleware->append(ResolveCampusScope::class);
         $middleware->alias([
             'auth.access' => AuthenticateAccessToken::class,
             'auth.optional' => AuthenticateOptionalAccessToken::class,
@@ -61,6 +63,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'legal.consent' => RequireLegalConsent::class,
             'auth.publisher' => AuthenticateTaskPublisher::class,
             'module.gate' => RequireModuleEnabled::class,
+            'campus.bound' => RequireBoundCampus::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
