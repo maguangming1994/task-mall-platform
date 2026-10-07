@@ -24,6 +24,7 @@ use App\Modules\Auth\Http\Controllers\AdminSmsProviderController;
 use App\Modules\Auth\Http\Controllers\AdminWechatProviderController;
 use App\Modules\Auth\Http\Controllers\AuthController;
 use App\Modules\Auth\Http\Controllers\CurrentUserController;
+use App\Modules\Auth\Http\Controllers\MiniProgramConfigController;
 use App\Modules\Auth\Http\Controllers\PhoneBindingController;
 use App\Modules\Auth\Http\Controllers\PhoneVerificationController;
 use App\Modules\Auth\Http\Controllers\WechatAuthController;
@@ -120,6 +121,8 @@ Route::get('/appearance-content', [AppearanceContentController::class, 'show']);
 Route::get('/app-navigation', [AppNavigationController::class, 'show']);
 Route::get('/icon-configs', [IconConfigController::class, 'index']);
 Route::get('/legal-documents', [LegalDocumentController::class, 'index']);
+// 公开的小程序基础配置（仅 AppID 等公开信息，凭据绝不外泄），供发布脚本/流水线自动读取
+Route::get('/app-config', [MiniProgramConfigController::class, 'show'])->middleware('throttle:60,1');
 Route::middleware(['auth.optional', 'module.gate:module_tasks'])->group(function () {
     Route::get('/tasks', [TaskHallController::class, 'index']);
     Route::get('/tasks/{task}', [TaskHallController::class, 'show']);
