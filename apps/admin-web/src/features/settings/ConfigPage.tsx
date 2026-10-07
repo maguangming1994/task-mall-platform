@@ -11,14 +11,17 @@ import {
   type SystemSetting,
 } from '../../api/admin'
 import { Card, PageHead, Pill } from '../../components/xq'
+import { useAdminAuth } from '../auth/AdminAuthContext'
+import { ThirdPartyServicesPanel } from './ThirdPartyServicesPanel'
 
-type SubKey = 'flags' | 'global' | 'shipping' | 'points'
+type SubKey = 'flags' | 'global' | 'shipping' | 'points' | 'thirdparty'
 
-const subnavItems: Array<{ key: SubKey; label: string }> = [
+const subnavItems: Array<{ key: SubKey; label: string; superOnly?: boolean }> = [
   { key: 'flags', label: '灰度开关' },
   { key: 'global', label: '全局配置' },
   { key: 'shipping', label: '运费模板' },
   { key: 'points', label: '积分规则' },
+  { key: 'thirdparty', label: '第三方服务', superOnly: true },
 ]
 
 /* 全局配置 4 个输入框：按名称关键字匹配真实配置项 */
@@ -44,6 +47,8 @@ function displayNumber(setting: SystemSetting) {
 }
 
 export function ConfigPage() {
+  const { admin } = useAdminAuth()
+  const isSuperAdmin = admin?.roles.includes('super_admin') ?? false
   const [sub, setSub] = useState<SubKey>('flags')
   const [settings, setSettings] = useState<SystemSetting[]>([])
   const [templates, setTemplates] = useState<ManagedShippingTemplate[]>([])
@@ -208,7 +213,7 @@ export function ConfigPage() {
       <PageHead title="配置中心" />
       <div className="xq-split">
         <div className="xq-card xq-subnav">
-          {subnavItems.map((item) => (
+          {subnavItems.filter((item) => !item.superOnly || isSuperAdmin).map((item) => (
             <div key={item.key} className={`it${sub === item.key ? ' on' : ''}`} onClick={() => setSub(item.key)}>{item.label}</div>
           ))}
         </div>
@@ -217,6 +222,7 @@ export function ConfigPage() {
           {sub === 'global' && globalCard}
           {sub === 'shipping' && shippingCard}
           {sub === 'points' && pointsCard}
+          {sub === 'thirdparty' && isSuperAdmin && <ThirdPartyServicesPanel />}
         </div>
       </div>
     </div>
