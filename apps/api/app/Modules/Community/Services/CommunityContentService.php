@@ -17,7 +17,12 @@ use Illuminate\Validation\ValidationException;
 
 class CommunityContentService
 {
-    public function __construct(private readonly SystemSettingService $settings, private readonly AssetLedgerService $assets, private readonly NotificationService $notifications) {}
+    public function __construct(
+        private readonly SystemSettingService $settings,
+        private readonly AssetLedgerService $assets,
+        private readonly NotificationService $notifications,
+        private readonly CommunityContentSecurityService $contentSecurity,
+    ) {}
 
     /**
      * @return array{
@@ -55,9 +60,11 @@ class CommunityContentService
         $this->validatePostText($data, $rules);
         $this->enforceDailyLimit($user, CommunityPost::class, (int) $this->value('community.daily_post_limit'));
         $files = $this->validateAttachments($user, $data['image_file_ids'] ?? [], $data['video_file_id'] ?? null);
+        // 微信 msg_sec_check：明确违规直接拒绝，疑似违规即使在自动发布模式下也转人工审核。
+        $forceReview = $this->scanPostForReview($user, $data);
 
-        return DB::transaction(function () use ($user, $data, $hash, $rules, $files) {
-            $auto = $rules['review_mode'] === 'auto_publish';
+        return DB::transaction(function () use ($user, $data, $hash, $rules, $files, $forceReview) {
+            $auto = $rules['review_mode'] === 'auto_publish' && ! $forceReview;
             $post = CommunityPost::query()->create([
                 'user_id' => $user->id,
                 'title' => $data['title'],
@@ -104,11 +111,12 @@ class CommunityContentService
         $rules = $this->postRules();
         $this->validatePostText($data, $rules);
         $files = $this->validateAttachments($user, $data['image_file_ids'] ?? [], $data['video_file_id'] ?? null);
+        $forceReview = $this->scanPostForReview($user, $data);
 
-        return DB::transaction(function () use ($post, $data, $rules, $files) {
+        return DB::transaction(function () use ($post, $data, $rules, $files, $forceReview) {
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
             $versionNo = $locked->current_version_no + 1;
-            $auto = $rules['review_mode'] === 'auto_publish';
+            $auto = $rules['review_mode'] === 'auto_publish' && ! $forceReview;
             $version = CommunityPostVersion::query()->create([
                 'community_post_id' => $locked->id,
                 'version_no' => $versionNo,
@@ -161,7 +169,8 @@ class CommunityContentService
             }
         }
         $sensitive = collect($this->value('community.sensitive_words'))->contains(fn ($word) => $word !== '' && str_contains($data['content'], (string) $word));
-        $auto = $rules['review_mode'] === 'sensitive_filter' && ! $sensitive;
+        $wechatReview = $this->scanFieldForReview($user, (string) $data['content'], 2, 'content');
+        $auto = $rules['review_mode'] === 'sensitive_filter' && ! $sensitive && ! $wechatReview;
 
         return DB::transaction(function () use ($user, $post, $data, $hash, $rules, $parent, $auto) {
             $comment = CommunityComment::query()->create([
@@ -375,6 +384,30 @@ class CommunityContentService
         $location = trim($location);
 
         return $location === '' ? null : mb_substr($location, 0, 80);
+    }
+
+    /**
+     * 帖子标题与正文的微信内容安全检测（scene=3 论坛社区）。
+     * 明确违规直接抛 422；返回 true 表示微信判定疑似违规，需强制人工审核。
+     *
+     * @param  array<string,mixed>  $data
+     */
+    private function scanPostForReview(User $user, array $data): bool
+    {
+        return $this->scanFieldForReview($user, (string) ($data['title'] ?? ''), 3, 'title')
+            || $this->scanFieldForReview($user, (string) ($data['content'] ?? ''), 3, 'content');
+    }
+
+    private function scanFieldForReview(User $user, string $text, int $scene, string $field): bool
+    {
+        $scan = $this->contentSecurity->scanText($user, $text, $scene);
+        if ($scan['verdict'] === CommunityContentSecurityService::BLOCK) {
+            throw ValidationException::withMessages([
+                $field => '内容包含违法违规或不当信息，无法发布，请修改后再试。',
+            ]);
+        }
+
+        return $scan['verdict'] === CommunityContentSecurityService::REVIEW;
     }
 
     private function postRules(): array
