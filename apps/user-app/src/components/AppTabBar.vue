@@ -3,7 +3,7 @@
     <view class="tabbar-spacer" />
     <view class="tabbar" :style="barStyle">
       <view
-        v-for="(item, index) in navigation.visibleItems"
+        v-for="(item, index) in visibleItems"
         :key="item.id"
         class="tabbar-item"
         :class="{ active: item.target === currentTarget, featured: isFeatured(index) }"
@@ -23,13 +23,22 @@
 import { computed, onMounted, ref } from 'vue'
 import { navigationRoutes, type BottomNavigationItem, type NavigationTarget } from '@/api/navigation'
 import { useNavigationStore } from '@/stores/navigation'
+import { useModulesStore } from '@/stores/modules'
 import { useIconConfigStore } from '@/stores/icons'
 
 const props = defineProps<{ currentTarget: NavigationTarget; variant?: 'floating' | 'flat' }>()
 const emit = defineEmits<{ compose: [] }>()
 const navigation = useNavigationStore()
+const modules = useModulesStore()
 const icons = useIconConfigStore()
 const failedIcons = ref(new Set<string>())
+
+/** 模块关闭的 tab 不得展示（如审核期下线社区）；未解析时 fail-open，能力返回后立即隐藏 */
+const visibleItems = computed(() =>
+  navigation.visibleItems.filter((item) =>
+    item.target === 'community' ? modules.isEnabled('module_community') : true,
+  ),
+)
 const fallbackIcons: Record<NavigationTarget, { normal: string; active: string }> = {
   home: { normal: '/static/icons/tabbar-home.svg', active: '/static/icons/tabbar-home-active.svg' },
   tasks: { normal: '/static/icons/tabbar-tasks.svg', active: '/static/icons/tabbar-tasks-active.svg' },
@@ -47,11 +56,12 @@ const barStyle = computed(() => ({
 }))
 
 const featuredIndex = computed(() => {
-  return navigation.visibleItems.findIndex((item) => item.target === 'products')
+  return visibleItems.value.findIndex((item) => item.target === 'products')
 })
 
 onMounted(() => {
   void navigation.load()
+  void modules.ensureReady()
   void icons.load()
 })
 

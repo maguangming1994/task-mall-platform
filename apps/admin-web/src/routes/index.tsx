@@ -47,6 +47,7 @@ const UsersPage = lazyOf(() => import('../features/users/UsersPage'), 'UsersPage
 const CommunityPage = lazyOf(() => import('../features/community/CommunityPage'), 'CommunityPage')
 const SupportPage = lazyOf(() => import('../features/support/SupportPage'), 'SupportPage')
 const CampaignsPage = lazyOf(() => import('../features/operations/CampaignsPage'), 'CampaignsPage')
+const OperationsPage = lazyOf(() => import('../features/operations/OperationsPage'), 'OperationsPage')
 const ReportsPage = lazyOf(() => import('../features/operations/ReportsPage'), 'ReportsPage')
 const NotifyPage = lazyOf(() => import('../features/operations/NotifyPage'), 'NotifyPage')
 const DataBoardPage = lazyOf(() => import('../features/dashboard/DataBoardPage'), 'DataBoardPage')
@@ -93,6 +94,7 @@ export const ADMIN_GROUPS: AdminGroupDef[] = [
   ] },
   { key: 'operations', label: '运营与消息', icon: <NotificationOutlined />, pages: [
     { path: '/operations/campaigns', title: '活动运营', navCode: 'operations', element: CampaignsPage },
+    { path: '/operations/release-control', title: '功能灰度发布', navCode: 'operations', element: OperationsPage },
     { path: '/operations/data-board', title: '数据看板', navCode: 'data_board', element: DataBoardPage },
     { path: '/operations/notify', title: '消息通知', navCode: 'operations', element: NotifyPage },
   ] },

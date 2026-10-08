@@ -48,7 +48,7 @@
         <view class="mi" style="background:#FFF2E5;color:#F2620A"><text>📦</text><text v-if="unreadFor('order')" class="msg-badge">{{ unreadFor('order') }}</text></view>
         <text>订单物流</text>
       </view>
-      <view class="m" @click="selectCategory('community')">
+      <view v-if="communityEnabled" class="m" @click="selectCategory('community')">
         <view class="mi" style="background:#FFEAF1;color:#F43F7F"><text>❤️</text><text v-if="unreadFor('community')" class="msg-badge">{{ unreadFor('community') }}</text></view>
         <text>互动消息</text>
       </view>
@@ -60,13 +60,13 @@
 
     <scroll-view class="category-scroll" scroll-x :show-scrollbar="false">
       <view class="category-list">
-        <view v-for="category in categories" :key="category.value || 'all'" :class="['category-chip', { active: activeCategory === category.value }]" @click="selectCategory(category.value)">
+        <view v-for="category in visibleCategories" :key="category.value || 'all'" :class="['category-chip', { active: activeCategory === category.value }]" @click="selectCategory(category.value)">
           <text>{{ category.label }}</text><text v-if="unreadFor(category.value)" class="chip-count">{{ unreadFor(category.value) }}</text>
         </view>
       </view>
     </scroll-view>
 
-    <view v-if="activeCategory === 'community'" class="community-shortcuts">
+    <view v-if="communityEnabled && activeCategory === 'community'" class="community-shortcuts">
       <view
         v-for="shortcut in communityShortcuts"
         :key="shortcut.value"
@@ -133,6 +133,7 @@ import {
 import { ApiError } from '@/api/http'
 import AppTabBar from '@/components/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useModulesStore } from '@/stores/modules'
 import { navigateToLogin } from '@/utils/authRedirect'
 
 type CategoryFilter = '' | NotificationCategory
@@ -142,6 +143,7 @@ type QuietHourKey = 'quiet_hours_start' | 'quiet_hours_end'
 interface PendingWechatSubscriptionResults { request_id: string; results: WechatSubscriptionResult[] }
 
 const auth = useAuthStore()
+const modules = useModulesStore()
 const items = ref<AppNotification[]>([])
 const preference = ref<NotificationPreference | null>(null)
 const wechatSubscriptions = ref<WechatSubscriptionOptions | null>(null)
@@ -185,9 +187,17 @@ const communityShortcuts = computed(() => communityFilterMeta.map((item) => ({
   ...item,
   count: items.value.filter((notification) => communitySceneGroup(notification.scene_code) === item.value).length,
 })))
-const visibleItems = computed(() => activeCategory.value !== 'community' || communityFilter.value === 'all'
-  ? items.value
-  : items.value.filter((notification) => communitySceneGroup(notification.scene_code) === communityFilter.value))
+/** 社区模块关闭时（如审核期），互动消息入口/分类/内容整体隐藏 */
+const communityEnabled = computed(() => modules.isEnabled('module_community'))
+const visibleCategories = computed(() => categories.filter((item) => item.value !== 'community' || communityEnabled.value))
+const visibleItems = computed(() => {
+  const source = communityEnabled.value
+    ? items.value
+    : items.value.filter((notification) => notification.category !== 'community')
+  return activeCategory.value !== 'community' || communityFilter.value === 'all'
+    ? source
+    : source.filter((notification) => communitySceneGroup(notification.scene_code) === communityFilter.value)
+})
 const listTitle = computed(() => {
   if (activeCategory.value !== 'community') return activeCategory.value ? categoryText(activeCategory.value) : '全部消息'
   return communityFilterMeta.find((item) => item.value === communityFilter.value)?.label || '社区消息'
@@ -202,6 +212,8 @@ onReachBottom(() => { if (hasMore.value && !loadingMore.value) void loadMore() }
 
 async function initialize() {
   if (!auth.isAuthenticated) { navigateToLogin(); return }
+  await modules.ensureReady()
+  if (!communityEnabled.value && activeCategory.value === 'community') activeCategory.value = ''
   await Promise.all([loadNotifications(true), loadPreference(), loadWechatSubscriptions()])
 }
 
