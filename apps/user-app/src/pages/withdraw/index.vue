@@ -24,11 +24,12 @@
       <text class="amount-range">可提现范围：{{ minimumYuan }} ~ {{ maximumYuan }} 元</text>
     </view>
 
-    <view class="section-card rules-card"><view class="section-head"><text class="section-title">提现规则</text><text class="rule-link">规则说明 ›</text></view><view class="rule-grid"><view class="rule-item"><view class="rule-icon minimum">¥</view><view><text>最低提现（元）</text><strong>{{ minimumYuan }}</strong><small>单次最低提现金额</small></view></view><view class="rule-item"><view class="rule-icon maximum">¥</view><view><text>最高提现（元）</text><strong>{{ maximumYuan }}</strong><small>单次最高提现金额</small></view></view></view><view v-if="insufficient" class="rule-warning"><text class="warning-icon">!</text><view><text>余额不足，暂不可提现</text><small>最低提现金额为 ¥{{ minimumYuan }}</small></view></view></view>
+    <view class="section-card rules-card"><view class="section-head"><text class="section-title">提现规则</text><text class="rule-link" @click="showRules = true">规则说明 ›</text></view><view class="rule-grid"><view class="rule-item"><view class="rule-icon minimum">¥</view><view><text>最低提现（元）</text><strong>{{ minimumYuan }}</strong><small>单次最低提现金额</small></view></view><view class="rule-item"><view class="rule-icon maximum">¥</view><view><text>最高提现（元）</text><strong>{{ maximumYuan }}</strong><small>单次最高提现金额</small></view></view><view class="rule-item"><view class="rule-icon times">次</view><view><text>每日提现次数</text><strong>{{ rules ? rules.daily_count_limit : '—' }}</strong><small>今日剩余 {{ rules ? rules.daily_count_remaining : '—' }} 次</small></view></view><view class="rule-item"><view class="rule-icon limit">额</view><view><text>每日累计上限（元）</text><strong>{{ rules ? money(rules.daily_amount_limit) : '—' }}</strong><small>今日已提 ¥{{ rules ? money(rules.today_amount) : '0.00' }}</small></view></view></view><view v-if="rules && !rules.enabled" class="rule-warning"><text class="warning-icon">!</text><view><text>提现功能当前未开放</text><small>平台暂时关闭了提现，请稍后再试或联系客服</small></view></view><view v-else-if="insufficient" class="rule-warning"><text class="warning-icon">!</text><view><text>可提现余额不足</text><small>余额累计满 ¥{{ minimumYuan }} 后即可发起提现，余额永久有效</small></view></view></view>
 
-    <view class="section-card fee-card"><view class="section-head"><text class="section-title">手续费说明</text><text class="rule-link">如何计算 ?</text></view><view class="fee-equation"><view><text>提现金额</text><strong class="dark">¥{{ quote ? money(quote.requested_amount) : '0.00' }}</strong></view><text class="operator">−</text><view><text>手续费率</text><strong class="dark">{{ quote ? feeRateText : '—' }}</strong></view><text class="operator">=</text><view><text>手续费</text><strong class="orange">¥{{ quote ? money(quote.fee_amount) : '0.00' }}</strong></view><text class="operator">→</text><view class="received-cell"><text>实际到账</text><strong class="green">¥{{ quote ? money(quote.received_amount) : '0.00' }}</strong></view></view><text class="fee-note">以提交时计算为准，手续费将从提现金额中扣除</text></view>
+    <view class="section-card fee-card"><view class="section-head"><text class="section-title">手续费说明</text><text class="rule-link" @click="showRules = true">如何计算 ?</text></view><view class="fee-equation"><view><text>提现金额</text><strong class="dark">¥{{ quote ? money(quote.requested_amount) : '0.00' }}</strong></view><text class="operator">−</text><view><text>手续费率</text><strong class="dark">{{ feeRateText }}</strong></view><text class="operator">=</text><view><text>手续费</text><strong class="orange">¥{{ quote ? money(quote.fee_amount) : '0.00' }}</strong></view><text class="operator">→</text><view class="received-cell"><text>实际到账</text><strong class="green">¥{{ quote ? money(quote.received_amount) : '0.00' }}</strong></view></view><text class="fee-note">费率 {{ feeRateText }}，手续费从提现金额中扣除；实算不足 0.01 元时免收，以提交时计算为准</text></view>
 
-    <view class="section-card info-row"><view class="info-icon clock">◷</view><view class="info-main"><text class="info-title">到账时间</text><text class="info-note">工作日到账，周末及节假日顺延，请耐心等待</text></view><text class="info-side">预计1-3个工作日</text></view>
+    <view class="section-card info-row"><view class="info-icon clock">◷</view><view class="info-main"><text class="info-title">到账时间</text><text class="info-note">{{ rules?.arrival_text || '提交后平台审核，工作日到账，周末及节假日顺延' }}</text></view><text class="info-side">1-3 个工作日</text></view>
+    <view class="section-card info-row"><view class="info-icon account">审</view><view class="info-main"><text class="info-title">审核与退回</text><text class="info-note">提交即冻结申请金额，平台审核通过后出款；审核驳回或打款失败，金额自动退回余额</text></view><text class="info-side" @click="showRules = true">流程详情 ›</text></view>
 
     <view class="section-card channel-card">
       <view class="section-head"><text class="section-title">到账方式</text><text class="rule-link" @click="goBankCards">银行卡管理 ›</text></view>
@@ -49,11 +50,29 @@
     </view>
 
     <label class="consent"><checkbox value="withdraw-consent" :checked="withdrawAgreed" color="#0BBF63" @change="onConsentChange" /><text>我已阅读并同意 <text class="link">《用户协议》</text> 和 <text class="link">《隐私政策》</text></text></label>
-    <button class="withdraw-button" :disabled="!withdrawAgreed || withdrawing" :loading="withdrawing" @click="handleWithdraw">{{ quote ? '确认提现' : '提现' }}</button>
+    <button class="withdraw-button" :disabled="!withdrawAgreed || withdrawing || (rules !== null && !rules.enabled)" :loading="withdrawing" @click="handleWithdraw">{{ rules && !rules.enabled ? '提现暂未开放' : (quote ? '确认提现' : '提现') }}</button>
     <view class="safety-note">平台保障资金安全，禁止任何形式的线下交易或提现代办行为</view>
 
     <view v-if="actionError" class="action-error" role="alert"><text>{{ actionError }}</text><button @click="actionError = ''">知道了</button></view>
     <view v-if="withdrawals.length" class="history-card section-card"><view class="section-head"><text class="section-title">提现记录</text><text class="rule-link">最近记录</text></view><view v-for="item in withdrawals" :key="item.id" class="history-row"><view><text>{{ item.withdrawal_no }}</text><small>{{ formatDate(item.created_at) }} · {{ item.channel_label || '微信零钱' }} · {{ item.workflow?.next_action || '请稍后刷新处理状态' }}</small></view><view><text>¥{{ money(item.requested_amount) }}</text><small>{{ item.workflow?.status_label || statusText(item.status) }}</small></view></view></view>
+
+    <view v-if="showRules" class="rules-mask" @click="showRules = false">
+      <view class="rules-sheet" @click.stop>
+        <view class="sheet-head"><text class="sheet-title">提现规则说明</text><text class="sheet-close" @click="showRules = false">×</text></view>
+        <scroll-view scroll-y class="sheet-body">
+          <view class="rule-block"><text class="block-title">1. 提现金额</text><text class="block-text">单笔最低提现 {{ minimumYuan }} 元，最高 {{ maximumYuan }} 元；输入金额需在此范围内。</text></view>
+          <view class="rule-block"><text class="block-title">2. 每日限额</text><text class="block-text">每日最多可提现 {{ rules?.daily_count_limit ?? '—' }} 次，累计金额不超过 {{ rules ? money(rules.daily_amount_limit) : '—' }} 元；次数与额度按自然日 0:00 重置，审核驳回或失败的提现不占用限额。</text></view>
+          <view class="rule-block"><text class="block-title">3. 手续费</text><text class="block-text">手续费率 {{ feeRateText }}，手续费 = 提现金额 × 费率并向上取整到 0.01 元，从提现金额中扣除；当应计手续费达到或超过提现金额时（如 0.01 元的极小额提现）免收手续费。实际到账 = 提现金额 − 手续费，以提交时试算结果为准。</text></view>
+          <view class="rule-block"><text class="block-title">4. 提现流程</text><text class="block-text">提交申请后，申请金额将立即从余额冻结；平台对提现资格与金额进行人工审核，审核通过后按所选方式出款。处理中的金额可在页面顶部「冻结额」查看。</text></view>
+          <view class="rule-block"><text class="block-title">5. 到账时间</text><text class="block-text">{{ rules?.arrival_text || '提交后平台审核，预计 1-3 个工作日到账，周末及节假日顺延。' }}</text></view>
+          <view class="rule-block"><text class="block-title">6. 到账方式</text><text class="block-text">微信零钱：审核通过后转账至微信支付实名账户；银行卡：审核通过后由财务在工作日人工转账至本人储蓄卡，可在「银行卡管理」中维护收款卡。</text></view>
+          <view class="rule-block"><text class="block-title">7. 失败与退回</text><text class="block-text">审核未通过或出款失败时，冻结的申请金额将自动退回可提现余额，不收取任何费用，可按规则重新发起提现。</text></view>
+          <view class="rule-block"><text class="block-title">8. 余额来源</text><text class="block-text">任务佣金、交易收入等在确认收货并完成结算后计入可提现余额，余额永久有效；平台不收取提现手续费之外的任何费用。</text></view>
+          <view class="rule-block"><text class="block-title">9. 安全提示</text><text class="block-text">请使用本人实名账户收款，禁止任何形式的线下交易或提现代办行为；如有疑问请联系平台客服。</text></view>
+        </scroll-view>
+        <button class="sheet-confirm" @click="showRules = false">我已知晓</button>
+      </view>
+    </view>
     </template>
   </view>
 </template>
@@ -62,7 +81,7 @@
 import { formatDateTime as formatDate } from '@/utils/dateTime'
 import { onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
-import { createWithdrawal, getPointAccount, getWalletAccount, getWithdrawalQuote, listWithdrawals, type PointAccount, type WalletAccount, type Withdrawal, type WithdrawalChannel, type WithdrawalQuote } from '@/api/assets'
+import { createWithdrawal, getPointAccount, getWalletAccount, getWithdrawalQuote, getWithdrawalRules, listWithdrawals, type PointAccount, type WalletAccount, type Withdrawal, type WithdrawalChannel, type WithdrawalQuote, type WithdrawalRules } from '@/api/assets'
 import { listBankCards, type BankCard } from '@/api/bank-cards'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
@@ -78,6 +97,8 @@ const points = ref<PointAccount | null>(null)
 const withdrawals = ref<Withdrawal[]>([])
 const withdrawYuan = ref('')
 const quote = ref<WithdrawalQuote | null>(null)
+const rules = ref<WithdrawalRules | null>(null)
+const showRules = ref(false)
 const withdrawAgreed = ref(false)
 const loading = ref(false)
 const withdrawing = ref(false)
@@ -87,15 +108,16 @@ const channel = ref<WithdrawalChannel>('wechat_transfer')
 const cards = ref<BankCard[]>([])
 const selectedCardId = ref('')
 const selectedCard = computed(() => cards.value.find((c) => c.id === selectedCardId.value) || null)
-const fallbackMinimum = 100
+const fallbackMinimum = 1
 const fallbackMaximum = 500000
-const minimumCents = computed(() => quote.value?.minimum_amount || fallbackMinimum)
-const maximumCents = computed(() => quote.value?.maximum_amount || fallbackMaximum)
+const minimumCents = computed(() => rules.value?.minimum_amount ?? quote.value?.minimum_amount ?? fallbackMinimum)
+const maximumCents = computed(() => rules.value?.maximum_amount ?? quote.value?.maximum_amount ?? fallbackMaximum)
 const minimumYuan = computed(() => money(minimumCents.value))
 const maximumYuan = computed(() => money(maximumCents.value))
 const expiringPoints = computed(() => points.value?.expiring_points ?? '—')
 const insufficient = computed(() => Boolean(wallet.value && wallet.value.withdrawable_amount < minimumCents.value))
-const feeRateText = computed(() => quote.value ? `${(quote.value.fee_rate / 10000).toFixed(2)}%` : '—')
+const feeRatePpm = computed(() => quote.value?.fee_rate ?? rules.value?.fee_rate ?? null)
+const feeRateText = computed(() => feeRatePpm.value === null ? '—' : `${(feeRatePpm.value / 10000).toFixed(2)}%`)
 
 onShow(load)
 
@@ -106,16 +128,18 @@ async function load() {
   loading.value = true
   loadError.value = ''
   try {
-    const [account, pointAccount, list, cardRes] = await Promise.all([
+    const [account, pointAccount, list, cardRes, ruleRes] = await Promise.all([
       getWalletAccount(auth.accessToken),
       getPointAccount(auth.accessToken),
       listWithdrawals(auth.accessToken),
       listBankCards(auth.accessToken).catch(() => ({ items: [] as BankCard[] })),
+      getWithdrawalRules(auth.accessToken).catch(() => null),
     ])
     wallet.value = account
     points.value = pointAccount
     withdrawals.value = list.items
     cards.value = cardRes.items
+    rules.value = ruleRes
     if (!selectedCardId.value || !cards.value.some((c) => c.id === selectedCardId.value)) {
       selectedCardId.value = cards.value.find((c) => c.is_default)?.id || cards.value[0]?.id || ''
     }
@@ -228,4 +252,8 @@ async function calculateQuote(cents: number) {
 .state-card{margin:20rpx 0 0;padding:40rpx;border-radius:32rpx;background:#fff;color:#767C85;text-align:center;font-size:26rpx;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}.error-state{color:#FF2442;background:#FFEEEA}.state-card button{display:block;height:56rpx;margin:20rpx auto 0;padding:0 24rpx;border:2rpx solid currentColor;border-radius:28rpx;background:#fff;color:inherit;font-size:24rpx;line-height:52rpx}.state-card button::after{border:0}
 /* 错误与记录 */
 .action-error{display:flex;align-items:center;justify-content:space-between;gap:14rpx;margin:20rpx 0 0;padding:20rpx;border-radius:24rpx;background:#FFEEEA;color:#FF2442;font-size:24rpx}.action-error text{min-width:0}.action-error button{height:52rpx;flex:none;margin:0;padding:0 20rpx;border:2rpx solid #FF2442;border-radius:16rpx;background:#fff;color:#FF2442;font-size:22rpx;line-height:48rpx}.action-error button::after{border:0}.history-card{padding-bottom:12rpx}.history-row{display:flex;align-items:center;justify-content:space-between;gap:16rpx;padding:20rpx 0;border-bottom:1rpx solid #F5F6F6}.history-row:last-child{border-bottom:0}.history-row>view:last-child{text-align:right}.history-row text,.history-row small{display:block}.history-row text{font-size:26rpx;font-weight:700;color:#191B1F}.history-row small{margin-top:6rpx;color:#AEB3BB;font-size:22rpx}
+/* 规则图标补充 */
+.rule-icon.times{background:#EAF2FF;color:#2B6FE6}.rule-icon.limit{background:#F3EEFF;color:#7A4DE8}
+/* 规则说明弹层 */
+.rules-mask{position:fixed;z-index:999;inset:0;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,24,20,.5)}.rules-sheet{display:flex;max-height:82vh;width:100%;flex-direction:column;border-radius:32rpx 32rpx 0 0;background:#fff;padding:32rpx 28rpx calc(40rpx + env(safe-area-inset-bottom))}.sheet-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:20rpx;border-bottom:1rpx solid #F0F2F0}.sheet-title{font-size:32rpx;font-weight:800;color:#191B1F}.sheet-close{width:56rpx;height:56rpx;border-radius:50%;background:#F2F4F3;color:#767C85;font-size:40rpx;line-height:52rpx;text-align:center}.sheet-body{max-height:60vh;padding:8rpx 4rpx}.rule-block{padding:20rpx 4rpx;border-bottom:1rpx solid #F5F6F6}.rule-block:last-child{border-bottom:0}.block-title,.block-text{display:block}.block-title{font-size:27rpx;font-weight:700;color:#191B1F}.block-text{margin-top:10rpx;color:#5C625C;font-size:25rpx;line-height:1.65}.sheet-confirm{height:88rpx;margin-top:24rpx;border:0;border-radius:44rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:30rpx;font-weight:800;line-height:88rpx}.sheet-confirm::after{border:0}
 </style>

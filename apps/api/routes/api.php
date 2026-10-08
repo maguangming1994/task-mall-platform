@@ -210,6 +210,7 @@ Route::middleware('auth.access')->group(function () {
     // 提现（含银行卡管理）
     Route::middleware('module.gate:module_withdraw')->group(function () {
         Route::get('/wallet/withdrawals', [UserAssetLedgerController::class, 'withdrawals'])->middleware('legal.consent:wallet');
+        Route::get('/wallet/withdrawal-rules', [UserAssetLedgerController::class, 'withdrawalRules'])->middleware('legal.consent:wallet');
         Route::get('/wallet/withdrawal-quote', [UserAssetLedgerController::class, 'withdrawalQuote'])->middleware('legal.consent:wallet');
         Route::post('/wallet/withdrawals', [UserAssetLedgerController::class, 'createWithdrawal'])->middleware(['legal.consent:wallet', 'throttle:10,1']);
         Route::get('/wallet/bank-cards', [UserBankCardController::class, 'index'])->middleware('legal.consent:wallet');

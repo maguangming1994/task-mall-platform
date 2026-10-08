@@ -53,15 +53,9 @@ class WalletWithdrawalService
             }
 
             $quote = $this->quote($amount);
-            $today = CarbonImmutable::now('Asia/Shanghai')->startOfDay();
-            $daily = WalletWithdrawal::query()
-                ->where('user_id', $user->id)
-                ->where('created_at', '>=', $today)
-                ->whereNotIn('status', ['rejected', 'failed', 'cancelled']);
-            $countLimit = (int) $this->settings->read('wallet.daily_withdrawal_count')['value'];
-            $amountLimit = (int) $this->settings->read('wallet.daily_withdrawal_cents')['value'];
-            if ($daily->count() >= $countLimit || $daily->sum('requested_amount_cents') + $amount > $amountLimit) {
-                throw ValidationException::withMessages(['amount' => ['已超过当日提现次数或金额上限。']]);
+            $usage = $this->dailyUsage($user);
+            if ($usage['count'] >= $usage['count_limit'] || $usage['amount_limit'] < $usage['amount'] + $amount) {
+                throw ValidationException::withMessages(['amount' => ['今日可提现次数或金额已达上限，请明天再试。']]);
             }
 
             $withdrawal = WalletWithdrawal::query()->create([
@@ -84,6 +78,40 @@ class WalletWithdrawalService
         });
     }
 
+    /**
+     * 用户端提现规则视图：小程序进入提现页即拉取并完整公示，
+     * 包含门槛、费率、每日次数/额度、当日剩余额度与审核到账说明。
+     *
+     * @return array<string,mixed>
+     */
+    public function rules(User $user): array
+    {
+        $minimum = (int) $this->settings->read('wallet.min_withdrawal_cents')['value'];
+        $maximum = (int) $this->settings->read('wallet.max_withdrawal_cents')['value'];
+        $ratePpm = (int) round((float) $this->settings->read('wallet.withdraw_fee_rate')['value'] * 1_000_000);
+        $usage = $this->dailyUsage($user);
+
+        return [
+            'enabled' => (bool) $this->settings->read('wallet.withdrawal_enabled')['value'],
+            'minimum_amount' => $minimum,
+            'maximum_amount' => $maximum,
+            'fee_rate' => $ratePpm,
+            'daily_count_limit' => $usage['count_limit'],
+            'daily_amount_limit' => $usage['amount_limit'],
+            'today_count' => $usage['count'],
+            'today_amount' => $usage['amount'],
+            'daily_count_remaining' => max(0, $usage['count_limit'] - $usage['count']),
+            'daily_amount_remaining' => max(0, $usage['amount_limit'] - $usage['amount']),
+            // 当前所有提现均为平台人工审核后出款，流程文案必须与实际一致。
+            'review_mode' => 'manual',
+            'arrival_text' => '提交后平台尽快完成审核，预计 1-3 个工作日到账（周末及节假日顺延）。',
+            'channels' => [
+                ['code' => 'wechat_transfer', 'label' => '微信零钱', 'arrival_text' => '审核通过后转账至微信支付实名账户。'],
+                ['code' => 'bank_card', 'label' => '银行卡', 'arrival_text' => '审核通过后由财务在工作日人工转账至本人储蓄卡。'],
+            ],
+        ];
+    }
+
     /** @return array{requested_amount:int,fee_rate:int,fee_amount:int,received_amount:int,minimum_amount:int,maximum_amount:int} */
     public function quote(int $amount): array
     {
@@ -93,12 +121,13 @@ class WalletWithdrawalService
         $minimum = (int) $this->settings->read('wallet.min_withdrawal_cents')['value'];
         $maximum = (int) $this->settings->read('wallet.max_withdrawal_cents')['value'];
         if ($amount < $minimum || $amount > $maximum) {
-            throw ValidationException::withMessages(['amount' => ["提现金额必须在 {$minimum} 至 {$maximum} 分之间。"]]);
+            throw ValidationException::withMessages(['amount' => ["提现金额需在 {$this->yuan($minimum)} 元至 {$this->yuan($maximum)} 元之间。"]]);
         }
         $ratePpm = (int) round((float) $this->settings->read('wallet.withdraw_fee_rate')['value'] * 1_000_000);
         $fee = intdiv($amount * $ratePpm + 999_999, 1_000_000);
         if ($fee >= $amount) {
-            throw ValidationException::withMessages(['amount' => ['手续费必须小于提现金额。']]);
+            // 极小额提现实算手续费不足 1 分，免收手续费，确保达到最低门槛的用户都能成功提现。
+            $fee = 0;
         }
 
         return [
@@ -109,6 +138,28 @@ class WalletWithdrawalService
             'minimum_amount' => $minimum,
             'maximum_amount' => $maximum,
         ];
+    }
+
+    /** 当日有效提现（不含已拒绝/失败/取消）的笔数与金额及配置上限，金额单位均为分。 @return array{count:int,amount:int,count_limit:int,amount_limit:int} */
+    private function dailyUsage(User $user): array
+    {
+        $today = CarbonImmutable::now('Asia/Shanghai')->startOfDay();
+        $query = WalletWithdrawal::query()
+            ->where('user_id', $user->id)
+            ->where('created_at', '>=', $today)
+            ->whereNotIn('status', ['rejected', 'failed', 'cancelled']);
+
+        return [
+            'count' => (clone $query)->count(),
+            'amount' => (int) (clone $query)->sum('requested_amount_cents'),
+            'count_limit' => (int) $this->settings->read('wallet.daily_withdrawal_count')['value'],
+            'amount_limit' => (int) $this->settings->read('wallet.daily_withdrawal_cents')['value'],
+        ];
+    }
+
+    private function yuan(int $cents): string
+    {
+        return number_format($cents / 100, 2, '.', '');
     }
 
     public function review(AdminUser $admin, WalletWithdrawal $withdrawal, string $decision, string $note, string $idempotencyKey): WalletWithdrawal

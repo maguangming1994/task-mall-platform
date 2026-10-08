@@ -234,4 +234,9 @@ class UserAssetLedgerController extends Controller
 
         return ApiResponse::success($withdrawals->quote($data['amount']));
     }
+
+    public function withdrawalRules(Request $request, WalletWithdrawalService $withdrawals): JsonResponse
+    {
+        return ApiResponse::success($withdrawals->rules($request->user()));
+    }
 }

@@ -7,6 +7,22 @@ export interface WalletAccount { currency: 'CNY'; available_amount: number; froz
 export interface WalletTransaction { id: string; type: string; change_amount: number; balance_after: number; remark: string; created_at: string }
 export interface UserCoupon { id: string; name: string; cash_discount_amount: number; points_discount: number; valid_to: string; status: string }
 export interface WithdrawalQuote { requested_amount: number; fee_rate: number; fee_amount: number; received_amount: number; minimum_amount: number; maximum_amount: number }
+export interface WithdrawalRuleChannel { code: WithdrawalChannel; label: string; arrival_text: string }
+export interface WithdrawalRules {
+  enabled: boolean
+  minimum_amount: number
+  maximum_amount: number
+  fee_rate: number
+  daily_count_limit: number
+  daily_amount_limit: number
+  today_count: number
+  today_amount: number
+  daily_count_remaining: number
+  daily_amount_remaining: number
+  review_mode: string
+  arrival_text: string
+  channels: WithdrawalRuleChannel[]
+}
 export type WithdrawalChannel = 'wechat_transfer' | 'bank_card'
 export interface WithdrawalBankCard { id: string; cardholder_name: string; bank_name: string; card_tail: string; card_masked: string; phone_masked: string }
 export interface Withdrawal { id: string; withdrawal_no: string; requested_amount: number; fee_amount: number; received_amount: number; channel?: WithdrawalChannel; channel_label?: string; bank_card?: WithdrawalBankCard | null; status: string; failure_message?: string | null; workflow?: { status_label: string; next_action: string; is_terminal: boolean }; created_at: string }
@@ -30,6 +46,7 @@ export function claimCoupon(token: string, templateId: string) {
     headers: { 'Idempotency-Key': `coupon-claim-${templateId}-${Date.now()}` },
   })
 }
+export function getWithdrawalRules(token: string) { return apiRequest<WithdrawalRules>({ path: '/wallet/withdrawal-rules', accessToken: token }) }
 export function getWithdrawalQuote(token: string, amount: number) { return apiRequest<WithdrawalQuote>({ path: `/wallet/withdrawal-quote?amount=${amount}`, accessToken: token }) }
 export function createWithdrawal(token: string, amount: number, channel: WithdrawalChannel = 'wechat_transfer', bankCardId?: string) {
   return apiRequest<Withdrawal>({

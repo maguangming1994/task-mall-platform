@@ -34,7 +34,7 @@ class SystemSettingDefinitionSeeder extends Seeder
             ['pricing.shared_across_clients', 'payment', '多端共用价格', 'boolean', null, true, ['const' => true], 'high'],
             ['wallet.withdrawal_enabled', 'wallet', '余额提现开关', 'boolean', null, true, null, 'high'],
             ['wallet.withdraw_fee_rate', 'wallet', '提现手续费率', 'decimal', '比例', 0.006, ['min' => 0, 'max' => 0.2], 'high'],
-            ['wallet.min_withdrawal_cents', 'wallet', '单笔最低提现金额', 'money', '分', 1000, ['min' => 100, 'max' => 100000000], 'high'],
+            ['wallet.min_withdrawal_cents', 'wallet', '单笔最低提现金额', 'money', '分', 1, ['min' => 1, 'max' => 100000000], 'high'],
             ['wallet.max_withdrawal_cents', 'wallet', '单笔最高提现金额', 'money', '分', 100000, ['min' => 100, 'max' => 100000000], 'high'],
             ['wallet.daily_withdrawal_count', 'wallet', '每日提现次数', 'integer', '次', 3, ['min' => 1, 'max' => 100], 'high'],
             ['wallet.daily_withdrawal_cents', 'wallet', '每日提现累计上限', 'money', '分', 200000, ['min' => 100, 'max' => 100000000], 'high'],
