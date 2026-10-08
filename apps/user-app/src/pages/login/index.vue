@@ -2,7 +2,10 @@
   <view class="page" :style="topSafeAreaStyle">
     <view class="login-deco" />
     <view class="login-deco d2" />
-    <view class="login-back" role="button" aria-label="返回上一页" @click="goBack">‹</view>
+    <view class="login-back" role="button" aria-label="返回上一页" @click="goBack">
+      <text class="login-back-icon">‹</text>
+      <text class="login-back-text">返回</text>
+    </view>
 
     <view class="login-top">
       <image v-if="brand.logo_url" class="login-logo login-logo-img" :src="brand.logo_url" mode="aspectFit" />
@@ -82,6 +85,7 @@
           <text>，未注册手机号将自动创建账号</text>
         </view>
       </view>
+      <view class="login-skip" role="button" aria-label="暂不登录，返回逛逛" @click="goBack">暂不登录，返回逛逛</view>
     </view>
   </view>
 </template>
@@ -325,6 +329,7 @@ function goBack() {
     uni.navigateBack()
     return
   }
+  // 从 tabBar 页（如“我的”）跳来时上一页不入栈，无页可退；此时回首页并清掉登录意图
   uni.reLaunch({ url: '/pages/index/index' })
 }
 
@@ -355,7 +360,10 @@ onUnmounted(() => {
 .page::after{content:'';position:absolute;bottom:420rpx;left:-160rpx;width:400rpx;height:400rpx;border-radius:50%;background:rgba(255,255,255,.08);pointer-events:none}
 .login-deco{position:absolute;top:140rpx;left:80rpx;width:108rpx;height:108rpx;border-radius:36rpx;background:rgba(255,255,255,.14);pointer-events:none}
 .login-deco.d2{top:240rpx;left:auto;right:108rpx;width:76rpx;height:76rpx;border-radius:24rpx;background:rgba(255,255,255,.10)}
-.login-back{position:relative;z-index:3;display:flex;width:72rpx;height:72rpx;align-items:center;justify-content:center;margin:8rpx 0 0 24rpx;color:#fff;font-size:48rpx;font-weight:300;line-height:1}
+.login-back{position:relative;z-index:3;display:flex;align-items:center;gap:6rpx;padding:16rpx 20rpx;margin:8rpx 0 0 24rpx;color:#fff;font-size:30rpx;font-weight:500;line-height:1;border-radius:16rpx}
+.login-back-icon{font-size:44rpx;font-weight:300;line-height:1}
+.login-back-text{font-size:30rpx}
+.login-skip{display:flex;justify-content:center;margin-top:36rpx;padding:20rpx 0;color:#fff;font-size:26rpx;text-decoration:underline;text-decoration-color:rgba(255,255,255,.55)}
 .login-top{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;padding-top:110rpx}
 .login-logo{display:flex;width:168rpx;height:168rpx;align-items:center;justify-content:center;border-radius:48rpx;background:#fff;box-shadow:0 28rpx 60rpx rgba(0,0,0,.15);color:#08A152;font-size:80rpx;font-weight:900}
 .login-logo-img{padding:24rpx;box-sizing:border-box}

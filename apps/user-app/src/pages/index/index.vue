@@ -10,6 +10,7 @@
     <view class="home-v13-head">
       <view class="home-v13-campus-wrap">
         <CampusSelector
+          ref="campusSelectorRef"
           :access-token="auth.accessToken"
           :account-campus="auth.user?.campus"
           @change="handleCampusChange"
@@ -190,7 +191,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { loadHomeContent, type HomeCarouselItem, type HomeContent, type HomeLinkType } from '@/api/home'
 import { loadPendingLegalDocuments } from '@/api/legal'
@@ -222,6 +223,8 @@ const campus = useCampusStore()
 const modules = useModulesStore()
 const icons = useIconConfigStore()
 let promotionCampusReady: Promise<unknown> | null = null
+const campusSelectorRef = ref<{ open: () => void } | null>(null)
+let campusPromptShown = false
 const popupVisible = ref(false)
 const homeLoading = ref(false)
 const homeLoaded = ref(false)
@@ -480,6 +483,22 @@ function maxReward(rewards: TaskReward[] | undefined) {
 onLoad((options?: Record<string, string | undefined>) => {
   const hint = promotionCampusHint(options)
   if (hint) promotionCampusReady = campus.selectPromotionCampus(hint, auth.accessToken).catch(() => null)
+})
+
+// 微信运营规范 3.3：游客无需登录即可浏览。未选校时内容无法按校展示，
+// 冷启动自动展开一次选校半屏（选校仅本地保存、不要求登录），可关闭且本次启动不再打扰。
+onMounted(() => {
+  void (async () => {
+    if (campus.selected) return
+    if (promotionCampusReady) {
+      try { await promotionCampusReady } catch { /* 扫码选校失败时仍引导手动选择 */ }
+    }
+    setTimeout(() => {
+      if (campusPromptShown || campus.selected) return
+      campusPromptShown = true
+      campusSelectorRef.value?.open()
+    }, 350)
+  })()
 })
 
 onShow(async () => {

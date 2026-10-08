@@ -89,10 +89,9 @@ function resolveCover(id: string) {
 }
 
 async function load() {
-  if (!auth.accessToken) return
   loading.value = true
   try {
-    const res = await listSecondHandItems(auth.accessToken, { keyword: keyword.value, category_id: categoryId.value || undefined, sort: sort.value })
+    const res = await listSecondHandItems(auth.accessToken || undefined, { keyword: keyword.value, category_id: categoryId.value || undefined, sort: sort.value })
     items.value = res.items
   } catch (e) {
     uni.showToast({ title: '加载失败', icon: 'none' })
@@ -102,9 +101,8 @@ async function load() {
 }
 
 async function loadCategories() {
-  if (!auth.accessToken) return
   try {
-    const res = await listSecondHandCategories(auth.accessToken)
+    const res = await listSecondHandCategories(auth.accessToken || undefined)
     categories.value = res.items
   } catch { /* ignore */ }
 }
@@ -125,7 +123,13 @@ function openDetail(id: string) {
 
 function goPublish() {
   if (!auth.isAuthenticated) {
-    uni.navigateTo({ url: '/pages/login/index' })
+    uni.showModal({
+      title: '登录后发布闲置',
+      content: '登录后可以发布闲置、管理订单和进行售后。',
+      confirmText: '去登录',
+      cancelText: '取消',
+      success: (result) => { if (result.confirm) uni.navigateTo({ url: '/pages/login/index' }) },
+    })
     return
   }
   uni.navigateTo({ url: '/pages/second-hand-publish/index' })

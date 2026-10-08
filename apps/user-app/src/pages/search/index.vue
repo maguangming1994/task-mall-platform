@@ -193,13 +193,11 @@ async function doSearch() {
       listHallTasks({ keyword: kw }).then((res) => { tasks.value = res.items }).catch(() => { tasks.value = [] }),
       listProducts(undefined, kw).then((res) => { products.value = res.items }).catch(() => { products.value = [] }),
     ]
-    if (auth.accessToken) {
-      jobs.push(
-        listSecondHandItems(auth.accessToken, { keyword: searchedKeyword.value, page_size: 50 })
-          .then((res) => { shItems.value = res.items })
-          .catch(() => { shItems.value = [] })
-      )
-    }
+    jobs.push(
+      listSecondHandItems(auth.accessToken || undefined, { keyword: searchedKeyword.value, page_size: 50 })
+        .then((res) => { shItems.value = res.items })
+        .catch(() => { shItems.value = [] })
+    )
     await Promise.all(jobs)
   } finally {
     loading.value = false

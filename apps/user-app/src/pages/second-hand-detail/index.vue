@@ -120,9 +120,9 @@ onLoad((q) => {
 async function load() {
   await modules.ensureReady()
   if (!moduleEnabled.value) return
-  if (!auth.accessToken || !itemId.value) return
+  if (!itemId.value) return
   try {
-    item.value = await getSecondHandItem(auth.accessToken, itemId.value)
+    item.value = await getSecondHandItem(auth.accessToken || undefined, itemId.value)
   } catch {
     uni.showToast({ title: '加载失败', icon: 'none' })
   }

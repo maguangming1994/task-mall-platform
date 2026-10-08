@@ -98,20 +98,20 @@ export interface SecondHandRefund {
   created_at: string
 }
 
-// 分类
-export function listSecondHandCategories(token: string) {
-  return apiRequest<{ items: SecondHandCategory[]; conditions: Record<string, string> }>({ path: '/second-hand/categories', accessToken: token })
+// 分类（公开浏览接口，游客可不传 token）
+export function listSecondHandCategories(token?: string) {
+  return apiRequest<{ items: SecondHandCategory[]; conditions: Record<string, string> }>({ path: '/second-hand/categories', accessToken: token || undefined })
 }
 
-// 列表
-export function listSecondHandItems(token: string, params: { page?: number; page_size?: number; category_id?: string; seller?: string; keyword?: string; condition?: SecondHandCondition; trade_type?: SecondHandTradeType; sort?: 'latest' | 'price_asc' | 'price_desc' }) {
+// 列表（公开浏览接口，游客可不传 token；收藏态等个性化字段仅登录后返回）
+export function listSecondHandItems(token: string | undefined, params: { page?: number; page_size?: number; category_id?: string; seller?: string; keyword?: string; condition?: SecondHandCondition; trade_type?: SecondHandTradeType; sort?: 'latest' | 'price_asc' | 'price_desc' }) {
   const qs = toQueryString(params)
-  return apiRequest<{ items: SecondHandItem[]; pagination: { page: number; page_size: number; total: number } }>({ path: `/second-hand/items${qs ? `?${qs}` : ''}`, accessToken: token })
+  return apiRequest<{ items: SecondHandItem[]; pagination: { page: number; page_size: number; total: number } }>({ path: `/second-hand/items${qs ? `?${qs}` : ''}`, accessToken: token || undefined })
 }
 
-// 详情
-export function getSecondHandItem(token: string, id: string) {
-  return apiRequest<SecondHandItem>({ path: `/second-hand/items/${id}`, accessToken: token })
+// 详情（公开浏览接口，游客可不传 token）
+export function getSecondHandItem(token: string | undefined, id: string) {
+  return apiRequest<SecondHandItem>({ path: `/second-hand/items/${id}`, accessToken: token || undefined })
 }
 
 // 发布

@@ -354,6 +354,11 @@ function promptLocationPermission() {
   })
 }
 
+/** 供页面在游客首次进入、未选校时自动展开选校引导 */
+defineExpose({
+  open: () => void openCampusSelector(),
+})
+
 function locationText(item: Campus) {
   if (item.location_accuracy === 'reference') {
     return [item.location_name !== item.name ? item.location_name : '', item.address].filter(Boolean).join(' · ')

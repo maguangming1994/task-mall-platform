@@ -130,16 +130,26 @@ async function loadProfile() {
 
 function switchTab(t: 'on_sale' | 'sold' | 'ratings') {
   if (tab.value === t) return
+  if (t === 'ratings' && !auth.isAuthenticated) {
+    uni.showModal({
+      title: '登录后查看评价',
+      content: '卖家交易评价需登录后查看，在售宝贝无需登录即可浏览。',
+      confirmText: '去登录',
+      cancelText: '取消',
+      success: (result) => { if (result.confirm) uni.navigateTo({ url: '/pages/login/index' }) },
+    })
+    return
+  }
   tab.value = t
   if (t === 'on_sale' && !items.value.length) loadItems()
   if (t === 'ratings' && !ratings.value.length) loadRatings()
 }
 
 async function loadItems() {
-  if (!auth.accessToken) return
+  if (!sellerId.value) return
   loading.value = true
   try {
-    const res = await listSecondHandItems(auth.accessToken, { seller: sellerId.value, page_size: 50 })
+    const res = await listSecondHandItems(auth.accessToken || undefined, { seller: sellerId.value, page_size: 50 })
     items.value = res.items
   } catch { uni.showToast({ title: '宝贝列表加载失败', icon: 'none' }) }
   finally { loading.value = false }
