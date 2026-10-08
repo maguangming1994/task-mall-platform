@@ -77,9 +77,15 @@ function upload() {
     fail(`未找到微信开发者工具 CLI：${cliPath}，请安装开发者工具或用 WECHAT_DEVTOOLS_CLI 指定路径`)
   }
   console.log(`[publish-wechat] 调用开发者工具上传：版本 ${version}（${desc}）`)
-  const result = spawnSync(cliPath, [
-    'upload', '--project', distDir, '-v', version, '-d', desc,
-  ], { stdio: 'inherit' })
+  // Windows 下 spawnSync 直接执行 .bat 在 Node ≥22 会抛 EINVAL，需 shell:true；
+  // 开启 shell 后路径/参数中的空格与中文必须显式加双引号。
+  const quote = (value) => `"${String(value).replace(/"/g, '\\"')}"`
+  const useShell = process.platform === 'win32'
+  const command = useShell ? quote(cliPath) : cliPath
+  const buildArg = (value) => (useShell ? quote(value) : value)
+  const result = spawnSync(command, [
+    'upload', '--project', buildArg(distDir), '-v', buildArg(version), '-d', buildArg(desc),
+  ], { stdio: 'inherit', shell: useShell })
   if (result.error) fail(`CLI 调用异常：${result.error.message}`)
   if (result.status !== 0) fail(`CLI 上传退出码 ${result.status}，请确认开发者工具已登录、服务端口已开启，且登录账号是该小程序的开发者`)
   console.log('[publish-wechat] 上传成功。请到 mp.weixin.qq.com 「版本管理 → 开发版本」提交审核。')
