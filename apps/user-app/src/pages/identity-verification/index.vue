@@ -77,9 +77,12 @@
       <view class="agreement">
         <view class="checkbox" :class="{ checked: consented }" @click="consented = !consented">{{ consented ? '✓' : '' }}</view>
         <text class="agreement-text" @click="consented = !consented">我已阅读并同意</text>
+        <text class="link" @click.stop="openLegal('user_agreement')">《用户服务协议》</text>
+        <text class="agreement-text" @click="consented = !consented">、</text>
         <text class="link" @click.stop="openLegal('identity_service')">《实名认证服务协议》</text>
         <text class="agreement-text" @click="consented = !consented">与</text>
         <text class="link" @click.stop="openLegal('privacy_policy')">《隐私政策》</text>
+        <text class="agreement-text" @click="consented = !consented">，并授权平台在实名认证所必需的范围内收集、使用本人姓名、身份证号与手机号信息。</text>
       </view>
 
       <button class="submit" :disabled="!canSubmit || submitting" @click="submit">提交认证</button>
