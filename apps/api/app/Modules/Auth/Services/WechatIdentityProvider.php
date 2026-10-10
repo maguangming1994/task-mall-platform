@@ -6,9 +6,22 @@ use App\Modules\Auth\Exceptions\AuthException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WechatIdentityProvider
 {
+    /**
+     * 微信服务端配置类错误码：问题在平台侧（AppID/AppSecret/IP 白名单），
+     * 而非用户的临时登录凭证。必须与 40029 区分响应，避免以「凭证无效或已过期」
+     * 的客户端文案掩盖服务端配置故障（微信审核曾因此驳回登录体验）。
+     * - 40013 invalid appid：AppID 无效或与小程序不匹配
+     * - 40125 invalid appsecret：AppSecret 不正确或已在公众平台重置
+     * - 40164 invalid ip：服务器出口 IP 未加入小程序后台 IP 白名单
+     *
+     * @var list<int>
+     */
+    private const CONFIGURATION_ERROR_CODES = [40013, 40125, 40164];
+
     public function __construct(private readonly WechatProviderSettingsService $settings) {}
 
     /** @return array{openid:string,unionid:?string,app_id_hash:string} */
@@ -99,7 +112,7 @@ class WechatIdentityProvider
             throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务暂时不可用。', 503);
         }
 
-        return $this->validatedPayload($response->json());
+        return $this->validatedPayload($response->json(), 'mini');
     }
 
     /** @param array<string,mixed> $configuration
@@ -120,19 +133,35 @@ class WechatIdentityProvider
             throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务暂时不可用。', 503);
         }
 
-        return $this->validatedPayload($response->json());
+        return $this->validatedPayload($response->json(), 'official_account');
     }
 
     /** @param array<string,mixed>|null $payload
      * @return array{openid:string,unionid:?string}
      */
-    private function validatedPayload(?array $payload): array
+    private function validatedPayload(?array $payload, string $channel): array
     {
-        if (! is_array($payload) || ! is_string($payload['openid'] ?? null)) {
-            throw new AuthException('WECHAT_AUTH_FAILED', '微信临时登录凭证无效或已过期。', 422);
+        if (is_array($payload) && is_string($payload['openid'] ?? null)) {
+            return ['openid' => $payload['openid'], 'unionid' => is_string($payload['unionid'] ?? null) ? $payload['unionid'] : null];
         }
 
-        return ['openid' => $payload['openid'], 'unionid' => is_string($payload['unionid'] ?? null) ? $payload['unionid'] : null];
+        // 微信拒绝换票时不返回 openid，仅给 errcode/errmsg（如 40029 invalid code、
+        // 40013 invalid appid、40125 invalid appsecret）。原始错误码落日志，
+        // 便于在无法复现审核环境时快速区分「用户凭证问题」与「平台配置问题」。
+        $errcode = is_array($payload) ? $payload['errcode'] ?? null : null;
+        $errcode = is_numeric($errcode) ? (int) $errcode : $errcode;
+        $errmsg = is_array($payload) ? (string) ($payload['errmsg'] ?? '') : '';
+        $context = ['channel' => $channel, 'wechat_errcode' => $errcode, 'wechat_errmsg' => $errmsg];
+
+        if (in_array($errcode, self::CONFIGURATION_ERROR_CODES, true)) {
+            Log::error('微信登录换票失败：疑似平台 AppID/AppSecret/IP 白名单配置异常。', $context);
+
+            throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务暂时不可用，请稍后重试或使用手机号登录。', 503);
+        }
+
+        Log::warning('微信登录换票失败：临时登录凭证被微信拒绝。', $context);
+
+        throw new AuthException('WECHAT_AUTH_FAILED', '微信临时登录凭证无效或已过期。', 422);
     }
 
     /** @param array<string,mixed> $configuration */

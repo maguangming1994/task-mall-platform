@@ -172,6 +172,44 @@ class WechatIdentityFlowTest extends TestCase
             ->assertJsonPath('data.id', $phoneUser->json('data.user.id'));
     }
 
+    public function test_rejected_mini_login_code_returns_client_auth_failure(): void
+    {
+        config()->set('wechat_auth.driver', 'wechat');
+        config()->set('wechat_auth.mini.app_id', 'test-mini-app-id');
+        config()->set('wechat_auth.mini.app_secret', 'test-mini-app-secret');
+        Cache::clear();
+        Http::fake([
+            'api.weixin.qq.com/sns/jscode2session*' => Http::response([
+                'errcode' => 40029,
+                'errmsg' => 'invalid code',
+            ]),
+        ]);
+
+        $this->wechatLogin('mini', 'rejected-login-code')
+            ->assertStatus(422)
+            ->assertJsonPath('code', 'WECHAT_AUTH_FAILED')
+            ->assertJsonPath('message', '微信临时登录凭证无效或已过期。');
+    }
+
+    public function test_invalid_wechat_appsecret_is_reported_as_service_unavailable(): void
+    {
+        config()->set('wechat_auth.driver', 'wechat');
+        config()->set('wechat_auth.mini.app_id', 'test-mini-app-id');
+        config()->set('wechat_auth.mini.app_secret', 'wrong-secret');
+        Cache::clear();
+        Http::fake([
+            'api.weixin.qq.com/sns/jscode2session*' => Http::response([
+                'errcode' => 40125,
+                'errmsg' => 'invalid appsecret',
+            ]),
+        ]);
+
+        $this->wechatLogin('mini', 'config-error-code')
+            ->assertStatus(503)
+            ->assertJsonPath('code', 'WECHAT_PROVIDER_UNAVAILABLE')
+            ->assertJsonPath('message', '微信登录服务暂时不可用，请稍后重试或使用手机号登录。');
+    }
+
     public function test_unconfigured_wechat_phone_authorization_returns_a_safe_fallback(): void
     {
         $login = $this->wechatLogin('mini', 'local:mini-open-unconfigured:union-unconfigured');
