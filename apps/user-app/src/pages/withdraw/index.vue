@@ -21,10 +21,10 @@
     <view class="section-card amount-card">
       <view class="section-head"><text class="section-title">提现金额</text><text class="info-side">最多可提现 ¥{{ wallet ? money(wallet.withdrawable_amount) : '—' }}</text></view>
       <view class="amount-input"><text>¥</text><input v-model="withdrawYuan" type="digit" placeholder="0.00" @input="onAmountInput" /><button @click="fillAll">全部提现</button></view>
-      <text class="amount-range">可提现范围：{{ minimumYuan }} ~ {{ maximumYuan }} 元</text>
+      <text class="amount-range">{{ rangeText }}</text>
     </view>
 
-    <view class="section-card rules-card"><view class="section-head"><text class="section-title">提现规则</text><text class="rule-link" @click="showRules = true">规则说明 ›</text></view><view class="rule-grid"><view class="rule-item"><view class="rule-icon minimum">¥</view><view><text>最低提现（元）</text><strong>{{ minimumYuan }}</strong><small>单次最低提现金额</small></view></view><view class="rule-item"><view class="rule-icon maximum">¥</view><view><text>最高提现（元）</text><strong>{{ maximumYuan }}</strong><small>单次最高提现金额</small></view></view><view class="rule-item"><view class="rule-icon times">次</view><view><text>每日提现次数</text><strong>{{ rules ? rules.daily_count_limit : '—' }}</strong><small>今日剩余 {{ rules ? rules.daily_count_remaining : '—' }} 次</small></view></view><view class="rule-item"><view class="rule-icon limit">额</view><view><text>每日累计上限（元）</text><strong>{{ rules ? money(rules.daily_amount_limit) : '—' }}</strong><small>今日已提 ¥{{ rules ? money(rules.today_amount) : '0.00' }}</small></view></view></view><view v-if="rules && !rules.enabled" class="rule-warning"><text class="warning-icon">!</text><view><text>提现功能当前未开放</text><small>平台暂时关闭了提现，请稍后再试或联系客服</small></view></view><view v-else-if="insufficient" class="rule-warning"><text class="warning-icon">!</text><view><text>可提现余额不足</text><small>余额累计满 ¥{{ minimumYuan }} 后即可发起提现，余额永久有效</small></view></view></view>
+    <view class="section-card rules-card"><view class="section-head"><text class="section-title">提现规则</text><text class="rule-link" @click="showRules = true">规则说明 ›</text></view><view class="rule-grid"><view class="rule-item"><view class="rule-icon minimum">¥</view><view><text>最低提现（元）</text><strong>{{ noMinimum ? '无门槛' : minimumYuan }}</strong><small>{{ noMinimum ? '不设最低提现金额' : '单次最低提现金额' }}</small></view></view><view class="rule-item"><view class="rule-icon maximum">¥</view><view><text>最高提现（元）</text><strong>{{ maximumYuan }}</strong><small>单次最高提现金额</small></view></view><view class="rule-item"><view class="rule-icon times">次</view><view><text>每日提现次数</text><strong>{{ rules ? rules.daily_count_limit : '—' }}</strong><small>今日剩余 {{ rules ? rules.daily_count_remaining : '—' }} 次</small></view></view><view class="rule-item"><view class="rule-icon limit">额</view><view><text>每日累计上限（元）</text><strong>{{ rules ? money(rules.daily_amount_limit) : '—' }}</strong><small>今日已提 ¥{{ rules ? money(rules.today_amount) : '0.00' }}</small></view></view></view><view v-if="rules && !rules.enabled" class="rule-warning"><text class="warning-icon">!</text><view><text>提现功能当前未开放</text><small>平台暂时关闭了提现，请稍后再试或联系客服</small></view></view><view v-else-if="insufficient" class="rule-warning"><text class="warning-icon">!</text><view><text>可提现余额不足</text><small>余额累计满 ¥{{ minimumYuan }} 后即可发起提现，余额永久有效</small></view></view></view>
 
     <view class="section-card fee-card"><view class="section-head"><text class="section-title">手续费说明</text><text class="rule-link" @click="showRules = true">如何计算 ?</text></view><view class="fee-equation"><view><text>提现金额</text><strong class="dark">¥{{ quote ? money(quote.requested_amount) : '0.00' }}</strong></view><text class="operator">−</text><view><text>手续费率</text><strong class="dark">{{ feeRateText }}</strong></view><text class="operator">=</text><view><text>手续费</text><strong class="orange">¥{{ quote ? money(quote.fee_amount) : '0.00' }}</strong></view><text class="operator">→</text><view class="received-cell"><text>实际到账</text><strong class="green">¥{{ quote ? money(quote.received_amount) : '0.00' }}</strong></view></view><text class="fee-note">费率 {{ feeRateText }}，手续费从提现金额中扣除；实算不足 0.01 元时免收，以提交时计算为准</text></view>
 
@@ -60,7 +60,7 @@
       <view class="rules-sheet" @click.stop>
         <view class="sheet-head"><text class="sheet-title">提现规则说明</text><text class="sheet-close" @click="showRules = false">×</text></view>
         <scroll-view scroll-y class="sheet-body">
-          <view class="rule-block"><text class="block-title">1. 提现金额</text><text class="block-text">单笔最低提现 {{ minimumYuan }} 元，最高 {{ maximumYuan }} 元；输入金额需在此范围内。</text></view>
+          <view class="rule-block"><text class="block-title">1. 提现金额</text><text class="block-text">{{ noMinimum ? `不设单笔最低提现门槛，0.01 元起即可发起提现，单笔最高 ${maximumYuan} 元。` : `单笔最低提现 ${minimumYuan} 元，最高 ${maximumYuan} 元；输入金额需在此范围内。` }}</text></view>
           <view class="rule-block"><text class="block-title">2. 每日限额</text><text class="block-text">每日最多可提现 {{ rules?.daily_count_limit ?? '—' }} 次，累计金额不超过 {{ rules ? money(rules.daily_amount_limit) : '—' }} 元；次数与额度按自然日 0:00 重置，审核驳回或失败的提现不占用限额。</text></view>
           <view class="rule-block"><text class="block-title">3. 手续费</text><text class="block-text">手续费率 {{ feeRateText }}，手续费 = 提现金额 × 费率并向上取整到 0.01 元，从提现金额中扣除；当应计手续费达到或超过提现金额时（如 0.01 元的极小额提现）免收手续费。实际到账 = 提现金额 − 手续费，以提交时试算结果为准。</text></view>
           <view class="rule-block"><text class="block-title">4. 提现流程</text><text class="block-text">提交申请后，申请金额将立即从余额冻结；平台对提现资格与金额进行人工审核，审核通过后按所选方式出款。处理中的金额可在页面顶部「冻结额」查看。</text></view>
@@ -108,12 +108,14 @@ const channel = ref<WithdrawalChannel>('wechat_transfer')
 const cards = ref<BankCard[]>([])
 const selectedCardId = ref('')
 const selectedCard = computed(() => cards.value.find((c) => c.id === selectedCardId.value) || null)
-const fallbackMinimum = 1
+const fallbackMinimum = 0
 const fallbackMaximum = 500000
 const minimumCents = computed(() => rules.value?.minimum_amount ?? quote.value?.minimum_amount ?? fallbackMinimum)
 const maximumCents = computed(() => rules.value?.maximum_amount ?? quote.value?.maximum_amount ?? fallbackMaximum)
+const noMinimum = computed(() => minimumCents.value <= 0)
 const minimumYuan = computed(() => money(minimumCents.value))
 const maximumYuan = computed(() => money(maximumCents.value))
+const rangeText = computed(() => noMinimum.value ? `无最低提现门槛，单笔最多可提现 ${maximumYuan.value} 元` : `可提现范围：${minimumYuan.value} ~ ${maximumYuan.value} 元`)
 const expiringPoints = computed(() => points.value?.expiring_points ?? '—')
 const insufficient = computed(() => Boolean(wallet.value && wallet.value.withdrawable_amount < minimumCents.value))
 const feeRatePpm = computed(() => quote.value?.fee_rate ?? rules.value?.fee_rate ?? null)

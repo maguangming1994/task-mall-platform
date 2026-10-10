@@ -7,8 +7,11 @@ use App\Modules\Assets\Services\AssetLedgerService;
 use App\Modules\Auth\Models\UserDevice;
 use App\Modules\Auth\Models\UserSession;
 use App\Modules\Auth\Services\AccessTokenService;
+use App\Modules\Settings\Models\SystemSettingDefinition;
+use App\Modules\Settings\Models\SystemSettingVersion;
 use Database\Seeders\SystemSettingDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class WithdrawalRulesApiTest extends TestCase
@@ -23,7 +26,7 @@ class WithdrawalRulesApiTest extends TestCase
         $this->withToken($token)->getJson('/api/v1/wallet/withdrawal-rules')
             ->assertOk()
             ->assertJsonPath('data.enabled', true)
-            ->assertJsonPath('data.minimum_amount', 1)
+            ->assertJsonPath('data.minimum_amount', 0)
             ->assertJsonPath('data.maximum_amount', 100000)
             ->assertJsonPath('data.fee_rate', 6000)
             ->assertJsonPath('data.daily_count_limit', 3)
@@ -41,13 +44,13 @@ class WithdrawalRulesApiTest extends TestCase
         $this->seed(SystemSettingDefinitionSeeder::class);
         $token = $this->userToken(User::factory()->create());
 
-        // 0.01 元达到最低门槛，实算手续费不足 1 分时免收，确保门槛金额可提现。
+        // 无最低提现门槛（minimum=0），0.01 元即可提现；实算手续费不足 1 分时免收。
         $this->withToken($token)->getJson('/api/v1/wallet/withdrawal-quote?amount=1')
             ->assertOk()
             ->assertJsonPath('data.requested_amount', 1)
             ->assertJsonPath('data.fee_amount', 0)
             ->assertJsonPath('data.received_amount', 1)
-            ->assertJsonPath('data.minimum_amount', 1);
+            ->assertJsonPath('data.minimum_amount', 0);
     }
 
     public function test_out_of_range_amount_is_rejected_with_yuan_message(): void
@@ -57,7 +60,7 @@ class WithdrawalRulesApiTest extends TestCase
 
         $this->withToken($token)->getJson('/api/v1/wallet/withdrawal-quote?amount=500001')
             ->assertStatus(422)
-            ->assertJsonPath('details.errors.amount.0', '提现金额需在 0.01 元至 1000.00 元之间。');
+            ->assertJsonPath('details.errors.amount.0', '单笔提现金额不能超过 1000.00 元。');
     }
 
     public function test_rules_reflect_todays_usage_after_a_withdrawal(): void
@@ -78,6 +81,32 @@ class WithdrawalRulesApiTest extends TestCase
             ->assertJsonPath('data.today_amount', 1000)
             ->assertJsonPath('data.daily_count_remaining', 2)
             ->assertJsonPath('data.daily_amount_remaining', 199000);
+    }
+
+    public function test_configured_minimum_threshold_still_rejects_smaller_amounts(): void
+    {
+        $this->seed(SystemSettingDefinitionSeeder::class);
+        $token = $this->userToken(User::factory()->create());
+        $this->publishMinimum(1000);
+
+        $this->withToken($token)->getJson('/api/v1/wallet/withdrawal-quote?amount=999')
+            ->assertStatus(422)
+            ->assertJsonPath('details.errors.amount.0', '单笔提现金额不能低于 10.00 元。');
+    }
+
+    private function publishMinimum(int $cents): void
+    {
+        $definition = SystemSettingDefinition::query()->where('setting_key', 'wallet.min_withdrawal_cents')->firstOrFail();
+        SystemSettingVersion::query()->create([
+            'setting_definition_id' => $definition->id,
+            'version' => 1,
+            'value' => $cents,
+            'source' => 'publish',
+            'reason' => '验证可配置的单笔最低提现门槛。',
+            'published_at' => now(),
+        ]);
+        Cache::forget('system-setting:active:wallet.min_withdrawal_cents');
+        Cache::forget('system-setting:last-good:wallet.min_withdrawal_cents');
     }
 
     private function userToken(User $user): string

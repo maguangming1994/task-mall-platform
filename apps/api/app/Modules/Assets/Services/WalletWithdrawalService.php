@@ -120,8 +120,15 @@ class WalletWithdrawalService
         }
         $minimum = (int) $this->settings->read('wallet.min_withdrawal_cents')['value'];
         $maximum = (int) $this->settings->read('wallet.max_withdrawal_cents')['value'];
-        if ($amount < $minimum || $amount > $maximum) {
-            throw ValidationException::withMessages(['amount' => ["提现金额需在 {$this->yuan($minimum)} 元至 {$this->yuan($maximum)} 元之间。"]]);
+        // minimum=0 表示不设单笔提现门槛；货币最小单位为 1 分，金额必须为正整数分。
+        if ($amount < 1) {
+            throw ValidationException::withMessages(['amount' => ['提现金额必须大于 0 元。']]);
+        }
+        if ($minimum > 0 && $amount < $minimum) {
+            throw ValidationException::withMessages(['amount' => ["单笔提现金额不能低于 {$this->yuan($minimum)} 元。"]]);
+        }
+        if ($amount > $maximum) {
+            throw ValidationException::withMessages(['amount' => ["单笔提现金额不能超过 {$this->yuan($maximum)} 元。"]]);
         }
         $ratePpm = (int) round((float) $this->settings->read('wallet.withdraw_fee_rate')['value'] * 1_000_000);
         $fee = intdiv($amount * $ratePpm + 999_999, 1_000_000);
