@@ -115,4 +115,30 @@ class AdminUserManagementController extends Controller
 
         return ApiResponse::success(['requires_mfa' => false]);
     }
+
+    public function resetPassword(Request $request, AdminUser $adminUser, AdminAuthService $auth, AuditLogger $audit): JsonResponse
+    {
+        $data = $request->validate([
+            'password' => ['required', 'string', 'min:12', 'max:200', 'regex:/[A-Za-z]/', 'regex:/[0-9]/'],
+            'reason' => ['required', 'string', 'min:4', 'max:500'],
+        ]);
+        /** @var AdminUser $actor */
+        $actor = $request->user();
+        if ($adminUser->is_service_account) {
+            throw ValidationException::withMessages(['password' => ['服务账号不支持重置密码。']]);
+        }
+        if ($actor->is($adminUser)) {
+            throw ValidationException::withMessages(['password' => ['不能在此重置自己的密码，请使用右上角「修改密码」。']]);
+        }
+
+        $before = $auth->present($adminUser);
+        DB::transaction(function () use ($adminUser, $data): void {
+            $adminUser->update(['password' => $data['password']]);
+            AdminSession::query()->where('admin_user_id', $adminUser->id)->whereNull('revoked_at')->update(['revoked_at' => now(), 'revoke_reason' => 'password_reset', 'updated_at' => now()]);
+        });
+        $after = $auth->present($adminUser->fresh());
+        $audit->record($actor, 'admin_user.password_reset', 'admin_user', $adminUser->public_id, $before, $after, $data['reason']);
+
+        return ApiResponse::success(['password_reset' => true]);
+    }
 }

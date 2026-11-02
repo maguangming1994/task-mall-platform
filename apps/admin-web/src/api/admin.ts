@@ -1450,6 +1450,10 @@ export async function resetManagedAdminMfa(id: string, reason: string): Promise<
   return request(`/admin/admin-users/${id}/reset-mfa`, { method: 'POST', body: JSON.stringify({ reason }) })
 }
 
+export async function resetManagedAdminPassword(id: string, password: string, reason: string): Promise<{ password_reset: boolean }> {
+  return request(`/admin/admin-users/${id}/password`, { method: 'PUT', body: JSON.stringify({ password, reason }) })
+}
+
 export async function enrollCurrentAdminMfa(): Promise<{ secret: string; otpauth_uri: string }> {
   return request('/admin/mfa/totp/enroll', { method: 'POST', body: JSON.stringify({}) })
 }

@@ -417,6 +417,7 @@ Route::prefix('admin')->group(function () {
         Route::put('/admin-users/{adminUser}/status', [AdminUserManagementController::class, 'status'])->middleware(['admin.permission:rbac.manage', 'admin.recent_verification']);
         Route::post('/admin-users/{adminUser}/revoke-sessions', [AdminUserManagementController::class, 'revokeSessions'])->middleware(['admin.permission:rbac.manage', 'admin.recent_verification']);
         Route::post('/admin-users/{adminUser}/reset-mfa', [AdminUserManagementController::class, 'resetMfa'])->middleware(['admin.permission:rbac.manage', 'admin.recent_verification']);
+        Route::put('/admin-users/{adminUser}/password', [AdminUserManagementController::class, 'resetPassword'])->middleware(['admin.permission:rbac.manage', 'admin.recent_verification', 'throttle:10,1']);
         Route::get('/roles', [AdminRoleController::class, 'index'])->middleware('admin.permission:rbac.manage');
         Route::get('/permissions', [AdminRoleController::class, 'permissions'])->middleware('admin.permission:rbac.manage');
         Route::post('/roles', [AdminRoleController::class, 'store'])->middleware(['admin.permission:rbac.manage', 'admin.recent_verification']);
