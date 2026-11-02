@@ -2,7 +2,7 @@ import { Alert, Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Tab
 import { useCallback, useEffect, useState } from 'react'
 import {
   ApiError, confirmCurrentAdminMfa, createAdminRole, createManagedAdmin, enrollCurrentAdminMfa, listAdminPermissions, listAdminRoles, listManagedAdmins,
-  resetManagedAdminMfa, resetManagedAdminPassword, revokeManagedAdminSessions, updateManagedAdminRoles, updateManagedAdminStatus,
+  resetManagedAdminMfa, revokeManagedAdminSessions, updateManagedAdminRoles, updateManagedAdminStatus,
   updateAdminRole, verifyAdminRecent,
   type AdminPermission, type AdminRole, type ManagedAdmin,
 } from '../../api/admin'
@@ -31,14 +31,12 @@ export function SecurityPage() {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<ManagedAdmin | null>(null)
-  const [resettingPassword, setResettingPassword] = useState<ManagedAdmin | null>(null)
   const [editingRole, setEditingRole] = useState<AdminRole | 'new' | null>(null)
   const [enrollment, setEnrollment] = useState<{ secret: string; otpauth_uri: string } | null>(null)
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([])
   const [verifying, setVerifying] = useState(false)
   const [form] = Form.useForm()
   const [roleForm] = Form.useForm()
-  const [resetPasswordForm] = Form.useForm()
   const [roleDefinitionForm] = Form.useForm<RoleDefinitionForm>()
   const [mfaForm] = Form.useForm()
   const [verifyForm] = Form.useForm()
@@ -75,22 +73,6 @@ export function SecurityPage() {
   const saveRoles = async () => {
     if (!editing) return
     try { const values = await roleForm.validateFields(); await updateManagedAdminRoles(editing.id, values.role_codes, values.reason); messageApi.success('角色已更新，后续请求立即按新权限校验。'); setEditing(null); await load() } catch (error) { if (error instanceof ApiError) messageApi.error(error.message) }
-  }
-  const saveResetPassword = async () => {
-    if (!resettingPassword) return
-    try {
-      const values = await resetPasswordForm.validateFields()
-      await verifyAdminRecent(values.current_password, values.mfa_code || undefined)
-      await resetManagedAdminPassword(resettingPassword.id, values.password, values.reason)
-      messageApi.success('密码已重置，该管理员的全部会话已失效。')
-      setResettingPassword(null)
-      resetPasswordForm.resetFields()
-      await load()
-    } catch (error) { if (error instanceof ApiError) messageApi.error(error.message) }
-  }
-  const openResetPassword = (item: ManagedAdmin) => {
-    setResettingPassword(item)
-    resetPasswordForm.setFieldsValue({ password: '', reason: '管理员遗失密码后按最小权限原则重置。', current_password: '', mfa_code: '' })
   }
   const openRoleEditor = (role: AdminRole | 'new') => {
     setEditingRole(role)
@@ -137,7 +119,6 @@ export function SecurityPage() {
         <Button size="small" onClick={() => { setEditing(item); roleForm.setFieldsValue({ role_codes: item.roles, reason: '根据岗位职责调整角色权限。' }) }}>角色</Button>
         <Popconfirm title="撤销该管理员全部会话？" onConfirm={() => void run(() => revokeManagedAdminSessions(item.id, '后台安全操作撤销全部活跃会话。'), '会话已撤销。')}><Button size="small">下线</Button></Popconfirm>
         {item.requires_mfa && <Popconfirm title="重置 MFA 会同时撤销全部会话，确认继续？" onConfirm={() => void run(() => resetManagedAdminMfa(item.id, '管理员身份核验后重置丢失的验证器。'), 'MFA 已重置。')}><Button size="small">重置 MFA</Button></Popconfirm>}
-        {item.id !== admin?.id && <Button size="small" onClick={() => openResetPassword(item)}>重置密码</Button>}
         {item.id !== admin?.id && <Popconfirm title={item.status === 'active' ? '确认停用并撤销会话？' : '确认恢复该账号？'} onConfirm={() => void run(() => updateManagedAdminStatus(item.id, item.status === 'active' ? 'disabled' : 'active', item.status === 'active' ? '后台账号停用并撤销会话。' : '完成复核后恢复后台账号。'), '账号状态已更新。')}><Button danger={item.status === 'active'} size="small">{item.status === 'active' ? '停用' : '恢复'}</Button></Popconfirm>}
       </Space> },
     ]} />
@@ -152,7 +133,7 @@ export function SecurityPage() {
   return <>
     {contextHolder}
     <div className="page-heading"><div><Typography.Text className="eyebrow">身份、权限与审计</Typography.Text><Typography.Title level={2}>权限、安全与审计</Typography.Title><Typography.Paragraph type="secondary">账号、角色、会话、二次验证和不可篡改审计记录统一治理。</Typography.Paragraph></div>{canManage && <Space><Button onClick={() => setVerifying(true)}>刷新近期验证</Button><Button onClick={() => void startMfa()}>为当前账号启用 MFA</Button></Space>}</div>
-    {canManage && <Alert showIcon type="warning" message="新增管理员、角色变更、停用、MFA 重置、密码重置等高风险操作要求近期验证；系统阻止停用自己或移除自己的超级管理员角色。" />}
+    {canManage && <Alert showIcon type="warning" message="新增管理员、角色变更、停用、MFA 重置等高风险操作要求近期验证；系统阻止停用自己或移除自己的超级管理员角色。" />}
     <Card bordered={false} className="settings-table-card"><Tabs items={[
       ...(canManage ? [{ key: 'accounts', label: '管理员账号', children: accountTab }, { key: 'roles', label: '角色权限', children: roleTab }] : []),
       ...(canAudit ? [{ key: 'audit', label: '操作审计', children: <AuditLogPanel /> }] : []),
@@ -181,15 +162,6 @@ export function SecurityPage() {
     <Modal title="启用验证器 MFA" open={Boolean(enrollment)} onCancel={() => setEnrollment(null)} footer={recoveryCodes.length ? <Button type="primary" onClick={() => setEnrollment(null)}>我已安全保存恢复码</Button> : undefined} onOk={recoveryCodes.length ? undefined : () => void confirmMfa()} okText="确认启用" closable={recoveryCodes.length === 0}>
       {enrollment && !recoveryCodes.length && <><Alert showIcon type="info" message="将以下密钥添加到任意兼容 TOTP 的验证器，密钥只在本次设置过程中展示。" /><Typography.Paragraph copyable code className="mfa-secret">{enrollment.secret}</Typography.Paragraph><Form form={mfaForm} layout="vertical"><Form.Item name="code" label="6 位动态验证码" rules={[{ required: true, len: 6 }]}><Input autoComplete="one-time-code" /></Form.Item></Form></>}
       {recoveryCodes.length > 0 && <><Alert showIcon type="warning" message="恢复码只展示一次，每个只能使用一次。请离线保存，禁止发送到聊天群。" /><div className="recovery-grid">{recoveryCodes.map((code) => <Typography.Text code copyable key={code}>{code}</Typography.Text>)}</div></>}
-    </Modal>
-    <Modal title={resettingPassword ? `重置密码：${resettingPassword.display_name}` : '重置密码'} open={Boolean(resettingPassword)} onCancel={() => { setResettingPassword(null); resetPasswordForm.resetFields() }} onOk={() => void saveResetPassword()} okText="确认重置" destroyOnHidden>
-      <Alert showIcon type="warning" message="重置后该管理员的全部会话立即失效，需使用新密码重新登录；本操作会记入审计日志。" style={{ marginBottom: 16 }} />
-      <Form form={resetPasswordForm} layout="vertical">
-        <Form.Item name="password" label="新密码" rules={[{ required: true, min: 12, message: '请输入至少 12 位的新密码' }, { pattern: /^(?=.*[A-Za-z])(?=.*\d).+$/, message: '新密码必须同时包含字母和数字' }]}><Input.Password autoComplete="new-password" /></Form.Item>
-        <Form.Item name="reason" label="重置原因" rules={[{ required: true, min: 4, max: 500 }]}><Input.TextArea rows={2} /></Form.Item>
-        <Form.Item name="current_password" label="当前管理员密码" rules={[{ required: true, message: '请输入你自己的密码完成二次验证' }]}><Input.Password autoComplete="current-password" /></Form.Item>
-        {admin?.requires_mfa && <Form.Item name="mfa_code" label="动态验证码或恢复码" rules={[{ required: true }]}><Input autoComplete="one-time-code" /></Form.Item>}
-      </Form>
     </Modal>
     <Modal title="刷新高风险操作验证" open={verifying} onCancel={() => setVerifying(false)} onOk={() => void verifyRecent()} okText="完成验证"><Form form={verifyForm} layout="vertical"><Form.Item name="password" label="当前密码" rules={[{ required: true }]}><Input.Password autoComplete="current-password" /></Form.Item>{admin?.requires_mfa && <Form.Item name="mfa_code" label="动态验证码或恢复码" rules={[{ required: true }]}><Input autoComplete="one-time-code" /></Form.Item>}</Form></Modal>
   </>

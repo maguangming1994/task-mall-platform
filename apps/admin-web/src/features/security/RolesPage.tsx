@@ -1,4 +1,4 @@
-import { Button, Form, Input, Modal, Popconfirm, Select, Table, Tree, message } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tree, message } from 'antd'
 import type { TreeProps } from 'antd'
 import { useCallback, useEffect, useMemo, useState, type Key, type ReactNode } from 'react'
 import {
@@ -9,8 +9,10 @@ import {
   listAdminPermissions,
   listAdminRoles,
   listManagedAdmins,
+  resetManagedAdminPassword,
   updateAdminRole,
   updateManagedAdminStatus,
+  verifyAdminRecent,
   type AdminAuditLog,
   type AdminPermission,
   type AdminRole,
@@ -18,6 +20,7 @@ import {
 } from '../../api/admin'
 import { auditActionLabels, businessLabel } from '../../constants/businessLabels'
 import { Links, PageHead, Pill, UCell } from '../../components/xq'
+import { useAdminAuth } from '../auth/AdminAuthContext'
 
 type TabKey = 'roles' | 'accounts' | 'logs'
 
@@ -160,6 +163,7 @@ interface RoleFormValue { code: string; name: string; description?: string; perm
 interface AccountFormValue { account: string; display_name: string; email?: string; password: string; role_codes: string[] }
 
 export function RolesPage() {
+  const { admin: currentAdmin } = useAdminAuth()
   const [tab, setTab] = useState<TabKey>('roles')
   const [roles, setRoles] = useState<AdminRole[]>([])
   const [admins, setAdmins] = useState<ManagedAdmin[]>([])
@@ -173,9 +177,11 @@ export function RolesPage() {
   const [appliedKw, setAppliedKw] = useState('')
   const [editingRole, setEditingRole] = useState<AdminRole | 'new' | null>(null)
   const [creatingAccount, setCreatingAccount] = useState(false)
+  const [resettingPassword, setResettingPassword] = useState<ManagedAdmin | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [roleForm] = Form.useForm<RoleFormValue>()
   const [accountForm] = Form.useForm<AccountFormValue>()
+  const [resetPasswordForm] = Form.useForm()
   const [messageApi, contextHolder] = message.useMessage()
 
   const load = useCallback(async () => {
@@ -266,6 +272,29 @@ export function RolesPage() {
     }
   }
 
+  const openResetPassword = (item: ManagedAdmin) => {
+    setResettingPassword(item)
+    resetPasswordForm.setFieldsValue({ password: '', reason: '管理员遗失密码后按最小权限原则重置。', current_password: '', mfa_code: '' })
+  }
+
+  const saveResetPassword = async () => {
+    if (!resettingPassword) return
+    try {
+      const values = await resetPasswordForm.validateFields()
+      setSubmitting(true)
+      await verifyAdminRecent(values.current_password, values.mfa_code || undefined)
+      await resetManagedAdminPassword(resettingPassword.id, values.password, values.reason)
+      messageApi.success('密码已重置，该管理员的全部会话已失效。')
+      setResettingPassword(null)
+      resetPasswordForm.resetFields()
+      await load()
+    } catch (error) {
+      if (error instanceof ApiError) messageApi.error(error.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const roleNameOf = (code: string) => roles.find((role) => role.code === code)?.name ?? code
 
   const rolesTab = <>
@@ -318,10 +347,13 @@ export function RolesPage() {
           { title: 'MFA', width: 100, dataIndex: 'requires_mfa', render: (value: boolean) => (value ? <Pill tone="blue">已启用</Pill> : <Pill tone="gray">未启用</Pill>) },
           { title: '最近登录', width: 170, dataIndex: 'last_login_at', render: fmtTime },
           {
-            title: '操作', width: 100, render: (_: unknown, item: ManagedAdmin) => (
-              <Popconfirm title={item.status === 'active' ? '确认停用该账号并撤销会话？' : '确认恢复该账号？'} onConfirm={() => void toggleAdminStatus(item)}>
-                <a className={`xq-link${item.status === 'active' ? ' danger' : ''}`}>{item.status === 'active' ? '禁用' : '启用'}</a>
-              </Popconfirm>
+            title: '操作', width: 170, render: (_: unknown, item: ManagedAdmin) => (
+              <Space size={12}>
+                <Popconfirm title={item.status === 'active' ? '确认停用该账号并撤销会话？' : '确认恢复该账号？'} onConfirm={() => void toggleAdminStatus(item)}>
+                  <a className={`xq-link${item.status === 'active' ? ' danger' : ''}`}>{item.status === 'active' ? '禁用' : '启用'}</a>
+                </Popconfirm>
+                {item.id !== currentAdmin?.id && <a className="xq-link" onClick={() => openResetPassword(item)}>重置密码</a>}
+              </Space>
             ),
           },
         ]}
@@ -402,6 +434,24 @@ export function RolesPage() {
           <Form.Item name="role_codes" label="初始角色" rules={[{ required: true }]}>
             <Select mode="multiple" options={roles.map((role) => ({ value: role.code, label: role.name }))} />
           </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={resettingPassword ? `重置密码：${resettingPassword.display_name}` : '重置密码'}
+        open={Boolean(resettingPassword)}
+        onCancel={() => { setResettingPassword(null); resetPasswordForm.resetFields() }}
+        onOk={() => void saveResetPassword()}
+        okText="确认重置"
+        confirmLoading={submitting}
+        destroyOnHidden
+      >
+        <p style={{ color: '#b45309', marginBottom: 16 }}>重置后该管理员的全部会话立即失效，需用新密码重新登录；本操作会记入审计日志。</p>
+        <Form form={resetPasswordForm} layout="vertical">
+          <Form.Item name="password" label="新密码" rules={[{ required: true, min: 12, message: '请输入至少 12 位的新密码' }, { pattern: /^(?=.*[A-Za-z])(?=.*\d).+$/, message: '新密码必须同时包含字母和数字' }]}><Input.Password autoComplete="new-password" /></Form.Item>
+          <Form.Item name="reason" label="重置原因" rules={[{ required: true, min: 4, max: 500 }]}><Input.TextArea rows={2} /></Form.Item>
+          <Form.Item name="current_password" label="当前管理员密码" extra="用于高风险操作二次验证" rules={[{ required: true, message: '请输入你自己的密码' }]}><Input.Password autoComplete="current-password" /></Form.Item>
+          {currentAdmin?.requires_mfa && <Form.Item name="mfa_code" label="动态验证码或恢复码" rules={[{ required: true }]}><Input autoComplete="one-time-code" /></Form.Item>}
         </Form>
       </Modal>
     </div>
