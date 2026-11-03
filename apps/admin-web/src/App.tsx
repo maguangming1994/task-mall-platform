@@ -13,7 +13,6 @@ import {
   Button,
   Checkbox,
   ConfigProvider,
-  Dropdown,
   Form,
   Input,
   Layout,
@@ -224,21 +223,12 @@ function AdminShell() {
               />
             ) : null}
             <Badge dot color="#f59e0b"><span className="xq-header-bell"><BellOutlined /></span></Badge>
-            <Dropdown
-              trigger={['click']}
-              placement="bottomRight"
-              arrow
-              menu={{ items: [
-                { key: 'password', icon: <KeyOutlined />, label: '修改密码', onClick: () => setPasswordOpen(true) },
-                { type: 'divider' },
-                { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', danger: true, onClick: signOut },
-              ] }}
-            >
-              <div className="xq-header-user" aria-label="打开管理员账号菜单">
-                <Avatar size={32}>{admin?.display_name.slice(0, 1)}</Avatar>
-                <span><strong style={{ fontSize: 13 }}>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
-              </div>
-            </Dropdown>
+            <Button type="text" icon={<KeyOutlined />} onClick={() => setPasswordOpen(true)}>修改密码</Button>
+            <Button type="text" danger icon={<LogoutOutlined />} onClick={signOut}>退出登录</Button>
+            <div className="xq-header-user">
+              <Avatar size={32}>{admin?.display_name.slice(0, 1)}</Avatar>
+              <span><strong style={{ fontSize: 13 }}>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
+            </div>
           </div>
         </Layout.Header>
         <Layout.Content className="xq-content">
