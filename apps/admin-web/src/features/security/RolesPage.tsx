@@ -12,7 +12,6 @@ import {
   resetManagedAdminPassword,
   updateAdminRole,
   updateManagedAdminStatus,
-  verifyAdminRecent,
   type AdminAuditLog,
   type AdminPermission,
   type AdminRole,
@@ -274,7 +273,7 @@ export function RolesPage() {
 
   const openResetPassword = (item: ManagedAdmin) => {
     setResettingPassword(item)
-    resetPasswordForm.setFieldsValue({ password: '', reason: '管理员遗失密码后按最小权限原则重置。', current_password: '', mfa_code: '' })
+    resetPasswordForm.setFieldsValue({ password: '', reason: '管理员遗失密码后按最小权限原则重置。' })
   }
 
   const saveResetPassword = async () => {
@@ -282,7 +281,6 @@ export function RolesPage() {
     try {
       const values = await resetPasswordForm.validateFields()
       setSubmitting(true)
-      await verifyAdminRecent(values.current_password, values.mfa_code || undefined)
       await resetManagedAdminPassword(resettingPassword.id, values.password, values.reason)
       messageApi.success('密码已重置，该管理员的全部会话已失效。')
       setResettingPassword(null)
@@ -450,8 +448,6 @@ export function RolesPage() {
         <Form form={resetPasswordForm} layout="vertical">
           <Form.Item name="password" label="新密码" rules={[{ required: true, min: 12, message: '请输入至少 12 位的新密码' }, { pattern: /^(?=.*[A-Za-z])(?=.*\d).+$/, message: '新密码必须同时包含字母和数字' }]}><Input.Password autoComplete="new-password" /></Form.Item>
           <Form.Item name="reason" label="重置原因" rules={[{ required: true, min: 4, max: 500 }]}><Input.TextArea rows={2} /></Form.Item>
-          <Form.Item name="current_password" label="当前管理员密码" extra="用于高风险操作二次验证" rules={[{ required: true, message: '请输入你自己的密码' }]}><Input.Password autoComplete="current-password" /></Form.Item>
-          {currentAdmin?.requires_mfa && <Form.Item name="mfa_code" label="动态验证码或恢复码" rules={[{ required: true }]}><Input autoComplete="one-time-code" /></Form.Item>}
         </Form>
       </Modal>
     </div>
