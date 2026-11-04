@@ -185,6 +185,11 @@ class ModuleGateService
 
     private function selfEffective(string $code, ?int $campusId, string $subject, ?string $platform): bool
     {
+        // 审核期提现统一关闭：提现属于资金类功能，审核期不展示任何提现入口与规则文案。
+        if ($code === 'module_withdraw' && $this->releases->enabled('review_in_progress', $subject, $platform)) {
+            return false;
+        }
+
         $global = $this->releases->evaluation($code, $subject, $platform);
 
         // 全局总闸门：disabled 或开关记录缺失时，校区覆盖不可开启

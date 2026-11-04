@@ -14,7 +14,7 @@
       <view class="sec-title"><text class="sec-name">常见问题</text></view>
       <view class="qa-row">如何接单？<text class="chev">›</text></view>
       <view class="qa-row">积分如何获取？<text class="chev">›</text></view>
-      <view class="qa-row">提现多久到账？<text class="chev">›</text></view>
+      <view class="qa-row">如何发布闲置？<text class="chev">›</text></view>
       <view class="qa-row">如何联系卖家？<text class="chev">›</text></view>
     </view>
 

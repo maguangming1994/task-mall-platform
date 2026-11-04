@@ -28,7 +28,7 @@ function isValidStoredFlags(raw: unknown): raw is StoredFlags {
 }
 
 function defaultPlaceholder(code: ModuleCode): ModulePlaceholderCopy {
-  return { title: '功能升级中', desc: `${MODULE_REGISTRY[code].name}正在升级优化，稍作等待，精彩马上回来。` }
+  return { title: '开发中', desc: `${MODULE_REGISTRY[code].name}正在开发中，敬请期待。` }
 }
 
 export const useModulesStore = defineStore('app-modules', {

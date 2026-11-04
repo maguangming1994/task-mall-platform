@@ -20,7 +20,7 @@
       </view>
       <view class="wh-foot">
         <text>冻结余额 <text class="wh-b">¥{{ wallet ? money(wallet.frozen_amount) : '—' }}</text></text>
-        <text>可提现 <text class="wh-b">¥{{ wallet ? money(wallet.withdrawable_amount) : '—' }}</text></text>
+        <text v-if="withdrawEnabled">可提现 <text class="wh-b">¥{{ wallet ? money(wallet.withdrawable_amount) : '—' }}</text></text>
         <text class="wh-link" @click="scrollToWallet">余额明细 ›</text>
       </view>
     </view>
@@ -92,7 +92,7 @@
     </view>
     <view v-if="!couponsError && coupons.length === 0" class="card"><text class="empty">暂无可用优惠券</text></view>
 
-    <view class="card withdrawal-card">
+    <view v-if="withdrawEnabled" class="card withdrawal-card">
       <view class="sec-title"><text class="sec-h">余额提现</text><text class="sec-more">手续费以实时试算为准</text></view>
       <text class="withdraw-tip">提现金额提交后将冻结，审核通过后按后台当前费率扣除手续费并打款。</text>
       <button v-if="modules.isEnabled('module_withdraw')" class="withdraw-entry" aria-label="打开提现页面" @click="openWithdraw">去提现 · 计算手续费</button>
@@ -122,6 +122,7 @@ import { useModulesStore } from '@/stores/modules'
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_wallet'))
+const withdrawEnabled = computed(() => modules.isEnabled('module_withdraw'))
 
 const auth = useAuthStore()
 const points = ref<PointAccount | null>(null)
@@ -156,7 +157,7 @@ async function load() {
     if (pointExpiry.status === 'fulfilled') pointBatches.value = pointExpiry.value.items
     else { pointBatches.value = []; pointsError.value ||= errorMessage(pointExpiry.reason, '积分到期计划加载失败') }
 
-    const walletResults = await Promise.allSettled([getWalletAccount(auth.accessToken), listWalletTransactions(auth.accessToken), listWithdrawals(auth.accessToken)])
+    const walletResults = await Promise.allSettled([getWalletAccount(auth.accessToken), listWalletTransactions(auth.accessToken), withdrawEnabled.value ? listWithdrawals(auth.accessToken) : Promise.resolve({ items: [] as Withdrawal[] })])
     const [walletAccount, walletLedger, walletList] = walletResults
     if (walletAccount.status === 'fulfilled') wallet.value = walletAccount.value
     else { wallet.value = null; walletError.value = errorMessage(walletAccount.reason, '钱包账户加载失败') }

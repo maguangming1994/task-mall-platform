@@ -737,7 +737,7 @@ function openTaskDetail(id: string) { uni.navigateTo({ url: `/pages/task-detail/
 function navigateHomeLink(link: HomeLinkType) {
   const moduleCode = HOME_LINK_MODULE[link]
   if (moduleCode && !modules.isEnabled(moduleCode)) {
-    uni.showToast({ title: '功能升级中，敬请期待', icon: 'none' })
+    uni.showToast({ title: '功能开发中，敬请期待', icon: 'none' })
     return
   }
   if (link === 'tasks') return openTasks()

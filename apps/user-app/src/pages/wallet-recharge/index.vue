@@ -45,7 +45,7 @@
         <view class="frow-label">自定义</view>
         <input v-model="amountYuan" class="input" type="digit" placeholder="输入金额，最低 1 元，最高 50000 元" />
         <view class="pay-row"><text class="pay-label">支付方式</text><text class="pay-value">微信支付</text><view class="pay-check">✓</view></view>
-        <view class="tip-card">充值即时到账；余额可用于校园闲置担保交易，确认收货后结算给卖家；支持随时提现回微信零钱。</view>
+        <view class="tip-card">充值即时到账；余额可用于校园闲置担保交易，确认收货后结算给卖家。</view>
         <button class="tm-primary-button submit" :loading="submitting || onlinePaying" :disabled="onlinePaying" @click="submitOnline">{{ onlineRecharge && isOnlinePending ? '继续微信支付' : `确认充值 ¥${amountYuan || '0'}` }}</button>
       </template>
 

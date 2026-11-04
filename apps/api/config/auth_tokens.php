@@ -9,6 +9,11 @@ return [
     'refresh_ttl_days' => (int) env('AUTH_REFRESH_TTL_DAYS', 30),
     'max_active_devices' => (int) env('AUTH_MAX_ACTIVE_DEVICES', 5),
     'device_limit_strategy' => env('AUTH_DEVICE_LIMIT_STRATEGY', 'revoke_oldest'),
+    // 审核演示登录账号：仅在审核期（review_in_progress）可用，用于微信审核员体验登录、闲置与任务发布。
+    'review_demo' => [
+        'phone' => env('REVIEW_DEMO_PHONE', '13800000001'),
+        'code' => env('REVIEW_DEMO_CODE', '246810'),
+    ],
     'phone_verification' => [
         'driver' => env('PHONE_VERIFICATION_DRIVER', 'log'),
         'ttl_seconds' => (int) env('PHONE_VERIFICATION_TTL_SECONDS', 300),

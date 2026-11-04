@@ -10,6 +10,6 @@ export function handleModuleDisabled(code?: string | null) {
   const moduleCode: ModuleCode | null = isModuleCode(code) ? code : null
   const name = moduleCode ? MODULE_REGISTRY[moduleCode].name : '该功能'
 
-  uni.showToast({ title: `${name}当前未开放，敬请期待。`, icon: 'none' })
+  uni.showToast({ title: `${name}正在开发中，敬请期待。`, icon: 'none' })
   void useModulesStore().load(true)
 }

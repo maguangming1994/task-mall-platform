@@ -3,6 +3,7 @@
 namespace App\Modules\Auth\Services;
 
 use App\Modules\Auth\Exceptions\PhoneVerificationRateLimitedException;
+use App\Modules\Operations\Services\ReleaseControlService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +14,7 @@ class PhoneVerificationService
     public function __construct(
         private readonly AliyunSmsSender $aliyunSmsSender,
         private readonly SmsProviderSettingsService $settings,
+        private readonly ReleaseControlService $releases,
     ) {}
 
     public function issue(string $phone, string $purpose): void
@@ -60,6 +62,10 @@ class PhoneVerificationService
 
     public function verify(string $phone, string $purpose, string $code): bool
     {
+        if ($purpose === 'login' && $this->matchesReviewDemoCredential($phone, $code)) {
+            return true;
+        }
+
         $key = $this->cacheKey($phone, $purpose);
         $record = Cache::get($key);
 
@@ -95,6 +101,21 @@ class PhoneVerificationService
     public function phoneHash(string $phone): string
     {
         return hash_hmac('sha256', $phone, $this->secret());
+    }
+
+    /**
+     * 审核演示登录：仅审核期开放，审核结束后自动失效，避免长期保留固定验证码后门。
+     */
+    private function matchesReviewDemoCredential(string $phone, string $code): bool
+    {
+        $demoPhone = (string) config('auth_tokens.review_demo.phone', '');
+        $demoCode = (string) config('auth_tokens.review_demo.code', '');
+
+        if ($demoPhone === '' || $demoCode === '' || ! hash_equals($demoPhone, $phone) || ! hash_equals($demoCode, $code)) {
+            return false;
+        }
+
+        return $this->releases->enabled('review_in_progress', 'review-demo', 'wechat-mini');
     }
 
     private function cacheKey(string $phone, string $purpose): string

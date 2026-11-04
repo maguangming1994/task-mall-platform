@@ -86,6 +86,9 @@ compose run --rm --no-deps api php artisan db:seed --class=RbacSeeder --force
 echo "[6/14] 同步全局功能开关（幂等：确保 13 模块 flag 存在）"
 compose run --rm --no-deps api php artisan db:seed --class=ReleaseControlSeeder --force
 
+echo "[6b/14] 审核演示账号（幂等：仅审核期创建，含闲置/任务发布权限与预算池）"
+compose run --rm --no-deps api php artisan db:seed --class=ProductionReviewDemoAccountSeeder --force
+
 echo "[7/14] 启用人工实名认证（幂等：目标状态已满足则跳过）"
 compose run --rm --no-deps api php artisan db:seed --class=ProductionEnableIdentityVerificationSeeder --force
 

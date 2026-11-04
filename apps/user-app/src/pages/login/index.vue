@@ -63,6 +63,13 @@
 
       <view v-if="isDevelopment" class="dev-tip"><text class="dev-mark">DEV</text><text>本地调试验证码 246810</text></view>
 
+      <view v-if="isReviewDemo && !needsPhoneBinding" class="review-demo">
+        <view class="review-demo-head"><text class="review-demo-badge">审核演示</text><text class="review-demo-title">测试人员登录入口</text></view>
+        <view class="review-demo-row"><text>账号 <text class="review-demo-strong">{{ reviewDemoPhone }}</text></text><text>验证码 <text class="review-demo-strong">{{ reviewDemoCode }}</text></text></view>
+        <button class="review-demo-btn" :loading="auth.submitting" :disabled="auth.submitting" @click="reviewDemoLogin">一键填入并登录</button>
+        <text class="review-demo-tip">该账号已开通闲置发布与任务发布权限，可直接体验完整流程。</text>
+      </view>
+
       <view v-if="formError" class="form-error" role="alert" aria-live="assertive">{{ formError }}</view>
 
       <button :class="['btn-phone-submit', { primary: !wechatMethod || needsPhoneBinding }]" :loading="auth.submitting" :disabled="auth.submitting" @click="phoneAction">
@@ -117,6 +124,11 @@ const brand = ref<HomeBrand>({ logo_url: '', logo_text: 'TM', name: '任务商�
 const needsPhoneBinding = ref(Boolean(auth.user && !auth.user.phone_bound))
 const returnUrl = ref<string | null>(null)
 const isDevelopment = import.meta.env.MODE === 'development'
+const REVIEW_DEMO_PHONE = '13800000001'
+const REVIEW_DEMO_CODE = '246810'
+const reviewDemoPhone = REVIEW_DEMO_PHONE
+const reviewDemoCode = REVIEW_DEMO_CODE
+const isReviewDemo = computed(() => capabilities.value?.review_status === 'reviewing')
 const wechatMethod = computed(() => capabilities.value?.login_methods.find(method => method !== 'phone'))
 const wechatPhoneAvailable = computed(() => capabilities.value?.login_methods.includes('wechat_mini') === true)
 let timer: ReturnType<typeof setInterval> | undefined
@@ -197,6 +209,13 @@ async function phoneAction() {
   } catch (error) {
     showError(error)
   }
+}
+
+async function reviewDemoLogin() {
+  phone.value = REVIEW_DEMO_PHONE
+  code.value = REVIEW_DEMO_CODE
+  agreed.value = true
+  await phoneAction()
 }
 
 interface WechatPhoneEvent {
@@ -401,5 +420,14 @@ onUnmounted(() => {
 .verified-title{color:#08A152;font-size:28rpx;font-weight:700}
 .verified-copy{margin-top:6rpx;color:#5a8a72;font-size:22rpx}
 .wechat-phone-unavailable{margin-bottom:24rpx;padding:20rpx 24rpx;border-radius:20rpx;background:#FFF2E5;color:#F2620A;font-size:24rpx;line-height:1.5}
+.review-demo{margin-top:24rpx;padding:24rpx;border:2rpx dashed #0BBF63;border-radius:24rpx;background:#F2FBF6}
+.review-demo-head{display:flex;align-items:center;gap:12rpx}
+.review-demo-badge{padding:4rpx 12rpx;border-radius:10rpx;background:#0BBF63;color:#fff;font-size:20rpx;font-weight:700}
+.review-demo-title{color:#08A152;font-size:26rpx;font-weight:700}
+.review-demo-row{display:flex;flex-wrap:wrap;gap:12rpx 32rpx;margin-top:16rpx;color:#3C4A42;font-size:24rpx}
+.review-demo-strong{color:#08A152;font-weight:700}
+.review-demo-btn{display:flex;width:100%;height:76rpx;align-items:center;justify-content:center;margin:20rpx 0 0;border:2rpx solid #0BBF63;border-radius:38rpx;background:#fff;color:#08A152;font-size:26rpx;font-weight:700;line-height:76rpx}
+.review-demo-btn::after{border:0}
+.review-demo-tip{display:block;margin-top:14rpx;color:#6B7C72;font-size:22rpx;line-height:1.5}
 @media screen and (min-width:768px){.page{width:750rpx;margin:0 auto}}
 </style>

@@ -57,9 +57,14 @@ class ReleaseControlService
         return FeatureFlag::query()
             ->where('code', 'like', 'module_%')
             ->get(['code', $titleField, $descField])
-            ->mapWithKeys(function (FeatureFlag $flag) use ($titleField, $descField): array {
-                $title = $flag->getAttribute($titleField) ?: '功能升级中';
-                $desc = $flag->getAttribute($descField) ?: '该功能正在升级优化，稍作等待，精彩马上回来。';
+            ->mapWithKeys(function (FeatureFlag $flag) use ($titleField, $descField, $reviewStatus): array {
+                // 审核期统一显示「开发中」，避免出现“升级中/即将回来”等被理解为功能缺失的表述。
+                if ($reviewStatus === 'reviewing') {
+                    return [$flag->code => ['title' => '开发中', 'desc' => '该功能正在开发中，敬请期待。']];
+                }
+
+                $title = $flag->getAttribute($titleField) ?: '功能开发中';
+                $desc = $flag->getAttribute($descField) ?: '该功能正在开发中，敬请期待。';
 
                 return [$flag->code => ['title' => $title, 'desc' => $desc]];
             })
