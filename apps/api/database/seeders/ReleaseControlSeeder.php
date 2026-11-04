@@ -57,14 +57,16 @@ class ReleaseControlSeeder extends Seeder
             );
         }
 
-        // 提现功能：永久关闭，审核期与审核过均不可用，入口与页面统一显示占位。
-        FeatureFlag::query()->where('code', 'module_withdraw')->update([
-            'mode' => 'disabled',
-            'rollout_percentage' => 0,
-            'placeholder_title_reviewing' => '开发中',
-            'placeholder_desc_reviewing' => '该功能正在开发中，敬请期待。',
-            'placeholder_title_reviewed' => '开发中',
-            'placeholder_desc_reviewed' => '该功能正在开发中，敬请期待。',
-        ]);
+        // 提现功能：生产环境永久关闭，审核期与审核过均不可用，入口与页面统一显示占位。
+        if (app()->environment('production')) {
+            FeatureFlag::query()->where('code', 'module_withdraw')->update([
+                'mode' => 'disabled',
+                'rollout_percentage' => 0,
+                'placeholder_title_reviewing' => '开发中',
+                'placeholder_desc_reviewing' => '该功能正在开发中，敬请期待。',
+                'placeholder_title_reviewed' => '开发中',
+                'placeholder_desc_reviewed' => '该功能正在开发中，敬请期待。',
+            ]);
+        }
     }
 }
