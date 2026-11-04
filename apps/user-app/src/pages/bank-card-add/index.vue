@@ -38,7 +38,7 @@
 
     <view class="agree-card" @click="agreed = !agreed">
       <view class="agree-check" :class="{ on: agreed }"><text v-if="agreed" class="agree-tick">✓</text></view>
-      <text class="agree-text">我已阅读并同意<text class="link">《支付服务协议》</text>和<text class="link">《银行卡绑定须知》</text>，绑卡信息仅用于余额提现</text>
+      <text class="agree-text">我已阅读并同意<text class="link">《支付服务协议》</text>和<text class="link">《银行卡绑定须知》</text></text>
     </view>
 
     <view class="action-bar">

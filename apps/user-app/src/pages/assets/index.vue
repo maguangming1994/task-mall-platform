@@ -14,13 +14,11 @@
       <view class="wh-row">
         <text class="wh-num">{{ wallet ? money(wallet.available_amount) : '—' }}</text>
         <view class="wh-actions">
-          <button v-if="modules.isEnabled('module_withdraw')" class="wh-pill ghost" @click="openWithdraw">提现</button>
           <button v-if="modules.isEnabled('module_wallet_recharge')" class="wh-pill solid" @click="openRecharge">充值</button>
         </view>
       </view>
       <view class="wh-foot">
         <text>冻结余额 <text class="wh-b">¥{{ wallet ? money(wallet.frozen_amount) : '—' }}</text></text>
-        <text v-if="withdrawEnabled">可提现 <text class="wh-b">¥{{ wallet ? money(wallet.withdrawable_amount) : '—' }}</text></text>
         <text class="wh-link" @click="scrollToWallet">余额明细 ›</text>
       </view>
     </view>
@@ -92,18 +90,6 @@
     </view>
     <view v-if="!couponsError && coupons.length === 0" class="card"><text class="empty">暂无可用优惠券</text></view>
 
-    <view v-if="withdrawEnabled" class="card withdrawal-card">
-      <view class="sec-title"><text class="sec-h">余额提现</text><text class="sec-more">手续费以实时试算为准</text></view>
-      <text class="withdraw-tip">提现金额提交后将冻结，审核通过后按后台当前费率扣除手续费并打款。</text>
-      <button v-if="modules.isEnabled('module_withdraw')" class="withdraw-entry" aria-label="打开提现页面" @click="openWithdraw">去提现 · 计算手续费</button>
-      <view v-for="item in withdrawals" :key="item.id" class="pt-row">
-        <view class="pt-ic ic-orange">提</view>
-        <view class="pt-main"><text class="pt-title">{{ item.withdrawal_no }}</text><text class="pt-note">{{ formatTime(item.created_at) }} · {{ item.workflow?.next_action || '请稍后刷新提现处理状态。' }}</text></view>
-        <view class="withdrawal-amount"><text>¥{{ money(item.requested_amount) }}</text><text>{{ item.workflow?.status_label || withdrawalStatusText(item.status) }}</text></view>
-      </view>
-      <text v-if="!walletError && !loading && withdrawals.length === 0" class="empty">暂无提现记录</text>
-    </view>
-
     </template>
     <AppTabBar current-target="account" />
   </view>
@@ -113,7 +99,7 @@
 import { formatDate, formatDateTime as formatTime } from '@/utils/dateTime'
 import { onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
-import { getPointAccount, getWalletAccount, listCoupons, listPointBatches, listPointTransactions, listWalletTransactions, listWithdrawals, type PointAccount, type PointBatch, type PointTransaction, type UserCoupon, type WalletAccount, type WalletTransaction, type Withdrawal } from '@/api/assets'
+import { getPointAccount, getWalletAccount, listCoupons, listPointBatches, listPointTransactions, listWalletTransactions, type PointAccount, type PointBatch, type PointTransaction, type UserCoupon, type WalletAccount, type WalletTransaction } from '@/api/assets'
 import AppTabBar from '@/components/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
@@ -122,7 +108,6 @@ import { useModulesStore } from '@/stores/modules'
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_wallet'))
-const withdrawEnabled = computed(() => modules.isEnabled('module_withdraw'))
 
 const auth = useAuthStore()
 const points = ref<PointAccount | null>(null)
@@ -131,7 +116,6 @@ const coupons = ref<UserCoupon[]>([])
 const pointTransactions = ref<PointTransaction[]>([])
 const pointBatches = ref<PointBatch[]>([])
 const walletTransactions = ref<WalletTransaction[]>([])
-const withdrawals = ref<Withdrawal[]>([])
 const loading = ref(false)
 const pointsError = ref('')
 const walletError = ref('')
@@ -157,14 +141,12 @@ async function load() {
     if (pointExpiry.status === 'fulfilled') pointBatches.value = pointExpiry.value.items
     else { pointBatches.value = []; pointsError.value ||= errorMessage(pointExpiry.reason, '积分到期计划加载失败') }
 
-    const walletResults = await Promise.allSettled([getWalletAccount(auth.accessToken), listWalletTransactions(auth.accessToken), withdrawEnabled.value ? listWithdrawals(auth.accessToken) : Promise.resolve({ items: [] as Withdrawal[] })])
-    const [walletAccount, walletLedger, walletList] = walletResults
+    const walletResults = await Promise.allSettled([getWalletAccount(auth.accessToken), listWalletTransactions(auth.accessToken)])
+    const [walletAccount, walletLedger] = walletResults
     if (walletAccount.status === 'fulfilled') wallet.value = walletAccount.value
     else { wallet.value = null; walletError.value = errorMessage(walletAccount.reason, '钱包账户加载失败') }
     if (walletLedger.status === 'fulfilled') walletTransactions.value = walletLedger.value.items
     else { walletTransactions.value = []; walletError.value ||= errorMessage(walletLedger.reason, '余额流水加载失败') }
-    if (walletList.status === 'fulfilled') withdrawals.value = walletList.value.items
-    else { withdrawals.value = []; walletError.value ||= errorMessage(walletList.reason, '提现记录加载失败') }
 
     try { coupons.value = await listCoupons(auth.accessToken) } catch (error) { coupons.value = []; couponsError.value = errorMessage(error, '优惠券加载失败') }
   } finally {
@@ -179,9 +161,7 @@ function signedMoney(value: number) { return `${value >= 0 ? '+' : '-'}¥${money
 function pointTypeText(value: string) { return ({ grant: '获得积分', consume: '使用积分', expire: '积分到期', refund: '退款返还', adjust: '后台调整', reverse: '业务冲正' } as Record<string, string>)[value] || '积分变动' }
 function walletTypeText(value: string) { return ({ grant: '余额奖励', consume: '余额支付', refund: '退款返还', withdrawal: '余额提现', adjust: '后台调整', reverse: '业务冲正', recharge_card: '卡密充值', recharge_online: '线上充值', recharge_offline: '线下充值' } as Record<string, string>)[value] || '余额变动' }
 function sourceText(value?: string | null) { return ({ signin: '签到', daily_check_in: '每日签到', post: '发布帖子', comment: '发表评论', profile: '完善资料', referral: '推荐新人', referral_new_user: '推荐新人', task: '完成任务', manual: '平台发放' } as Record<string, string>)[value || ''] || '其他来源' }
-function withdrawalStatusText(value: string) { return ({ reviewing: '审核中', submitted: '待审核', approved: '待打款', processing: '处理中', succeeded: '已到账', completed: '已完成', rejected: '已拒绝', failed: '打款失败', cancelled: '已取消' } as Record<string, string>)[value] || '提现状态同步中' }
 function openRecharge() { uni.navigateTo({ url: '/pages/wallet-recharge/index' }) }
-function openWithdraw() { uni.navigateTo({ url: '/pages/withdraw/index' }) }
 function scrollToWallet() { uni.pageScrollTo({ selector: '#wallet-ledger', duration: 300 }) }
 </script>
 
@@ -253,14 +233,6 @@ function scrollToWallet() { uni.pageScrollTo({ selector: '#wallet-ledger', durat
 .cp-mid{flex:1;min-width:0;padding:28rpx 16rpx 24rpx 28rpx}
 .cp-name{display:block;font-size:28rpx;font-weight:800}
 .cp-time{display:block;margin-top:14rpx;font-size:20rpx;opacity:.75}
-/* 提现区 */
-.withdrawal-card{padding-bottom:16rpx}
-.withdraw-tip{display:block;margin:0 28rpx;font-size:24rpx;color:#767C85;line-height:1.6}
-.withdraw-entry{height:80rpx;margin:20rpx 28rpx 8rpx;border:0;border-radius:40rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:28rpx;font-weight:700;line-height:80rpx;box-shadow:0 12rpx 28rpx rgba(11,191,99,.3)}
-.withdraw-entry::after{border:0}
-.withdrawal-amount{flex:none;text-align:right}
-.withdrawal-amount text{display:block;font-size:26rpx;font-weight:700;color:#191B1F}
-.withdrawal-amount text:last-child{margin-top:6rpx;font-size:22rpx;font-weight:400;color:#AEB3BB}
 /* 状态与错误 */
 .empty{display:block;padding:40rpx 0;color:#AEB3BB;text-align:center;font-size:26rpx}
 .module-error{display:flex;align-items:center;justify-content:space-between;gap:16rpx;margin-top:20rpx;padding:20rpx 24rpx;border-radius:24rpx;background:#FFEEEA;color:#FF2442;font-size:24rpx}

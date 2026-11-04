@@ -37,7 +37,7 @@
       <view v-else class="empty">
         <view class="empty-ic">💳</view>
         <text class="empty-title">暂无绑定银行卡</text>
-        <text class="empty-copy">添加银行卡后可用于提现收款</text>
+        <text class="empty-copy">绑定银行卡用于后续资金服务</text>
       </view>
 
       <view class="add-btn-wrap">
