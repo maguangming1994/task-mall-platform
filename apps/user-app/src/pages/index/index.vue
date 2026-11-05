@@ -138,7 +138,7 @@
           </view>
           <text class="home-v13-post-meta">{{ postMetaText(task) }}</text>
         </view>
-        <view class="home-v13-post-follow" @click.stop="followPublisher(task)">+关注</view>
+        <view v-if="modules.isLaunched('module_follow')" class="home-v13-post-follow" @click.stop="followPublisher(task)">+关注</view>
       </view>
 
       <text class="home-v13-post-body">{{ postBodyText(task) }}</text>

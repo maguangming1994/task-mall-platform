@@ -28,6 +28,11 @@ class ModuleRegistry
         'module_referrals' => ['name' => '邀请推荐', 'parent' => null, 'group' => 'growth'],
         'module_checkin' => ['name' => '每日签到', 'parent' => null, 'group' => 'growth'],
         'module_second_hand' => ['name' => '校园闲置', 'parent' => null, 'group' => 'second_hand'],
+        // 以下为暂未上线能力：全局默认关闭，后台开启后热生效。
+        'module_membership' => ['name' => '校园 PLUS 会员', 'parent' => null, 'group' => 'membership'],
+        'module_follow' => ['name' => '关注作者', 'parent' => null, 'group' => 'community'],
+        'module_identity_verification' => ['name' => '实名认证', 'parent' => null, 'group' => 'membership'],
+        'module_feedback' => ['name' => '意见反馈', 'parent' => null, 'group' => 'membership'],
     ];
 
     /**
@@ -42,6 +47,7 @@ class ModuleRegistry
         'wallet' => '资产钱包',
         'growth' => '增长工具',
         'second_hand' => '校园闲置',
+        'membership' => '会员与账户',
     ];
 
     /**

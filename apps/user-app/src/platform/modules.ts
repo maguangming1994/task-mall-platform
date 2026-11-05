@@ -14,6 +14,10 @@ export type ModuleCode =
   | 'module_referrals'
   | 'module_checkin'
   | 'module_second_hand'
+  | 'module_membership'
+  | 'module_follow'
+  | 'module_identity_verification'
+  | 'module_feedback'
 
 export interface ModuleDefinition {
   code: ModuleCode
@@ -39,6 +43,10 @@ export const MODULE_REGISTRY: Record<ModuleCode, ModuleDefinition> = {
   module_referrals: { code: 'module_referrals', name: '邀请推荐', parent: null, icon: '/static/icons/module-referrals.svg' },
   module_checkin: { code: 'module_checkin', name: '每日签到', parent: null, icon: '/static/icons/module-check-in.svg' },
   module_second_hand: { code: 'module_second_hand', name: '校园闲置', parent: null, icon: '/static/icons/module-mall-trade.svg' },
+  module_membership: { code: 'module_membership', name: '校园 PLUS 会员', parent: null, icon: '/static/icons/module-referrals.svg' },
+  module_follow: { code: 'module_follow', name: '关注作者', parent: null, icon: '/static/icons/module-community.svg' },
+  module_identity_verification: { code: 'module_identity_verification', name: '实名认证', parent: null, icon: '/static/icons/service-verify.svg' },
+  module_feedback: { code: 'module_feedback', name: '意见反馈', parent: null, icon: '/static/icons/service-support.svg' },
 }
 
 export const MODULE_CODES = Object.keys(MODULE_REGISTRY) as ModuleCode[]

@@ -6,7 +6,7 @@ namespace App\Modules\Operations\Support;
  * 校区分期上线套餐（阶段模板）。
  *
  * 语义约定：
- * - basic/standard：套餐内模块显式 enabled，其余 13 模块显式 disabled。
+ * - basic/standard：套餐内模块显式 enabled，其余 17 模块显式 disabled。
  *   必须显式关闭而非继承——全局默认 enabled 时 inherit 即开放。
  * - full：不写任何覆盖行（全部 inherit 跟随全局，含平台灰度与应急总闸门），
  *   应用时删除该校区全部覆盖行。
@@ -45,7 +45,7 @@ class ModulePackage
         ],
         self::FULL => [
             'name' => '完整版',
-            'description' => '全部 13 个模块跟随平台全局配置开放。',
+            'description' => '全部 17 个模块跟随平台全局配置开放。',
             'modules' => [
                 'module_tasks',
                 'module_task_publish',
@@ -60,6 +60,10 @@ class ModulePackage
                 'module_referrals',
                 'module_checkin',
                 'module_second_hand',
+                'module_membership',
+                'module_follow',
+                'module_identity_verification',
+                'module_feedback',
             ],
         ],
     ];
@@ -95,7 +99,7 @@ class ModulePackage
     }
 
     /**
-     * 套餐对全部 13 个模块的目标覆盖状态（code => enabled/disabled）。
+     * 套餐对全部 17 个模块的目标覆盖状态（code => enabled/disabled）。
      * 完整版返回空数组，语义为“不保留任何覆盖行，全部 inherit”。
      *
      * @return array<string, string>

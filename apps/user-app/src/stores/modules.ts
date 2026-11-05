@@ -141,6 +141,19 @@ export const useModulesStore = defineStore('app-modules', {
       }
       return true
     },
+    /**
+     * 仅当服务端明确开启时才展示：用于「暂未上线」功能的入口隐藏。
+     * 与 isEnabled 不同，缺失开关记录（未下发/请求失败）时保持隐藏（fail-close）。
+     */
+    isLaunched(code: ModuleCode): boolean {
+      let cur: ModuleCode | null = code
+      while (cur) {
+        const key: ModuleCode = cur
+        if (this.flags[key] !== true) return false
+        cur = MODULE_REGISTRY[key].parent
+      }
+      return true
+    },
     placeholder(code: ModuleCode): ModulePlaceholderCopy {
       return this.placeholders[code] || defaultPlaceholder(code)
     },

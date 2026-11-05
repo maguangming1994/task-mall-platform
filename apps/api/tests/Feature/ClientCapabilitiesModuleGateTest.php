@@ -26,7 +26,7 @@ class ClientCapabilitiesModuleGateTest extends TestCase
         return $headers;
     }
 
-    public function test_payload_is_version_6_with_13_modules_and_experimental_flags(): void
+    public function test_payload_is_version_6_with_17_modules_and_experimental_flags(): void
     {
         $response = $this->getJson('/api/v1/client-capabilities', $this->baseHeaders('cap-device-1'));
 
@@ -37,10 +37,15 @@ class ClientCapabilitiesModuleGateTest extends TestCase
             ->assertJsonPath('data.campus_profile', null);
 
         $flags = $response->json('data.feature_flags');
+        // 已上线模块全局默认 enabled；以下暂未上线能力默认 disabled，入口在客户端隐藏。
+        $unlaunched = ['module_membership', 'module_follow', 'module_identity_verification', 'module_feedback'];
         foreach (app(ModuleRegistry::class)->codes() as $code) {
             $this->assertArrayHasKey($code, $flags, "缺少模块开关 {$code}");
-            // 全局 13 模块默认 enabled，无校区上下文时全部为开
-            $this->assertTrue($flags[$code], "全局默认开启的 {$code} 应为 true");
+            $this->assertSame(
+                ! in_array($code, $unlaunched, true),
+                $flags[$code],
+                "{$code} 的默认开启状态与预期不符",
+            );
         }
         // 实验性 flag 仍然存在且走全局口径（播种为 disabled）
         $this->assertFalse($flags['checkout_v2']);

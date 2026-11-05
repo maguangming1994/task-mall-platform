@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
  */
 class ModuleRegistryTest extends TestCase
 {
-    public function test_registry_contains_exactly_the_13_module_codes(): void
+    public function test_registry_contains_exactly_the_17_module_codes(): void
     {
         $registry = new ModuleRegistry;
 
@@ -28,9 +28,13 @@ class ModuleRegistryTest extends TestCase
             'module_referrals',
             'module_checkin',
             'module_second_hand',
+            'module_membership',
+            'module_follow',
+            'module_identity_verification',
+            'module_feedback',
         ], $registry->codes());
 
-        $this->assertCount(13, $registry->all());
+        $this->assertCount(17, $registry->all());
     }
 
     public function test_parent_chain_matches_frontend_registry(): void
@@ -51,6 +55,10 @@ class ModuleRegistryTest extends TestCase
             'module_referrals' => null,
             'module_checkin' => null,
             'module_second_hand' => null,
+            'module_membership' => null,
+            'module_follow' => null,
+            'module_identity_verification' => null,
+            'module_feedback' => null,
         ];
 
         foreach ($expectedParents as $code => $parent) {

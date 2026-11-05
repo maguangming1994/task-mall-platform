@@ -58,7 +58,7 @@
       </view>
     </view>
 
-    <view class="vip-card" @click="openVip">
+    <view v-if="modules.isLaunched('module_membership')" class="vip-card" @click="openVip">
       <view class="vip-main">
         <text class="vip-title">👑 校园 PLUS 会员</text>
         <text class="vip-sub">兑换 9 折起 · 每月领 50 积分券包</text>
@@ -114,7 +114,7 @@
       <view v-if="modules.isEnabled('module_wallet')" class="fn" @click="openAssets"><view class="fn-ic" style="background:#FFF2E5">🎫</view><text class="fn-label">积分明细</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view v-if="modules.isEnabled('module_wallet_recharge')" class="fn" @click="openRecharge"><view class="fn-ic" style="background:#FFF6DE">💳</view><text class="fn-label">钱包充值</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view class="fn" @click="openSupport"><view class="fn-ic" style="background:#EAF2FF">🎧</view><text class="fn-label">客服中心</text><view class="sp" /><text class="fn-arrow">›</text></view>
-      <view class="fn" @click="openSupport"><view class="fn-ic" style="background:#F1EAFF">💬</view><text class="fn-label">意见反馈</text><view class="sp" /><text class="fn-arrow">›</text></view>
+      <view v-if="modules.isLaunched('module_feedback')" class="fn" @click="openSupport"><view class="fn-ic" style="background:#F1EAFF">💬</view><text class="fn-label">意见反馈</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view class="fn" @click="openPrivacy"><view class="fn-ic" style="background:#EEF1F5">⚙️</view><text class="fn-label">设置</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view class="fn" @click="openAdminWorkbench"><view class="fn-ic" style="background:#E9F7EF">🛡️</view><text class="fn-label">审核工作台</text><view class="sp" /><text v-if="admin.isLoggedIn" class="fn-note">{{ admin.displayName }}</text><text class="fn-arrow">›</text></view>
     </view>
@@ -233,11 +233,18 @@ const serviceModuleMap: Record<string, ModuleCode> = {
   referrals: 'module_referrals',
   check_in: 'module_checkin',
 }
+const launchedServiceModuleMap: Record<string, ModuleCode> = {
+  identity: 'module_identity_verification',
+}
 const services = computed(() => baseServices
   .filter((item) => item.id !== 'publisher' || auth.user?.can_publish_tasks === true)
   .filter((item) => {
     const code = serviceModuleMap[item.id]
     return !code || modules.isEnabled(code)
+  })
+  .filter((item) => {
+    const code = launchedServiceModuleMap[item.id]
+    return !code || modules.isLaunched(code)
   })
   .map((item) => {
     const configured = accountAppearance.value.service_icons.find((icon) => icon.id === item.id)

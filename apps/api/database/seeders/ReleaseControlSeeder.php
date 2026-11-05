@@ -57,6 +57,29 @@ class ReleaseControlSeeder extends Seeder
             );
         }
 
+        // 暂未上线能力：默认全局关闭，小程序端不出现任何入口；
+        // 审核上线后由管理员在后台「功能开关」把 mode 改为 enabled 即可热生效（60 秒缓存）。
+        foreach ([
+            ['code' => 'module_membership', 'name' => '校园 PLUS 会员'],
+            ['code' => 'module_follow', 'name' => '关注作者'],
+            ['code' => 'module_identity_verification', 'name' => '实名认证'],
+            ['code' => 'module_feedback', 'name' => '意见反馈'],
+        ] as $flag) {
+            FeatureFlag::query()->firstOrCreate(
+                ['code' => $flag['code']],
+                [
+                    'name' => $flag['name'],
+                    'mode' => 'disabled',
+                    'rollout_percentage' => 0,
+                    'version' => 1,
+                    'placeholder_title_reviewing' => '开发中',
+                    'placeholder_desc_reviewing' => '该功能正在开发中，敬请期待。',
+                    'placeholder_title_reviewed' => '开发中',
+                    'placeholder_desc_reviewed' => '该功能正在开发中，敬请期待。',
+                ],
+            );
+        }
+
         // 提现功能：生产环境永久关闭，审核期与审核过均不可用，入口与页面统一显示占位。
         if (app()->environment('production')) {
             FeatureFlag::query()->where('code', 'module_withdraw')->update([

@@ -66,12 +66,12 @@
       <view class="guide-step"><strong>3</strong><text>涉及订单或任务时，请同时提供相关编号</text></view>
     </view>
 
-    <view class="card feedback-card">
+    <view v-if="modules.isLaunched('module_feedback')" class="card feedback-card">
       <view class="sec-title"><text class="sec-name">意见反馈</text></view>
       <textarea v-model="feedback" class="feedback-input" placeholder="描述你遇到的问题或建议…" />
       <view class="upload-grid"><view class="upload-add"><text class="up-plus">＋</text><text class="up-text">添加截图 0/3</text></view></view>
     </view>
-    <view class="feedback-action"><button class="feedback-btn" @click="submitFeedback">提交反馈</button></view>
+    <view v-if="modules.isLaunched('module_feedback')" class="feedback-action"><button class="feedback-btn" @click="submitFeedback">提交反馈</button></view>
     <AppTabBar current-target="account" />
   </view>
 </template>
@@ -81,7 +81,9 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { loadHomeContent, type HomeFloatingSupport } from '@/api/home'
 import AppTabBar from '@/components/AppTabBar.vue'
+import { useModulesStore } from '@/stores/modules'
 
+const modules = useModulesStore()
 const support = ref<HomeFloatingSupport>({
   enabled: true,
   show_label: true,
@@ -107,6 +109,7 @@ function submitFeedback() {
 }
 
 onShow(async () => {
+  void modules.ensureReady()
   await loadSupport()
 })
 

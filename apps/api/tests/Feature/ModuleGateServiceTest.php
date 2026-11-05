@@ -112,7 +112,7 @@ class ModuleGateServiceTest extends TestCase
         $this->assertFalse($gate->effective('module_community', $disabled->id, 'device-allow'));
     }
 
-    public function test_all_effective_returns_all_13_module_keys(): void
+    public function test_all_effective_returns_all_17_module_keys(): void
     {
         foreach (app(ModuleRegistry::class)->codes() as $code) {
             $this->globalFlag($code);
@@ -120,8 +120,8 @@ class ModuleGateServiceTest extends TestCase
 
         $result = app(ModuleGateService::class)->allEffective(null, 'device-1');
 
-        $this->assertCount(13, $result);
-        $this->assertCount(13, array_filter($result));
+        $this->assertCount(17, $result);
+        $this->assertCount(17, array_filter($result));
     }
 
     public function test_override_cache_is_cleared_after_forget_campus(): void
