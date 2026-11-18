@@ -10,6 +10,7 @@ use App\Modules\Community\Models\CommunityPostVersion;
 use App\Modules\Notification\Models\NotificationBusinessEvent;
 use App\Modules\Notification\Models\WechatSubscriptionGrant;
 use App\Modules\Notification\Services\NotificationBusinessEventService;
+use App\Modules\Notification\Services\NotificationSceneConfigService;
 use App\Modules\Notification\Services\NotificationService;
 use App\Modules\Notification\Services\WechatSubscriptionGrantService;
 use App\Modules\Task\Models\Task;
@@ -231,6 +232,67 @@ class BusinessNotificationSubscriptionFlowTest extends TestCase
         $this->assertSame('pages/task-claim/index?id=CLAIM-WECHAT-1', $messageRequest['page']);
         $this->assertSame(rtrim(mb_substr($longTitle, 0, 20)), $messageRequest['data']['thing1']['value']);
         $this->assertSame('审核通过', $messageRequest['data']['phrase2']['value']);
+    }
+
+    public function test_official_account_subscription_delivery_uses_oa_openid_and_absolute_url(): void
+    {
+        config()->set('wechat_auth.driver', 'wechat');
+        config()->set('wechat_auth.official_account.app_id', 'wxoa1234567890abcd');
+        config()->set('wechat_auth.official_account.app_secret', 'test-oa-secret');
+        config()->set('app.url', 'https://rwsc.example.cn');
+        Cache::clear();
+        Http::fake([
+            'api.weixin.qq.com/cgi-bin/token*' => Http::response(['access_token' => 'oa-access-token', 'expires_in' => 7200]),
+            'api.weixin.qq.com/cgi-bin/message/subscribe/bizsend*' => Http::response(['errcode' => 0, 'errmsg' => 'ok', 'msgid' => 'oa-message-001']),
+        ]);
+        $user = User::factory()->create(['status' => 'active']);
+        UserIdentity::query()->create([
+            'user_id' => $user->id,
+            'provider' => 'wechat_oa',
+            'provider_user_id' => hash('sha256', 'oa-openid-001'),
+            'provider_user_value' => 'oa-openid-001',
+            'metadata' => ['app_id_hash' => hash('sha256', 'wxoa1234567890abcd')],
+        ]);
+        $admin = AdminUser::query()->create(['account' => 'oa-template-owner', 'display_name' => '公众号模板管理员', 'password' => 'AdminPassword12345!']);
+        $notifications = app(NotificationService::class);
+        $notifications->preference($user)->update(['wechat_enabled' => true, 'quiet_hours_start' => '00:00', 'quiet_hours_end' => '00:00']);
+        $notifications->saveTemplate($admin, [
+            'scene_code' => 'task_completed',
+            'channel' => 'wechat_oa',
+            'subject' => '任务状态更新',
+            'body' => '{"thing1":"{{task_title}}","phrase2":"{{status_text}}"}',
+            'allowed_variables' => ['task_title', 'status_text'],
+            'provider_template_id' => 'OA_TASK_TEMPLATE',
+            'publish' => true,
+        ]);
+        app(NotificationSceneConfigService::class)->configuration('task_completed')
+            ->update(['channels' => ['in_app', 'wechat_oa']]);
+
+        app(NotificationBusinessEventService::class)->record($user, 'task_completed', [
+            'task_title' => '公众号任务提醒',
+            'status_text' => '审核通过',
+            'task_claim_id' => 'CLAIM-OA-1',
+            'task_id' => 'TASK-OA-1',
+            'occurred_at' => '2026-11-18 10:00',
+        ], 'task:CLAIM-OA-1:completed', ['task_claim_id' => 'CLAIM-OA-1']);
+
+        $this->assertDatabaseHas('notification_deliveries', ['channel' => 'wechat_oa', 'status' => 'pending']);
+        $this->assertSame(1, $notifications->deliverPending());
+        $this->assertDatabaseHas('notification_deliveries', [
+            'channel' => 'wechat_oa',
+            'status' => 'sent',
+            'provider_message_id' => 'oa-message-001',
+        ]);
+
+        $sent = Http::recorded(fn (Request $request): bool => str_starts_with($request->url(), 'https://api.weixin.qq.com/cgi-bin/message/subscribe/bizsend'))->first();
+        $this->assertNotNull($sent);
+        /** @var Request $messageRequest */
+        $messageRequest = $sent[0];
+        $this->assertStringContainsString('access_token=oa-access-token', $messageRequest->url());
+        $this->assertSame('oa-openid-001', $messageRequest['touser']);
+        $this->assertSame('OA_TASK_TEMPLATE', $messageRequest['template_id']);
+        $this->assertSame('https://rwsc.example.cn/#/pages/task-claim/index?id=CLAIM-OA-1', $messageRequest['url']);
+        $this->assertSame('公众号任务提醒', $messageRequest['data']['thing1']['value']);
     }
 
     public function test_wechat_subscription_result_is_idempotent_and_rejection_keeps_existing_grant(): void

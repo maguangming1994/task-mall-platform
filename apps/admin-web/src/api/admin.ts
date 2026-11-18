@@ -951,6 +951,7 @@ export interface ManagedSupportTicket {
   status: 'open' | 'processing' | 'waiting_user' | 'waiting_service' | 'resolved' | 'closed'
   priority: 'low' | 'normal' | 'high' | 'urgent'; related_type: string | null; related_public_id: string | null
   assigned_admin_id: number | null; created_at: string; updated_at: string; messages: ManagedSupportMessage[]
+  wechat_notification?: { status: 'sent' | 'skipped' | 'failed'; message: string } | null
 }
 export interface ManagedRelease { id: string; release_version: string; environment: string; commit_sha: string; artifact_hash: string; configuration_hash: string; status: string; rollout_percentage: number; deployed_at: string | null; rolled_back_at: string | null }
 
@@ -1382,6 +1383,20 @@ export function uploadWechatVerificationFile(file: File): Promise<WechatVerifica
 
 export function deleteWechatVerificationFile(filename: string): Promise<void> {
   return request(`/admin/wechat/verification-files/${encodeURIComponent(filename)}`, { method: 'DELETE' })
+}
+
+export interface WechatOfficialAccountMenu {
+  configured: boolean
+  button: Array<Record<string, unknown>>
+  default_button: Array<Record<string, unknown>>
+}
+
+export function getWechatOfficialAccountMenu(): Promise<WechatOfficialAccountMenu> {
+  return request('/admin/wechat/official-account/menu')
+}
+
+export function publishWechatOfficialAccountMenu(reason: string): Promise<WechatOfficialAccountMenu> {
+  return request('/admin/wechat/official-account/menu', { method: 'POST', body: JSON.stringify({ reason }) })
 }
 
 export function getWechatPaymentSettings(): Promise<WechatPaymentSettings> {
@@ -1857,8 +1872,8 @@ export async function listManagedSupportTickets(filters: { status?: string; cate
   const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => Boolean(value)) as Array<[string, string]>)
   return request(`/admin/support-tickets${query.size ? `?${query.toString()}` : ''}`)
 }
-export async function replyManagedSupportTicket(id: string, content: string, status: 'processing' | 'waiting_user' | 'resolved' = 'waiting_user'): Promise<ManagedSupportTicket> {
-  return request(`/admin/support-tickets/${id}/messages`, { method: 'POST', body: JSON.stringify({ content, status }) })
+export async function replyManagedSupportTicket(id: string, content: string, status: 'processing' | 'waiting_user' | 'resolved' = 'waiting_user', notifyWechat = false): Promise<ManagedSupportTicket> {
+  return request(`/admin/support-tickets/${id}/messages`, { method: 'POST', body: JSON.stringify({ content, status, notify_wechat: notifyWechat }) })
 }
 export async function updateManagedSupportTicket(id: string, input: { status?: ManagedSupportTicket['status']; priority?: ManagedSupportTicket['priority'] }): Promise<ManagedSupportTicket> {
   return request(`/admin/support-tickets/${id}`, { method: 'PUT', body: JSON.stringify(input) })

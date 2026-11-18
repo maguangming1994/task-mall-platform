@@ -91,11 +91,12 @@
 </template>
 
 <script setup lang="ts">
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { addCartItem } from '@/api/cart'
 import { resolveApiAssetUrl } from '@/api/http'
 import { getProduct, type MallProduct, type PurchaseMode, type PurchaseOption } from '@/api/products'
+import { enableWechatShare } from '@/platform/wechatJssdk'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
@@ -134,9 +135,27 @@ async function load() {
     const firstSku = product.value.skus.find((sku) => sku.stock > 0) || product.value.skus[0]
     selectedSkuId.value = firstSku?.id || ''
     selectedOptionId.value = firstSku?.purchase_options.find((option) => option.enabled)?.id || ''
+    void enableWechatShare({ title: shareTitle(), desc: shareDesc(), link: sharePath(), imageUrl: shareImage() })
   } catch (error) { loadError.value = error instanceof Error ? error.message : '请稍后重试。'; uni.showToast({ title: loadError.value, icon: 'none' }) }
   finally { loading.value = false }
 }
+
+function shareTitle() {
+  return product.value?.name || '校园好物'
+}
+function shareDesc() {
+  return product.value?.subtitle || product.value?.description_text || '发现校园好物，积分与现金灵活购。'
+}
+function sharePath() {
+  return `/pages/product-detail/index?id=${encodeURIComponent(product.value?.id || productId.value)}`
+}
+function shareImage() {
+  const url = product.value?.gallery_images?.[0]?.url
+  return url ? resolveApiAssetUrl(url) : undefined
+}
+
+onShareAppMessage(() => ({ title: shareTitle(), path: sharePath(), imageUrl: shareImage() }))
+onShareTimeline(() => ({ title: shareTitle(), query: `id=${encodeURIComponent(product.value?.id || productId.value)}`, imageUrl: shareImage() }))
 
 function selectSku(id: string) {
   const sku = product.value?.skus.find((item) => item.id === id)

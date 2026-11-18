@@ -1,5 +1,5 @@
 import { CustomerServiceOutlined, MessageOutlined, SendOutlined } from '@ant-design/icons'
-import { Alert, Button, Card, Drawer, Empty, Form, Input, Select, Space, Table, Tag, Typography, message } from 'antd'
+import { Alert, Button, Card, Checkbox, Drawer, Empty, Form, Input, Select, Space, Table, Tag, Typography, message } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ApiError, listManagedSupportTickets, replyManagedSupportTicket, updateManagedSupportTicket, type ManagedSupportTicket } from '../../api/admin'
 
@@ -17,7 +17,7 @@ export function SupportTicketPage() {
   const [selected, setSelected] = useState<ManagedSupportTicket | null>(null)
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState({ status: '', category: '' })
-  const [form] = Form.useForm<{ content: string; status: 'processing' | 'waiting_user' | 'resolved' }>()
+  const [form] = Form.useForm<{ content: string; status: 'processing' | 'waiting_user' | 'resolved'; notify_wechat: boolean }>()
   const [messageApi, contextHolder] = message.useMessage()
   const load = useCallback(async () => {
     setLoading(true)
@@ -34,10 +34,16 @@ export function SupportTicketPage() {
     try { sync(await updateManagedSupportTicket(selected.id, input)); messageApi.success('工单状态已更新') }
     catch (error) { messageApi.error(error instanceof ApiError ? error.message : '更新失败') }
   }
-  const reply = async (values: { content: string; status: 'processing' | 'waiting_user' | 'resolved' }) => {
+  const reply = async (values: { content: string; status: 'processing' | 'waiting_user' | 'resolved'; notify_wechat: boolean }) => {
     if (!selected) return
-    try { sync(await replyManagedSupportTicket(selected.id, values.content, values.status)); form.resetFields(); messageApi.success('回复已发送') }
-    catch (error) { messageApi.error(error instanceof ApiError ? error.message : '发送失败') }
+    try {
+      const updated = await replyManagedSupportTicket(selected.id, values.content, values.status, Boolean(values.notify_wechat))
+      sync(updated); form.resetFields()
+      const wechat = updated.wechat_notification
+      if (wechat && wechat.status !== 'sent') messageApi.warning(`回复已发送；微信客服消息未送达：${wechat.message}`)
+      else if (wechat?.status === 'sent') messageApi.success('回复已发送，并同步发送微信客服消息')
+      else messageApi.success('回复已发送')
+    } catch (error) { messageApi.error(error instanceof ApiError ? error.message : '发送失败') }
   }
 
   return <>
@@ -66,7 +72,7 @@ export function SupportTicketPage() {
         <div style={{ display: 'grid', gap: 12, maxHeight: 390, overflow: 'auto', padding: 4 }}>
           {selected.messages.length ? selected.messages.map((item) => <div key={item.id} style={{ maxWidth: '86%', justifySelf: item.sender_type === 'admin' ? 'end' : 'start', padding: 14, borderRadius: 16, background: item.sender_type === 'admin' ? '#eaf6f1' : '#f3f5f7' }}><Typography.Text type="secondary" style={{ fontSize: 12 }}>{item.sender_type === 'admin' ? '客服' : '用户'} · {new Date(item.created_at).toLocaleString('zh-CN', { hour12: false })}</Typography.Text><Typography.Paragraph style={{ margin: '6px 0 0', whiteSpace: 'pre-wrap' }}>{item.content}</Typography.Paragraph></div>) : <Empty description="暂无沟通记录" />}
         </div>
-        {!['resolved', 'closed'].includes(selected.status) && <Form form={form} layout="vertical" initialValues={{ status: 'waiting_user' }} onFinish={reply}><Form.Item name="content" label="回复用户" rules={[{ required: true, message: '请输入回复内容' }]}><Input.TextArea rows={5} maxLength={5000} showCount placeholder="说明处理结果或需要用户补充的材料…" /></Form.Item><Space><Form.Item name="status" noStyle><Select style={{ width: 150 }} options={[{ value: 'waiting_user', label: '回复后待用户' }, { value: 'processing', label: '保持处理中' }, { value: 'resolved', label: '回复并解决' }]} /></Form.Item><Button type="primary" htmlType="submit" icon={<SendOutlined />}>发送回复</Button></Space></Form>}
+        {!['resolved', 'closed'].includes(selected.status) && <Form form={form} layout="vertical" initialValues={{ status: 'waiting_user', notify_wechat: false }} onFinish={reply}><Form.Item name="content" label="回复用户" rules={[{ required: true, message: '请输入回复内容' }]}><Input.TextArea rows={5} maxLength={5000} showCount placeholder="说明处理结果或需要用户补充的材料…" /></Form.Item><Form.Item name="notify_wechat" valuePropName="checked"><Checkbox>同时发送微信客服消息（仅限公众号内授权且 48 小时内互动过的用户）</Checkbox></Form.Item><Space><Form.Item name="status" noStyle><Select style={{ width: 150 }} options={[{ value: 'waiting_user', label: '回复后待用户' }, { value: 'processing', label: '保持处理中' }, { value: 'resolved', label: '回复并解决' }]} /></Form.Item><Button type="primary" htmlType="submit" icon={<SendOutlined />}>发送回复</Button></Space></Form>}
       </Space> : null}
     </Drawer>
   </>

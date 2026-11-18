@@ -192,7 +192,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline, onShow } from '@dcloudio/uni-app'
 import { loadHomeContent, type HomeCarouselItem, type HomeContent, type HomeLinkType } from '@/api/home'
 import { loadPendingLegalDocuments } from '@/api/legal'
 import { openPrimaryNavigation } from '@/api/navigation'
@@ -201,6 +201,7 @@ import { listHallTasks, listMyTaskClaims, type HallTask, type TaskClaim, type Ta
 import { getPointAccount } from '@/api/assets'
 import { getDailyCheckIn, type DailyCheckInStatus } from '@/api/growth'
 import { resolveApiAssetUrl } from '@/api/http'
+import { enableWechatShare } from '@/platform/wechatJssdk'
 import { formatRelativeTime } from '@/utils/dateTime'
 import AppTabBar from '@/components/AppTabBar.vue'
 import CampusSelector from '@/components/CampusSelector.vue'
@@ -559,6 +560,17 @@ function promotionCampusHint(options?: Record<string, string | undefined>) {
   return campusPair?.slice(1).join('=') || (scene.includes('=') ? '' : scene)
 }
 
+function homeShareTitle() {
+  return home.value.brand.name || '任务商城'
+}
+function homeShareImage() {
+  const logo = home.value.brand.logo_url
+  return logo ? resolveApiAssetUrl(logo) : undefined
+}
+
+onShareAppMessage(() => ({ title: homeShareTitle(), path: '/pages/index/index', imageUrl: homeShareImage() }))
+onShareTimeline(() => ({ title: homeShareTitle(), imageUrl: homeShareImage() }))
+
 async function loadHome() {
   if (homeLoading.value) return
   homeLoading.value = true
@@ -568,6 +580,7 @@ async function loadHome() {
     home.value = normalizeHomeContent(await loadHomeContent())
     const preferredHeroIndex = home.value.carousel.items.findIndex((item) => item.image_url)
     activeHeroIndex.value = preferredHeroIndex >= 0 ? preferredHeroIndex : 0
+    void enableWechatShare({ title: homeShareTitle(), desc: home.value.brand.caption || '校园任务互助 · 积分换好物', link: '/pages/index/index', imageUrl: homeShareImage() })
     showPopupWhenNeeded()
   } catch {
     homeError.value = '首页配置暂时不可用'

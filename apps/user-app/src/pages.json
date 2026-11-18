@@ -103,6 +103,12 @@
       }
     },
     {
+      "path": "pages/phone-change/index",
+      "style": {
+        "navigationBarTitleText": "更换手机号"
+      }
+    },
+    {
       "path": "pages/assets/index",
       "style": {
         "navigationBarTitleText": "我的资产"

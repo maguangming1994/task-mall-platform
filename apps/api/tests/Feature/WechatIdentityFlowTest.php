@@ -61,6 +61,83 @@ class WechatIdentityFlowTest extends TestCase
         $this->assertDatabaseHas('user_identities', ['provider' => 'phone']);
     }
 
+    public function test_bound_phone_can_be_changed_after_verifying_both_numbers(): void
+    {
+        $login = $this->wechatLogin('mini', 'local:mini-open-change:union-change');
+        $token = $login->json('data.access_token');
+        $headers = $this->headers('wechat-mini', 'mini-change-device');
+
+        $this->postJson('/api/v1/auth/phone/verification-codes', [
+            'phone' => '13800138890',
+            'purpose' => 'bind_phone',
+        ], $headers)->assertAccepted();
+        $this->withToken($token)
+            ->putJson('/api/v1/me/phone', [
+                'new_phone' => '13800138890',
+                'new_phone_verification_code' => '246810',
+            ])
+            ->assertOk();
+
+        $this->postJson('/api/v1/auth/phone/verification-codes', [
+            'phone' => '13800138890',
+            'purpose' => 'change_phone_old',
+        ], $headers)->assertAccepted();
+        $this->postJson('/api/v1/auth/phone/verification-codes', [
+            'phone' => '13900139001',
+            'purpose' => 'change_phone_new',
+        ], $headers)->assertAccepted();
+
+        $this->withToken($token)
+            ->putJson('/api/v1/me/phone/change', [
+                'current_phone' => '13800138890',
+                'current_phone_verification_code' => '246810',
+                'new_phone' => '13900139001',
+                'new_phone_verification_code' => '246810',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.phone_bound', true)
+            ->assertJsonPath('data.phone_masked', '139****9001');
+
+        $oldIdentity = DB::table('user_identities')
+            ->where('provider', 'phone')
+            ->get()
+            ->contains(fn (object $identity): bool => $identity->metadata === json_encode(['source' => 'sms_verification']));
+        $this->assertFalse($oldIdentity);
+    }
+
+    public function test_phone_change_requires_the_current_number_verification(): void
+    {
+        $login = $this->wechatLogin('mini', 'local:mini-open-change-guard:union-change-guard');
+        $token = $login->json('data.access_token');
+        $headers = $this->headers('wechat-mini', 'mini-change-guard-device');
+
+        $this->postJson('/api/v1/auth/phone/verification-codes', [
+            'phone' => '13800138891',
+            'purpose' => 'bind_phone',
+        ], $headers)->assertAccepted();
+        $this->withToken($token)
+            ->putJson('/api/v1/me/phone', [
+                'new_phone' => '13800138891',
+                'new_phone_verification_code' => '246810',
+            ])
+            ->assertOk();
+
+        $this->postJson('/api/v1/auth/phone/verification-codes', [
+            'phone' => '13900139002',
+            'purpose' => 'change_phone_new',
+        ], $headers)->assertAccepted();
+
+        $this->withToken($token)
+            ->putJson('/api/v1/me/phone/change', [
+                'current_phone' => '13800138891',
+                'current_phone_verification_code' => '000000',
+                'new_phone' => '13900139002',
+                'new_phone_verification_code' => '246810',
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('code', 'PHONE_CHANGE_CURRENT_CODE_INVALID');
+    }
+
     public function test_unbound_wechat_session_is_limited_to_the_phone_binding_flow(): void
     {
         $login = $this->wechatLogin('mini', 'local:mini-open-limited:union-limited');

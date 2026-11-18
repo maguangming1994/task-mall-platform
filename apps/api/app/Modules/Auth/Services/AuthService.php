@@ -141,11 +141,41 @@ class AuthService
         return $this->bindVerifiedPhone($user, $session, $phone, 'wechat_phone_authorization');
     }
 
+    /**
+     * 换绑手机号：同时校验当前手机号与新手机号。
+     *
+     * @return array<string, mixed>
+     */
+    public function changePhone(
+        User $user,
+        UserSession $session,
+        string $currentPhone,
+        string $currentCode,
+        string $newPhone,
+        string $newCode,
+    ): array {
+        if (! $this->phoneVerification->verify($currentPhone, 'change_phone_old', $currentCode)) {
+            throw new AuthException('PHONE_CHANGE_CURRENT_CODE_INVALID', '当前手机号验证码错误或已过期。', 422);
+        }
+        $currentHash = $this->phoneVerification->phoneHash($currentPhone);
+        if ($user->phone_hash === null || $user->phone_hash !== $currentHash) {
+            throw new AuthException('PHONE_CHANGE_CURRENT_MISMATCH', '当前手机号与账号绑定不一致，请重新登录后重试。', 422);
+        }
+        if (! $this->phoneVerification->verify($newPhone, 'change_phone_new', $newCode)) {
+            throw new AuthException('PHONE_CHANGE_NEW_CODE_INVALID', '新手机号验证码错误或已过期。', 422);
+        }
+        if ($this->phoneVerification->phoneHash($newPhone) === $currentHash) {
+            throw new AuthException('PHONE_CHANGE_SAME_NUMBER', '新手机号与当前手机号相同。', 422);
+        }
+
+        return $this->bindVerifiedPhone($user, $session, $newPhone, 'sms_change_phone', true);
+    }
+
     /** @return array<string, mixed> */
-    private function bindVerifiedPhone(User $user, UserSession $session, string $phone, string $source): array
+    private function bindVerifiedPhone(User $user, UserSession $session, string $phone, string $source, bool $currentPhoneVerified = false): array
     {
         $phoneHash = $this->phoneVerification->phoneHash($phone);
-        if ($user->phone_hash !== null && $user->phone_hash !== $phoneHash) {
+        if (! $currentPhoneVerified && $user->phone_hash !== null && $user->phone_hash !== $phoneHash) {
             throw new AuthException(
                 'PHONE_CHANGE_REQUIRES_CURRENT_VERIFICATION',
                 '更换已绑定手机号需要同时验证当前手机号。',
@@ -184,11 +214,20 @@ class AuthService
         }
 
         DB::transaction(function () use ($user, $phone, $phoneHash, $source): void {
+            $previousPhoneHash = $user->phone_hash;
             $user->update([
                 'phone' => $phone,
                 'phone_hash' => $phoneHash,
                 'phone_verified_at' => now(),
             ]);
+            if ($previousPhoneHash !== null && $previousPhoneHash !== $phoneHash) {
+                // 换绑后旧手机号不再属于该账号，移除旧登录标识避免历史身份残留。
+                UserIdentity::query()
+                    ->where('provider', 'phone')
+                    ->where('provider_user_id', $previousPhoneHash)
+                    ->where('user_id', $user->id)
+                    ->delete();
+            }
             UserIdentity::query()->updateOrCreate(
                 ['provider' => 'phone', 'provider_user_id' => $phoneHash],
                 ['user_id' => $user->id, 'metadata' => ['source' => $source], 'last_login_at' => now()],

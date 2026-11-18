@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import { formatDate } from '@/utils/dateTime'
 import { onLoad, onShareAppMessage, onShow } from '@dcloudio/uni-app'
+import { enableWechatShare, toWechatShareLink } from '@/platform/wechatJssdk'
 import { computed, ref } from 'vue'
 import { bindReferral, getReferrals, type ReferralDashboard } from '@/api/referrals'
 import AppTabBar from '@/components/AppTabBar.vue'
@@ -81,7 +82,11 @@ async function load() {
   if (!auth.accessToken || loading.value) return
   loading.value = true
   loadError.value = ''
-  try { dashboard.value = await getReferrals(auth.accessToken) }
+  try {
+    dashboard.value = await getReferrals(auth.accessToken)
+    // 公众号内：邀请链接走 JSSDK 分享卡片；其他端自动跳过。
+    void enableWechatShare({ title: shareTitle(), link: toWechatShareLink(sharePath.value) })
+  }
   catch (error) { loadError.value = errorMessage(error, '请检查网络后重试'); uni.showToast({ title: loadError.value, icon: 'none' }) }
   finally { loading.value = false }
 }

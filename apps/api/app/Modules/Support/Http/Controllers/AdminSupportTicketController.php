@@ -4,6 +4,8 @@ namespace App\Modules\Support\Http\Controllers;
 
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Modules\Auth\Services\WechatCustomerServiceMessageSender;
 use App\Modules\Support\Models\SupportTicket;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,14 +29,32 @@ class AdminSupportTicketController extends Controller
         return ApiResponse::success($this->data($supportTicket->load('messages')));
     }
 
-    public function reply(Request $request, SupportTicket $supportTicket): JsonResponse
-    {
-        $data = $request->validate(['content' => ['required', 'string', 'min:1', 'max:5000'], 'status' => ['sometimes', 'in:processing,waiting_user,resolved']]);
+    public function reply(
+        Request $request,
+        SupportTicket $supportTicket,
+        WechatCustomerServiceMessageSender $wechat,
+    ): JsonResponse {
+        $data = $request->validate([
+            'content' => ['required', 'string', 'min:1', 'max:5000'],
+            'status' => ['sometimes', 'in:processing,waiting_user,resolved'],
+            'notify_wechat' => ['sometimes', 'boolean'],
+        ]);
         $supportTicket->messages()->create(['sender_type' => 'admin', 'sender_id' => $request->user()->id, 'content' => $data['content'], 'attachment_file_ids' => []]);
         $status = $data['status'] ?? 'waiting_user';
         $supportTicket->update(['assigned_admin_id' => $request->user()->id, 'status' => $status, 'last_replied_at' => now(), 'closed_at' => $status === 'resolved' ? now() : null]);
 
-        return ApiResponse::success($this->data($supportTicket->fresh()->load('messages')));
+        $wechatResult = null;
+        if (($data['notify_wechat'] ?? false) === true) {
+            $user = User::query()->find($supportTicket->user_id);
+            $wechatResult = $user === null
+                ? ['status' => 'skipped', 'message' => '工单用户不存在，未发送微信客服消息。']
+                : $wechat->send($user, (string) $data['content']);
+        }
+
+        return ApiResponse::success([
+            ...$this->data($supportTicket->fresh()->load('messages')),
+            'wechat_notification' => $wechatResult,
+        ]);
     }
 
     public function update(Request $request, SupportTicket $supportTicket): JsonResponse

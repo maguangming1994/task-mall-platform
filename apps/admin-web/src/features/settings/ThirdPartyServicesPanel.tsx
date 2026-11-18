@@ -5,8 +5,10 @@ import {
   ApiError,
   deleteWechatVerificationFile,
   getIdentityVerificationSettings,
+  getWechatOfficialAccountMenu,
   getWechatPaymentSettings,
   getWechatSettings,
+  publishWechatOfficialAccountMenu,
   saveIdentityVerificationSettings,
   saveWechatAppSettings,
   saveWechatPaymentCredentials,
@@ -18,6 +20,7 @@ import {
   type IdentityVerificationSettings,
   type SecureValueState,
   type WechatAppSettings,
+  type WechatOfficialAccountMenu,
   type WechatPaymentSettings,
   type WechatSettingsBundle,
 } from '../../api/admin'
@@ -98,6 +101,7 @@ export function ThirdPartyServicesPanel() {
   const [denied, setDenied] = useState(false)
   const [busy, setBusy] = useState('')
   const [verificationFile, setVerificationFile] = useState<UploadFile | null>(null)
+  const [oaMenu, setOaMenu] = useState<WechatOfficialAccountMenu | null>(null)
   const [privateKey, setPrivateKey] = useState<UploadFile | null>(null)
   const [platformCertificate, setPlatformCertificate] = useState<UploadFile | null>(null)
   const [wechatForm] = Form.useForm<WechatFormValues>()
@@ -113,6 +117,8 @@ export function ThirdPartyServicesPanel() {
       ])
       setWechat(wechatValue); setPayment(paymentValue); setIdentity(identityValue)
       wechatForm.setFieldsValue({ mini: appValues(wechatValue.mini), official_account: appValues(wechatValue.official_account), reason: '', current_password: '', mfa_code: '' })
+      // 菜单接口在未配置公众号时返回 503，不能影响其它配置加载。
+      void getWechatOfficialAccountMenu().then(setOaMenu).catch(() => setOaMenu(null))
       paymentForm.setFieldsValue({
         driver: paymentValue.driver, merchant_id: paymentValue.merchant_id,
         merchant_certificate_serial: paymentValue.merchant_certificate_serial,
@@ -195,6 +201,17 @@ export function ThirdPartyServicesPanel() {
     } catch (error) { messageApi.error(errorText(error, '验证文件上传失败。')) } finally { setBusy('') }
   }
 
+  const publishMenu = async () => {
+    try {
+      const values = wechatForm.getFieldsValue()
+      if (!values.current_password) return messageApi.warning('发布菜单前请填写管理员密码。')
+      if (!values.reason?.trim()) return messageApi.warning('请填写修改原因。')
+      setBusy('oa-menu'); await verifyRecent(values)
+      const menu = await publishWechatOfficialAccountMenu(values.reason.trim())
+      setOaMenu(menu); messageApi.success('公众号菜单已发布，微信客户端最长 24 小时后全量生效。')
+    } catch (error) { messageApi.error(errorText(error, '公众号菜单发布失败。')) } finally { setBusy('') }
+  }
+
   const removeVerification = async (filename: string) => {
     try {
       const values = wechatForm.getFieldsValue(); setBusy(`delete-${filename}`); await verifyRecent(values)
@@ -263,6 +280,9 @@ export function ThirdPartyServicesPanel() {
         <Form.Item name={[provider, 'timeout_seconds']} label="请求超时"><InputNumber min={1} max={30} addonAfter="秒" style={{ width: '100%' }} /></Form.Item>
       </div>
       <Form.Item name={[provider, 'app_id']} label="AppID" rules={[{ pattern: /^$|^wx[A-Za-z0-9]{6,62}$/, message: 'AppID 应以 wx 开头。' }]}><Input maxLength={64} /></Form.Item>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
+        公众号与小程序统一用户（unionid）：需在微信开放平台把两端应用绑定到同一开放平台账号，并将「授权回调域」配置为本站域名；绑定后重新登录即可按 unionid 合并身份。
+      </Typography.Paragraph>
       <Form.Item name={[provider, 'login_enabled']} label="启用微信登录" valuePropName="checked" extra="关闭后该端登录方式列表不再提供微信登录，保存即生效。"><Switch /></Form.Item>
       {isOa && <Form.Item label="网页授权回调域名（只读核对）" extra="需与微信公众平台「网页授权域名」完全一致。">
         <Typography.Text code>{state.oauth_redirect_domain || '未配置，请检查站点域名'}</Typography.Text>
@@ -291,6 +311,18 @@ export function ThirdPartyServicesPanel() {
         <Button type="primary" loading={busy === 'verification-upload'} onClick={() => void uploadVerification()}>发布验证文件</Button>
       </Space>
       <div className="third-party-file-list">{wechat?.verification_files.map((file) => <div key={file.filename}><a href={file.public_url} target="_blank" rel="noreferrer">{file.filename}</a><Popconfirm title="确认删除该验证文件？" onConfirm={() => void removeVerification(file.filename)}><Button danger type="text" icon={<DeleteOutlined />} loading={busy === `delete-${file.filename}`} /></Popconfirm></div>)}</div>
+    </section>
+    <section className="third-party-section">
+      <div className="third-party-section-heading">
+        <div><Typography.Title level={5}>公众号自定义菜单</Typography.Title>
+          <Tag color={oaMenu?.configured ? 'success' : 'warning'}>{oaMenu?.configured ? '已发布' : '未发布'}</Tag>
+        </div>
+        <Button type="primary" loading={busy === 'oa-menu'} onClick={() => void publishMenu()}>发布默认菜单</Button>
+      </div>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 10 }}>
+        默认菜单为「逛逛 / 做任务 / 我的」，均跳转公众号内 H5。发布后微信客户端最长 24 小时全量生效；修改前请先填写下方管理员密码与修改原因。
+      </Typography.Paragraph>
+      {oaMenu && <div className="third-party-file-list">{oaMenu.button.map((item, index) => <div key={index}><span>{String(item.name ?? '未命名')}</span><Typography.Text type="secondary">{String(item.url ?? item.type ?? '')}</Typography.Text></div>)}</div>}
     </section>
     <RecentFields />
   </Form>

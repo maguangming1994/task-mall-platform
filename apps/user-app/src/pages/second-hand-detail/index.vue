@@ -76,12 +76,13 @@
 </template>
 
 <script setup lang="ts">
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { getSecondHandItem, type SecondHandItem } from '@/api/second-hand'
 import { ensureChatConversation } from '@/api/chat'
 import { resolveApiAssetUrl } from '@/api/http'
+import { enableWechatShare } from '@/platform/wechatJssdk'
 import { formatDate } from '@/utils/dateTime'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
@@ -123,10 +124,25 @@ async function load() {
   if (!itemId.value) return
   try {
     item.value = await getSecondHandItem(auth.accessToken || undefined, itemId.value)
+    void enableWechatShare({ title: shareTitle(), desc: item.value?.description || '校内闲置，低价转给同学。', link: sharePath(), imageUrl: shareImage() })
   } catch {
     uni.showToast({ title: '加载失败', icon: 'none' })
   }
 }
+
+function shareTitle() {
+  return item.value?.title || '校内闲置好物'
+}
+function sharePath() {
+  return `/pages/second-hand-detail/index?id=${encodeURIComponent(item.value?.id || itemId.value)}`
+}
+function shareImage() {
+  const url = item.value?.cover || item.value?.images?.[0]
+  return url ? resolveApiAssetUrl(url) : undefined
+}
+
+onShareAppMessage(() => ({ title: shareTitle(), path: sharePath(), imageUrl: shareImage() }))
+onShareTimeline(() => ({ title: shareTitle(), query: `id=${encodeURIComponent(item.value?.id || itemId.value)}`, imageUrl: shareImage() }))
 
 async function goChat() {
   if (!auth.isAuthenticated) { uni.navigateTo({ url: '/pages/login/index' }); return }

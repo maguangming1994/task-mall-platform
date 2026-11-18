@@ -24,6 +24,7 @@ class NotificationService
         private readonly SystemSettingService $settings,
         private readonly WechatSubscriptionGrantService $wechatGrants,
         private readonly WechatMiniSubscriptionSender $wechatMini,
+        private readonly WechatOfficialAccountSubscriptionSender $wechatOa,
         private readonly NotificationSceneRegistry $sceneRegistry,
         private readonly WechatMiniTemplateData $wechatTemplates,
     ) {}
@@ -194,9 +195,9 @@ class NotificationService
         if (preg_match('/\{\{[^}]+\}\}/', preg_replace('/\{\{[a-zA-Z0-9_]+\}\}/', '', $data['subject'].' '.$data['body']))) {
             throw ValidationException::withMessages(['body' => '模板变量格式无效。']);
         }
-        if ($data['channel'] === 'wechat_mini' && $data['publish']) {
+        if (in_array($data['channel'], ['wechat_mini', 'wechat_oa'], true) && $data['publish']) {
             if (blank($data['provider_template_id'] ?? null)) {
-                throw ValidationException::withMessages(['provider_template_id' => '发布微信小程序订阅模板前必须填写微信模板 ID。']);
+                throw ValidationException::withMessages(['provider_template_id' => '发布微信订阅模板前必须填写微信模板 ID。']);
             }
             $this->wechatTemplates->decode($data['body']);
         }
@@ -237,6 +238,8 @@ class NotificationService
             $notification = Notification::query()->findOrFail($delivery->notification_id);
             if ($delivery->channel === 'wechat_mini' && ($payload['provider'] ?? null) === 'wechat_mini_subscription') {
                 $providerId = $this->wechatMini->send(User::query()->findOrFail($notification->user_id), $payload);
+            } elseif ($delivery->channel === 'wechat_oa' && ($payload['provider'] ?? null) === 'wechat_official_account_subscription') {
+                $providerId = $this->wechatOa->send(User::query()->findOrFail($notification->user_id), $payload);
             } elseif (config('notifications.driver') === 'local') {
                 $providerId = 'local-'.Str::ulid();
             } else {

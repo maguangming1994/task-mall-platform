@@ -63,6 +63,13 @@ class BusinessNotificationService
                     'page' => $this->render((string) $definition['deep_link'], $variables),
                 ];
             }
+            if ($channel === 'wechat_oa') {
+                $channelPayloads[$channel] += [
+                    'provider' => 'wechat_official_account_subscription',
+                    'provider_data' => $this->wechatTemplates->render((string) $template['body'], $variables),
+                    'url' => $this->deepLinkUrl((string) $definition['deep_link'], $variables),
+                ];
+            }
         }
 
         return $this->notifications->create(
@@ -98,6 +105,21 @@ class BusinessNotificationService
     private function render(string $template, array $variables): string
     {
         return strtr($template, collect($variables)->mapWithKeys(fn (string $value, string $key): array => ['{{'.$key.'}}' => $value])->all());
+    }
+
+    /**
+     * 公众号订阅通知只能跳转绝对地址，把站内深链转成 H5 hash 路由。
+     *
+     * @param array<string,string> $variables
+     */
+    private function deepLinkUrl(string $template, array $variables): string
+    {
+        $path = ltrim($this->render($template, $variables), '/');
+        if ($path === '' || preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+
+        return rtrim((string) config('app.url'), '/').'/#/'.$path;
     }
 
     private function stillRelevant(NotificationBusinessEvent $event): bool

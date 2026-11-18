@@ -100,7 +100,7 @@ class AdminOperationsController extends Controller
         $data = $request->validate([
             'enabled' => ['required', 'boolean'],
             'channels' => ['required', 'array', 'min:1'],
-            'channels.*' => ['required', 'in:in_app,wechat_mini,sms'],
+            'channels.*' => ['required', 'in:in_app,wechat_mini,wechat_oa,sms'],
             'expected_version' => ['required', 'integer', 'min:1'],
             'reason' => ['required', 'string', 'min:5', 'max:500'],
         ]);
@@ -121,7 +121,7 @@ class AdminOperationsController extends Controller
 
     public function saveTemplate(Request $request, NotificationService $service, AuditLogger $audit): JsonResponse
     {
-        $data = $request->validate(['scene_code' => ['required', 'string', 'max:64'], 'channel' => ['required', 'in:in_app,wechat,wechat_mini,sms'], 'subject' => ['required', 'string', 'max:160'], 'body' => ['required', 'string', 'max:2000'], 'allowed_variables' => ['present', 'array', 'max:20'], 'allowed_variables.*' => ['string', 'regex:/^[a-zA-Z0-9_]+$/'], 'provider_template_id' => ['nullable', 'string', 'max:160'], 'publish' => ['required', 'boolean']]); /** @var AdminUser $admin */
+        $data = $request->validate(['scene_code' => ['required', 'string', 'max:64'], 'channel' => ['required', 'in:in_app,wechat,wechat_mini,wechat_oa,sms'], 'subject' => ['required', 'string', 'max:160'], 'body' => ['required', 'string', 'max:2000'], 'allowed_variables' => ['present', 'array', 'max:20'], 'allowed_variables.*' => ['string', 'regex:/^[a-zA-Z0-9_]+$/'], 'provider_template_id' => ['nullable', 'string', 'max:160'], 'publish' => ['required', 'boolean']]); /** @var AdminUser $admin */
         $admin = $request->user();
         $existing = NotificationTemplate::query()->where('scene_code', $data['scene_code'])->where('channel', $data['channel'])->where('locale', 'zh-CN')->first();
         $before = $existing ? $this->templateData($existing, true) : null;

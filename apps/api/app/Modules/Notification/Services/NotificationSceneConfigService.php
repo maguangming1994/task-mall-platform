@@ -143,7 +143,7 @@ class NotificationSceneConfigService
         if (blank($template['provider_template_id'] ?? null)) {
             return false;
         }
-        if ($channel === 'wechat_mini') {
+        if ($channel === 'wechat_mini' || $channel === 'wechat_oa') {
             return $this->wechatTemplates->isValid((string) $template['body']);
         }
 
@@ -161,6 +161,6 @@ class NotificationSceneConfigService
 
     private function channelName(string $channel): string
     {
-        return ['wechat_mini' => '微信小程序订阅消息', 'sms' => '短信'][$channel] ?? '外部渠道';
+        return ['wechat_mini' => '微信小程序订阅消息', 'wechat_oa' => '微信公众号订阅通知', 'sms' => '短信'][$channel] ?? '外部渠道';
     }
 }

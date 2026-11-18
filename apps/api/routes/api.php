@@ -28,6 +28,7 @@ use App\Modules\Auth\Http\Controllers\MiniProgramConfigController;
 use App\Modules\Auth\Http\Controllers\PhoneBindingController;
 use App\Modules\Auth\Http\Controllers\PhoneVerificationController;
 use App\Modules\Auth\Http\Controllers\WechatAuthController;
+use App\Modules\Auth\Http\Controllers\WechatJssdkController;
 use App\Modules\Campus\Http\Controllers\AdminCampusController;
 use App\Modules\Campus\Http\Controllers\CampusController;
 use App\Modules\Cart\Http\Controllers\CartController;
@@ -114,6 +115,8 @@ Route::get('/internal/metrics', [MonitoringController::class, 'metrics'])->middl
 
 // auth.optional：登录用户的模块判定必须以其账号校区为准，防止伪造 X-Campus-Id 绕过本校关闭策略
 Route::get('/client-capabilities', [ClientCapabilitiesController::class, 'show'])->middleware('auth.optional');
+// 公众号内分享签名：公开接口（分享落地页可能未登录），仅接受本站域名，限流防刷。
+Route::get('/wechat/jssdk-signature', [WechatJssdkController::class, 'show'])->middleware('throttle:60,1');
 Route::get('/campuses', [CampusController::class, 'index'])->middleware('throttle:campus-list');
 Route::post('/campuses/nearby', [CampusController::class, 'nearby'])->middleware('throttle:campus-nearby');
 Route::get('/home-content', [HomeContentController::class, 'show']);
@@ -325,6 +328,8 @@ Route::middleware('auth.access')->group(function () {
         ->middleware('legal.consent:account');
     Route::put('/me/phone/wechat', [PhoneBindingController::class, 'storeFromWechat'])
         ->middleware(['legal.consent:account', 'throttle:10,1']);
+    Route::put('/me/phone/change', [PhoneBindingController::class, 'change'])
+        ->middleware(['legal.consent:account', 'throttle:10,1']);
     Route::get('/me/privacy-requests', [PrivacyRequestController::class, 'index'])->middleware('legal.consent:account');
     Route::post('/me/privacy-requests', [PrivacyRequestController::class, 'store'])->middleware('legal.consent:account');
     Route::get('/me/account-cancellation/eligibility', [AccountCancellationController::class, 'eligibility'])->middleware('legal.consent:account_cancellation');
@@ -459,6 +464,10 @@ Route::prefix('admin')->group(function () {
         Route::delete('/wechat/verification-files/{filename}', [AdminWechatProviderController::class, 'deleteVerificationFile'])
             ->where('filename', 'MP_verify_[A-Za-z0-9_-]{6,64}\.txt')
             ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::get('/wechat/official-account/menu', [AdminWechatProviderController::class, 'menu'])
+            ->middleware('admin.permission:settings.manage');
+        Route::post('/wechat/official-account/menu', [AdminWechatProviderController::class, 'publishMenu'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification', 'throttle:10,1']);
         Route::get('/wechat-payment/settings', [AdminWechatPaymentSettingsController::class, 'show'])
             ->middleware('admin.permission:settings.manage');
         Route::put('/wechat-payment/settings', [AdminWechatPaymentSettingsController::class, 'update'])

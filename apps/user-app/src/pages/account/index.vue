@@ -113,6 +113,7 @@
       <view class="fn" @click="openAddresses"><view class="fn-ic" style="background:#E7F9EF">📍</view><text class="fn-label">收货地址</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view v-if="modules.isEnabled('module_wallet')" class="fn" @click="openAssets"><view class="fn-ic" style="background:#FFF2E5">🎫</view><text class="fn-label">积分明细</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view v-if="modules.isEnabled('module_wallet_recharge')" class="fn" @click="openRecharge"><view class="fn-ic" style="background:#FFF6DE">💳</view><text class="fn-label">钱包充值</text><view class="sp" /><text class="fn-arrow">›</text></view>
+      <view v-if="auth.user?.phone_bound" class="fn" @click="openPhoneChange"><view class="fn-ic" style="background:#E7F9EF">📱</view><text class="fn-label">手机号</text><view class="sp" /><text class="fn-note">{{ auth.user?.phone_masked || '已绑定' }}</text><text class="fn-arrow">›</text></view>
       <view class="fn" @click="openSupport"><view class="fn-ic" style="background:#EAF2FF">🎧</view><text class="fn-label">客服中心</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view v-if="modules.isLaunched('module_feedback')" class="fn" @click="openSupport"><view class="fn-ic" style="background:#F1EAFF">💬</view><text class="fn-label">意见反馈</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view class="fn" @click="openPrivacy"><view class="fn-ic" style="background:#EEF1F5">⚙️</view><text class="fn-label">设置</text><view class="sp" /><text class="fn-arrow">›</text></view>
@@ -456,6 +457,7 @@ function openIdentityVerification() { uni.navigateTo({ url: '/pages/identity-ver
 function openAddresses() { uni.navigateTo({ url: '/pages/addresses/index' }) }
 function openLegal() { uni.navigateTo({ url: '/pages/legal/index' }) }
 function openSupport() { uni.navigateTo({ url: '/pages/support/index' }) }
+function openPhoneChange() { uni.navigateTo({ url: '/pages/phone-change/index' }) }
 function openCommunity(category?: string) { uni.reLaunch({ url: `/pages/community/index${category ? `?category=${category}` : ''}` }) }
 function openCommunityCompose(category: string) { uni.navigateTo({ url: `/pages/community-compose/index?category=${category}` }) }
 function openActivities() { uni.navigateTo({ url: '/pages/community-activities/index' }) }

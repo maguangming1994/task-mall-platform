@@ -71,7 +71,7 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated: state => Boolean(state.accessToken && state.user?.phone_bound),
   },
   actions: {
-    async requestPhoneCode(phone: string, purpose: 'login' | 'bind_phone' = 'login') {
+    async requestPhoneCode(phone: string, purpose: 'login' | 'bind_phone' | 'change_phone_old' | 'change_phone_new' = 'login') {
       await apiRequest<void>({
         path: '/auth/phone/verification-codes',
         method: 'POST',
@@ -124,6 +124,35 @@ export const useAuthStore = defineStore('auth', {
           if (!isUnauthorized(error) || !this.refreshToken) throw error
           await this.refreshSession()
           return this.applyPhoneBinding(await bind())
+        }
+      } finally {
+        this.submitting = false
+      }
+    },
+    /** 已绑定用户换绑手机号，需要同时验证当前号和新号。 */
+    async changePhone(currentPhone: string, currentCode: string, newPhone: string, newCode: string) {
+      if (!this.accessToken) throw new Error('请先登录。')
+      this.submitting = true
+      try {
+        const change = () => apiRequest<PhoneBindingPayload>({
+          path: '/me/phone/change',
+          method: 'PUT',
+          accessToken: this.accessToken,
+          data: {
+            current_phone: currentPhone,
+            current_phone_verification_code: currentCode,
+            new_phone: newPhone,
+            new_phone_verification_code: newCode,
+          },
+        })
+
+        if (this.expiresAt <= Date.now() && this.refreshToken) await this.refreshSession()
+        try {
+          return this.applyPhoneBinding(await change())
+        } catch (error) {
+          if (!isUnauthorized(error) || !this.refreshToken) throw error
+          await this.refreshSession()
+          return this.applyPhoneBinding(await change())
         }
       } finally {
         this.submitting = false

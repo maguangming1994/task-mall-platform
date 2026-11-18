@@ -96,7 +96,7 @@ class NotificationSceneRegistry
             'default_subject' => $subject,
             'default_body' => $body,
             'default_channels' => $channels,
-            'allowed_channels' => ['in_app', 'wechat_mini', 'sms'],
+            'allowed_channels' => ['in_app', 'wechat_mini', 'wechat_oa', 'sms'],
             'allowed_variables' => $variables,
             'deep_link' => $deepLink ?? match ($domain) {
                 'task' => 'pages/task-claim/index?id={{task_claim_id}}',

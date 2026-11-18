@@ -6,6 +6,7 @@ use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
+use App\Modules\Auth\Services\WechatOfficialAccountMenuService;
 use App\Modules\Auth\Services\WechatProviderSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -100,6 +101,66 @@ class AdminWechatProviderController extends Controller
         }
 
         return ApiResponse::success($result, 200, '微信接口连接测试完成。');
+    }
+
+    public function menu(Request $request, WechatOfficialAccountMenuService $menu): JsonResponse
+    {
+        if (! $this->isAuthorized($request)) {
+            return $this->denied();
+        }
+        try {
+            return ApiResponse::success($menu->current());
+        } catch (Throwable $exception) {
+            return ApiResponse::error('WECHAT_OA_MENU_UNAVAILABLE', $exception->getMessage(), 503);
+        }
+    }
+
+    public function publishMenu(
+        Request $request,
+        WechatOfficialAccountMenuService $menu,
+        AuditLogger $audit,
+    ): JsonResponse {
+        if (! $this->isAuthorized($request)) {
+            return $this->denied();
+        }
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:4', 'max:500'],
+            'buttons' => ['sometimes', 'array', 'max:3'],
+            'buttons.*.name' => ['required', 'string', 'max:16'],
+            'buttons.*.type' => ['required', 'in:view,miniprogram,click'],
+            'buttons.*.url' => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'buttons.*.appid' => ['sometimes', 'nullable', 'string', 'max:64'],
+            'buttons.*.pagepath' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'buttons.*.key' => ['sometimes', 'nullable', 'string', 'max:128'],
+        ]);
+        $buttons = null;
+        if (isset($data['buttons'])) {
+            $buttons = array_map(
+                fn (array $button): array => array_filter(
+                    Arr::only($button, ['type', 'name', 'url', 'appid', 'pagepath', 'key']),
+                    static fn ($value): bool => $value !== null && $value !== '',
+                ),
+                $data['buttons'],
+            );
+        }
+        /** @var AdminUser $admin */
+        $admin = $request->user();
+        try {
+            $result = $menu->publish($buttons);
+        } catch (Throwable $exception) {
+            return ApiResponse::error('WECHAT_OA_MENU_PUBLISH_FAILED', $exception->getMessage(), 422);
+        }
+        $audit->record(
+            $admin,
+            'wechat.official_account.menu.publish',
+            'wechat_provider',
+            'official_account',
+            null,
+            $result,
+            $data['reason'],
+        );
+
+        return ApiResponse::success($result, 200, '公众号菜单已发布，微信客户端最长 24 小时后全量生效。');
     }
 
     public function uploadVerificationFile(

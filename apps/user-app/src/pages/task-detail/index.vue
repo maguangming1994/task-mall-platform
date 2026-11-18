@@ -157,6 +157,7 @@
 <script setup lang="ts">
 import { formatDateTime as formatTime } from '@/utils/dateTime'
 import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+import { enableWechatShare } from '@/platform/wechatJssdk'
 import qrcode from 'qrcode-generator'
 import { computed, nextTick, ref } from 'vue'
 import { ApiError } from '@/api/http'
@@ -205,6 +206,8 @@ onLoad(async (options) => {
   taskId = typeof options?.id === 'string' ? options.id : ''
   if (!taskId) { loading.value = false; return }
   await loadTask()
+  // 公众号内：配置 JSSDK 分享卡片；小程序端与浏览器端该调用会自动跳过。
+  void enableWechatShare({ title: taskShareTitle(), link: taskShareLink(), imageUrl: heroImageSrc.value })
   // #ifdef MP-WEIXIN
   uni.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage', 'shareTimeline'] })
   // #endif

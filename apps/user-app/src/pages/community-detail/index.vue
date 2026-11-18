@@ -135,6 +135,7 @@
 <script setup lang="ts">
 import { formatDateTime as formatTime } from '@/utils/dateTime'
 import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+import { enableWechatShare } from '@/platform/wechatJssdk'
 import qrcode from 'qrcode-generator'
 import { computed, nextTick, ref } from 'vue'
 import CommunityCommentComposer from '@/components/CommunityCommentComposer.vue'
@@ -214,6 +215,8 @@ async function loadPost() {
     return
   }
   loading.value = false
+  // 公众号内：配置 JSSDK 分享卡片；小程序端与浏览器端该调用会自动跳过。
+  void enableWechatShare({ title: shareTitle(), link: shareLink(), imageUrl: images.value[0]?.url ?? undefined })
   await loadComments(postId.value)
 }
 
