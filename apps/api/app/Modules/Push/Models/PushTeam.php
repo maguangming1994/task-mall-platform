@@ -3,8 +3,8 @@
 namespace App\Modules\Push\Models;
 
 use App\Models\User;
-use App\Modules\Campus\Models\Concerns\BelongsToCampus;
 use App\Modules\Campus\Models\Campus;
+use App\Modules\Campus\Models\Concerns\BelongsToCampus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;

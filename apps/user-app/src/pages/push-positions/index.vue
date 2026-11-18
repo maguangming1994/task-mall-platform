@@ -50,6 +50,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { ref } from 'vue'
 import { listPushPositions, listPushSubmissions, type PushPosition, type PushSubmission } from '@/api/push'
 import { useAuthStore } from '@/stores/auth'
+import { formatDateTime } from '@/utils/dateTime'
 
 const auth = useAuthStore()
 const tab = ref<'positions' | 'submissions'>('positions')
@@ -80,7 +81,7 @@ async function load() {
 function switchSubmissions() { tab.value = 'submissions'; void load() }
 function goTasks() { uni.navigateTo({ url: '/pages/push-tasks/index' }) }
 function goSubmit(id: string) { uni.navigateTo({ url: `/pages/push-submit/index?id=${encodeURIComponent(id)}` }) }
-function formatTime(value: string | null) { return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '—' }
+function formatTime(value: string | null) { return formatDateTime(value) }
 function statusText(status: string) { return ({ pending: '审核中', approved: '已通过', rejected: '已驳回' } as Record<string, string>)[status] || status }
 
 onShow(() => { void load() })

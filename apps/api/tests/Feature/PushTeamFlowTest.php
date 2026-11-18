@@ -12,8 +12,8 @@ use App\Modules\Campus\Models\Campus;
 use App\Modules\Identity\Models\UserIdentityVerification;
 use App\Modules\Push\Models\PushPosition;
 use App\Modules\Push\Models\PushSubmission;
+use App\Modules\Push\Models\PushTask;
 use App\Modules\Push\Models\PushTeam;
-use App\Modules\Push\Models\PushTeamApplication;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -260,9 +260,9 @@ class PushTeamFlowTest extends TestCase
         return $this->tokens[$user->id] = app(AccessTokenService::class)->issue($user, $session)['token'];
     }
 
-    private function task(Campus $campus): \App\Modules\Push\Models\PushTask
+    private function task(Campus $campus): PushTask
     {
-        return \App\Modules\Push\Models\PushTask::query()->create([
+        return PushTask::query()->create([
             'campus_id' => $campus->id,
             'title' => '测试推广任务',
             'reward_cents' => 500,

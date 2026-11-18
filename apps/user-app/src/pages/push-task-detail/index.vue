@@ -47,6 +47,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { claimPushPosition, getPushTask, type PushPosition, type PushTask } from '@/api/push'
 import { useAuthStore } from '@/stores/auth'
+import { formatDate as formatBeijingDate } from '@/utils/dateTime'
 
 const auth = useAuthStore()
 const taskId = ref('')
@@ -95,7 +96,7 @@ function openPosition(id: string) {
   uni.navigateTo({ url: `/pages/push-positions/index?highlight=${encodeURIComponent(id)}` })
 }
 function goJoin() { uni.navigateTo({ url: '/pages/push-my-team/index' }) }
-function formatDate(value: string | null) { return value ? new Date(value).toLocaleDateString('zh-CN') : '—' }
+function formatDate(value: string | null) { return formatBeijingDate(value) }
 
 onLoad((options) => { taskId.value = String(options?.id || '') })
 onShow(() => { void load() })

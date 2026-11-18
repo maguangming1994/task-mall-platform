@@ -52,6 +52,7 @@ import { ref } from 'vue'
 import { listPushPositions, submitPushPosition, type PushPosition } from '@/api/push'
 import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
+import { formatDateTime } from '@/utils/dateTime'
 
 const auth = useAuthStore()
 const positionId = ref('')
@@ -115,7 +116,7 @@ async function submit() {
 }
 
 function back() { uni.navigateBack() }
-function formatTime(value: string | null) { return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '—' }
+function formatTime(value: string | null) { return formatDateTime(value) }
 
 onLoad((options) => {
   positionId.value = String(options?.id || '')

@@ -40,6 +40,7 @@ import { onReachBottom, onShow } from '@dcloudio/uni-app'
 import { ref } from 'vue'
 import { listPushTasks, type PushTask } from '@/api/push'
 import { useAuthStore } from '@/stores/auth'
+import { formatDate as formatBeijingDate } from '@/utils/dateTime'
 
 const auth = useAuthStore()
 const tasks = ref<PushTask[]>([])
@@ -69,7 +70,7 @@ async function load(reset = false) {
 }
 
 function openTask(id: string) { uni.navigateTo({ url: `/pages/push-task-detail/index?id=${encodeURIComponent(id)}` }) }
-function formatDate(value: string) { return new Date(value).toLocaleDateString('zh-CN') }
+function formatDate(value: string) { return formatBeijingDate(value) }
 
 onShow(() => { void load(true) })
 onReachBottom(() => {

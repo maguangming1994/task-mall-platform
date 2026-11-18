@@ -21,6 +21,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class AdminUserCenterController extends Controller
@@ -235,7 +236,7 @@ class AdminUserCenterController extends Controller
         $fromCampusId = $user->campus_id;
 
         if ($fromCampusId === $campus->id && ! array_key_exists('grade_year', $data) && ! array_key_exists('major', $data) && ! array_key_exists('college', $data)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'campus_id' => ['目标学校与当前绑定学校一致，无需改校。'],
             ]);
         }
