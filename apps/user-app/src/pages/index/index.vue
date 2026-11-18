@@ -203,6 +203,7 @@ import { getDailyCheckIn, type DailyCheckInStatus } from '@/api/growth'
 import { resolveApiAssetUrl } from '@/api/http'
 import { enableWechatShare } from '@/platform/wechatJssdk'
 import { formatRelativeTime } from '@/utils/dateTime'
+import { ensureCampusBinding } from '@/utils/campusBindingGuard'
 import AppTabBar from '@/components/AppTabBar.vue'
 import CampusSelector from '@/components/CampusSelector.vue'
 import type { Campus } from '@/api/campuses'
@@ -303,7 +304,7 @@ function createDefaultHome(): HomeContent {
         { id: 'cat-lost', label: '失物招领', note: '寻物启事', mark: '失', tone: 'pink', icon_url: '/static/icons/cat-lost.svg', link_type: 'tasks:lost_found' },
         { id: 'cat-teamup', label: '组队拼单', note: '搭子拼团', mark: '队', tone: 'cyan', icon_url: '/static/icons/cat-teamup.svg', link_type: 'tasks:teamup' },
         { id: 'cat-research', label: '问卷调研', note: '填问卷', mark: '研', tone: 'yellow', icon_url: '/static/icons/cat-research.svg', link_type: 'tasks:research' },
-        { id: 'cat-all', label: '全部服务', note: '更多', mark: '全', tone: 'gray', icon_url: '/static/icons/cat-all.svg', link_type: 'tasks' },
+        { id: 'pt-center', label: '地推中心', note: '校园推广', mark: '推', tone: 'green', icon_url: '', link_type: 'push' },
       ],
       priority_entries: [
         { id: 'assets', mark: '资', icon_url: '/static/icons/module-wallet.svg' },
@@ -503,6 +504,8 @@ onMounted(() => {
 })
 
 onShow(async () => {
+  // 登录用户未绑校 / 档案不完整：强制进入三步绑校向导（匿名浏览不拦截）
+  void ensureCampusBinding()
   void modules.ensureReady()
   if (promotionCampusReady) await promotionCampusReady
   await loadHome()
@@ -742,6 +745,7 @@ function openOrders() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/ord
 function openSecondHand() { uni.navigateTo({ url: '/pages/second-hand/index' }) }
 function openNotifications() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/notifications/index' }) : openLogin() }
 function openAssets() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/assets/index' }) : openLogin() }
+function openPushCenter() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/push-center/index' }) : openLogin() }
 function openReferrals() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/referrals/index' }) : openLogin() }
 function openFloatingSupport() { uni.navigateTo({ url: '/pages/support/index' }) }
 function goCheckIn() { uni.navigateTo({ url: '/pages/check-in/index' }) }
@@ -759,12 +763,14 @@ function navigateHomeLink(link: HomeLinkType) {
   if (link === 'notifications') return openNotifications()
   if (link === 'orders') return openOrders()
   if (link === 'assets') return openAssets()
+  if (link === 'push') return openPushCenter()
   if (link === 'second_hand' || link === 'secondhand') return openSecondHand()
 }
 
 // 金刚区跳转：支持 tasks:<category> 直达大厅指定分类。
 function handleKingLink(link: string, id: string) {
   if (link === 'secondhand' || id === 'cat-secondhand') return openSecondHand()
+  if (link === 'push' || id === 'pt-center') return openPushCenter()
   if (link.startsWith('tasks:')) {
     const categoryValue = link.slice('tasks:'.length)
     if (categoryValue) uni.setStorageSync('task_mall_hall_category', categoryValue)

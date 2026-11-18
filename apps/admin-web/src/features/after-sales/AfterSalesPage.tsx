@@ -23,6 +23,8 @@ interface AfterSaleRow {
   type: AfterSaleType
   typeLabel: string
   ticketNo: string
+  orderNo: string
+  userLabel: string
   amount: string
   status: string
   reason: string
@@ -85,6 +87,8 @@ export function AfterSalesPage() {
       type: 'refund',
       typeLabel: refundTypeLabel(item.service_type),
       ticketNo: item.refund_no,
+      orderNo: item.order_no ?? '—',
+      userLabel: item.user?.nickname ?? '—',
       amount: `${formatMoney(item.refund_cash_amount)}${item.refund_points > 0 ? ` + ${item.refund_points} 积分` : ''}`,
       status: item.status,
       reason: item.reason_name,
@@ -96,6 +100,8 @@ export function AfterSalesPage() {
       type: 'exchange',
       typeLabel: '换货',
       ticketNo: item.exchange_no,
+      orderNo: item.order_no ?? '—',
+      userLabel: item.user?.nickname ?? '—',
       amount: '—',
       status: item.status,
       reason: item.reason_name,
@@ -108,7 +114,7 @@ export function AfterSalesPage() {
   const filtered = useMemo(() => rows.filter((row) => {
     if (typeFilter && row.type !== typeFilter) return false
     if (status && row.status !== status) return false
-    if (keyword && !row.ticketNo.toLowerCase().includes(keyword.toLowerCase())) return false
+    if (keyword && !`${row.ticketNo} ${row.orderNo} ${row.userLabel}`.toLowerCase().includes(keyword.toLowerCase())) return false
     return true
   }), [rows, typeFilter, status, keyword])
 
@@ -203,8 +209,8 @@ export function AfterSalesPage() {
           pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
           columns={[
             { title: '售后单号', dataIndex: 'ticketNo', render: (value: string) => <span style={{ fontWeight: 600 }}>{value}</span> },
-            { title: '订单号', render: () => '—' },
-            { title: '用户', render: () => '—' },
+            { title: '订单号', dataIndex: 'orderNo' },
+            { title: '用户', dataIndex: 'userLabel' },
             { title: '类型', dataIndex: 'typeLabel' },
             { title: '金额', dataIndex: 'amount' },
             {

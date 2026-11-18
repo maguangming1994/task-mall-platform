@@ -2,6 +2,15 @@
 import { onLaunch, onShow, onHide } from "@dcloudio/uni-app";
 import { useModulesStore } from '@/stores/modules'
 import { useIconConfigStore } from '@/stores/icons'
+import { useCampusProfileStore } from '@/stores/campusProfile'
+import { CAMPUS_REQUIRED_EVENT, showCampusRequiredModal } from '@/utils/campusGate'
+import { ensureCampusBinding } from '@/utils/campusBindingGuard'
+
+function handleCampusRequired(code?: string) {
+  // 写接口被校区门禁拦截：刷新账号校区状态并统一提示（可取消继续浏览）
+  void useCampusProfileStore().load(true)
+  showCampusRequiredModal(code)
+}
 
 onLaunch(() => {
   console.info("Task Mall launched");
@@ -11,9 +20,15 @@ onLaunch(() => {
   const icons = useIconConfigStore()
   icons.hydrate()
   void icons.load(true)
+  // 账号校区状态：绑校门禁 / 换校冷却 / 严格隔离
+  const campusProfile = useCampusProfileStore()
+  void campusProfile.load(true)
+  // 写接口 403 CAMPUS_NOT_BOUND / CAMPUS_PROFILE_INCOMPLETE 统一提示（可取消继续浏览）
+  uni.$on(CAMPUS_REQUIRED_EVENT, handleCampusRequired)
 });
 onShow(() => {
-  // App lifecycle hook reserved for channel-specific refresh work.
+  // 登录用户未绑校 / 档案不完整时强制进入三步绑校向导
+  void ensureCampusBinding()
 });
 onHide(() => {
   // Sensitive drafts are persisted by their owning pages before backgrounding.

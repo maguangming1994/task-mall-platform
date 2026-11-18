@@ -2,6 +2,8 @@
 
 namespace Tests;
 
+use App\Models\User;
+use App\Modules\Campus\Models\Campus;
 use Database\Seeders\ReleaseControlSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Schema;
@@ -18,5 +20,27 @@ abstract class TestCase extends BaseTestCase
         if (Schema::hasTable('feature_flags')) {
             $this->seed(ReleaseControlSeeder::class);
         }
+    }
+
+    /**
+     * 将测试用户绑定到测试校区并补齐档案，满足 UGC 写接口的 campus.bound 门槛。
+     */
+    protected function bindTestCampus(User $user): void
+    {
+        $campus = Campus::query()->firstOrCreate(
+            ['code' => 'test-campus'],
+            [
+                'name' => '测试大学',
+                'status' => 'active',
+                'catalog_type' => 'manual',
+                'catalog_status' => 'manual',
+            ],
+        );
+        $user->forceFill([
+            'campus_id' => $campus->id,
+            'grade_year' => $user->grade_year ?? 2025,
+            'major' => $user->major ?? '计算机科学',
+        ])->save();
+        $user->refresh();
     }
 }

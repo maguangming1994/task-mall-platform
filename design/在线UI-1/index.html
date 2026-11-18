@@ -1,7 +1,8 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>校圈 · 校园任务商城 · 全套 UI 设计图（小程序 + 管理端）</title>
 <style>
@@ -109,6 +110,25 @@ a{text-decoration:none;color:inherit}
 .lb .prev{left:26px}.lb .next{right:26px}
 .lb .close{position:absolute;top:24px;right:26px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:18px;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .lb .tip{position:absolute;bottom:26px;color:rgba(255,255,255,.55);font-size:12px}
+/* ===== 流程标注与泳道 ===== */
+.fnode .fb{display:inline-block;font-size:9px;font-weight:800;border-radius:5px;padding:1px 5px;letter-spacing:.02em;white-space:nowrap}
+.fnode .fb.new{background:var(--green-soft);color:var(--green-deep)}
+.fnode .fb.reuse{background:#EAF2FF;color:#3B82F6}
+.fnode.danger{border-color:#F5B0AD;background:#FFF6F5}
+.fnode.danger .n{color:#D4380D}
+.fnode.danger b{color:#B42318}
+.lanes{display:flex;flex-direction:column;gap:10px;margin:12px 0 6px}
+.lane{display:flex;align-items:stretch;gap:10px}
+.lane-tag{width:90px;flex:none;background:#0A3D23;color:#D6E3ED;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:11.5px;font-weight:800;line-height:1.5;padding:10px 6px}
+.lane-tag small{display:block;font-size:9.5px;font-weight:600;color:#7E96AB;margin-top:3px}
+.lane .flow-chain{flex-wrap:wrap;gap:0}
+.lane .fnode{min-width:130px;padding:10px 12px}
+.lane .fnode b{font-size:12.5px}
+.lane .fnode p{font-size:10px}
+.lane .farrow{padding:0 3px}
+.flow .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:var(--t2)}
+.flow .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
 .footer{text-align:center;font-size:12px;color:var(--t3);margin-top:60px;line-height:1.8}
 </style>
 </head>
@@ -116,14 +136,14 @@ a{text-decoration:none;color:inherit}
 
 <header class="hero">
   <div class="wrap">
-    <span class="badge">🎨 校圈 v13 绿色商业风 · 全套页面设计图</span>
+    <span class="badge">🎨 校圈 v13 绿色商业风 · 统一浏览入口</span>
     <h1>校园任务商城 · UI 全览（小程序 + 管理端）</h1>
-    <p>校园互助任务 + 积分商城 + 校园社区 + 校园闲置 + IM 私信，共 <b>83</b> 张设计图（小程序 57 + 管理端 26）、<b>24</b> 条核心业务流程。点击任意页面图可查看高清大图并翻页浏览。<b style="color:#08A152">2026-10-05 视觉复核：13 个标记页面（10 页遗漏未翻新 + 3 页半翻新）代码层已全部翻新完成，流程图红/橙标记已清零。</b></p>
+    <p>校园互助任务 + 积分商城 + 校园社区 + 校园闲置 + IM 私信 + 地推模块 + 校区强隔离，共 <b>103</b> 张设计图、<b>29</b> 条核心业务流程。页面稿按原有两端结构呈现：<b>C 端 75 屏</b>（sub-screens.html）、<b>后台 38 屏</b>（admin-screens.html），新流程与新页面均按业务主线就地排入。</p>
     <div class="stats">
-      <div class="stat"><b>83</b><span>设计图总数</span></div>
-      <div class="stat"><b>57</b><span>小程序页面图</span></div>
-      <div class="stat"><b>26</b><span>管理端页面图</span></div>
-      <div class="stat"><b>24</b><span>核心流程</span></div>
+      <div class="stat"><b>103</b><span>设计图总数</span></div>
+      <div class="stat"><b>75</b><span>C 端页面</span></div>
+      <div class="stat"><b>38</b><span>后台页面</span></div>
+      <div class="stat"><b>29</b><span>核心流程</span></div>
     </div>
   </div>
 </header>
@@ -131,7 +151,7 @@ a{text-decoration:none;color:inherit}
 <div class="wrap">
 
   <!-- ========== 核心流程 ========== -->
-  <div class="sec-h"><i></i><h2>核心业务流程（13 条）</h2><span class="sub">点击流程节点可直达对应页面图 · <b style="color:#08A152">2026-10-05 复核：标记页面已全部翻新完成（红/橙标记已清零）</b></span></div>
+  <div class="sec-h" id="flows-main"><i></i><h2>核心业务流程（29 条）</h2><span class="sub">点击流程节点可直达对应页面图 · <b style="color:#08A152">2026-10-05 复核：标记页面已全部翻新完成（红/橙标记已清零）</b></span></div>
 
   <div class="flow">
     <div class="flow-head"><span class="no">1</span><h3>接单赚钱流程</h3><span class="tagline">接任务 → 完成服务 → 赚积分</span></div>
@@ -323,7 +343,60 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">12</span><h3>社区活动流程</h3><span class="tagline">官方活动 · 报名参与 · 奖励发放</span></div>
+    <div class="flow-head"><span class="no">12</span><h3>校区隔离启动与绑校门禁流程</h3><span class="tagline">campus_required 判定 → 三步绑定 → 冷启动</span></div>
+    <div class="flow-chain">
+      <div class="fnode"><span class="n">A1</span><b>启动 / 登录</b><p>拉取 client-capabilities</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode enter"><span class="n">A2</span><b>campus_required?</b><p>登录 && 未绑校 = true</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode warn"><span class="n">A3 · M1/M1b/M1c</span><b>三步绑定门禁</b><p>学校 → 年级 → 专业</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">A4</span><b>PUT /me/campus</b><p>写审计 · 冷启动</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">A5</span><b>正常首页</b><p>内容 = 绑定校 + 平台投放</p></div>
+    </div>
+    <div class="flow-chain" style="margin-top:10px">
+      <div class="fnode"><span class="n">A2</span><b>campus_required? = false</b><p>已绑校用户</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">A5</span><b>浏览 / 交易 / UGC</b><p>写入一律盖绑定校</p></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-head"><span class="no">13</span><h3>校区隔离存量兜底确认流程</h3><span class="tagline">D6 · 强弹窗不可跳过 · 重新选校不计冷却</span></div>
+    <div class="flow-chain">
+      <div class="fnode"><span class="n">B1</span><b>老用户登录</b><p>曾被回填至默认学校</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode warn"><span class="n">B2 · M2</span><b>强制确认弹窗</b><p>确认 / 重新选择学校</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">B3</span><b>确认默认校</b><p>补全年级 / 专业后生效</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">B4</span><b>重新选校</b><p>走选校列表 · 不计冷却</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode enter"><span class="n">B5</span><b>冷启动完成</b><p>写审计 · 进入首页</p></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-head"><span class="no">14</span><h3>校区隔离换校流程</h3><span class="tagline">D5 · 30 天冷却 + 未履约订单前置校验</span></div>
+    <div class="flow-chain">
+      <div class="fnode"><span class="n">C1 · M5</span><b>我的 → 切换学校</b><p>换校页</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode enter"><span class="n">C2</span><b>前置校验</b><p>冷却期? / 未履约订单?</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">C3</span><b>确认弹窗</b><p>资产随人 · UGC 留原校</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode enter"><span class="n">C4</span><b>换校成功</b><p>清缓存 · 冷启动 · 写审计</p></div>
+    </div>
+    <div class="flow-chain" style="margin-top:10px">
+      <div class="fnode danger"><span class="n">C2-a · M6</span><b>422 TOO_FREQUENT</b><p>冷却中 · 倒计时下次可换日期</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode danger"><span class="n">C2-b · M6</span><b>422 BLOCKED_ORDERS</b><p>提示先完成 / 取消订单</p></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-head"><span class="no">15</span><h3>社区活动流程</h3><span class="tagline">官方活动 · 报名参与 · 奖励发放</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="3"><span class="n">04</span><b>校园墙</b><p>活动入口</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -338,7 +411,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">13</span><h3>帮助与工单流程</h3><span class="tagline">常见问题 · 提交工单 · 客服处理</span></div>
+    <div class="flow-head"><span class="no">16</span><h3>帮助与工单流程</h3><span class="tagline">常见问题 · 提交工单 · 客服处理</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="4"><span class="n">05</span><b>我的</b><p>帮助与反馈</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -350,10 +423,8 @@ a{text-decoration:none;color:inherit}
     </div>
   </div>
 
-  <div class="sec-h"><i></i><h2>管理端核心流程（11 条）</h2><span class="sub">PC 管理后台 · 节点直达 a 系列页面图 · a01-a26 全覆盖</span></div>
-
   <div class="flow">
-    <div class="flow-head"><span class="no">14</span><h3>任务治理流程</h3><span class="tagline">审核 → 治理 → 模板/推荐 → 复盘</span></div>
+    <div class="flow-head"><span class="no">17</span><h3>任务治理流程</h3><span class="tagline">审核 → 治理 → 模板/推荐 → 复盘</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="56"><span class="n">a03</span><b>任务审核</b><p>待审队列处理</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -366,7 +437,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">15</span><h3>商城履约流程</h3><span class="tagline">商品 → 库存 → 订单 → 售后</span></div>
+    <div class="flow-head"><span class="no">18</span><h3>商城履约流程</h3><span class="tagline">商品 → 库存 → 订单 → 售后</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="58"><span class="n">a05</span><b>商品管理</b><p>SPU/SKU 上架</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -379,7 +450,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">16</span><h3>财务结算流程</h3><span class="tagline">提现 → 对账 → 资产调整 → 审计</span></div>
+    <div class="flow-head"><span class="no">19</span><h3>财务结算流程</h3><span class="tagline">提现 → 对账 → 资产调整 → 审计</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="61"><span class="n">a08</span><b>提现审核</b><p>财务初审/打款</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -392,7 +463,41 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">17</span><h3>内容治理流程</h3><span class="tagline">审核 → 举报 → 处罚 → 触达</span></div>
+    <div class="flow-head"><span class="no">20</span><h3>地推全链路流程</h3><span class="tagline">4 角色 · F01–F13 摘要 · 入口 → 领位 → 交单 → 审核 → 批次 → 入账</span></div>
+    <div class="flow-chain">
+      <div class="fnode enter"><span class="n">F01 · C-01</span><b>地推中心入口</b><p>首页金刚区 / 我的宫格</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">F03 / F05 · C-09 / C-04</span><b>领位 · 入团</b><p>选任务点位 / 申请加入团队</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">F07 · C-10</span><b>提交交单</b><p>凭证 + 说明 + 定位</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode warn"><span class="n">F08 · A-05</span><b>交单审核</b><p>进入现有任务审核队列</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">F11 · A-06</span><b>生成结算批次</b><p>合格单汇总 → 发放 / 撤回</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode enter"><span class="n">F13 · C-12</span><b>佣金入账 · 提现</b><p>钱包流水 → 提现</p></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-head"><span class="no">21</span><h3>地推后台配置与结算流程</h3><span class="tagline">E1–E6 · 配置 → 审核 → 汇总 → 批次 → 结算</span></div>
+    <div class="flow-chain">
+      <div class="fnode"><span class="n">E1 · A-03 / A-04</span><b>配置任务与规则</b><p>推广任务 / 等级佣金 / 团队加成</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">E2 · A-05</span><b>审核推广位 / 申请</b><p>团队申请 · 点位资格</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode warn"><span class="n">E3 · A-05</span><b>审核交单</b><p>通过 / 驳回 → 原因回流</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">E4 · A-05</span><b>汇总合格单</b><p>按周期冻结名单</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode"><span class="n">E5 · A-06</span><b>生成结算批次</b><p>规则快照 · 金额校验</p></div>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="fnode enter"><span class="n">E6 · A-06</span><b>结算发放 / 撤回</b><p>入账钱包 · 撤回二次确认</p></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-head"><span class="no">22</span><h3>内容治理流程</h3><span class="tagline">审核 → 举报 → 处罚 → 触达</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="63"><span class="n">a10</span><b>内容审核</b><p>帖子/评论队列</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -405,7 +510,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">18</span><h3>运营活动流程</h3><span class="tagline">活动位 → 推送 → 发券 → 看板</span></div>
+    <div class="flow-head"><span class="no">23</span><h3>运营活动流程</h3><span class="tagline">活动位 → 推送 → 发券 → 看板</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="65"><span class="n">a12</span><b>活动运营</b><p>活动位上/下线</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -418,7 +523,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">19</span><h3>配置与权限发布流程</h3><span class="tagline">角色 → 配置 → 校区 → 审计</span></div>
+    <div class="flow-head"><span class="no">24</span><h3>配置与权限发布流程</h3><span class="tagline">角色 → 配置 → 校区 → 审计</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="67"><span class="n">a14</span><b>角色与权限</b><p>最小权限授权</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -431,7 +536,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">20</span><h3>闲置治理流程</h3><span class="tagline">审核 → 纠纷 → 处罚 → 触达</span></div>
+    <div class="flow-head"><span class="no">25</span><h3>闲置治理流程</h3><span class="tagline">审核 → 纠纷 → 处罚 → 触达</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="57"><span class="n">a04</span><b>闲置审核</b><p>上架审核/驳回</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -444,7 +549,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">21</span><h3>客服工单闭环流程</h3><span class="tagline">受理 → 协同核查 → 处理 → 留痕</span></div>
+    <div class="flow-head"><span class="no">26</span><h3>客服工单闭环流程</h3><span class="tagline">受理 → 协同核查 → 处理 → 留痕</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="64"><span class="n">a11</span><b>客服工单</b><p>受理/分派</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -457,7 +562,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">22</span><h3>管理员安全准入流程</h3><span class="tagline">MFA 登录 → 授权 → 复核 → 审计</span></div>
+    <div class="flow-head"><span class="no">27</span><h3>管理员安全准入流程</h3><span class="tagline">MFA 登录 → 授权 → 复核 → 审计</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="54"><span class="n">a01</span><b>管理员登录</b><p>账号 + MFA 二次验证</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -470,7 +575,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">23</span><h3>校区代理运营流程</h3><span class="tagline">开通 → 授权 → 运营 → 复盘</span></div>
+    <div class="flow-head"><span class="no">28</span><h3>校区代理运营流程</h3><span class="tagline">开通 → 授权 → 运营 → 复盘</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="78"><span class="n">a25</span><b>校区管理</b><p>校区开通/资料</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -483,7 +588,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="flow">
-    <div class="flow-head"><span class="no">24</span><h3>商品上架全链路流程</h3><span class="tagline">类目 → 商品 → 库存 → 营销</span></div>
+    <div class="flow-head"><span class="no">29</span><h3>商品上架全链路流程</h3><span class="tagline">类目 → 商品 → 库存 → 营销</span></div>
     <div class="flow-chain">
       <a class="fnode enter" data-i="70"><span class="n">a17</span><b>类目管理</b><p>前后台类目维护</p></a>
       <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -496,7 +601,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <!-- ========== 三方核对 ========== -->
-  <div class="sec-h"><i></i><h2>设计 / 小程序 / 后端 三方核对</h2><span class="sub">2026-10-04 · 功能链路核对（视觉翻新状态见下方 10-05 复核区块）</span></div>
+  <div class="sec-h" id="audit"><i></i><h2>设计 / 小程序 / 后端 三方核对</h2><span class="sub">2026-10-04 · 功能链路核对（视觉翻新状态见下方 10-05 复核区块）</span></div>
 
   <div class="audit">
     <table>
@@ -545,7 +650,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <!-- ========== 页面画廊 ========== -->
-  <div class="sec-h"><i></i><h2>全部页面图（83 屏）</h2><span class="sub">小程序 390 × 844 · 管理端 1440 × 900 · 点击放大 · ← → 键翻页</span></div>
+  <div class="sec-h" id="gal"><i></i><h2>全部页面图（103 屏）</h2><span class="sub">小程序 390 × 844 · 管理端 1440 × 900 · 点击放大 · ← → 键翻页 · 页面稿：<a href="sub-screens.html">C 端 75 屏</a> · <a href="admin-screens.html">后台 38 屏</a></span></div>
 
   <div class="group">
     <div class="group-title"><h3>一级 Tab 页面</h3><span>5 屏 · 底部凸起商城按钮</span></div>
@@ -604,7 +709,8 @@ a{text-decoration:none;color:inherit}
 
   <p class="footer">
     校圈 · 校园任务商城 · UI v13 绿色商业风全套设计稿（小程序 + 管理端）<br>
-    小程序图 390 × 844（iPhone 14 逻辑分辨率）· 管理端图 1440 × 900 · 唯一设计基准目录：design/在线UI-1 · 源文件 sub-screens.html / admin-screens.html
+    小程序图 390 × 844（iPhone 14 逻辑分辨率）· 管理端图 1440 × 900 · 唯一设计基准目录：design/在线UI-1<br>
+    统一入口：29 条流程 + 113 屏 · 页面源 sub-screens.html（C 端 75 屏）/ admin-screens.html（后台 38 屏）· 地推 20 屏与校区隔离 15 屏已就地并入两端页面稿，不再单列
   </p>
 </div>
 
@@ -729,8 +835,8 @@ function closeLb(){ lb.classList.remove('on'); }
 function move(d){ cur = (cur + d + PAGES.length) % PAGES.length; sync(); }
 document.addEventListener('click', function(e){
   var node = e.target.closest('[data-i]');
-  if(node && node.classList.contains('fnode')){ openLb(+node.dataset.i); }
-  else if(node && node.classList.contains('shot')){ openLb(+node.dataset.i); }
+  if(node && node.classList.contains('fnode') && node.dataset.i){ openLb(+node.dataset.i); }
+  else if(node && node.classList.contains('shot') && node.dataset.i){ openLb(+node.dataset.i); }
 });
 document.getElementById('lbClose').onclick = closeLb;
 document.getElementById('lbPrev').onclick = function(){ move(-1); };
@@ -742,6 +848,7 @@ document.addEventListener('keydown', function(e){
   if(e.key === 'ArrowLeft') move(-1);
   if(e.key === 'ArrowRight') move(1);
 });
+
 </script>
 </body>
 </html>

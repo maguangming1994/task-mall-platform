@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
+use App\Modules\Campus\Models\Campus;
 use App\Modules\Identity\Models\UserIdentityVerification;
 use App\Modules\SecondHand\Models\SecondHandCategory;
 use App\Modules\SecondHand\Models\SecondHandItem;
@@ -370,6 +371,8 @@ class SecondHandItemController extends Controller
             'view_count' => (int) $item->view_count,
             'created_at' => $item->created_at?->toIso8601String(),
             'category' => $item->category ? ['id' => $item->category->public_id, 'name' => $item->category->name] : null,
+            // 校区隔离：换校后历史发布仍归属原校，前端据此展示「原·XX学校」
+            'campus_name' => $item->campus_id === null ? null : Campus::query()->whereKey($item->campus_id)->value('name'),
             'seller' => $this->presentUser($item->seller),
         ];
 

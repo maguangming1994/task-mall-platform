@@ -270,7 +270,10 @@ class SecondHandAuditRatingRefundFlowTest extends TestCase
             ])->assertCreated();
         }
 
-        return [User::query()->where('public_id', $login->json('data.user.id'))->firstOrFail(), $token];
+        $user = User::query()->where('public_id', $login->json('data.user.id'))->firstOrFail();
+        $this->bindTestCampus($user);
+
+        return [$user, $token];
     }
 
     private function loginAdmin(): array

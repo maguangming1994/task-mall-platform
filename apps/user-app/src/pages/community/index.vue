@@ -142,14 +142,16 @@
           </template>
           <template v-else-if="activeFeed === 'nearby'">
             <view class="state-illustration">⌖</view>
-            <text class="state-title">附近暂时没有同校动态</text>
-            <text class="state-copy">成为这栋楼第一个分享的人，让附近的同学看见你。</text>
+            <text class="state-title">{{ strictCampus ? '本校暂无附近动态' : '附近暂时没有同校动态' }}</text>
+            <text class="state-copy">{{ strictCampus ? '发布第一条动态，让本校同学看见你。' : '成为这栋楼第一个分享的人，让附近的同学看见你。' }}</text>
+            <text v-if="strictCampus" class="strict-note">严格校区模式：仅展示本校同学的内容</text>
             <button v-if="modules.isEnabled('module_community_post')" @click="openCompose(activeCategory || undefined)">发布附近第一条</button>
           </template>
           <template v-else>
             <view class="state-illustration">✦</view>
-            <text class="state-title">还没有同学发过这类内容</text>
-            <text class="state-copy">分享校园新鲜事、学习经验或互助问题，成为第一个发帖的人。</text>
+            <text class="state-title">{{ strictCampus ? '本校暂无动态' : '还没有同学发过这类内容' }}</text>
+            <text class="state-copy">{{ strictCampus ? '发布第一条动态，让本校同学看见你。' : '分享校园新鲜事、学习经验或互助问题，成为第一个发帖的人。' }}</text>
+            <text v-if="strictCampus" class="strict-note">严格校区模式：仅展示本校同学的内容</text>
             <button v-if="modules.isEnabled('module_community_post')" @click="openCompose(activeCategory || undefined)">发布第一条动态</button>
           </template>
         </view>
@@ -227,11 +229,14 @@ import { createTopSafeAreaStyle } from '@/utils/safeArea'
 import { unicodeLength } from '@/utils/textInput'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
+import { useCampusProfileStore } from '@/stores/campusProfile'
 
 const topSafeAreaStyle = createTopSafeAreaStyle()
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_community'))
+const campusProfile = useCampusProfileStore()
+const strictCampus = computed(() => campusProfile.isStrict)
 
 const feedTabs: Array<{ code: CommunityFeed; label: string }> = [
   { code: 'following', label: '关注' },
@@ -332,6 +337,7 @@ onLoad((options) => {
 })
 
 onShow(async () => {
+  void campusProfile.ensure()
   await modules.ensureReady()
   if (!moduleEnabled.value) return
   if (activeView.value === 'mine' && auth.isAuthenticated) await loadMine()
@@ -609,6 +615,7 @@ text{box-sizing:border-box}
 .state-illustration{display:flex;align-items:center;justify-content:center;width:96rpx;height:96rpx;margin:0 auto;border-radius:28rpx;background:var(--c-soft);color:var(--c-deep);font-size:22px;font-weight:900}
 .state-title{display:block;margin-top:24rpx;color:var(--t1);font-size:16px;font-weight:900}
 .state-copy{display:block;margin:10rpx auto 0;max-width:460rpx;color:var(--t2);font-size:13px;line-height:1.6}
+.strict-note{display:inline-block;margin-top:16rpx;padding:8rpx 20rpx;border-radius:999rpx;background:#F1F5F1;color:#5C7264;font-size:12px;line-height:1.5}
 .state-card button,.load-more{height:72rpx;margin:24rpx auto 0;padding:0 40rpx;border:0;border-radius:999rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:13px;font-weight:800;line-height:72rpx;box-shadow:0 10rpx 24rpx rgba(11,191,99,.22)}
 .state-card button::after,.load-more::after,.mine-hero button::after,.mine-actions button::after,.sheet-cancel::after,.publish-fab::after{border:0}
 .error-card .state-illustration{background:#FFEEEA;color:var(--c-red)}

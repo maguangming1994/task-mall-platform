@@ -1,5 +1,6 @@
 import { clientPlatform } from '@/platform/runtime'
 import { handleModuleDisabled } from '@/utils/moduleDisabled'
+import { handleCampusGate } from '@/utils/campusGate'
 
 export interface ApiEnvelope<T> {
   code: string
@@ -113,6 +114,10 @@ export function apiRequest<T>(options: ApiRequestOptions): Promise<T> {
             ? payload.details.module
             : undefined
           handleModuleDisabled(moduleCode)
+        }
+        // 校区门禁：统一广播，由 App.vue 提示并引导到绑校页（可取消继续浏览）
+        if (payload.code === 'CAMPUS_NOT_BOUND' || payload.code === 'CAMPUS_PROFILE_INCOMPLETE') {
+          handleCampusGate(payload.code)
         }
         reject(new ApiError(
           payload.code || 'REQUEST_FAILED',

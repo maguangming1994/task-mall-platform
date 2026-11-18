@@ -24,12 +24,13 @@
     </view>
 
     <view v-else-if="items.length" class="card">
-      <view v-for="item in items" :key="item.id" class="sh-item" :class="{ muted: item.audit_status === 'pending' }">
+      <view v-for="item in items" :key="item.id" class="sh-item" :class="{ muted: item.audit_status === 'pending', 'cross-campus': Boolean(crossCampusName(item)) }">
         <image v-if="item.cover" class="cover" :src="resolveCover(item.cover)" mode="aspectFill" @click="openDetail(item)" />
         <view v-else class="cover placeholder" @click="openDetail(item)"><text>{{ item.title.slice(0, 1) }}</text></view>
         <view class="main">
           <text class="title" @click="openDetail(item)">{{ item.title }}</text>
           <view class="tags">
+            <text v-if="crossCampusName(item)" class="tag tag-cross">原·{{ crossCampusName(item) }}</text>
             <text class="tag tag-green">{{ item.condition_label }}</text>
             <text v-if="item.status === 'sold'" class="tag tag-gray">已售</text>
             <text v-else-if="item.status === 'off_shelf'" class="tag tag-gray">已下架</text>
@@ -82,9 +83,20 @@ import { resolveApiAssetUrl } from '@/api/http'
 import { formatDate } from '@/utils/dateTime'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
+import { useCampusProfileStore } from '@/stores/campusProfile'
+import { useCampusStore } from '@/stores/campus'
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
+const campusProfile = useCampusProfileStore()
+const campus = useCampusStore()
+const currentCampusName = computed(() => campusProfile.campusName || campus.selected?.name || '')
+
+function crossCampusName(item: SecondHandItem) {
+  const name = item.campus_name?.trim()
+  if (!name || !currentCampusName.value || name === currentCampusName.value) return ''
+  return name
+}
 
 const auth = useAuthStore()
 const tabs = [
@@ -106,6 +118,7 @@ function resolveCover(id: string | null) { return resolveApiAssetUrl(id) }
 onShow(handleShow)
 
 async function handleShow() {
+  void campusProfile.ensure()
   await modules.ensureReady()
   if (!moduleEnabled.value) return
   load()
@@ -189,6 +202,7 @@ function relist(item: SecondHandItem) {
 .sh-item { display:flex; gap:20rpx; padding:22rpx 24rpx; }
 .sh-item + .sh-item { border-top:2rpx solid #F5F6F6; }
 .sh-item.muted { opacity:.7; }
+.sh-item.cross-campus { opacity:.55; background:#FAFAFA; }
 .cover { width:150rpx; height:150rpx; border-radius:18rpx; background:#F2F4F3; flex:none; }
 .cover.placeholder { display:flex; align-items:center; justify-content:center; color:var(--t3); font-size:44rpx; }
 .main { flex:1; min-width:0; }
@@ -198,6 +212,7 @@ function relist(item: SecondHandItem) {
 .tag-green { background:var(--green-soft); color:var(--green-deep); }
 .tag-blue { background:#EAF2FE; color:#2F7DE1; }
 .tag-red { background:var(--red-soft); color:var(--red); }
+.tag-cross { background:#FFF2E5; color:#B76A12; }
 .tag-gray { background:#F2F4F3; color:var(--t3); }
 .meta { font-size:21rpx; color:var(--t3); margin-top:10rpx; display:block; }
 .reject-reason { color:var(--red); }

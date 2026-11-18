@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>校圈 · 管理后台设计图</title>
 <style>
@@ -20,6 +21,7 @@ html,body{background:#ccc;font-family:-apple-system,BlinkMacSystemFont,"PingFang
 img{display:block}
 .pc-wrap{width:1440px;height:900px;margin:0 auto;background:var(--bg);display:flex;box-shadow:0 0 80px rgba(0,0,0,.12);overflow:hidden}
 .screen{display:none;width:1440px;height:900px}
+.screen.on{display:flex}
 body[data-screen="admin-login"] .screen[data-screen="admin-login"],
 body[data-screen="admin-dashboard"] .screen[data-screen="admin-dashboard"],
 body[data-screen="admin-task-audit"] .screen[data-screen="admin-task-audit"],
@@ -194,6 +196,100 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 .perm-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
 .perm-row:last-child{border-bottom:0}
 </style>
+<style>
+/* ===== 校区隔离后台屏（迁入，作用域 .ci-admin） ===== */
+.ci-admin{position:relative}
+.ci-admin .btn{height:34px;padding:0 16px;border-radius:6px;border:1px solid var(--line);background:#fff;font-size:13px;color:var(--t1);cursor:pointer}
+.ci-admin .btn.primary{background:var(--green-grad);color:#fff;border:0}
+.ci-admin .tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:700}
+.ci-admin .tag.green{background:var(--green-soft);color:var(--green-deep)}
+.ci-admin .tag.blue{background:var(--blue-soft);color:var(--blue)}
+.ci-admin .tag.orange{background:var(--orange-soft);color:var(--orange-deep)}
+.ci-admin .tag.gray{background:#F2F3F5;color:var(--t2)}
+.ci-admin .cols{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+.ci-admin .modal-mask{position:absolute;inset:56px 0 0 220px;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:20}
+.ci-admin .modal{width:600px;max-height:82%;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.28)}
+.ci-admin .modal .mh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);font-size:15px;font-weight:800}
+.ci-admin .modal .mh span{color:var(--t3);font-weight:400;cursor:pointer}
+.ci-admin .modal .mb{padding:16px 20px}
+.ci-admin .modal .mf{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+.ci-admin .alert{background:var(--orange-soft);border:1px solid var(--line);color:var(--orange-deep);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.7;margin-bottom:14px}
+.ci-admin .form-row{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.ci-admin .form-row:last-child{border-bottom:0}
+.ci-admin .form-row label{width:100px;flex:none;font-size:12.5px;font-weight:700;color:var(--t2);padding-top:9px}
+.ci-admin .form-row label i{color:var(--red);font-style:normal}
+.ci-admin .fld{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12.5px;min-height:36px;background:#fff}
+.ci-admin .fld.dis{background:#F7F9F8;color:var(--t3)}
+.ci-admin .hint{font-size:11px;color:var(--t3);margin-top:5px;line-height:1.6}
+.ci-admin .form-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.ci-admin .radio-row{display:flex;gap:10px;margin-bottom:6px}
+.ci-admin .radio{display:inline-flex;align-items:center;height:32px;border:1px solid var(--line);border-radius:6px;padding:0 12px;font-size:13px;color:var(--t2);background:#fff}
+.ci-admin .radio.on{border-color:var(--green);background:var(--green-soft);color:var(--green-deep);font-weight:700}
+.ci-admin .timeline{border-left:2px solid var(--line);padding-left:14px;margin-left:4px}
+.ci-admin .tl-item{position:relative;padding:0 0 14px}
+.ci-admin .tl-item::before{content:"";position:absolute;left:-19px;top:2px;width:8px;height:8px;border-radius:50%;background:var(--green)}
+.ci-admin .tl-item .tt{font-size:12.5px;font-weight:700}
+.ci-admin .tl-item .ts{font-size:11px;color:var(--t3);margin-top:2px}
+.ci-admin .mono{font-family:Consolas,Menlo,monospace;font-size:11.5px;line-height:1.7;background:#F7F9F8;border:1px solid var(--line);border-radius:8px;padding:12px 14px;white-space:pre-wrap;color:#334155}
+.ci-admin .mono .c1{color:#7C8B99}
+.ci-admin .mono .c2{color:var(--green-deep);font-weight:700}
+.ci-admin .mono .c3{color:var(--orange-deep);font-weight:700}
+</style>
+<style>
+/* ===== 新增后台页：对齐现有后台组件 ===== */
+.pt-alert{display:flex;gap:8px;align-items:flex-start;background:var(--orange-soft);border:1px solid var(--line);color:var(--orange-deep);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.7;margin-bottom:14px}
+.pt-alert.info{background:var(--blue-soft);border-color:var(--line);color:var(--blue)}
+.pt-alert.error{background:var(--red-soft);border-color:#FFD7D2;color:#B02A22}
+.pt-alert b{font-weight:700}
+.pt-review-list{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:auto}
+.pt-review-item{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px}
+.pt-review-item:last-child{border-bottom:0}
+.pt-review-item b{font-size:13px;font-weight:600;display:block}
+.pt-review-item p{font-size:11px;color:var(--t3);margin-top:3px}
+.pt-review-item.on{background:var(--green-soft)}
+.pt-kv{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.pt-kv:last-child{border-bottom:0}
+.pt-kv span{color:var(--t3);flex:none}
+.pt-kv b{font-weight:600;text-align:right}
+.pt-shots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.pt-shot{height:72px;border-radius:8px;background:#F4F6F4;border:1px solid var(--line);color:var(--t3);font-size:11px;line-height:1.5;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px}
+.pt-form{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+.pt-field label{display:block;font-size:12px;color:var(--t2);font-weight:600;margin-bottom:6px}
+.pt-field input,.pt-field select{width:100%;height:32px;border:1px solid var(--line);border-radius:6px;padding:0 10px;font-size:13px;background:#fff;font-family:inherit;color:var(--t1)}
+.pt-field .hint{font-size:11px;color:var(--t3);margin-top:5px}
+.pt-skel{height:14px;border-radius:4px;background:#F2F4F3}
+.pt-empty{background:#fff;border:1px solid var(--line);border-radius:12px;padding:48px 24px;text-align:center}
+.pt-empty .eic{width:46px;height:46px;border-radius:14px;background:var(--green-soft);color:var(--green-deep);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:20px}
+.pt-empty .btn,.pt-modal-foot .btn,.pt-alert .btn,.pcard .btn{height:32px;padding:0 14px;border-radius:6px;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--t1);cursor:pointer}
+.pcard .btn:not(.ghost){background:var(--green-grad);color:#fff;border:0}
+.pt-empty .btn.primary,.pt-modal-foot .btn.danger{background:var(--green-grad);color:#fff;border:0}
+.pt-modal-foot .btn.danger{background:var(--red)}
+.pt-empty b{font-size:14px;font-weight:700;display:block}
+.pt-empty p{font-size:12px;color:var(--t2);line-height:1.7;margin:6px 0 14px}
+.pt-modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:120}
+.pt-modal-card{width:480px;background:#fff;border-radius:12px;box-shadow:0 24px 70px rgba(0,0,0,.28);overflow:hidden}
+.pt-modal-head{padding:16px 20px;border-bottom:1px solid var(--line);font-size:15px;font-weight:800}
+.pt-modal-body{padding:16px 20px;font-size:13px;line-height:1.7;color:var(--t2)}
+.pt-modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+.pt-modtabs{display:flex;gap:2px;background:#F4F6F4;border-radius:8px;padding:3px;width:fit-content;margin:0 0 14px}
+.pt-modtab{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;color:var(--t2);cursor:pointer}
+.pt-modtab.on{background:#fff;color:var(--green-deep)}
+.pt-sb-new{margin-left:auto;font-size:9px;font-weight:700;color:#fff;background:var(--green);border-radius:4px;padding:1px 4px}
+/* 屏目录浮层 */
+.pt-switch{position:fixed;right:16px;bottom:16px;z-index:200;font-size:13px;text-align:left}
+.pt-switch-btn{height:36px;padding:0 14px;border-radius:18px;background:#fff;color:var(--t1);font-size:13px;font-weight:600;box-shadow:0 6px 20px rgba(23,26,23,.14);display:flex;align-items:center;gap:6px;cursor:pointer}
+.pt-switch-btn b{font-size:11px;font-weight:700;color:var(--green-deep);background:var(--green-soft);border-radius:9px;padding:2px 7px}
+.pt-switch-panel{display:none;position:absolute;right:0;bottom:46px;width:300px;max-height:560px;background:#fff;border-radius:12px;box-shadow:0 16px 44px rgba(23,26,23,.18);overflow:hidden}
+.pt-switch.on .pt-switch-panel{display:flex;flex-direction:column}
+.pt-switch-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:12px;color:var(--t2);flex:none}
+.pt-switch-head a{color:var(--green-deep);font-weight:600;text-decoration:none;white-space:nowrap}
+#ptSwitchList{overflow:auto;padding:4px 0 6px}
+.pt-switch-group{padding:9px 14px 4px;font-size:10.5px;color:var(--t3);font-weight:700}
+.pt-switch-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 14px;font-size:12.5px;cursor:pointer}
+.pt-switch-item:hover{background:#F7F9F8}
+.pt-switch-item.on{color:var(--green-deep);font-weight:700;background:var(--green-soft)}
+.pt-switch-item em{font-style:normal;font-size:10px;color:var(--t3);flex:none}
+</style>
 </head>
 <body>
 
@@ -221,7 +317,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 02 DASHBOARD ==================== -->
 <div class="screen" data-screen="admin-dashboard">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -295,7 +390,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 03 TASK AUDIT ==================== -->
 <div class="screen" data-screen="admin-task-audit">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -350,7 +444,67 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 04 SH AUDIT ==================== -->
+<div class="screen" data-screen="admin-pt-review" data-kind="新增" data-title="交单审核">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0 ·  build 20261004</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 <b>/ 运营与消息 / 地推申请审核</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div class="page-title">推广申请与交单审核</div>
+      <div class="split" style="height:730px">
+        <div class="split-left" style="width:360px">
+          <div class="filter-bar" style="margin-bottom:0;padding:10px 12px"><input class="inp" placeholder="搜索成员 / 团队" style="min-width:0;flex:1"><select class="sel" style="min-width:88px"><option>待审核</option></select></div>
+          <div class="pt-review-list">
+            <div class="pt-review-item on"><b>快手极速版 · 周迟</b><p>东湖 / 东湖推广大队 · 3 人 · 20 分钟前</p><div style="margin-top:6px"><span class="tag green">凭证齐全</span><span class="tag orange">待复核</span></div></div>
+            <div class="pt-review-item"><b>美团到店 · 林昭</b><p>东湖 / 东湖推广大队 · 2 人 · 1 小时前</p><div style="margin-top:6px"><span class="tag blue">到店凭证</span></div></div>
+            <div class="pt-review-item"><b>问卷回收 · 赵一鸣</b><p>全校区 / 东湖推广大队 · 9 份 · 3 小时前</p><div style="margin-top:6px"><span class="tag orange">有 2 份重复</span></div></div>
+            <div class="pt-review-item"><b>入团申请 · 许南</b><p>南苑校区 → 东湖校区 · 校区不一致</p><div style="margin-top:6px"><span class="tag red">拦截</span></div></div>
+          </div>
+        </div>
+        <div class="split-right">
+          <div class="pcard" style="flex:none">
+            <h3>交单详情 · 快手极速版</h3>
+            <div class="u" style="margin-bottom:12px"><span class="uav">周</span><span class="uinfo"><b>周迟</b><span>东湖校园推广大队 · A2 · uid 10211</span></span><span style="margin-left:auto"><span class="tag green">实名已通过</span></span></div>
+            <div class="pt-kv"><span>推广位</span><b>KSDX-EH-8842 · 快手极速版 · 东湖</b></div>
+            <div class="pt-kv"><span>提交人数</span><b>3 人 · 预计佣金 ¥24.00</b></div>
+            <div class="pt-kv"><span>提交次数</span><b>今日第 3/5 次</b></div>
+            <div class="pt-kv"><span>补充说明</span><b style="font-weight:400">二食堂门口地推，3 人现场注册。</b></div>
+            <div style="margin-top:12px;font-size:12px;font-weight:700;color:var(--t2)">注册截图（3 张）</div>
+            <div class="pt-shots"><div class="pt-shot">截图 1<br>手机号 + 邀请码</div><div class="pt-shot">截图 2<br>注册成功页</div><div class="pt-shot">截图 3<br>现场合影</div></div>
+          </div>
+          <div class="pcard" style="flex:1;display:flex;flex-direction:column">
+            <h3>审核结论</h3>
+            <div class="pt-kv"><span>邀请码校验</span><b style="color:var(--green-deep)">通过 · 归属周迟</b></div>
+            <div class="pt-kv"><span>设备去重</span><b style="color:var(--green-deep)">通过 · 3 台独立设备</b></div>
+            <div class="pt-kv"><span>校区归属</span><b style="color:var(--green-deep)">通过 · 东湖校区</b></div>
+            <div class="pt-kv"><span>历史重复</span><b style="color:var(--green-deep)">无重复提交</b></div>
+            <div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--t2)">不合格原因（选择后提交）</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><span class="tag orange">凭证缺失</span><span class="tag orange">邀请码不符</span><span class="tag orange">同设备</span><span class="tag orange">非本校</span><span class="tag orange">截图重复</span></div>
+            <textarea style="width:100%;height:54px;margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:12.5px;resize:none" placeholder="审核备注（不合格时必填，会同步给成员与团长）"></textarea>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:auto;padding-top:14px"><button class="btn ghost" style="height:32px;padding:0 14px;border-radius:6px;border:1px solid var(--line);background:#fff;font-size:13px">转交团长</button><button class="btn" style="height:32px;padding:0 16px;border-radius:6px;border:1px solid #FFC9C2;background:var(--red-soft);color:var(--red);font-size:13px;font-weight:700">不合格</button><button class="btn" style="height:32px;padding:0 20px;border-radius:6px;border:0;background:var(--green-grad);color:#fff;font-size:13px;font-weight:700">合格通过</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
 <div class="screen" data-screen="admin-sh-audit">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -405,7 +559,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 05 PRODUCT ==================== -->
 <div class="screen" data-screen="admin-product">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -460,7 +613,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 06 ORDER ==================== -->
 <div class="screen" data-screen="admin-order">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -511,7 +663,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 07 AFTERSALE ==================== -->
 <div class="screen" data-screen="admin-aftersale">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -562,7 +713,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 08 WITHDRAW ==================== -->
 <div class="screen" data-screen="admin-withdraw">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -619,7 +769,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 09 USER ==================== -->
 <div class="screen" data-screen="admin-user">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -672,7 +821,284 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 10 COMMUNITY ==================== -->
+<div class="screen ci-admin" data-screen="ci-a2" data-kind="新增" data-title="A2 用户详情 · 强制改校">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item on"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 / 用户中心 <b>/ 用户详情</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div class="page-title" style="margin:0">用户详情 · 王同学</div>
+        <span class="tag green" style="height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;background:var(--green-soft);color:var(--green-deep)">正常</span>
+      </div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">UID 102400 · 注册于 2026-08-15</div>
+      <div class="row">
+        <div class="stat-card"><div class="lab">账户余额（积分）</div><div class="num" style="color:var(--green-deep)">1,280</div><div class="chg up">正常</div></div>
+        <div class="stat-card"><div class="lab">完成任务</div><div class="num" style="color:var(--blue)">36</div><div class="chg up">近 30 天 8 单</div></div>
+        <div class="stat-card"><div class="lab">发布闲置</div><div class="num" style="color:var(--orange-deep)">12</div><div class="chg up">在售 6</div></div>
+        <div class="stat-card"><div class="lab">进行中订单</div><div class="num">8</div><div class="chg up">无异常</div></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tr><th style="width:180px">字段</th><th>值</th><th style="width:240px">操作</th></tr>
+          <tr><td style="color:var(--t3)">当前绑定学校</td><td><b>南昌大学</b> <span style="font-size:11px;color:var(--t3);margin-left:8px">绑定于 2026-09-20</span></td><td class="act"><a class="danger">强制改校</a><a>换校历史</a></td></tr>
+          <tr><td style="color:var(--t3)">年级 / 专业</td><td>2024 级 · 软件工程 · 信息工程学院</td><td class="act"><a>修正档案</a></td></tr>
+          <tr><td style="color:var(--t3)">实名状态</td><td>已实名（王*明）</td><td style="color:var(--t3)">—</td></tr>
+          <tr><td style="color:var(--t3)">兜底标记</td><td><span class="tag gray">无</span></td><td style="color:var(--t3)">—</td></tr>
+        </table>
+      </div>
+      <div class="pcard" style="margin-top:14px">
+        <h3>换校历史</h3>
+        <div class="list-item"><span class="dot"></span>2026-09-20 · 由「江西师范大学」迁入「南昌大学」<span class="meta">本人操作 · 冷却期已重置</span></div>
+        <div class="list-item"><span class="dot orange"></span>2026-08-28 · 由「默认学校」兜底确认至「江西师范大学」<span class="meta">兜底确认</span></div>
+      </div>
+      <div class="modal-mask">
+        <div class="modal">
+          <div class="mh">强制改校 · 王同学<span>✕</span></div>
+          <div class="mb">
+            <div class="alert">管理员强制改校不受 30 天冷却限制，将写入换校审计（操作人 + 原因）。用户的余额与订单随账号保留，已发布内容留在原学校。</div>
+            <div class="form-row"><label>当前档案</label><div class="fld dis">南昌大学 · 2024 级 · 软件工程（绑定于 2026-09-20）</div></div>
+            <div class="form-row"><label><i>*</i> 目标学校</label><div class="fld">江西师范大学 · 江西省南昌市 ▾</div></div>
+            <div class="form-row"><label>年级</label><div class="fld">2025 级 ▾</div></div>
+            <div class="form-row"><label>专业</label><div class="fld">市场营销</div></div>
+            <div class="form-row"><label><i>*</i> 改校原因</label><div style="flex:1"><div class="fld" style="min-height:56px">用户毕业转校，客服工单 #KF-2026-1042</div><div class="hint">必填，将展示在换校审计记录中</div></div></div>
+          </div>
+          <div class="mf"><button class="btn">取消</button><button class="btn primary">确认强制改校</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="screen" data-screen="admin-pt-teams" data-kind="新增" data-title="推广团队">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0 ·  build 20261004</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 <b>/ 用户中心 / 地推团队</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div class="page-title">团队管理</div>
+      <div class="row">
+        <div class="stat-card"><div class="lab">地推团队总数</div><div class="num">42</div><div class="chg up">↑ 6 本月新增</div></div>
+        <div class="stat-card"><div class="lab">待审核入团申请</div><div class="num" style="color:var(--orange-deep)">9</div><div class="chg down">2 小时时效</div></div>
+        <div class="stat-card"><div class="lab">本月有效单</div><div class="num">8,246</div><div class="chg up">↑ 12% 较上月</div></div>
+        <div class="stat-card"><div class="lab">本月团队佣金</div><div class="num">¥18.6万</div><div class="chg up">待结算 ¥3.2万</div></div>
+      </div>
+      <div class="filter-bar">
+        <select class="sel"><option>全部校区</option><option>东湖校区</option><option>城北校区</option></select>
+        <select class="sel"><option>全部状态</option><option>正常</option><option>观察中</option><option>已解散</option></select>
+        <input class="inp" placeholder="搜索团队名称 / 团长">
+        <button class="btn">查询</button>
+        <button class="btn ghost">重置</button>
+        <div style="margin-left:auto;display:flex;gap:8px"><button class="btn ghost">导出</button><button class="btn">新建团队</button></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>团队</th><th>校区</th><th>团长</th><th>成员</th><th>本月单量</th><th>审单通过率</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td><div class="u"><span class="uav">东</span><span class="uinfo"><b>东湖校园推广大队</b><span>team_1001 · A3</span></span></div></td><td>东湖校区</td><td>陈曦</td><td>28</td><td>1,246</td><td>96%</td><td><span class="tag green">正常</span></td><td class="act"><a>详情</a><a>成员</a><a>停用</a></td></tr>
+            <tr><td><div class="u"><span class="uav">城</span><span class="uinfo"><b>城北轻骑兵</b><span>team_1002 · A2</span></span></div></td><td>城北校区</td><td>苏禾</td><td>16</td><td>684</td><td>91%</td><td><span class="tag green">正常</span></td><td class="act"><a>详情</a><a>成员</a><a>停用</a></td></tr>
+            <tr><td><div class="u"><span class="uav">南</span><span class="uinfo"><b>南苑新媒体小组</b><span>team_1003 · A1</span></span></div></td><td>南苑校区</td><td>许南</td><td>9</td><td>212</td><td>78%</td><td><span class="tag orange">观察中</span></td><td class="act"><a>详情</a><a>成员</a><a class="danger">停用</a></td></tr>
+            <tr><td><div class="u"><span class="uav">西</span><span class="uinfo"><b>西区校园合伙人</b><span>team_1004 · A2</span></span></div></td><td>西区校区</td><td>周迟</td><td>21</td><td>902</td><td>94%</td><td><span class="tag green">正常</span></td><td class="act"><a>详情</a><a>成员</a><a>停用</a></td></tr>
+            <tr><td><div class="u"><span class="uav">老</span><span class="uinfo"><b>老校区试点队</b><span>team_1005 · A1</span></span></div></td><td>老校区</td><td>—</td><td>0</td><td>0</td><td>—</td><td><span class="tag gray">已解散</span></td><td class="act"><a>详情</a></td></tr>
+          </tbody>
+        </table>
+        <div class="pager">共 42 个团队 <span class="pbtn">&lt;</span><span class="pbtn on">1</span><span class="pbtn">2</span><span class="pbtn">3</span><span class="pbtn">&gt;</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="screen" data-screen="admin-pt-members" data-kind="新增" data-title="团队成员">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0 ·  build 20261004</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 <b>/ 用户中心 / 地推成员等级</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div class="page-title">成员与等级</div>
+      <div class="row">
+        <div class="stat-card"><div class="lab">地推成员</div><div class="num">1,286</div><div class="chg up">↑ 218 本月新增</div></div>
+        <div class="stat-card"><div class="lab">A3 成员</div><div class="num">86</div><div class="chg up">占比 6.7%</div></div>
+        <div class="stat-card"><div class="lab">待升级</div><div class="num" style="color:var(--orange-deep)">34</div><div class="chg down">满足单量门槛</div></div>
+        <div class="stat-card"><div class="lab">本月人均有效单</div><div class="num">6.4</div><div class="chg up">↑ 0.8 较上月</div></div>
+      </div>
+      <div class="filter-bar">
+        <select class="sel"><option>全部团队</option><option>东湖校园推广大队</option><option>城北轻骑兵</option></select>
+        <select class="sel"><option>全部等级</option><option>A3</option><option>A2</option><option>A1</option></select>
+        <select class="sel"><option>全部状态</option><option>正常</option><option>待激活</option><option>已退出</option></select>
+        <input class="inp" placeholder="搜索成员昵称 / 手机号">
+        <button class="btn">查询</button>
+        <div style="margin-left:auto"><button class="btn ghost">调整等级</button></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>成员</th><th>所属团队</th><th>校区</th><th>等级</th><th>本月有效单</th><th>审单通过率</th><th>累计佣金</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td><div class="u"><span class="uav">陈</span><span class="uinfo"><b>陈曦</b><span>uid 10102 · 团长</span></span></div></td><td>东湖校园推广大队</td><td>东湖</td><td><span class="tag green">A3</span></td><td>132</td><td>97%</td><td>¥4,820</td><td><span class="tag green">正常</span></td><td class="act"><a>详情</a><a>等级记录</a></td></tr>
+            <tr><td><div class="u"><span class="uav">周</span><span class="uinfo"><b>周迟</b><span>uid 10211 · 副团长</span></span></div></td><td>东湖校园推广大队</td><td>东湖</td><td><span class="tag green">A2</span></td><td>68</td><td>95%</td><td>¥2,046</td><td><span class="tag green">正常</span></td><td class="act"><a>详情</a><a>等级记录</a></td></tr>
+            <tr><td><div class="u"><span class="uav">林</span><span class="uinfo"><b>林昭</b><span>uid 10325</span></span></div></td><td>东湖校园推广大队</td><td>东湖</td><td><span class="tag green">A2</span></td><td>54</td><td>92%</td><td>¥1,528</td><td><span class="tag green">正常</span></td><td class="act"><a>详情</a><a>等级记录</a></td></tr>
+            <tr><td><div class="u"><span class="uav">赵</span><span class="uinfo"><b>赵一鸣</b><span>uid 10402</span></span></div></td><td>东湖校园推广大队</td><td>东湖</td><td><span class="tag blue">A1</span></td><td>41</td><td>88%</td><td>¥986</td><td><span class="tag green">正常</span></td><td class="act"><a>详情</a><a>等级记录</a></td></tr>
+            <tr><td><div class="u"><span class="uav">苏</span><span class="uinfo"><b>苏禾</b><span>uid 10510</span></span></div></td><td>城北轻骑兵</td><td>城北</td><td><span class="tag gray">A1</span></td><td>12</td><td>76%</td><td>¥212</td><td><span class="tag orange">待激活</span></td><td class="act"><a>详情</a><a>等级记录</a></td></tr>
+          </tbody>
+        </table>
+        <div class="pager">共 1,286 位成员 <span class="pbtn">&lt;</span><span class="pbtn on">1</span><span class="pbtn">2</span><span class="pbtn">3</span><span class="pbtn">&gt;</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="screen" data-screen="admin-pt-rules" data-kind="新增" data-title="佣金与规则">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0 ·  build 20261004</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 <b>/ 资产与财务 / 地推佣金规则</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div class="page-title">等级佣金规则</div>
+      <div class="tabs"><span class="tab on">规则配置</span><span class="tab">结算快照</span><span class="tab">变更记录</span></div>
+      <div class="pt-alert info"><b>复用现有结算口径：</b>地推佣金与积分任务分账，提现仍走「提现审核」；本页只维护等级系数与团队加成，不新建钱包账户。</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>等级</th><th>升级门槛（月有效单）</th><th>个人佣金系数</th><th>团队加成</th><th>审单时效</th><th>结算周期</th><th>生效状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag green">A3</span></td><td>≥ 100 单</td><td>1.10×</td><td>+5%（平台承担）</td><td>12h</td><td>T+3 批次</td><td><span class="tag green">生效中</span></td><td class="act"><a>编辑</a><a>停用</a></td></tr>
+            <tr><td><span class="tag green">A2</span></td><td>≥ 50 单</td><td>1.05×</td><td>+3%</td><td>24h</td><td>T+3 批次</td><td><span class="tag green">生效中</span></td><td class="act"><a>编辑</a><a>停用</a></td></tr>
+            <tr><td><span class="tag blue">A1</span></td><td>≥ 10 单</td><td>1.00×</td><td>—</td><td>24h</td><td>T+3 批次</td><td><span class="tag green">生效中</span></td><td class="act"><a>编辑</a><a>停用</a></td></tr>
+            <tr><td><span class="tag gray">A0 试用</span></td><td>&lt; 10 单</td><td>0.90×</td><td>—</td><td>48h</td><td>T+7 批次</td><td><span class="tag gray">未启用</span></td><td class="act"><a>编辑</a><a>启用</a></td></tr>
+          </tbody>
+        </table>
+        <div class="pager">共 4 条规则 <span class="pbtn on">1</span></div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <div class="pcard" style="flex:1">
+          <h3>规则快照 · 批次 B20261105</h3>
+          <div class="pt-kv"><span>快照版本</span><b>rules_v3.2 · 2026-11-01 00:00</b></div>
+          <div class="pt-kv"><span>参与等级</span><b>A1 / A2 / A3</b></div>
+          <div class="pt-kv"><span>个人系数</span><b>1.00× / 1.05× / 1.10×</b></div>
+          <div class="pt-kv"><span>团队加成</span><b>3% / 5%（平台承担）</b></div>
+          <div class="pt-kv"><span>锁定状态</span><b style="color:var(--green-deep)">已锁定，批次结算后不可改</b></div>
+        </div>
+        <div class="pcard" style="flex:1">
+          <h3>变更记录</h3>
+          <div class="list-item"><span class="dot"></span> 调整 A2 团队加成 2% → 3% <span class="meta">10-28 · admin</span></div>
+          <div class="list-item"><span class="dot orange"></span> 新增 A0 试用等级（未启用） <span class="meta">10-21 · admin</span></div>
+          <div class="list-item"><span class="dot"></span> 结算周期统一 T+3 <span class="meta">09-30 · fin_01</span></div>
+          <div class="list-item"><span class="dot"></span> 初始化 A1–A3 系数 <span class="meta">08-15 · admin</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="screen" data-screen="admin-pt-teams-error" data-kind="新增" data-title="推广团队 · 异常态">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0 ·  build 20261004</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 <b>/ 用户中心 / 地推团队</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div class="page-title">团队管理</div>
+      <div class="pt-alert error"><span style="width:22px;height:22px;border-radius:50%;background:#FFEEEA;color:var(--red);display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">!</span><div><b>团队数据加载失败（503）</b><br>地推团队服务暂时不可用，已自动重试 2 次。列表展示为最近一次缓存，操作按钮已禁用。请稍后重试或联系技术支持。</div></div>
+      <div class="filter-bar">
+        <select class="sel" disabled><option>全部校区</option></select>
+        <select class="sel" disabled><option>全部状态</option></select>
+        <input class="inp" placeholder="搜索团队名称 / 团长" disabled>
+        <button class="btn" onclick="this.closest('.pt-alert').style.display='none'">重新加载</button>
+        <button class="btn ghost">查看服务状态</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>团队</th><th>校区</th><th>团长</th><th>成员</th><th>本月单量</th><th>审单通过率</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td><div style="width:140px"><div class="pt-skel"></div></div></td><td><div class="pt-skel" style="width:54px"></div></td><td><div class="pt-skel" style="width:48px"></div></td><td><div class="pt-skel" style="width:28px"></div></td><td><div class="pt-skel" style="width:52px"></div></td><td><div class="pt-skel" style="width:40px"></div></td><td><div class="pt-skel" style="width:44px;height:20px"></div></td><td><div class="pt-skel" style="width:64px"></div></td></tr>
+            <tr><td><div class="pt-skel" style="width:150px"></div></td><td><div class="pt-skel" style="width:54px"></div></td><td><div class="pt-skel" style="width:40px"></div></td><td><div class="pt-skel" style="width:28px"></div></td><td><div class="pt-skel" style="width:46px"></div></td><td><div class="pt-skel" style="width:40px"></div></td><td><div class="pt-skel" style="width:44px;height:20px"></div></td><td><div class="pt-skel" style="width:64px"></div></td></tr>
+            <tr><td><div class="pt-skel" style="width:130px"></div></td><td><div class="pt-skel" style="width:54px"></div></td><td><div class="pt-skel" style="width:36px"></div></td><td><div class="pt-skel" style="width:28px"></div></td><td><div class="pt-skel" style="width:50px"></div></td><td><div class="pt-skel" style="width:40px"></div></td><td><div class="pt-skel" style="width:44px;height:20px"></div></td><td><div class="pt-skel" style="width:64px"></div></td></tr>
+            <tr><td><div class="pt-skel" style="width:160px"></div></td><td><div class="pt-skel" style="width:54px"></div></td><td><div class="pt-skel" style="width:44px"></div></td><td><div class="pt-skel" style="width:28px"></div></td><td><div class="pt-skel" style="width:56px"></div></td><td><div class="pt-skel" style="width:40px"></div></td><td><div class="pt-skel" style="width:44px;height:20px"></div></td><td><div class="pt-skel" style="width:64px"></div></td></tr>
+            <tr><td><div class="pt-skel" style="width:120px"></div></td><td><div class="pt-skel" style="width:54px"></div></td><td><div class="pt-skel" style="width:32px"></div></td><td><div class="pt-skel" style="width:28px"></div></td><td><div class="pt-skel" style="width:48px"></div></td><td><div class="pt-skel" style="width:40px"></div></td><td><div class="pt-skel" style="width:44px;height:20px"></div></td><td><div class="pt-skel" style="width:64px"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
 <div class="screen" data-screen="admin-community">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -729,7 +1155,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 11 SUPPORT ==================== -->
 <div class="screen" data-screen="admin-support">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -829,7 +1254,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 12 OPERATIONS ==================== -->
 <div class="screen" data-screen="admin-operations">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -886,7 +1310,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 13 CONFIG ==================== -->
 <div class="screen" data-screen="admin-config">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -952,7 +1375,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 14 PERMISSIONS ==================== -->
 <div class="screen" data-screen="admin-permissions">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1008,7 +1430,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 15 TASK LIST ==================== -->
 <div class="screen" data-screen="admin-task-list">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1070,7 +1491,43 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 16 TASK TEMPLATE ==================== -->
+<div class="screen ci-admin" data-screen="ci-a3" data-kind="新增" data-title="A3 任务编辑 · 平台投放">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item on"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 / 任务中心 <b>/ 新建任务</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div class="page-title">新建任务</div>
+      <div style="font-size:12px;color:var(--t3);margin-top:-10px;margin-bottom:16px">校本任务仅本校可见；勾选平台投放后面向全部学校</div>
+      <div class="pcard" style="max-width:820px">
+        <div class="form-row"><label><i>*</i> 任务标题</label><div class="fld">新生防骗指南问卷</div></div>
+        <div class="form-row"><label><i>*</i> 投放范围</label><div style="flex:1"><div class="radio-row"><span class="radio">校本任务</span><span class="radio on">平台投放（全校可见）</span></div><div class="hint">平台投放任务将在所有学校（含严格隔离校区）的任务大厅展示，带「平台 · 全校」徽章</div></div></div>
+        <div class="form-row"><label>所属学校</label><div class="fld dis">已禁用 · 平台投放任务不归属单一学校</div></div>
+        <div class="form-row"><label><i>*</i> 奖励积分</label><div class="fld" style="max-width:160px">2</div></div>
+        <div class="form-row"><label><i>*</i> 截止时间</label><div class="fld" style="max-width:220px">2026-10-31 23:59</div></div>
+        <div style="display:flex;gap:8px;align-items:flex-start;margin-top:14px;font-size:12px;color:var(--t2);line-height:1.6"><span style="width:16px;height:16px;border-radius:4px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;font-size:10px">✓</span>我确认该任务为平台官方活动，内容适用于全部学校（勾选后写审计：创建人 + 投放范围）</div>
+        <div class="form-footer"><button class="btn">存草稿</button><button class="btn primary">发布任务</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
 <div class="screen" data-screen="admin-task-template">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1124,7 +1581,60 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 17 CATEGORY ==================== -->
+<div class="screen" data-screen="admin-pt-task-config" data-kind="新增" data-title="推广任务配置">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0 ·  build 20261004</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 <b>/ 运营与消息 / 地推任务配置</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div class="page-title">推广任务配置</div>
+      <div class="tabs"><span class="tab on">结算规则</span><span class="tab">库存份额</span><span class="tab">佣金系数</span><span class="tab">每日价格</span></div>
+      <div class="pcard" style="margin-bottom:16px">
+        <h3>新建推广任务 · 结算规则</h3>
+        <div class="pt-form">
+          <div class="pt-field"><label>任务名称</label><input value="快手极速版 · 校园拉新推广"></div>
+          <div class="pt-field"><label>任务类型</label><select><option>拉新</option><option>到店</option><option>问卷</option></select></div>
+          <div class="pt-field"><label>适用校区</label><select><option>东湖校区</option><option>城北校区</option><option>全校区</option></select></div>
+          <div class="pt-field"><label>单份佣金（元）</label><input value="8.00"><div class="hint">按有效推广人数结算</div></div>
+          <div class="pt-field"><label>总份额</label><input value="500"><div class="hint">剩余 86 · 已领 414</div></div>
+          <div class="pt-field"><label>每人限领</label><input value="3"></div>
+          <div class="pt-field"><label>审单时效</label><select><option>24 小时</option><option>12 小时</option><option>48 小时</option></select></div>
+          <div class="pt-field"><label>结算周期</label><select><option>T+3 批次</option><option>T+7 批次</option></select></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px"><button class="btn ghost" style="height:32px;padding:0 14px;border-radius:6px;border:1px solid var(--line);background:#fff;font-size:13px">存草稿</button><button class="btn" style="height:32px;padding:0 16px;border-radius:6px;border:0;background:var(--green-grad);color:#fff;font-size:13px;font-weight:700">提交复核</button></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>任务</th><th>类型</th><th>校区</th><th>佣金</th><th>份额</th><th>佣金系数</th><th>每日价格</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td><div class="goods"><span class="gimg">极速</span><span class="ginfo"><b>快手极速版 · 校园拉新</b><span>task_9001</span></span></div></td><td>拉新</td><td>东湖</td><td>¥8.00/单</td><td>86 / 500</td><td>A3 1.10× · A2 1.05×</td><td>¥0.60/人/天</td><td><span class="tag green">上线中</span></td><td class="act"><a>编辑</a><a>份额</a><a class="danger">下线</a></td></tr>
+            <tr><td><div class="goods"><span class="gimg">美团</span><span class="ginfo"><b>美团到店 · 二食堂商圈</b><span>task_9002</span></span></div></td><td>到店</td><td>东湖</td><td>¥12.00/单</td><td>24 / 200</td><td>A3 1.10×</td><td>¥0.90/人/天</td><td><span class="tag green">上线中</span></td><td class="act"><a>编辑</a><a>份额</a><a class="danger">下线</a></td></tr>
+            <tr><td><div class="goods"><span class="gimg">问卷</span><span class="ginfo"><b>消费习惯问卷</b><span>task_9003</span></span></div></td><td>问卷</td><td>全校区</td><td>¥3.50/份</td><td>140 / 600</td><td>统一 1.00×</td><td>—</td><td><span class="tag blue">待复核</span></td><td class="act"><a>复核</a><a>编辑</a></td></tr>
+            <tr><td><div class="goods"><span class="gimg">京东</span><span class="ginfo"><b>京东校园卡 · 开卡激活</b><span>task_9004</span></span></div></td><td>拉新</td><td>城北</td><td>¥20.00/单</td><td>0 / 120</td><td>A3 1.10×</td><td>¥1.20/人/天</td><td><span class="tag gray">已结束</span></td><td class="act"><a>复制</a></td></tr>
+          </tbody>
+        </table>
+        <div class="pager">共 12 个推广任务 <span class="pbtn">&lt;</span><span class="pbtn on">1</span><span class="pbtn">2</span><span class="pbtn">&gt;</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
 <div class="screen" data-screen="admin-category">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1174,7 +1684,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 18 INVENTORY ==================== -->
 <div class="screen" data-screen="admin-inventory">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1235,7 +1744,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 19 POINTS ==================== -->
 <div class="screen" data-screen="admin-points">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1299,7 +1807,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 20 COUPON ==================== -->
 <div class="screen" data-screen="admin-coupon">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1358,7 +1865,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 21 RECONCILE ==================== -->
 <div class="screen" data-screen="admin-reconcile">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1416,7 +1922,105 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 22 REPORT ==================== -->
+<div class="screen" data-screen="admin-pt-batches" data-kind="新增" data-title="结算批次">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0 ·  build 20261004</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 <b>/ 资产与财务 / 地推结算批次</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div class="page-title">地推结算批次</div>
+      <div class="row">
+        <div class="stat-card"><div class="lab">待结算批次</div><div class="num" style="color:var(--orange-deep)">3</div><div class="chg down">合计 ¥32,480.00</div></div>
+        <div class="stat-card"><div class="lab">本月已结算</div><div class="num">¥18.6万</div><div class="chg up">↑ 4 个批次</div></div>
+        <div class="stat-card"><div class="lab">待分配团队加成</div><div class="num">¥4,260</div><div class="chg up">6 个团队</div></div>
+        <div class="stat-card"><div class="lab">撤回率</div><div class="num">0.8%</div><div class="chg up">↓ 0.3% 较上月</div></div>
+      </div>
+      <div class="filter-bar">
+        <select class="sel"><option>全部状态</option><option>待结算</option><option>已结算</option><option>已撤回</option></select>
+        <select class="sel"><option>全部任务</option><option>快手极速版</option><option>美团到店</option></select>
+        <input class="inp" value="2026-11-01 ~ 2026-11-07">
+        <button class="btn">查询</button>
+        <div style="margin-left:auto;display:flex;gap:8px"><button class="btn ghost">导出对账</button><button class="btn">生成批次</button></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>批次号</th><th>任务</th><th>周期</th><th>有效单</th><th>个人佣金</th><th>团队加成</th><th>合计</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td>B20261105</td><td>美团到店 · 二食堂</td><td>11-05 ~ 11-07</td><td>9</td><td>¥108.00</td><td>¥5.40</td><td>¥113.40</td><td><span class="tag orange">待结算</span></td><td class="act"><a>明细</a><a>结算</a><a class="danger">撤回</a></td></tr>
+            <tr><td>B20261104</td><td>快手极速版</td><td>11-04 ~ 11-06</td><td>68</td><td>¥544.00</td><td>¥27.20</td><td>¥571.20</td><td><span class="tag orange">待结算</span></td><td class="act"><a>明细</a><a>结算</a><a class="danger">撤回</a></td></tr>
+            <tr><td>B20261101</td><td>快手极速版</td><td>11-01 ~ 11-03</td><td>18</td><td>¥144.00</td><td>¥7.20</td><td>¥151.20</td><td><span class="tag green">已结算</span></td><td class="act"><a>明细</a><a>入账记录</a></td></tr>
+            <tr><td>B20261028</td><td>京东校园卡</td><td>10-28 ~ 10-31</td><td>12</td><td>¥240.00</td><td>¥12.00</td><td>¥252.00</td><td><span class="tag red">已撤回</span></td><td class="act"><a>明细</a><a>撤回原因</a></td></tr>
+          </tbody>
+        </table>
+        <div class="pager">共 26 个批次 <span class="pbtn">&lt;</span><span class="pbtn on">1</span><span class="pbtn">2</span><span class="pbtn">3</span><span class="pbtn">&gt;</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="pt-modal">
+    <div class="pt-modal-card">
+      <div class="pt-modal-head">撤回批次 B20261105？</div>
+      <div class="pt-modal-body">撤回后本批次已计入的 ¥113.40 将从成员待结算金额中扣除，并生成一条冲正记录；已入钱包的批次需走「提现审核」人工处理。<br><br><b style="color:var(--t1)">撤回原因（必填）</b><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><span class="tag orange">重复批次</span><span class="tag orange">金额错误</span><span class="tag orange">任务下线</span><span class="tag orange">风控拦截</span></div></div>
+      <div class="pt-modal-foot"><button class="btn" onclick="this.closest('.pt-modal').style.display='none'">取消</button><button class="btn danger" onclick="this.closest('.pt-modal').style.display='none'">确认撤回</button></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="screen" data-screen="admin-pt-batches-empty" data-kind="新增" data-title="结算批次 · 空态">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0 ·  build 20261004</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 <b>/ 资产与财务 / 地推结算批次</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div class="page-title">地推结算批次</div>
+      <div class="filter-bar">
+        <select class="sel"><option>全部状态</option><option>待结算</option></select>
+        <select class="sel"><option>全部任务</option><option>快手极速版</option></select>
+        <input class="inp" value="2026-11-08 ~ 2026-11-08">
+        <button class="btn">查询</button>
+      </div>
+      <div class="pt-empty" style="margin-top:24px">
+        <div class="eic">批</div>
+        <h4>当前周期暂无待结算批次</h4>
+        <p>11-08 的推广单还在审核中，或该周期没有有效单。可切换日期查看历史批次，或先生成批次做预结算。</p>
+        <button class="btn">生成批次（预结算）</button>
+        <div style="margin-top:12px;font-size:11.5px;color:var(--t3)">最近批次：B20261105 · 待结算 ¥113.40</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
 <div class="screen" data-screen="admin-report">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1473,7 +2077,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 23 NOTIFY ==================== -->
 <div class="screen" data-screen="admin-notify">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1536,7 +2139,6 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 24 DATA ==================== -->
 <div class="screen" data-screen="admin-data">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1627,7 +2229,79 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 25 CAMPUS ==================== -->
+<div class="screen ci-admin" data-screen="ci-a4" data-kind="新增" data-title="A4 回填报告">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item on"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 / 配置中心 <b>/ 校区归属回填</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div class="page-title" style="margin:0">校区归属回填</div>
+        <span class="tag blue" style="height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;background:var(--blue-soft);color:var(--blue)">DRY-RUN</span>
+      </div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">批次 20261007-1030 · 由 deploy 执行 · 报告生成于 2026-10-07 10:30 · 仅预览不写入</div>
+      <div class="row">
+        <div class="stat-card"><div class="lab">无校用户</div><div class="num" style="color:var(--orange-deep)">120</div><div class="chg down">推断 95 / 兜底 25</div></div>
+        <div class="stat-card"><div class="lab">无归属 UGC</div><div class="num" style="color:var(--blue)">52</div><div class="chg down">帖 40 / 闲置 12</div></div>
+        <div class="stat-card"><div class="lab">任务处理</div><div class="num" style="color:var(--green-deep)">25</div><div class="chg up">投放 5 / 回填 18 / 下线 2</div></div>
+        <div class="stat-card"><div class="lab">归属冲突</div><div class="num" style="color:var(--red)">3</div><div class="chg down">待人工复核</div></div>
+      </div>
+      <div class="cols">
+        <div>
+          <div class="table-wrap">
+            <table>
+              <tr><th>类别</th><th>待处理</th><th>处理方式</th><th>状态</th></tr>
+              <tr><td>用户 → 历史推断</td><td>95</td><td>取最近订单 / 发布校区众数</td><td><span class="tag green">可执行</span></td></tr>
+              <tr><td>用户 → 兜底默认校</td><td>25</td><td>挂 default-campus + 强弹窗标记</td><td><span class="tag green">可执行</span></td></tr>
+              <tr><td>社区帖子 NULL</td><td>40</td><td>继承作者校区</td><td><span class="tag green">可执行</span></td></tr>
+              <tr><td>闲置物品 NULL</td><td>12</td><td>继承作者校区</td><td><span class="tag green">可执行</span></td></tr>
+              <tr><td>UGC 归属冲突</td><td>3</td><td>不改数据 · 人工复核</td><td><span class="tag orange">待复核</span></td></tr>
+              <tr><td>NULL 任务</td><td>25</td><td>5 平台投放 / 18 回填 / 2 下线</td><td><span class="tag green">可执行</span></td></tr>
+            </table>
+            <div class="pager">共 6 类 · 145 项待处理</div>
+          </div>
+          <div class="pcard" style="margin-top:14px;background:var(--blue-soft);border-color:var(--line);font-size:12.5px;line-height:1.7;color:var(--blue)">执行后将生成回滚映射 <span style="font-family:Consolas">rollback-20261007-1030.json</span>；校验 SQL 全部清零前，不得将任何学校切换为「严格」模式。</div>
+          <div class="form-footer" style="justify-content:flex-start"><button class="btn primary">确认执行回填</button><button class="btn">导出报告 JSON</button><button class="btn" style="color:var(--red);border-color:#FFC9C2;background:var(--red-soft)">放弃本批次</button></div>
+        </div>
+        <div>
+          <div class="pcard">
+            <h3>执行记录</h3>
+            <div class="timeline">
+              <div class="tl-item"><div class="tt">dry-run 完成</div><div class="ts">2026-10-07 10:30 · deploy · 145 项待处理</div></div>
+              <div class="tl-item"><div class="tt">报告评审通过</div><div class="ts">待运营确认后执行</div></div>
+              <div class="tl-item"><div class="tt">正式执行</div><div class="ts">—</div></div>
+              <div class="tl-item"><div class="tt">校验清零</div><div class="ts">—</div></div>
+            </div>
+            <h3 style="margin-top:16px">命令预览</h3>
+            <div class="mono">$ php artisan campus:backfill --dry-run
+<span class="c1"># 推断规则：订单 / 发布校区众数</span>
+users:  <span class="c2">120</span> null → <span class="c3">95 inferred / 25 default</span>
+ugc:    <span class="c2">52</span> null → inherit author
+tasks:  <span class="c2">25</span> null → 5 platform / 18 backfill / <span class="c2">2 draft</span>
+<span class="c1"># 校验：4 条 SQL 须全 0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
 <div class="screen" data-screen="admin-campus">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1686,7 +2360,61 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
 </div>
 </div>
 
-<!-- ==================== 26 AUDIT LOG ==================== -->
+<div class="screen ci-admin" data-screen="ci-a1" data-kind="新增" data-title="A1 学校库 · 隔离开关">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item on"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0</div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="bread">首页 / 权限与审计 <b>/ 学校库</b></div><div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div></div>
+    <div class="content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="page-title" style="margin:0">学校库</div>
+        <button class="btn primary">+ 新增学校</button>
+      </div>
+      <div class="row">
+        <div class="stat-card"><div class="lab">接入学校</div><div class="num">4</div><div class="chg up">严格 3 · 传统 1</div></div>
+        <div class="stat-card"><div class="lab">待确认绑定</div><div class="num" style="color:var(--orange-deep)">286</div><div class="chg down">需兜底确认</div></div>
+        <div class="stat-card"><div class="lab">跨校异常</div><div class="num" style="color:var(--red)">12</div><div class="chg down">待复核</div></div>
+        <div class="stat-card"><div class="lab">隔离覆盖率</div><div class="num">96%</div><div class="chg up">↑ 灰度推进中</div></div>
+      </div>
+      <div class="filter-bar">
+        <input class="inp" placeholder="搜索学校名称 / 省份">
+        <select class="sel"><option>隔离模式：全部</option><option>严格</option><option>传统</option></select>
+        <button class="btn">查询</button>
+        <span style="flex:1"></span>
+        <span class="tag green">严格 3</span>
+        <span class="tag gray">传统 1</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tr><th>学校</th><th>省 / 市</th><th>用户数</th><th>隔离模式</th><th>模块</th><th>操作</th></tr>
+          <tr><td><b>南昌大学</b></td><td>江西 / 南昌</td><td>1,204</td><td><span class="sw on"></span> <span class="tag green">严格</span></td><td><span class="tag blue">12/13</span></td><td class="act"><a>功能模块</a><a>编辑</a></td></tr>
+          <tr><td><b>江西师范大学</b></td><td>江西 / 南昌</td><td>862</td><td><span class="sw on"></span> <span class="tag green">严格</span></td><td><span class="tag blue">13/13</span></td><td class="act"><a>功能模块</a><a>编辑</a></td></tr>
+          <tr><td><b>华东交通大学</b></td><td>江西 / 南昌</td><td>455</td><td><span class="sw"></span> <span class="tag gray">传统</span></td><td><span class="tag blue">13/13</span></td><td class="act"><a>功能模块</a><a>编辑</a></td></tr>
+          <tr><td><b>默认学校</b> <span class="tag orange">兜底</span></td><td>—</td><td>128</td><td><span class="sw"></span> <span class="tag gray">传统</span></td><td><span class="tag gray">—</span></td><td class="act"><a style="color:var(--t3)">系统保留</a></td></tr>
+        </table>
+        <div class="pager">共 4 条 <span class="pbtn">&lt;</span><span class="pbtn on">1</span><span class="pbtn">&gt;</span></div>
+      </div>
+      <div class="pcard" style="margin-top:14px;font-size:12.5px;color:var(--t2);line-height:1.7">💡 切换「严格」前需通过数据治理校验（该校 UGC 无 NULL 归属）；切换动作二次确认 + 写审计；可随时切回「传统」实现单校回滚，无需发版。默认学校始终 legacy，避免误伤未确认老用户。</div>
+    </div>
+  </div>
+</div>
+</div>
+
 <div class="screen" data-screen="admin-auditlog">
 <div class="pc-wrap">
   <aside class="sidebar">
@@ -1743,6 +2471,164 @@ body[data-screen="admin-auditlog"] .screen[data-screen="admin-auditlog"]{display
   </div>
 </div>
 </div>
+
+<!-- 评审用屏目录（全部后台页面，按业务主线顺序） -->
+<div class="pt-switch" id="ptSwitch">
+  <button class="pt-switch-btn" id="ptSwitchBtn">屏目录 <b id="ptCount">0</b></button>
+  <div class="pt-switch-panel" id="ptSwitchPanel">
+    <div class="pt-switch-head"><span>点击切换屏幕</span><a href="index.html#flows-main">返回流程总览 ›</a></div>
+    <div id="ptSwitchList"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* 地推模块页签：进入模块后 6 个页面直接可达（A-07/A-08 归属对应主页面） */
+  var PT_TABS = [
+    ['admin-pt-teams','团队管理'],
+    ['admin-pt-members','成员与等级'],
+    ['admin-pt-rules','佣金规则'],
+    ['admin-pt-task-config','任务配置'],
+    ['admin-pt-review','申请审核'],
+    ['admin-pt-batches','结算批次']
+  ];
+  var TAB_OF = {
+    'admin-pt-teams':'admin-pt-teams',
+    'admin-pt-teams-error':'admin-pt-teams',
+    'admin-pt-members':'admin-pt-members',
+    'admin-pt-rules':'admin-pt-rules',
+    'admin-pt-task-config':'admin-pt-task-config',
+    'admin-pt-review':'admin-pt-review',
+    'admin-pt-batches':'admin-pt-batches',
+    'admin-pt-batches-empty':'admin-pt-batches'
+  };
+  var menus = Array.prototype.slice.call(document.querySelectorAll('.sb-menu'));
+
+  /* 记录每个侧栏原有的选中项，切回现有屏时原样恢复 */
+  menus.forEach(function(menu){ menu._origOn = menu.querySelector('.sb-item.on'); });
+
+  /* 注入一级项「地推运营」：放在「运营与消息」之后，其余一级项顺序不变 */
+  menus.forEach(function(menu){
+    if(menu.querySelector('.pt-sb')) return;
+    var d = document.createElement('div');
+    d.className = 'sb-item pt-sb';
+    d.innerHTML = '<span class="ic">🚀</span> 地推运营<span class="pt-sb-new">NEW</span>';
+    d.onclick = function(){ show('admin-pt-teams'); };
+    var after = null;
+    Array.prototype.forEach.call(menu.querySelectorAll('.sb-item'), function(it){
+      if(it.textContent.indexOf('运营与消息') !== -1) after = it;
+    });
+    if(after) after.insertAdjacentElement('afterend', d);
+    else menu.appendChild(d);
+  });
+
+  /* 地推屏内容区顶部注入模块页签，避免回侧栏找入口 */
+  Array.prototype.forEach.call(document.querySelectorAll('.screen[data-screen^="admin-pt-"]'), function(s){
+    var content = s.querySelector('.content');
+    if(!content || content.querySelector('.pt-modtabs')) return;
+    var bar = document.createElement('div');
+    bar.className = 'pt-modtabs';
+    PT_TABS.forEach(function(t){
+      var b = document.createElement('button');
+      b.className = 'pt-modtab';
+      b.dataset.go = t[0];
+      b.textContent = t[1];
+      b.onclick = function(){ show(t[0]); };
+      bar.appendChild(b);
+    });
+    var title = content.querySelector('.page-title');
+    if(title) title.insertAdjacentElement('afterend', bar);
+    else content.insertBefore(bar, content.firstChild);
+  });
+
+  function syncMenu(id){
+    var isPush = id && id.indexOf('admin-pt-') === 0;
+    var cur = TAB_OF[id] || id;
+    Array.prototype.forEach.call(document.querySelectorAll('.pt-modtab'), function(b){
+      b.classList.toggle('on', b.dataset.go === cur);
+    });
+    menus.forEach(function(menu){
+      var pt = menu.querySelector('.pt-sb');
+      Array.prototype.forEach.call(menu.querySelectorAll('.sb-item'), function(x){ x.classList.remove('on'); });
+      if(isPush && pt) pt.classList.add('on');
+      else if(menu._origOn) menu._origOn.classList.add('on');
+    });
+  }
+
+  var screens = Array.prototype.slice.call(document.querySelectorAll('.screen[data-screen]'));
+  var list = document.getElementById('ptSwitchList');
+  var sw = document.getElementById('ptSwitch');
+  var btn = document.getElementById('ptSwitchBtn');
+  var panel = document.getElementById('ptSwitchPanel');
+  document.getElementById('ptCount').textContent = screens.length;
+
+  function titleOf(s){
+    if(s.dataset.title) return s.dataset.title;
+    var h = s.querySelector('.page-title, .login-right h2, h1');
+    return h ? h.textContent.trim() : s.dataset.screen;
+  }
+  function esc(t){
+    return t.replace(/[&<>"]/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+  }
+  function show(id){
+    if(!id) return;
+    var el = document.querySelector('.screen[data-screen="'+id+'"]');
+    if(!el) return;
+    document.body.dataset.screen = id;
+    screens.forEach(function(s){ s.classList.toggle('on', s.dataset.screen === id); });
+    try{ if(history.replaceState) history.replaceState(null, '', '#'+id); }catch(e){}
+    Array.prototype.forEach.call(list.querySelectorAll('.pt-switch-item'), function(it){
+      it.classList.toggle('on', it.dataset.id === id);
+    });
+    syncMenu(id);
+    window.scrollTo(0, 0);
+  }
+  function group(title, items){
+    if(!items.length) return;
+    var h = document.createElement('div');
+    h.className = 'pt-switch-group';
+    h.textContent = title + '（' + items.length + '）';
+    list.appendChild(h);
+    items.forEach(function(s){
+      var it = document.createElement('div');
+      it.className = 'pt-switch-item';
+      it.dataset.id = s.dataset.screen;
+      var sid = s.dataset.screen;
+      var kind = sid.indexOf('ci-') === 0 ? '校区' : (sid.indexOf('admin-pt-') === 0 ? '地推' : '现有');
+      it.innerHTML = '<span>' + esc(titleOf(s)) + '</span><em>' + kind + '</em>';
+      it.onclick = function(){ show(s.dataset.screen); sw.classList.remove('on'); };
+      list.appendChild(it);
+    });
+  }
+  group('全部页面', screens);
+
+  btn.onclick = function(e){ e.stopPropagation(); sw.classList.toggle('on'); };
+  panel.onclick = function(e){ e.stopPropagation(); };
+  document.addEventListener('click', function(){ sw.classList.remove('on'); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') sw.classList.remove('on'); });
+  window.addEventListener('hashchange', function(){ show(location.hash.slice(1)); });
+
+  var init = location.hash ? location.hash.slice(1) : (document.body.dataset.screen || 'admin-dashboard');
+  show(init);
+})();
+</script>
+
+<style>
+/* 窄屏兼容：<1440 宽时整张 1440×900 画布等比缩放，桌面端视觉不变 */
+@media (max-width:1439px){ .pc-wrap,.login-pc{margin:0} }
+</style>
+<script>
+(function(){
+  function fit(){
+    var w = document.documentElement.clientWidth;
+    document.body.style.zoom = w < 1440 ? (w / 1440) : '';
+  }
+  fit();
+  window.addEventListener('resize', fit);
+})();
+</script>
 
 </body>
 </html>

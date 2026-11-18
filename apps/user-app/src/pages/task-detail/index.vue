@@ -21,6 +21,7 @@
       <view class="detail-title-card">
         <text class="detail-h1">{{ task.title }}</text>
         <view class="tags">
+          <text :class="['tag', task.is_platform_wide ? 'tag-platform' : 'tag-campus']">{{ task.is_platform_wide ? '平台·全校' : '本校' }}</text>
           <text class="tag tag-red">悬赏</text>
           <text class="tag tag-orange">{{ categoryLabel(task.category) }}</text>
           <text class="tag">{{ taskTypeLabel(task.task_type) }}</text>
@@ -499,6 +500,8 @@ function savePoster() {
 .tag-red{background:#FFEEEA;color:#FF3B30}
 .tag-orange{background:#FFF2E5;color:#F2620A}
 .tag-green{background:#E7F9EF;color:#08A152}
+.tag-platform{background:linear-gradient(135deg,#4C8DFF,#2F6BDE);color:#fff}
+.tag-campus{background:#E7F9EF;color:#08A152}
 .price-row{display:flex;align-items:baseline;gap:16rpx;margin-top:18rpx}
 .big{font-size:52rpx;font-weight:800;color:#FF3B30;line-height:1}
 .people{font-size:22rpx;color:#AEB3BB}

@@ -109,6 +109,60 @@
       }
     },
     {
+      "path": "pages/push-center/index",
+      "style": {
+        "navigationBarTitleText": "地推中心"
+      }
+    },
+    {
+      "path": "pages/push-teams/index",
+      "style": {
+        "navigationBarTitleText": "地推团队广场"
+      }
+    },
+    {
+      "path": "pages/push-team-detail/index",
+      "style": {
+        "navigationBarTitleText": "团队详情"
+      }
+    },
+    {
+      "path": "pages/push-my-team/index",
+      "style": {
+        "navigationBarTitleText": "我的地推团队"
+      }
+    },
+    {
+      "path": "pages/push-tasks/index",
+      "style": {
+        "navigationBarTitleText": "推广任务"
+      }
+    },
+    {
+      "path": "pages/push-task-detail/index",
+      "style": {
+        "navigationBarTitleText": "推广任务详情"
+      }
+    },
+    {
+      "path": "pages/push-positions/index",
+      "style": {
+        "navigationBarTitleText": "我的推广位"
+      }
+    },
+    {
+      "path": "pages/push-submit/index",
+      "style": {
+        "navigationBarTitleText": "提交交单"
+      }
+    },
+    {
+      "path": "pages/push-earnings/index",
+      "style": {
+        "navigationBarTitleText": "地推收益"
+      }
+    },
+    {
       "path": "pages/assets/index",
       "style": {
         "navigationBarTitleText": "我的资产"
@@ -161,6 +215,12 @@
       "style": {
 				"navigationStyle": "custom",
 				"enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/campus-bind/index",
+      "style": {
+        "navigationStyle": "custom"
       }
     },
       {

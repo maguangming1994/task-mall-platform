@@ -141,7 +141,7 @@ export function AuditLogsPage() {
                 </span>
               ),
             },
-            { title: 'IP', width: 110, render: () => '—' },
+            { title: 'IP 指纹', width: 130, render: (_: unknown, item: AdminAuditLog) => (item.ip_fingerprint ? <span style={{ fontSize: 12 }}>{item.ip_fingerprint}</span> : '—') },
             { title: '风险', width: 90, render: (_: unknown, item: AdminAuditLog) => { const meta = riskMeta[riskOf(item.action)]; return <Pill tone={meta.tone}>{meta.label}</Pill> } },
             { title: '请求ID', width: 120, render: (_: unknown, item: AdminAuditLog) => (item.request_id ? <span style={{ color: 'var(--xq-link)', fontSize: 12 }}>{item.request_id.slice(0, 10)}…</span> : '—') },
           ]}

@@ -68,6 +68,7 @@
         <view class="t-main">
           <view class="t-title">{{ task.title }}</view>
           <view class="t-tags">
+            <text :class="['tag', task.is_platform_wide ? 'tag-platform' : 'tag-campus']">{{ task.is_platform_wide ? '平台·全校' : '本校' }}</text>
             <text v-if="task.bounty" class="tag tag-red">悬赏</text>
             <text v-if="task.urgent" class="tag tag-orange">加急</text>
             <text v-for="tag in displayTags(task)" :key="tag" class="tag" :class="tagClass(tag)">{{ tag }}</text>
@@ -87,9 +88,11 @@
       </view>
       <view v-if="!loading && visibleTasks.length === 0" class="state-card task-empty">
         <view class="task-empty-mark">✦</view>
-        <text class="task-empty-title">暂时没有符合条件的任务</text>
-        <text class="task-empty-copy">换个分类看看，或刷新后获取最新任务。</text>
-        <button class="task-empty-action" @click="category = ''; loadHall()">查看全部任务</button>
+        <text class="task-empty-title">{{ strictCampus ? '本校暂无任务' : '暂时没有符合条件的任务' }}</text>
+        <text class="task-empty-copy">{{ strictCampus ? '发布一个任务，让本校同学来帮忙。' : '换个分类看看，或刷新后获取最新任务。' }}</text>
+        <text v-if="strictCampus" class="strict-note">严格校区模式：仅展示本校发布的任务，平台投放任务除外</text>
+        <button v-if="strictCampus" class="task-empty-action" @click="goPublishTask">去发布任务</button>
+        <button v-else class="task-empty-action" @click="category = ''; loadHall()">查看全部任务</button>
       </view>
     </template>
     <template v-else>
@@ -153,12 +156,15 @@ import { plainTextFromRich } from '@/utils/richText'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
+import { useCampusProfileStore } from '@/stores/campusProfile'
 import { resolveApiAssetUrl } from '@/api/http'
 
 const topSafeAreaStyle = createTopSafeAreaStyle()
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_tasks'))
+const campusProfile = useCampusProfileStore()
+const strictCampus = computed(() => campusProfile.isStrict)
 
 const auth = useAuthStore()
 const tab = ref<'hall' | 'mine'>('hall')
@@ -204,6 +210,7 @@ onMounted(() => { clock = setInterval(() => { nowEpoch.value = Date.now() }, 100
 onUnmounted(() => { if (clock) clearInterval(clock) })
 
 onShow(async () => {
+  void campusProfile.ensure()
   await modules.ensureReady()
   if (!moduleEnabled.value) return
   if (uni.getStorageSync('task_mall_open_my_tasks') && auth.accessToken) {
@@ -245,6 +252,7 @@ async function loadMine() {
   finally { loading.value = false }
 }
 function openTaskDetail(taskId: string) { uni.navigateTo({ url: `/pages/task-detail/index?id=${encodeURIComponent(taskId)}` }) }
+function goPublishTask() { if (!auth.isAuthenticated) return navigateToLogin(); uni.navigateTo({ url: '/pages/publisher/index' }) }
 function openClaimDetail(claimId: string) { uni.navigateTo({ url: `/pages/task-claim/index?id=${encodeURIComponent(claimId)}` }) }
 function showFilterHint() { filterVisible.value = true }
 function selectSort(value: 'default' | 'latest' | 'reward') { sortMode.value = value; filterVisible.value = false; void loadHall() }
@@ -371,6 +379,9 @@ function deadlineText(item: TaskClaim) { if (['approved', 'cancelled', 'appeal_r
 .tag-gray{background:#F0F2F5;color:#8A919C}
 .tag-yellow{background:#FFF6DC;color:#C98A06}
 .tag-pink{background:#FFEDF4;color:#E03E7C}
+.tag-platform{background:linear-gradient(135deg,#4C8DFF,#2F6BDE);color:#fff}
+.tag-campus{background:var(--green-soft);color:var(--green-deep)}
+.strict-note{display:block;margin-top:16rpx;padding:10rpx 22rpx;border-radius:999rpx;background:#F1F5F1;color:#5C7264;font-size:22rpx;line-height:1.5}
 .fb-errand{background:linear-gradient(135deg,#2FD088,#0E9D62)}
 .fb-study{background:linear-gradient(135deg,#5FA0FF,#2F6BDE)}
 .fb-skill{background:linear-gradient(135deg,#A78BFA,#7C4DFF)}

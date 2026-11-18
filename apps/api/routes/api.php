@@ -73,6 +73,8 @@ use App\Modules\Privacy\Http\Controllers\AdminPrivacyRequestController;
 use App\Modules\Privacy\Http\Controllers\PrivacyRequestController;
 use App\Modules\Product\Http\Controllers\AdminProductController;
 use App\Modules\Product\Http\Controllers\ProductController;
+use App\Modules\Push\Http\Controllers\AdminPushController;
+use App\Modules\Push\Http\Controllers\UserPushController;
 use App\Modules\Refund\Http\Controllers\AfterSaleReasonController;
 use App\Modules\Refund\Http\Controllers\ExchangeController;
 use App\Modules\Refund\Http\Controllers\RefundController;
@@ -254,10 +256,10 @@ Route::middleware('auth.access')->group(function () {
     // 社区发帖/互动（浏览门禁在公开区；父链 module_community 关闭时由 gate 服务级联关闭）
     Route::middleware('module.gate:module_community_post')->group(function () {
         Route::get('/community/my-posts', [CommunityPostController::class, 'mine'])->middleware('legal.consent:community');
-        Route::post('/community/posts', [CommunityPostController::class, 'store'])->middleware(['legal.consent:community', 'throttle:20,1']);
+        Route::post('/community/posts', [CommunityPostController::class, 'store'])->middleware(['campus.bound', 'legal.consent:community', 'throttle:20,1']);
         Route::put('/community/posts/{post}', [CommunityPostController::class, 'update'])->middleware('legal.consent:community');
         Route::delete('/community/posts/{post}', [CommunityPostController::class, 'destroy'])->middleware('legal.consent:community');
-        Route::post('/community/posts/{post}/comments', [CommunityCommentController::class, 'store'])->middleware(['legal.consent:community', 'throttle:60,1']);
+        Route::post('/community/posts/{post}/comments', [CommunityCommentController::class, 'store'])->middleware(['campus.bound', 'legal.consent:community', 'throttle:60,1']);
         Route::post('/community/posts/{post}/like', [CommunityEngagementController::class, 'like'])->middleware(['legal.consent:community', 'throttle:120,1']);
         Route::delete('/community/posts/{post}/like', [CommunityEngagementController::class, 'unlike'])->middleware(['legal.consent:community', 'throttle:120,1']);
         Route::post('/community/posts/{post}/favorite', [CommunityEngagementController::class, 'favorite'])->middleware(['legal.consent:community', 'throttle:120,1']);
@@ -265,7 +267,7 @@ Route::middleware('auth.access')->group(function () {
         Route::get('/community/social/stats', [CommunitySocialController::class, 'stats'])->middleware('legal.consent:community');
         Route::post('/community/users/{userId}/follow', [CommunitySocialController::class, 'follow'])->middleware(['legal.consent:community', 'throttle:120,1']);
         Route::delete('/community/users/{userId}/follow', [CommunitySocialController::class, 'unfollow'])->middleware(['legal.consent:community', 'throttle:120,1']);
-        Route::post('/community/activities', [CommunityActivityController::class, 'store'])->middleware(['legal.consent:community', 'throttle:10,1']);
+        Route::post('/community/activities', [CommunityActivityController::class, 'store'])->middleware(['campus.bound', 'legal.consent:community', 'throttle:10,1']);
         Route::post('/community/activities/{activity}/join', [CommunityActivityController::class, 'join'])->middleware(['legal.consent:community', 'throttle:30,1']);
         Route::delete('/community/activities/{activity}/join', [CommunityActivityController::class, 'leave'])->middleware(['legal.consent:community', 'throttle:30,1']);
         Route::get('/community/my-activities', [CommunityActivityController::class, 'mine'])->middleware('legal.consent:community');
@@ -276,7 +278,7 @@ Route::middleware('auth.access')->group(function () {
     Route::get('/community/my-moderation-actions', [CommunityModerationController::class, 'mine'])->middleware('legal.consent:community');
     // 任务领取/提交/申诉
     Route::middleware('module.gate:module_tasks')->group(function () {
-        Route::post('/tasks/{task}/claims', [TaskHallController::class, 'claim'])->middleware(['legal.consent:task', 'throttle:20,1']);
+        Route::post('/tasks/{task}/claims', [TaskHallController::class, 'claim'])->middleware(['campus.bound', 'legal.consent:task', 'throttle:20,1']);
         Route::post('/tasks/{task}/reports', [TaskRiskController::class, 'report'])->middleware(['legal.consent:task', 'throttle:10,1']);
         Route::get('/task-claims', [TaskHallController::class, 'myClaims'])->middleware('legal.consent:task');
         Route::get('/task-claims/{taskClaim}', [TaskHallController::class, 'showClaim'])->middleware('legal.consent:task');
@@ -343,13 +345,13 @@ Route::middleware('auth.access')->group(function () {
 
     // 二手闲置（含 IM 聊天：会话依附闲置/交易场景）
     Route::middleware('module.gate:module_second_hand')->group(function () {
-        Route::post('/second-hand/items', [SecondHandItemController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
+        Route::post('/second-hand/items', [SecondHandItemController::class, 'store'])->middleware(['campus.bound', 'legal.consent:account', 'throttle:20,1']);
         Route::put('/second-hand/items/{item}', [SecondHandItemController::class, 'update'])->middleware('legal.consent:account');
         Route::delete('/second-hand/items/{item}', [SecondHandItemController::class, 'destroy'])->middleware('legal.consent:account');
         Route::post('/second-hand/items/{item}/relist', [SecondHandItemController::class, 'relist'])->middleware('legal.consent:account');
         Route::get('/second-hand/my-items', [SecondHandItemController::class, 'mine'])->middleware('legal.consent:account');
         Route::get('/second-hand/orders', [SecondHandOrderController::class, 'index'])->middleware('legal.consent:account');
-        Route::post('/second-hand/orders', [SecondHandOrderController::class, 'store'])->middleware(['legal.consent:account', 'throttle:20,1']);
+        Route::post('/second-hand/orders', [SecondHandOrderController::class, 'store'])->middleware(['campus.bound', 'legal.consent:account', 'throttle:20,1']);
         Route::get('/second-hand/orders/{order}', [SecondHandOrderController::class, 'show'])->middleware('legal.consent:account');
         Route::post('/second-hand/orders/{order}/pay', [SecondHandOrderController::class, 'pay'])->middleware(['legal.consent:account', 'throttle:10,1']);
         Route::post('/second-hand/orders/{order}/ship', [SecondHandOrderController::class, 'ship'])->middleware('legal.consent:account');
@@ -371,6 +373,25 @@ Route::middleware('auth.access')->group(function () {
         Route::get('/chat/conversations/{conversation}/messages', [ChatController::class, 'messages'])->middleware('legal.consent:account');
         Route::post('/chat/conversations/{conversation}/messages', [ChatController::class, 'send'])->middleware(['legal.consent:account', 'throttle:30,1']);
         Route::post('/chat/conversations/{conversation}/read', [ChatController::class, 'read'])->middleware('legal.consent:account');
+    });
+
+    // 地推：团队、推广任务、推广位、交单与收益（独立于任务积分口径）
+    Route::prefix('push')->group(function () {
+        Route::get('/center', [UserPushController::class, 'center']);
+        Route::get('/teams', [UserPushController::class, 'teams']);
+        Route::get('/teams/{team}', [UserPushController::class, 'team']);
+        Route::post('/teams/{team}/apply', [UserPushController::class, 'apply'])->middleware(['campus.bound', 'throttle:10,1']);
+        Route::post('/leader-applications', [UserPushController::class, 'applyAsLeader'])->middleware(['campus.bound', 'throttle:5,1']);
+        Route::get('/my-team', [UserPushController::class, 'myTeam']);
+        Route::post('/applications/{application}/review', [UserPushController::class, 'reviewApplication'])->middleware('throttle:30,1');
+        Route::post('/my-team/leave', [UserPushController::class, 'leave']);
+        Route::get('/tasks', [UserPushController::class, 'tasks']);
+        Route::get('/tasks/{task}', [UserPushController::class, 'task']);
+        Route::post('/tasks/{task}/positions', [UserPushController::class, 'claim'])->middleware(['campus.bound', 'throttle:20,1']);
+        Route::get('/positions', [UserPushController::class, 'positions']);
+        Route::post('/positions/{position}/submissions', [UserPushController::class, 'submit'])->middleware('throttle:20,1');
+        Route::get('/submissions', [UserPushController::class, 'submissions']);
+        Route::get('/earnings', [UserPushController::class, 'earnings']);
     });
 
     // 广播鉴权（WebSocket 私有频道）
@@ -399,6 +420,29 @@ Route::prefix('admin')->group(function () {
         Route::put('/campuses/{campus}/agents', [AdminCampusController::class, 'agents'])->middleware('admin.permission:rbac.manage');
         Route::get('/campus-agents', [AdminCampusController::class, 'agentIndex'])->middleware('admin.permission:rbac.manage');
         Route::get('/campus-agent-options', [AdminCampusController::class, 'agentOptions'])->middleware('admin.permission:rbac.manage');
+        // 地推运营：团队/成员/等级规则/推广任务/申请与交单/结算批次
+        Route::prefix('push')->group(function () {
+            Route::get('/teams', [AdminPushController::class, 'teams'])->middleware('admin.permission:push.view');
+            Route::post('/teams', [AdminPushController::class, 'storeTeam'])->middleware('admin.permission:push.team_manage');
+            Route::put('/teams/{team}', [AdminPushController::class, 'updateTeam'])->middleware('admin.permission:push.team_manage');
+            Route::get('/members', [AdminPushController::class, 'members'])->middleware('admin.permission:push.view');
+            Route::put('/members/{member}', [AdminPushController::class, 'updateMember'])->middleware('admin.permission:push.member_manage');
+            Route::get('/levels', [AdminPushController::class, 'levels'])->middleware('admin.permission:push.view');
+            Route::post('/levels', [AdminPushController::class, 'storeLevel'])->middleware('admin.permission:push.rule_manage');
+            Route::put('/levels/{level:code}', [AdminPushController::class, 'updateLevel'])->middleware('admin.permission:push.rule_manage');
+            Route::get('/tasks', [AdminPushController::class, 'tasks'])->middleware('admin.permission:push.view');
+            Route::post('/tasks', [AdminPushController::class, 'storeTask'])->middleware('admin.permission:push.task_manage');
+            Route::put('/tasks/{task}', [AdminPushController::class, 'updateTask'])->middleware('admin.permission:push.task_manage');
+            Route::get('/applications', [AdminPushController::class, 'applications'])->middleware('admin.permission:push.view');
+            Route::post('/applications/{application}/review', [AdminPushController::class, 'reviewApplication'])->middleware('admin.permission:push.review');
+            Route::get('/submissions', [AdminPushController::class, 'submissions'])->middleware('admin.permission:push.view');
+            Route::post('/submissions/{submission}/review', [AdminPushController::class, 'reviewSubmission'])->middleware('admin.permission:push.review');
+            Route::get('/settlements', [AdminPushController::class, 'settlements'])->middleware('admin.permission:push.view');
+            Route::post('/settlements', [AdminPushController::class, 'storeSettlement'])->middleware('admin.permission:push.settle');
+            Route::get('/settlements/{settlement}', [AdminPushController::class, 'settlement'])->middleware('admin.permission:push.view');
+            Route::post('/settlements/{settlement}/confirm', [AdminPushController::class, 'confirmSettlement'])->middleware('admin.permission:push.settle');
+            Route::post('/settlements/{settlement}/pay', [AdminPushController::class, 'paySettlement'])->middleware(['admin.permission:push.settle', 'admin.recent_verification']);
+        });
         // 校区功能模块矩阵：学校代理可读（只读）；写入仅持 campus.module_manage 的平台超管 + 近期二次验证
         Route::get('/campuses/{campus}/modules', [AdminCampusModuleController::class, 'show']);
         Route::put('/campuses/{campus}/modules/{code}', [AdminCampusModuleController::class, 'update'])
@@ -409,6 +453,13 @@ Route::prefix('admin')->group(function () {
         Route::get('/user-center/users', [AdminUserCenterController::class, 'users'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
         Route::put('/user-center/users/{user:public_id}/task-publishing-permission', [AdminUserCenterController::class, 'updateTaskPublishingPermission'])
             ->middleware(['admin.permission:rbac.manage', 'admin.recent_verification']);
+        // 校区隔离：用户换校历史与管理员强制改校（不受 30 天冷却限制，必填原因并写审计）
+        Route::get('/user-center/campus-options', [AdminUserCenterController::class, 'campusOptions'])
+            ->middleware('admin.permission:user.view_masked|user.view_sensitive');
+        Route::get('/user-center/users/{user:public_id}/campus-history', [AdminUserCenterController::class, 'campusHistory'])
+            ->middleware('admin.permission:user.view_masked|user.view_sensitive');
+        Route::put('/user-center/users/{user:public_id}/campus', [AdminUserCenterController::class, 'forceCampus'])
+            ->middleware(['admin.permission:identity.review|rbac.manage', 'admin.recent_verification']);
         Route::get('/user-center/referrals', [AdminUserCenterController::class, 'referrals'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
         Route::get('/user-center/referral-teams', [AdminUserCenterController::class, 'referralTeams'])->middleware('admin.permission:user.view_masked|user.view_sensitive');
         Route::get('/user-center/referral-teams/{leader:public_id}', [AdminUserCenterController::class, 'referralTeam'])->middleware('admin.permission:user.view_masked|user.view_sensitive');

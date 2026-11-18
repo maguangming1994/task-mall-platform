@@ -2,7 +2,10 @@
 
 namespace App\Modules\Refund\Models;
 
+use App\Models\User;
+use App\Modules\Order\Models\Order;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -30,5 +33,15 @@ class Exchange extends Model
     public function shipments(): HasMany
     {
         return $this->hasMany(ExchangeShipment::class);
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

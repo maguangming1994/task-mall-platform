@@ -215,6 +215,7 @@ const baseServices = [
   { id: 'chat', mark: '聊', label: '消息聊天', note: '与同学沟通', tone: 'blue', action: openChat, icon: '/static/icons/service-messages.svg' },
   { id: 'after_sales', mark: '售', label: '售后服务', note: '退款与换货', tone: 'red', action: openAfterSales, icon: '/static/icons/service-aftersale.svg' },
   { id: 'referrals', mark: '邀', label: '邀请好友', note: '奖励与记录', tone: 'green', action: openReferrals, icon: '/static/icons/service-invite.svg' },
+  { id: 'push_team', mark: '推', label: '地推中心', note: '团队 · 推广位 · 佣金', tone: 'green', action: openPushCenter, icon: '/static/icons/service-tasks.svg' },
   { id: 'check_in', mark: '签', label: '每日签到', note: '连续签到领积分', tone: 'orange', action: openCheckIn, icon: '/static/icons/service-checkin.svg' },
   { id: 'notifications', mark: '信', label: '消息中心', note: '通知与提醒', tone: 'violet', action: openNotifications, icon: '/static/icons/service-messages.svg' },
   { id: 'addresses', mark: '址', label: '收货地址', note: '管理配送信息', tone: 'green', action: openAddresses, icon: '/static/icons/service-address.svg' },
@@ -441,6 +442,7 @@ function openPublisher() { uni.navigateTo({ url: '/pages/publisher/index' }) }
 function openOrders(status?: string) { uni.navigateTo({ url: `/pages/orders/index${status ? `?status=${status}` : ''}` }) }
 function openAfterSales() { uni.navigateTo({ url: '/pages/after-sales/index' }) }
 function openReferrals() { uni.navigateTo({ url: '/pages/referrals/index' }) }
+function openPushCenter() { uni.navigateTo({ url: '/pages/push-center/index' }) }
 function openCheckIn() { uni.navigateTo({ url: '/pages/check-in/index' }) }
 function openNotifications() { uni.navigateTo({ url: '/pages/notifications/index' }) }
 function openSecondHand() { uni.navigateTo({ url: '/pages/second-hand/index' }) }

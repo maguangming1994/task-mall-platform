@@ -57,7 +57,12 @@
         </view>
       </view>
     </view>
-    <view v-else class="empty"><text>暂无闲置物品</text></view>
+    <view v-else class="empty">
+      <text class="empty-title">{{ strictCampus ? '本校暂无闲置' : '暂无闲置物品' }}</text>
+      <text v-if="strictCampus" class="empty-sub">发布你的闲置，让本校同学看到</text>
+      <text v-if="strictCampus" class="strict-note">严格校区模式：仅展示本校同学的闲置</text>
+      <button v-if="strictCampus" class="empty-btn" @click="goPublish">发布闲置</button>
+    </view>
 
     <view class="fab-publish" @click="goPublish"><text class="fab-plus">＋</text><text>发布</text></view>
     </template>
@@ -72,9 +77,12 @@ import { listSecondHandCategories, listSecondHandItems, type SecondHandCategory,
 import { resolveApiAssetUrl } from '@/api/http'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
+import { useCampusProfileStore } from '@/stores/campusProfile'
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
+const campusProfile = useCampusProfileStore()
+const strictCampus = computed(() => campusProfile.isStrict)
 
 const auth = useAuthStore()
 const items = ref<SecondHandItem[]>([])
@@ -138,6 +146,7 @@ function goPublish() {
 onShow(handleShow)
 
 async function handleShow() {
+  void campusProfile.ensure()
   await modules.ensureReady()
   if (!moduleEnabled.value) return
   loadCategories()
@@ -196,5 +205,10 @@ async function handleShow() {
 /* 骨架 & 空态 */
 .skel-line { height: 32rpx; border-radius: 8rpx; margin-top: 20rpx; }
 .skel-line.short { width: 60%; }
-.empty { text-align: center; padding: 140rpx 0; color: #AEB3BB; font-size: 26rpx; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 140rpx 48rpx; color: #AEB3BB; font-size: 26rpx; }
+.empty-title { color: #191B1F; font-size: 30rpx; font-weight: 700; }
+.empty-sub { margin-top: 14rpx; color: #767C85; font-size: 24rpx; }
+.strict-note { margin-top: 16rpx; padding: 8rpx 20rpx; border-radius: 999rpx; background: #F1F5F1; color: #5C7264; font-size: 22rpx; line-height: 1.5; }
+.empty-btn { height: 76rpx; margin-top: 36rpx; padding: 0 56rpx; border-radius: 38rpx; background: linear-gradient(135deg, #12D978, #08A152); color: #fff; font-size: 28rpx; font-weight: 700; line-height: 76rpx; }
+.empty-btn::after { border: 0; }
 </style>

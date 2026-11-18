@@ -1,0 +1,2188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校园任务商城 · 地推运营（原生模块设计稿）</title>
+<style>
+/* ============================================================
+   0. 令牌来源
+   C 端：apps/user-app/src/pages/tasks/index.vue（--green #0BBF63 / #08A152）
+        apps/user-app/src/pages/task-detail/index.vue（.card / .info-row / .action-bar）
+        apps/user-app/src/pages/task-claim/index.vue（.subnav / .task-sum / .upload-box）
+        apps/user-app/src/pages/assets/index.vue（.wallet-head / .pt-ledger）
+        apps/user-app/src/components/AppTabBar.vue（.tabbar，中间凸起商城项）
+        apps/user-app/src/uni.scss（#2f67df / #15966a / #f6f9fc / #e2e9f0）
+   后台：apps/admin-web/src/styles/xq.css + App.tsx ConfigProvider token
+        （--xq-green #22c55e，sider #0a3a29，bg #f3f6f4，卡片 12px，表格 13px）
+   ============================================================ */
+:root{
+  /* C 端（rpx ÷ 2 = px，750rpx 设计稿） */
+  --g:#0bbf63; --g-deep:#08a152; --g-soft:#e7f9ef;
+  --g-grad:linear-gradient(135deg,#12d978,#08a152);
+  --o-soft:#fff2e5; --o-deep:#f2620a; --price:#ff3b30;
+  --t1:#191b1f; --t2:#767c85; --t3:#aeb3bb; --line:#edefef;
+  --c-bg:#f4f6f4; --c-shadow:0 1px 2px rgba(23,26,23,.03),0 6px 20px rgba(23,26,23,.05);
+
+  /* 后台 */
+  --xq:#22c55e; --xq-deep:#16a34a; --xq-dark:#15803d;
+  --sider:#0a3a29; --sider-hover:#10492f; --sider-text:#9fc3b2;
+  --bg:#f3f6f4; --xq-line:#e8ece9; --xq-line-soft:#f0f3f1;
+  --xq-text:#1f2937; --xq-muted:#6b7280;
+  --xq-blue:#2563eb; --xq-danger:#dc2626; --xq-warn:#d97706;
+
+  /* 文档外壳 */
+  --ink:#0f2a20; --doc-muted:#6b7a72; --doc-line:#e3eae6;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.55;color:var(--ink);background:#eef2f0}
+button{font-family:inherit;cursor:pointer;border:0;background:none}
+a{text-decoration:none;color:inherit}
+ul{list-style:none}
+.ic{width:18px;height:18px;display:inline-block;flex:none}
+.ic svg{width:100%;height:100%;display:block;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+/* ============================================================
+   1. 文档外壳
+   ============================================================ */
+.doc-head{background:var(--sider);color:#fff;padding:40px 0 74px;position:relative;overflow:hidden}
+.doc-head::before{content:"";position:absolute;width:560px;height:560px;right:-160px;top:-260px;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.32),transparent 68%)}
+.doc-head .wrap{max-width:1360px;margin:0 auto;padding:0 30px;position:relative;z-index:2}
+.brand-row{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:rgba(255,255,255,.66)}
+.brand-mark{width:30px;height:30px;border-radius:8px;background:var(--xq);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff}
+.doc-head h1{font-size:32px;font-weight:800;letter-spacing:-.4px;margin:20px 0 12px;line-height:1.25}
+.doc-head h1 em{font-style:normal;color:#8fe3b0}
+.doc-head .lead{max-width:820px;font-size:14px;line-height:1.85;color:rgba(255,255,255,.72)}
+.head-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.head-chip{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);border-radius:999px;padding:5px 13px;font-size:12px;color:#d9f2e3}
+.doc-tabs{position:sticky;top:0;z-index:80;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--doc-line)}
+.doc-tabs .wrap{max-width:1360px;margin:0 auto;padding:0 22px;display:flex;align-items:center;gap:2px}
+.doc-tab{height:54px;padding:0 20px;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#5d6b64;border-bottom:2px solid transparent}
+.doc-tab .count{font-size:11px;font-weight:700;background:#eef2f0;color:#7b8880;border-radius:999px;padding:1px 7px}
+.doc-tab.on{color:var(--xq-dark);border-bottom-color:var(--xq)}
+.doc-tab.on .count{background:#dcfce7;color:var(--xq-dark)}
+.doc-tips{margin-left:auto;font-size:12px;color:#93a099}
+.doc-main{max-width:1360px;margin:0 auto;padding:28px 30px 90px}
+.tab-panel{display:none}
+.tab-panel.on{display:block;animation:fade .3s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.note-bar{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--doc-line);border-left:3px solid var(--xq);border-radius:10px;padding:13px 16px;font-size:12.5px;line-height:1.75;color:#4d5d55;margin-bottom:26px}
+.note-bar b{color:var(--ink)}
+.note-bar code{background:#f1f5f3;border-radius:4px;padding:1px 5px;font-size:11.5px;color:#2f6b50}
+
+/* 总览 */
+.ov{background:#fff;border:1px solid var(--doc-line);border-radius:12px;padding:20px 22px;margin-bottom:24px}
+.ov-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.ov-head h2{font-size:18px;font-weight:800;color:var(--ink)}
+.ov-head p{font-size:12.5px;color:var(--doc-muted);margin-top:4px}
+.ov-legend{display:flex;gap:10px;font-size:11px;color:var(--doc-muted);flex-wrap:wrap}
+.ov-legend span{display:inline-flex;align-items:center;gap:5px}
+.ov-legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.ov-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1100px){.ov-grid{grid-template-columns:repeat(2,1fr)}}
+.ov-col{border:1px solid var(--doc-line);border-radius:10px;overflow:hidden}
+.ov-col-h{padding:9px 12px;font-size:11.5px;font-weight:800;display:flex;align-items:center;gap:6px;background:#f8fbf9;border-bottom:1px solid var(--doc-line)}
+.ov-col-h .lg{width:7px;height:7px;border-radius:50%}
+.ov-col-h small{margin-left:auto;font-size:10.5px;font-weight:600;color:#8c9a92}
+.ov-list{padding:6px 0}
+.ov-list div{display:flex;align-items:center;gap:6px;padding:4px 12px;font-size:11.5px;color:#3f4f47}
+.ov-list div span:first-child{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#8c9a92;min-width:58px}
+.ov-list div.new{color:#0f7a58;font-weight:600}
+.ov-list div.new span:first-child{color:#0f7a58}
+.ov-foot{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-top:14px}
+@media(max-width:1100px){.ov-foot{grid-template-columns:1fr}}
+.ov-box{border-radius:10px;padding:11px 13px;font-size:11.5px;line-height:1.7}
+.ov-box b{display:block;font-size:12px;margin-bottom:4px}
+.ov-box.reuse{background:#f2fbf6;color:#0b6444}
+.ov-box.new{background:#fff8ec;color:#8a5a15}
+
+/* ============================================================
+   2. 手机稿外壳
+   ============================================================ */
+.ph-grid{display:grid;grid-template-columns:repeat(3,397px);justify-content:center;gap:44px 26px}
+@media(max-width:1300px){.ph-grid{grid-template-columns:repeat(2,397px)}}
+@media(max-width:900px){.ph-grid{grid-template-columns:397px}}
+.pblock{width:397px}
+.pcap{margin-bottom:12px;padding:0 4px}
+.ptop{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.pnum{font-size:11px;font-weight:800;color:var(--xq-dark);letter-spacing:.04em}
+.ptitle{font-size:14.5px;font-weight:800;color:var(--ink)}
+.pstate{font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 6px}
+.pstate.empty{background:#f0eaff;color:#6b46c1}
+.pstate.error{background:#fee2e2;color:#b91c1c}
+.palign{display:block;margin-top:5px;font-size:10.5px;color:#7d8c84;font-family:ui-monospace,Menlo,Consolas,monospace}
+.purpose{margin-top:5px;font-size:12px;line-height:1.65;color:#4d5d55}
+.purpose b{color:#1f2937}
+.pinter{margin-top:3px;font-size:11.5px;line-height:1.6;color:#87958d}
+.device{width:397px;padding:7px;border-radius:42px;background:#0d1512;box-shadow:0 22px 46px rgba(13,25,20,.2)}
+.screen{position:relative;width:383px;height:820px;border-radius:36px;overflow:hidden;background:var(--c-bg);display:flex;flex-direction:column}
+.sbody{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0 12px 16px;scrollbar-width:thin}
+.sbody::-webkit-scrollbar{width:0}
+.sbody.has-tabbar{padding-bottom:92px}
+.sbody.has-actionbar{padding-bottom:78px}
+.sbody.has-subnav{padding-top:0}
+
+/* 状态栏 */
+.statusbar{height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px 0 22px;font-size:12px;font-weight:700;color:var(--t1);background:transparent;position:relative;z-index:6}
+.sb-r{display:flex;align-items:center;gap:5px;font-size:10.5px}
+.sb-bars{display:inline-flex;align-items:flex-end;gap:1.5px;height:9px}
+.sb-bars i{width:2px;background:var(--t1);border-radius:1px}
+.sb-bars i:nth-child(1){height:3px}.sb-bars i:nth-child(2){height:5px}.sb-bars i:nth-child(3){height:7px}.sb-bars i:nth-child(4){height:9px}
+.sb-bat{width:18px;height:9px;border:1px solid var(--t1);border-radius:2.5px;position:relative;opacity:.9}
+.sb-bat::after{content:"";position:absolute;inset:1.5px;right:4px;background:var(--t1);border-radius:1px}
+
+/* 页头（对齐 tasks/index.vue .page-head） */
+.ph{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 0}
+.ph-title{font-size:20px;font-weight:800;line-height:1.25;color:var(--t1)}
+.ph-sub{font-size:11.5px;color:var(--t2);margin-top:2px}
+.bell{position:relative;width:34px;height:34px;flex:none;border:1px solid var(--line);border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:#42526a}
+.bell .ic{width:17px;height:17px}
+.bell-dot{position:absolute;top:6px;right:7px;width:7px;height:7px;border:2px solid #fff;border-radius:50%;background:var(--price)}
+/* 子页导航（对齐 task-claim .subnav） */
+.subnav{display:flex;align-items:center;justify-content:space-between;height:44px;margin:0 -12px 10px;padding:0 12px;background:#fff}
+.subnav-back{width:32px;height:32px;border-radius:50%;background:var(--c-bg);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--t1);line-height:1}
+.subnav-title{flex:1;text-align:center;font-size:17px;font-weight:800}
+.subnav-right{width:32px;display:flex;justify-content:flex-end;font-size:12px;color:var(--t2)}
+
+/* 分段控件（tasks/index.vue .seg） */
+.seg{display:flex;gap:4px;margin-top:10px;padding:3px;border-radius:12px;background:#eaedea}
+.seg-item{flex:1;display:flex;align-items:center;justify-content:center;height:32px;border-radius:9px;font-size:13px;font-weight:600;color:var(--t2)}
+.seg-item.on{background:#fff;box-shadow:0 2px 6px rgba(23,26,23,.06);color:var(--g-deep);font-weight:700}
+
+/* 搜索（.search-full） */
+.search{display:flex;align-items:center;gap:6px;height:36px;margin-top:10px;padding:0 14px;border:1px solid var(--line);border-radius:18px;background:#fff;color:var(--t3);font-size:13px}
+.search .ic{width:15px;height:15px;color:#9aa4b7}
+
+/* 分类 chips（.cat-chip） */
+.chips{display:flex;gap:8px;margin-top:12px;overflow:hidden}
+.chip{display:inline-flex;align-items:center;height:30px;padding:0 14px;border:1px solid var(--line);border-radius:15px;background:#fff;color:var(--t2);font-size:12px;white-space:nowrap}
+.chip.on{border-color:var(--g);background:var(--g);color:#fff;font-weight:600}
+/* 排序行 */
+.sort-row{display:flex;align-items:center;gap:16px;padding:11px 4px 0;font-size:12px;color:var(--t2)}
+.sort-item.on{color:var(--t1);font-weight:700}
+.sort-row .sp{flex:1}
+.filter-btn{color:var(--t1);font-weight:700;display:flex;align-items:center;gap:3px}
+/* 通知条（.notice） */
+.notice{display:flex;align-items:center;gap:7px;height:32px;margin-top:10px;padding:0 11px;border-radius:9px;background:var(--g-soft);color:var(--g-deep);font-size:11px}
+.notice-ic{width:16px;height:16px;flex:none;border-radius:50%;background:var(--g);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.notice span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+
+/* 卡片（task-detail .card / tasks .tcard） */
+.card{margin-top:10px;padding:13px;border-radius:16px;background:#fff;box-shadow:var(--c-shadow)}
+.card-title{display:block;margin-bottom:7px;color:var(--t1);font-size:17px;font-weight:800}
+.card-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.card-title-row .card-title{margin:0}
+.sec-more{font-size:12px;color:var(--t2)}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:#f2f4f3;color:var(--t2);font-size:10px;font-weight:500}
+.tag-red{background:#ffeeea;color:var(--price)}
+.tag-orange{background:var(--o-soft);color:var(--o-deep)}
+.tag-green{background:var(--g-soft);color:var(--g-deep)}
+.tag-blue{background:#eaf2ff;color:#3b82f6}
+.tag-gray{background:#f0f2f5;color:#8a919c}
+.tag-yellow{background:#fff6dc;color:#c98a06}
+.tag-purple{background:#f0eaff;color:#6d4bd8}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+
+/* 横卡列表（tasks .tcard） */
+.tcard{display:flex;gap:11px;align-items:center;margin-top:10px;padding:12px;border-radius:16px;background:#fff;box-shadow:var(--c-shadow)}
+.t-img{width:88px;height:88px;flex:none;border-radius:10px;background:var(--g-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;text-align:center;line-height:1.2}
+.t-main{min-width:0;flex:1}
+.t-title{font-size:14px;font-weight:600;line-height:1.4;color:var(--t1);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.t-meta{display:flex;align-items:center;gap:4px;margin-top:5px;color:var(--t3);font-size:11px;white-space:nowrap;overflow:hidden}
+.t-meta .dot{width:2px;height:2px;border-radius:50%;background:var(--t3);flex:none}
+.t-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.t-pts{color:var(--g-deep);font-size:19px;font-weight:800;line-height:1}
+.t-pts small{font-size:10px;font-weight:500;margin-left:1px}
+.btn-go{display:flex;align-items:center;justify-content:center;height:30px;padding:0 16px;flex:none;border-radius:15px;background:var(--g-grad);box-shadow:0 4px 10px rgba(11,191,99,.28);color:#fff;font-size:12px;font-weight:600}
+.btn-go.disabled{background:#dfe3e0;box-shadow:none;color:#fff}
+.btn-go.ghost{background:#fff;border:1px solid var(--g);color:var(--g-deep);box-shadow:none}
+
+/* 信息行（task-detail .info-row） */
+.info-row{display:flex;align-items:center;gap:8px;padding:9px 0;font-size:13px;color:var(--t2);border-bottom:1px solid var(--line)}
+.info-row:last-child{border-bottom:0}
+.info-row .v{margin-left:auto;color:var(--t1);font-weight:600;text-align:right}
+.info-row .ic{width:15px;height:15px;color:var(--t3)}
+.info-row.hl{background:#f7fbf8;margin:0 -13px;padding:9px 13px}
+
+/* 空态 / 异常态（tasks .state-card / .task-empty） */
+.state-error{display:flex;align-items:center;gap:10px;margin-top:10px;padding:14px;border-radius:16px;background:#fff;box-shadow:var(--c-shadow)}
+.se-icon{width:28px;height:28px;flex:none;border-radius:50%;background:#ffeeea;color:#d92d20;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.se-body{flex:1;min-width:0}
+.se-title{display:block;color:#9b2c25;font-size:13px;font-weight:700}
+.se-copy{display:block;margin-top:3px;color:#b07a72;font-size:11px;line-height:1.5}
+.se-action{height:28px;padding:0 14px;border:1px solid #f0c8c2;border-radius:14px;background:#fff;color:#b43d32;font-size:12px;flex:none}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:10px;padding:32px 20px;border-radius:16px;background:#fff;box-shadow:var(--c-shadow)}
+.empty-mark{width:48px;height:48px;border-radius:14px;background:var(--g-soft);color:var(--g-deep);font-size:18px;display:flex;align-items:center;justify-content:center}
+.empty-title{margin-top:12px;font-size:15px;font-weight:700;color:var(--t1)}
+.empty-copy{margin-top:6px;font-size:12px;line-height:1.6;color:var(--t2)}
+.empty-action{display:flex;align-items:center;justify-content:center;height:32px;margin-top:16px;padding:0 20px;border-radius:16px;background:var(--g-grad);box-shadow:0 4px 10px rgba(11,191,99,.28);color:#fff;font-size:13px;font-weight:600}
+
+/* 绿色数据头（assets .wallet-head / index .point-card） */
+.g-head{margin-top:10px;padding:16px;border-radius:16px;background:var(--g-grad);color:#fff;box-shadow:0 8px 20px rgba(11,191,99,.24)}
+.g-head .lab{font-size:12px;opacity:.88;display:flex;align-items:center;justify-content:space-between}
+.g-head .num{font-size:34px;font-weight:800;line-height:1.15;letter-spacing:.5px;margin-top:2px}
+.g-head .num small{font-size:13px;font-weight:600;opacity:.9;margin-left:4px}
+.g-head .foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:11.5px;opacity:.9}
+.g-head .pill{height:26px;padding:0 12px;border-radius:13px;background:#fff;color:var(--g-deep);font-size:12px;font-weight:700;display:inline-flex;align-items:center}
+.g-head .ghost-pill{height:26px;padding:0 12px;border-radius:13px;background:rgba(255,255,255,.22);color:#fff;font-size:12px;font-weight:600;display:inline-flex;align-items:center;border:1px solid rgba(255,255,255,.4)}
+
+/* 金刚区（index.vue .home-v13-king） */
+.king{display:grid;grid-template-columns:repeat(4,1fr);row-gap:14px;padding:16px 10px 12px;margin-top:10px;border-radius:16px;background:#fff;box-shadow:var(--c-shadow)}
+.king-item{display:flex;flex-direction:column;align-items:center;gap:5px}
+.king-ic{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#0b6b43;background:var(--g-soft)}
+.king-ic.b{background:#eaf2ff;color:#2f6bde}
+.king-ic.o{background:var(--o-soft);color:var(--o-deep)}
+.king-ic.p{background:#f1eafe;color:#6d4bd8}
+.king-label{font-size:11px;color:#3a3d43}
+
+/* 宫格 / 功能行（account/index.vue .mt-row .fn-list） */
+.mt-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.mt-chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 2px;border-radius:10px;background:#f7f9f8}
+.mt-chip b{font-size:15px;font-weight:800;color:var(--t1)}
+.mt-chip span{font-size:10.5px;color:var(--t2)}
+.fn-list{margin-top:10px;border-radius:16px;background:#fff;box-shadow:var(--c-shadow);overflow:hidden}
+.fn{display:flex;align-items:center;gap:9px;padding:12px 13px;border-bottom:1px solid var(--line);font-size:13px;color:var(--t1)}
+.fn:last-child{border-bottom:0}
+.fn-ic{width:26px;height:26px;border-radius:8px;background:var(--g-soft);color:var(--g-deep);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.fn-label{flex:1}
+.fn-note{font-size:11px;color:var(--t3)}
+.fn-arrow{color:#c3cbd1;font-size:15px;line-height:1}
+
+/* 底部 TabBar（AppTabBar.vue：5 项 + 中间凸起） */
+.tabbar{position:absolute;z-index:20;left:0;right:0;bottom:0;height:76px;display:flex;align-items:flex-start;padding:8px 4px 0;border-top:1px solid var(--line);background:#fff}
+.tb{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:4px;color:#aeb3bb;font-size:10px;line-height:1.2}
+.tb .ic{width:21px;height:21px;stroke-width:1.8}
+.tb.on{color:var(--g);font-weight:600}
+.tb .dotnew{position:absolute;top:2px;right:22%;width:5px;height:5px;border-radius:50%;background:var(--price)}
+.tb.featured{padding-top:0}
+.tb.featured .tb-ic{width:48px;height:48px;margin-top:-24px;border:4px solid #fff;border-radius:50%;background:var(--g-grad);box-shadow:0 6px 16px rgba(11,191,99,.35);display:flex;align-items:center;justify-content:center;color:#fff}
+.tb.featured .tb-ic .ic{width:24px;height:24px}
+.tb.featured .tb-label{margin-top:3px}
+
+/* 吸底操作栏（task-detail .action-bar / task-claim） */
+.actionbar{position:absolute;z-index:20;left:0;right:0;bottom:0;display:flex;align-items:center;gap:10px;padding:10px 14px 14px;border-top:1px solid var(--line);background:#fff}
+.ab-ic{display:flex;flex-direction:column;align-items:center;gap:1px;width:38px;font-size:10px;color:var(--t2);flex:none}
+.ab-ic .ic{width:19px;height:19px}
+.ab-main{flex:1;height:40px;border-radius:20px;background:var(--g-grad);box-shadow:0 4px 12px rgba(11,191,99,.3);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.ab-main.disabled{background:#dfe3e0;box-shadow:none}
+.ab-main.ghost{background:#fff;border:1px solid var(--g);color:var(--g-deep);box-shadow:none}
+
+/* 底部弹层（task-detail .sheet） */
+.sheet-mask{position:absolute;z-index:40;inset:0;background:rgba(23,26,23,.42);display:flex;align-items:flex-end}
+.sheet{width:100%;max-height:78%;overflow-y:auto;padding:8px 16px 20px;border-radius:20px 20px 0 0;background:#fff}
+.sheet-grip{width:34px;height:4px;border-radius:2px;background:#e3e7e5;margin:0 auto 10px}
+.sheet-h3{display:block;text-align:center;font-size:16px;font-weight:800;color:var(--t1);margin-bottom:12px}
+.sheet .notice-list{display:grid;gap:6px;padding:11px;border-radius:12px;background:#f6faf7}
+.sheet .notice-li{display:flex;gap:6px;font-size:11.5px;line-height:1.6;color:var(--t2)}
+.sheet .notice-check{color:var(--g-deep);font-weight:800}
+.sheet-btns{display:flex;gap:10px;margin-top:14px}
+.sheet-btns button{flex:1;height:40px;border-radius:20px;font-size:14px;font-weight:700}
+.sheet-btns .cancel{background:#f2f4f3;color:var(--t2)}
+.sheet-btns .ok{background:var(--g-grad);color:#fff;box-shadow:0 4px 12px rgba(11,191,99,.3)}
+.sheet-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.sheet-row:last-of-type{border-bottom:0}
+
+/* 表单 */
+.field{margin-top:10px}
+.field-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:#42526a;margin-bottom:6px}
+.field-label small{font-weight:400;color:var(--t3)}
+.textarea{width:100%;height:76px;padding:8px;border:0;border-radius:8px;background:#f4f6f4;font-size:13px;color:var(--t1);resize:none;font-family:inherit;line-height:1.6}
+.form-err{display:none;margin-top:5px;font-size:11px;color:var(--price)}
+.form-note{margin-top:5px;font-size:11px;color:var(--t3)}
+.upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.upload-box{display:flex;flex-direction:column;align-items:center;justify-content:center;height:76px;border:1px dashed var(--g);border-radius:8px;background:#f7f9f8;color:var(--g-deep);font-size:11px;font-weight:700;gap:2px}
+.upload-box small{font-size:9.5px;color:var(--t3);font-weight:400}
+.uploaded{position:relative;height:76px;border-radius:8px;background:linear-gradient(135deg,#dfeee6,#cfe6da);display:flex;align-items:center;justify-content:center;font-size:10px;color:#3f6f58}
+.uploaded .del{position:absolute;right:2px;top:2px;width:14px;height:14px;border-radius:50%;background:rgba(16,33,58,.55);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center}
+
+/* 数量步进器 */
+.stepper{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;height:32px}
+.stepper button{width:32px;height:32px;background:#f7f9f8;color:var(--t1);font-size:15px;font-weight:700;line-height:1}
+.stepper button:disabled{color:#c3cbd1}
+.stepper span{min-width:44px;text-align:center;font-size:13px;font-weight:700}
+
+/* 推广位 / 收益列表（assets .pt-row） */
+.ledger{margin-top:10px;border-radius:16px;background:#fff;box-shadow:var(--c-shadow);overflow:hidden}
+.lrow{display:flex;align-items:center;gap:9px;padding:11px 13px;border-bottom:1px solid var(--line)}
+.lrow:last-child{border-bottom:0}
+.l-ic{width:34px;height:34px;flex:none;border-radius:10px;background:var(--g-soft);color:var(--g-deep);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.l-ic.orange{background:var(--o-soft);color:var(--o-deep)}
+.l-ic.gray{background:#f2f4f3;color:var(--t3)}
+.l-main{min-width:0;flex:1}
+.l-title{font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.l-note{margin-top:2px;font-size:10.5px;color:var(--t3)}
+.l-amt{font-size:14px;font-weight:800;flex:none;color:var(--g-deep)}
+.l-amt.out{color:var(--o-deep)}
+.l-amt.gray{color:var(--t3);font-size:12px;font-weight:600}
+.pill-s{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;background:var(--g-soft);color:var(--g-deep);font-size:10px;font-weight:700}
+.pill-s.orange{background:var(--o-soft);color:var(--o-deep)}
+.pill-s.gray{background:#f2f4f3;color:var(--t3)}
+.pill-s.red{background:#ffeeea;color:#d92d20}
+
+/* 推广位卡 */
+.pos-card{margin-top:10px;padding:12px;border-radius:16px;background:#fff;box-shadow:var(--c-shadow)}
+.pos-top{display:flex;align-items:center;gap:8px}
+.pos-tag{font-size:10px;font-weight:700;color:var(--g-deep);background:var(--g-soft);border-radius:4px;padding:1px 6px}
+.pos-title{font-size:13.5px;font-weight:700;color:var(--t1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kw-box{display:flex;align-items:center;gap:8px;margin-top:9px;padding:9px 11px;border-radius:10px;background:#f4f6f4;border:1px dashed #cfd8d2}
+.kw{flex:1;font-family:ui-monospace,Menlo,monospace;font-size:14px;font-weight:700;letter-spacing:.4px;color:var(--t1)}
+.kw-copy{height:26px;padding:0 10px;border-radius:13px;background:#fff;border:1px solid var(--line);font-size:11px;color:var(--t2);display:inline-flex;align-items:center;flex:none}
+.qr-panel{display:flex;align-items:center;gap:12px;margin-top:9px;padding:10px;border-radius:12px;background:#f7f9f8}
+.qr-svg{width:84px;height:84px;flex:none;background:#fff;border-radius:8px;padding:4px}
+.qr-side{flex:1;min-width:0}
+.qr-side .t{font-size:12.5px;font-weight:700;color:var(--t1)}
+.qr-side .s{font-size:10.5px;color:var(--t3);margin-top:3px;line-height:1.5}
+.progress{height:5px;margin-top:7px;border-radius:999px;background:#eff1ef;overflow:hidden}
+.progress i{display:block;height:100%;border-radius:999px;background:var(--g-grad)}
+.mini-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.mini-btn{height:26px;padding:0 12px;border-radius:13px;border:1px solid var(--g);color:var(--g-deep);font-size:11px;font-weight:600;background:#fff;display:inline-flex;align-items:center}
+.mini-btn.muted{border-color:#d9ddd9;color:var(--t2)}
+
+/* 详情头（task-detail .detail-title-card） */
+.detail-head{margin-top:10px;padding:14px;border-radius:16px;background:#fff;box-shadow:var(--c-shadow)}
+.detail-h1{font-size:18px;font-weight:800;line-height:1.35;color:var(--t1)}
+.price-row{display:flex;align-items:flex-end;gap:8px;margin-top:10px}
+.price-row .big{font-size:26px;font-weight:800;color:var(--price);line-height:1}
+.price-row .big small{font-size:12px;font-weight:600}
+.price-row .sp{flex:1}
+.price-row .people{font-size:10.5px;color:var(--t3)}
+.metric-strip{display:grid;grid-template-columns:repeat(3,1fr);padding:12px 3px;margin-top:10px;border-radius:16px;background:#fff;box-shadow:var(--c-shadow)}
+.metric-strip>div{text-align:center;border-right:1px solid var(--line)}
+.metric-strip>div:last-child{border-right:0}
+.metric-value{display:block;font-size:15px;font-weight:800;color:var(--t1)}
+.metric-label{display:block;margin-top:2px;font-size:10px;color:var(--t3)}
+
+/* 团队卡 */
+.team-hero{margin-top:10px;padding:14px;border-radius:16px;background:#fff;box-shadow:var(--c-shadow)}
+.team-top{display:flex;align-items:center;gap:11px}
+.team-logo{width:52px;height:52px;flex:none;border-radius:14px;background:var(--g-grad);color:#fff;font-size:17px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.team-name{font-size:16px;font-weight:800;color:var(--t1)}
+.team-sub{margin-top:3px;font-size:11px;color:var(--t3)}
+.team-stat{display:grid;grid-template-columns:repeat(3,1fr);margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
+.team-stat>div{text-align:center}
+.team-stat b{display:block;font-size:15px;font-weight:800;color:var(--t1)}
+.team-stat span{font-size:10px;color:var(--t3)}
+
+/* 角色徽标 */
+.role-badge{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;background:#f0eaff;color:#6d4bd8;font-size:10px;font-weight:700}
+.role-badge.leader{background:var(--o-soft);color:var(--o-deep)}
+
+/* 排名/等级行 */
+.rank-row{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line)}
+.rank-row:last-child{border-bottom:0}
+.rank-no{width:18px;height:18px;border-radius:6px;background:#f2f4f3;color:var(--t2);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.rank-no.top{background:var(--g-soft);color:var(--g-deep)}
+.rank-main{flex:1;min-width:0}
+.rank-name{font-size:12.5px;font-weight:600;color:var(--t1)}
+.rank-note{font-size:10px;color:var(--t3);margin-top:1px}
+.rank-val{font-size:12.5px;font-weight:800;color:var(--g-deep);flex:none}
+
+/* ============================================================
+   3. 后台稿（1440 画布，等比缩放）
+   ============================================================ */
+.admin-block{margin-bottom:30px}
+.acap{margin-bottom:10px;padding:0 2px}
+.atop{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.anum{font-size:11px;font-weight:800;color:var(--xq-dark);letter-spacing:.04em}
+.atitle{font-size:15px;font-weight:800;color:#12281f}
+.astate{font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 6px;background:#dcfce7;color:var(--xq-dark)}
+.apurpose{margin-top:4px;font-size:12px;line-height:1.65;color:#4d5d55}
+.apinter{margin-top:3px;font-size:11.5px;line-height:1.6;color:#87958d}
+.aalign{display:block;margin-top:4px;font-size:10.5px;color:#7d8c84;font-family:ui-monospace,Menlo,Consolas,monospace}
+.admin-fit{position:relative;overflow:hidden;border-radius:12px;box-shadow:0 14px 36px rgba(16,33,58,.12);background:#fff}
+.admin-fit .scaler{width:1440px;transform-origin:top left}
+
+.xq-shell{display:flex;width:1440px;min-height:860px;background:var(--bg);font-size:14px;color:var(--xq-text);font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif}
+.xq-sider{width:216px;flex:none;background:var(--sider);position:relative;display:flex;flex-direction:column;padding-bottom:52px}
+.xq-brand{display:flex;align-items:center;gap:10px;height:60px;padding:0 18px;color:#fff;font-size:17px;font-weight:800}
+.xq-brand .logo{width:28px;height:28px;border-radius:8px;background:var(--xq);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex:none}
+.xq-menu{padding:6px 10px;overflow:hidden}
+.xq-group{margin-bottom:2px}
+.xq-gtitle{display:flex;align-items:center;gap:10px;height:38px;padding:0 12px;border-radius:8px;color:var(--sider-text);font-size:14px;cursor:pointer}
+.xq-gtitle .ic{width:16px;height:16px;stroke-width:1.6;opacity:.9}
+.xq-gtitle .chev{width:11px;height:11px;margin-left:auto;opacity:.7}
+.xq-gtitle:hover{background:var(--sider-hover);color:#fff}
+.xq-gtitle.on{color:#fff}
+.xq-sub{background:rgba(0,0,0,.18);border-radius:8px;padding:4px 0;margin:2px 0 4px}
+.xq-sub a{display:flex;align-items:center;height:36px;padding:0 12px 0 44px;border-radius:6px;margin:0 6px;color:var(--sider-text);font-size:13.5px;cursor:pointer}
+.xq-sub a:hover{background:var(--sider-hover);color:#fff}
+.xq-sub a.on{background:var(--xq-dark);color:#fff;font-weight:600}
+.xq-sub .badge{margin-left:auto;background:rgba(255,255,255,.16);color:#fff;font-size:10.5px;border-radius:8px;padding:1px 6px;font-weight:700}
+.xq-sider-foot{position:absolute;bottom:0;left:0;right:0;padding:14px 18px;color:rgba(255,255,255,.4);font-size:11.5px}
+
+.xq-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.xq-header{height:56px;flex:none;background:#fff;border-bottom:1px solid var(--xq-line);display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+.xq-hl{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--xq-muted)}
+.xq-hl .crumb-sep{color:#c3cbc6}
+.xq-hl b{color:var(--xq-text);font-weight:600}
+.xq-collapse{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#4b5563;font-size:14px}
+.xq-hr{display:flex;align-items:center;gap:16px;font-size:13px;color:#4b5563}
+.xq-bell{position:relative;display:inline-flex;color:#b45309}
+.xq-bell .dot{position:absolute;top:-1px;right:-1px;width:6px;height:6px;border-radius:50%;background:#f59e0b;border:1px solid #fff}
+.xq-hr .txt{font-size:13px;color:#4b5563}
+.xq-user{display:flex;align-items:center;gap:8px}
+.xq-user .av{width:32px;height:32px;border-radius:50%;background:var(--xq);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.xq-user strong{display:block;font-size:13px;color:var(--xq-text);line-height:1.25}
+.xq-user small{display:block;font-size:11px;color:var(--xq-muted);line-height:1.25}
+.xq-content{flex:1;background:var(--bg);padding:22px 26px 40px;min-width:0}
+.xq-page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.xq-page-head h2{font-size:20px;font-weight:800;color:var(--xq-text);margin:0}
+.xq-page-head .sub{margin-top:5px;font-size:12.5px;color:var(--xq-muted)}
+.xq-actions{display:flex;gap:10px}
+
+/* 按钮（antd 36 高，圆角 8；主色 #22c55e） */
+.xq-btn{height:36px;padding:0 15px;border-radius:8px;border:1px solid #d8ded9;background:#fff;color:var(--xq-text);font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.xq-btn:hover{border-color:var(--xq);color:var(--xq-deep)}
+.xq-btn.primary{background:var(--xq);border-color:var(--xq);color:#fff;font-weight:600}
+.xq-btn.primary:hover{background:var(--xq-deep);border-color:var(--xq-deep);color:#fff}
+.xq-btn.danger{border-color:#fca5a5;color:var(--xq-danger);background:#fff}
+.xq-btn.ghost{border-color:transparent;background:transparent;color:var(--xq-muted)}
+.xq-btn.sm{height:30px;padding:0 11px;font-size:12.5px}
+.xq-btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* 统计卡 */
+.xq-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+.xq-stat{background:#fff;border-radius:12px;padding:18px 20px 14px}
+.xq-stat .t{color:var(--xq-muted);font-size:13px;margin-bottom:8px}
+.xq-stat .v{font-size:30px;font-weight:800;color:var(--xq-text);line-height:1.15;font-variant-numeric:tabular-nums}
+.xq-stat .v small{font-size:16px;font-weight:700}
+.xq-stat .d{font-size:12px;margin-top:6px;color:var(--xq-muted)}
+.xq-stat .d.up{color:var(--xq-deep)}
+.xq-stat .d.down{color:var(--xq-danger)}
+
+/* 卡片 */
+.xq-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 2px rgba(16,24,40,.03)}
+.xq-card+.xq-card{margin-top:16px}
+.xq-card.flush{padding:18px 0 8px}
+.xq-card.flush>.xq-card-title{padding:0 20px}
+.xq-card-title{font-size:15px;font-weight:700;color:var(--xq-text);margin:0 0 14px;display:flex;align-items:center;gap:8px}
+.xq-card-title .sub{font-size:12px;font-weight:400;color:var(--xq-muted)}
+.xq-card-title .right{margin-left:auto;display:flex;gap:10px;align-items:center}
+
+/* 筛选条 */
+.xq-filter{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.xq-filter .grow{flex:1}
+.xq-input{height:36px;min-width:200px;padding:0 11px;border:1px solid #d8ded9;border-radius:8px;display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#9ca3af;background:#fff}
+.xq-input .ic{width:14px;height:14px}
+.xq-select{height:36px;min-width:130px;padding:0 11px;border:1px solid #d8ded9;border-radius:8px;display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--xq-text);background:#fff}
+.xq-select .ic{width:11px;height:11px;margin-left:auto;color:#9ca3af}
+.xq-label{font-size:13px;color:var(--xq-muted);margin-right:2px}
+
+/* 表格（xq-table + antd middle） */
+.xq-table{width:100%;border-collapse:collapse}
+.xq-table th{text-align:left;font-size:12px;font-weight:500;color:var(--xq-muted);padding:10px 14px;border-bottom:1px solid var(--xq-line-soft);white-space:nowrap}
+.xq-table td{padding:13px 14px;border-bottom:1px solid var(--xq-line-soft);font-size:13px;color:var(--xq-text);vertical-align:middle}
+.xq-table tr:last-child td{border-bottom:0}
+.xq-table tbody tr:hover td{background:#f8faf9}
+.xq-table .nm{font-weight:600}
+.xq-table .sub{font-size:11px;color:var(--xq-muted);margin-top:2px}
+.xq-table .money{font-weight:700;font-variant-numeric:tabular-nums}
+.xq-table td.num{font-variant-numeric:tabular-nums}
+.xq-pager{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;font-size:12.5px;color:var(--xq-muted)}
+.xq-pager .pgs{display:flex;gap:4px;align-items:center}
+.xq-pager .pgs span{min-width:28px;height:28px;padding:0 7px;border:1px solid #e3e7e5;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;color:#4b5563;background:#fff}
+.xq-pager .pgs span.on{border-color:var(--xq);color:var(--xq-deep);font-weight:700}
+
+/* 用户单元格 */
+.xq-ucell{display:flex;align-items:center;gap:10px}
+.xq-ucell .ava{width:34px;height:34px;border-radius:50%;background:#d9f2e3;color:#15803d;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none}
+.xq-ucell .nm{font-weight:600;line-height:1.3;font-size:13px}
+.xq-ucell .id{color:var(--xq-muted);font-size:11px}
+.ava.blue{background:#dbeafe;color:#1d4ed8}
+.ava.purple{background:#ede9fe;color:#6d28d9}
+.ava.orange{background:#ffedd5;color:#c2410c}
+
+/* pill / 链接 */
+.xq-pill{display:inline-block;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.xq-pill.green{background:#dcfce7;color:#16a34a}
+.xq-pill.orange{background:#fdf0d5;color:#d97706}
+.xq-pill.red{background:#fee2e2;color:#dc2626}
+.xq-pill.gray{background:#f1f5f9;color:#64748b}
+.xq-pill.blue{background:#dbeafe;color:#2563eb}
+.xq-pill.purple{background:#ede9fe;color:#6d28d9}
+.xq-link{color:var(--xq-blue);cursor:pointer;margin-right:12px;font-size:13px;white-space:nowrap}
+.xq-link:last-child{margin-right:0}
+.xq-link.danger{color:var(--xq-danger)}
+.xq-link.muted{color:var(--xq-muted)}
+
+/* tabs（xq-tabs） */
+.xq-tabs{display:flex;gap:4px;border-bottom:1px solid var(--xq-line);margin:0 0 16px}
+.xq-tabs .it{padding:10px 18px;font-size:14px;color:var(--xq-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px}
+.xq-tabs .it.on{color:var(--xq-deep);font-weight:700;border-bottom-color:var(--xq)}
+.xq-tabs .badge{font-size:11px;background:#f1f5f9;color:#64748b;border-radius:8px;padding:0 6px;font-weight:600}
+.xq-tabs .it.on .badge{background:#dcfce7;color:var(--xq-dark)}
+
+/* 分栏 */
+.xq-split{display:flex;gap:16px;align-items:flex-start}
+.xq-split .main{flex:1;min-width:0}
+.xq-split .aside{width:400px;flex:none}
+.xq-split .aside .xq-card{padding:16px 18px}
+
+/* 描述列表 / kv */
+.xq-kv{display:flex;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px dashed #eff2f0;font-size:12.5px}
+.xq-kv span{color:var(--xq-muted);flex:none;width:76px}
+.xq-kv b{font-weight:600;color:var(--xq-text);margin-left:auto;text-align:right}
+.xq-detail-head{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--xq-line-soft);margin-bottom:4px}
+.xq-detail-head .ava{width:36px;height:36px;border-radius:50%;background:#ede9fe;color:#6d28d9;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none}
+.xq-detail-head .nm{font-size:14px;font-weight:700}
+.xq-detail-head .sub{font-size:11.5px;color:var(--xq-muted);margin-top:1px}
+
+/* 凭证 */
+.xq-shots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.xq-shot{height:78px;border-radius:8px;border:1px solid #e3e7e5;background:
+  linear-gradient(135deg,#eef5f0,#e3eee8);position:relative;overflow:hidden}
+.xq-shot::after{content:"凭证";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8aa596;font-size:11px}
+.xq-shot-note{font-size:10.5px;color:var(--xq-muted);text-align:center;margin-top:4px}
+.xq-verify{display:grid;gap:6px;margin-top:12px;padding:10px 12px;border-radius:8px;background:#f8faf9}
+.xq-verify>div{display:flex;align-items:center;gap:7px;font-size:12px;color:#374151}
+.xq-verify .ok,.xq-verify .bad{width:15px;height:15px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none;font-size:9px;font-weight:800}
+.xq-verify .ok{background:#dcfce7;color:#16a34a}
+.xq-verify .bad{background:#fee2e2;color:#dc2626}
+.xq-verify .ok .ic,.xq-verify .bad .ic{width:9px;height:9px;stroke-width:3}
+.xq-mini-note{margin-top:10px;padding:8px 10px;border-radius:6px;background:#fffbeb;color:#92400e;font-size:11.5px;line-height:1.6}
+.xq-review-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--xq-line-soft)}
+.xq-review-actions .xq-btn{height:32px;font-size:13px}
+
+/* 表单（后台） */
+.xq-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin-top:4px}
+.xq-field{display:flex;flex-direction:column;gap:5px}
+.xq-field label{font-size:12.5px;color:#4b5563}
+.xq-field .ctl{height:36px;padding:0 11px;border:1px solid #d8ded9;border-radius:8px;display:flex;align-items:center;font-size:13px;color:var(--xq-text);background:#fff}
+.xq-field .ctl.area{height:auto;padding:9px 11px;line-height:1.6;min-height:64px;align-items:flex-start}
+.xq-field .hint{font-size:11px;color:var(--xq-muted)}
+.xq-field.span2{grid-column:span 2}
+
+/* 快照 / 只读 */
+.xq-snapshot{margin-top:12px;padding:12px 14px;border:1px dashed #cbd5cf;border-radius:8px;background:#fbfdfb}
+.xq-snapshot-head{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--xq-text);margin-bottom:6px}
+.xq-snapshot-row{display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;color:#4b5563}
+.xq-snapshot-row b{color:var(--xq-text);font-weight:600}
+.xq-lock{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#6b7280;background:#f1f5f9;border-radius:4px;padding:1px 6px;font-weight:500}
+
+/* 提示条 */
+.xq-alert{display:flex;gap:9px;align-items:flex-start;padding:10px 14px;border-radius:8px;border:1px solid #fde68a;background:#fffbeb;color:#92400e;font-size:12.5px;line-height:1.65;margin-bottom:14px}
+.xq-alert .ic{width:15px;height:15px;margin-top:1px;color:#d97706}
+.xq-alert.error{border-color:#fecaca;background:#fef2f2;color:#991b1b}
+.xq-alert.error .ic{color:#dc2626}
+.xq-alert.info{border-color:#bfdbfe;background:#eff6ff;color:#1e40af}
+.xq-alert.info .ic{color:#2563eb}
+.xq-code{font-family:ui-monospace,Menlo,monospace;background:rgba(0,0,0,.05);border-radius:4px;padding:1px 5px;font-size:11.5px}
+
+/* 空态 / 骨架 */
+.xq-empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:46px 30px;color:#9ca3af}
+.xq-empty .ic-wrap{width:56px;height:56px;border-radius:50%;background:#f0f7f2;color:var(--xq-deep);display:flex;align-items:center;justify-content:center}
+.xq-empty .ic-wrap .ic{width:24px;height:24px}
+.xq-empty h4{margin:14px 0 0;font-size:15px;font-weight:700;color:var(--xq-text)}
+.xq-empty p{margin-top:6px;font-size:12.5px;line-height:1.75;color:var(--xq-muted);max-width:520px}
+.xq-empty .xq-actions{margin-top:16px}
+.xq-skeleton{height:44px;border-radius:8px;background:linear-gradient(100deg,#f0f3f1 30%,#f8faf9 45%,#f0f3f1 60%);background-size:220% 100%;animation:shimmer 1.3s ease-in-out infinite}
+@keyframes shimmer{from{background-position:120% 0}to{background-position:-40% 0}}
+.xq-tiny-legend{display:flex;gap:12px;font-size:11.5px;color:var(--xq-muted)}
+.xq-tiny-legend span{display:inline-flex;align-items:center;gap:5px}
+.xq-tiny-legend i{width:6px;height:6px;border-radius:50%;display:inline-block}
+
+/* 弹窗（antd Modal） */
+.xq-modal-mask{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;padding-top:110px;z-index:50}
+.xq-modal{width:540px;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden}
+.xq-modal-head{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 24px 12px}
+.xq-modal-head h3{font-size:16px;font-weight:700;color:var(--xq-text)}
+.xq-modal-head p{margin-top:3px;font-size:12px;color:var(--xq-muted)}
+.xq-modal-close{width:26px;height:26px;border-radius:6px;color:#9ca3af;display:flex;align-items:center;justify-content:center}
+.xq-modal-body{padding:4px 24px 8px;max-height:480px;overflow:auto}
+.xq-modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:12px 24px 16px;border-top:1px solid var(--xq-line-soft);margin-top:10px}
+.xq-modal-seg{display:inline-flex;padding:3px;border-radius:8px;background:#f1f5f2;margin-bottom:12px}
+.xq-modal-seg button{height:28px;padding:0 18px;border-radius:6px;font-size:12.5px;color:#4b5563;font-weight:600}
+.xq-modal-seg button.on{background:#fff;color:var(--xq-deep);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.xq-modal-note{margin-top:10px;padding:9px 12px;border-radius:6px;background:#f6faf7;font-size:12px;line-height:1.7;color:#4b5563}
+.xq-modal-note.error{background:#fef2f2;color:#991b1b}
+.xq-modal-check{display:flex;gap:8px;align-items:flex-start;margin-top:11px;font-size:12.5px;color:#374151;line-height:1.6}
+.xq-modal-check .box{width:15px;height:15px;border:1px solid #d1d5db;border-radius:3px;flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;background:#fff}
+.xq-modal-check .box .ic{width:10px;height:10px;color:#16a34a;stroke-width:3}
+.xq-pw{display:flex;align-items:center;gap:7px;height:36px;margin-top:11px;padding:0 11px;border:1px solid #d8ded9;border-radius:8px;font-size:13px;color:#9ca3af;background:#fff}
+
+/* 团队卡（后台列表内） */
+.xq-team{display:flex;align-items:center;gap:10px}
+.xq-team .lg{width:34px;height:34px;border-radius:9px;background:var(--g-grad);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.xq-team .nm{font-weight:600;font-size:13px}
+.xq-team .sub{font-size:11px;color:var(--xq-muted);margin-top:1px}
+.mark{width:18px;height:18px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;background:#f0f7f2;color:var(--xq-deep)}
+
+/* ============================================================
+   4. 流程图
+   ============================================================ */
+.flow-intro{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:22px}
+.flow-summary{background:#fff;border:1px solid var(--doc-line);border-radius:12px;padding:18px 20px}
+.flow-summary h3{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:8px}
+.flow-summary p{font-size:12.5px;line-height:1.85;color:#4d5d55}
+.flow-summary p b{color:var(--ink)}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.split>div{border-radius:8px;padding:9px 11px;font-size:11.5px;line-height:1.6}
+.split .cash{background:#e7f9ef;color:#08633f}
+.split .points{background:#f1f5f3;color:#4b5a53}
+.split b{display:block;font-size:12px;margin-bottom:3px}
+.flow-legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:13px;font-size:11.5px;color:var(--doc-muted)}
+.flow-legend span{display:inline-flex;align-items:center;gap:5px}
+.flow-legend .d{width:7px;height:7px;border-radius:50%;display:inline-block}
+.flow-layout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+@media(max-width:1180px){.flow-layout{grid-template-columns:1fr}}
+.flow-board{background:#fff;border:1px solid var(--doc-line);border-radius:12px;overflow:hidden}
+.flow-board-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--doc-line)}
+.flow-board-head h3{font-size:14.5px;font-weight:800}
+.flow-board-head .sub{font-size:11.5px;color:var(--doc-muted)}
+.lanes{display:grid;grid-template-columns:repeat(4,1fr);background:#f8fbf9;border-bottom:1px solid var(--doc-line)}
+.lane-head{padding:11px 14px;border-right:1px solid var(--doc-line)}
+.lane-head:last-child{border-right:0}
+.lane-head .role{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:var(--ink)}
+.lane-head small{display:block;margin-top:2px;font-size:10.5px;color:#8c9a92;line-height:1.4}
+.promoter .role .d{background:#2563eb}
+.leader .role .d{background:#6d4bd8}
+.campus .role .d{background:var(--xq)}
+.finance .role .d{background:#d97706}
+.lane-head .role .d{width:7px;height:7px;border-radius:50%;display:inline-block}
+.lrow{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--doc-line-soft);position:relative}
+.lrow:last-child{border-bottom:0}
+.fcell{position:relative;min-height:96px;padding:10px;border-right:1px dashed #edf1ee}
+.fcell:last-child{border-right:0}
+.fnode{width:100%;text-align:left;background:#fff;border:1px solid #e2e9e5;border-radius:9px;padding:8px 9px;transition:.16s;display:block}
+.fnode:hover{border-color:#b9cdc1;box-shadow:0 4px 12px rgba(16,40,30,.08);transform:translateY(-1px)}
+.fnode.on{border-color:#0f7a58;box-shadow:0 0 0 2px rgba(34,197,94,.18)}
+.fnode.role-op{border-left:3px solid #2563eb}
+.fnode.role-leader{border-left:3px solid #6d4bd8}
+.fnode.role-campus{border-left:3px solid var(--xq)}
+.fnode.role-finance{border-left:3px solid #d97706}
+.fcode{font-size:9.5px;font-weight:800;letter-spacing:.05em;color:#8c9a92}
+.fnode h4{font-size:12.5px;font-weight:800;color:var(--ink);margin:1px 0 2px;line-height:1.35}
+.fnode p{font-size:10.5px;line-height:1.5;color:#6b7a72}
+.fstatus{display:inline-block;margin-top:5px;font-size:9.5px;font-weight:700;color:#0f7a58;background:#e7f9ef;border-radius:3px;padding:1px 5px}
+.fv{position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);font-size:12px;color:#a9b8b0;z-index:2;background:#fff;line-height:1}
+.fh{position:absolute;right:-6px;top:50%;transform:translateY(-50%);font-size:12px;color:#a9b8b0;z-index:2;background:#fff;line-height:1}
+.fnote{grid-column:1/-1;padding:7px 14px;font-size:10.5px;color:#7d8c84;background:#fbfdfb;border-top:1px dashed #edf1ee}
+.flow-side{background:#fff;border:1px solid var(--doc-line);border-radius:12px;padding:18px;position:sticky;top:74px}
+.fs-code{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.fs-code .c{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--xq-dark);background:#dcfce7;border-radius:4px;padding:2px 7px}
+.fs-code .r{font-size:10.5px;font-weight:700;border-radius:4px;padding:2px 7px}
+.fs-title{font-size:17px;font-weight:800;color:var(--ink);line-height:1.35}
+.fs-sub{font-size:11.5px;color:#7d8c84;margin-top:4px;line-height:1.6}
+.fs-block{margin-top:13px;padding-top:11px;border-top:1px solid var(--doc-line-soft)}
+.fs-block h5{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#8c9a92;margin-bottom:6px}
+.fs-block ul{display:grid;gap:5px}
+.fs-block li{display:flex;gap:6px;font-size:12px;line-height:1.6;color:#3f4f47}
+.fs-block li .dot{width:4px;height:4px;border-radius:50%;background:#b7c6be;flex:none;margin-top:7px}
+.fs-block.state p{font-size:12px;line-height:1.7;color:#0f7a58;background:#f2fbf6;border-radius:6px;padding:8px 10px}
+.fs-block.ex li{color:#9a3f3f}
+.fs-block.ex li .dot{background:#e3a6a6}
+.fs-link{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--xq-blue);padding:3px 0}
+.fs-link .ic{width:12px;height:12px}
+.exception-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:18px}
+@media(max-width:1180px){.exception-grid{grid-template-columns:repeat(2,1fr)}}
+.exception-grid>div{background:#fff;border:1px solid var(--doc-line);border-radius:10px;padding:12px 13px}
+.exception-grid b{display:block;font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.exception-grid small{font-size:11px;line-height:1.65;color:#6b7a72}
+.flow-note{display:flex;gap:9px;margin-top:16px;padding:12px 15px;border-radius:10px;background:#fff;border:1px solid var(--doc-line);font-size:11.5px;line-height:1.75;color:#4d5d55}
+.flow-note .ic{color:#8c9a92;margin-top:1px}
+
+/* 提示 */
+#toast{position:fixed;z-index:200;left:50%;bottom:34px;transform:translate(-50%,16px);background:rgba(16,33,26,.9);color:#fff;font-size:13px;padding:9px 18px;border-radius:20px;opacity:0;pointer-events:none;transition:.22s}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></symbol>
+<symbol id="i-task" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+<symbol id="i-shop" viewBox="0 0 24 24"><path d="M4 9h16l-1.4 11H5.4z"/><path d="M8 9V7a4 4 0 018 0v2"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></symbol>
+<symbol id="i-team" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.4 2.7-5.4 6-5.4s6 2 6 5.4"/><path d="M16 5.2a3 3 0 010 5.6M18 20c0-2.4-.9-4-2.4-4.9"/></symbol>
+<symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V6M4 20h16"/><path d="M8 16v-4M12 16V9M16 16v-7"/></symbol>
+<symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h6"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><path d="M11 11l9 9M17 17l2-2M14 14l2-2"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-2.4-5.7"/><path d="M20 4v5h-5"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></symbol>
+<symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M3 4h2l2.4 11h11L21 7H6"/></symbol>
+<symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 12a8 8 0 01-8 8H4l2-3a8 8 0 1115-5z"/></symbol>
+<symbol id="i-mega" viewBox="0 0 24 24"><path d="M4 10v4l12 5V5z"/><path d="M16 8a4 4 0 010 8"/></symbol>
+<symbol id="i-set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1l2-1.4-2-3.4-2.3 1a7 7 0 00-1.7-1L14.5 3h-4l-.4 2.2a7 7 0 00-1.7 1l-2.3-1-2 3.4L6 10a7 7 0 000 2l-2 1.4 2 3.4 2.3-1a7 7 0 001.7 1l.4 2.2h4l.4-2.2a7 7 0 001.7-1l2.3 1 2-3.4-2-1.4a7 7 0 00.1-1z"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.4 8.3-8 9-4.6-.7-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+<symbol id="i-coins" viewBox="0 0 24 24"><ellipse cx="9" cy="6.5" rx="5" ry="2.5"/><path d="M4 6.5v4c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4"/><path d="M4 10.5v4c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5"/><path d="M15 9.5c2.8 0 5 1.1 5 2.5s-2.2 2.5-5 2.5"/></symbol>
+<symbol id="i-building" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M14 6l4 4"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L3 10l7 3 3 7z"/></symbol>
+</defs>
+</svg>
+
+<header class="doc-head">
+  <div class="wrap">
+    <div class="brand-row"><span class="brand-mark">校</span>校圈 · 校园任务商城 / 设计稿</div>
+    <h1>地推运营 <em>· 原生模块 UI 设计</em></h1>
+    <p class="lead">按现有页面骨架与主题令牌重做：C 端直接复用任务大厅的页头、分段、搜索、分类 chips、列表卡与底部 TabBar；后台直接复用 <b>xq.css</b> 的侧栏、面包屑页头、统计卡、筛选条与密集表格。每屏标注所对齐的现有页面文件，便于开发直接套用。</p>
+    <div class="head-chips">
+      <span class="head-chip">C 端 12 屏 · 375×812</span>
+      <span class="head-chip">后台 8 屏 · 1440</span>
+      <span class="head-chip">流程图 13 节点 / 4 泳道</span>
+      <span class="head-chip">单文件 · 离线可用</span>
+    </div>
+  </div>
+</header>
+
+<nav class="doc-tabs">
+  <div class="wrap">
+    <button class="doc-tab on" data-tab="c">C 端界面 <span class="count">12</span></button>
+    <button class="doc-tab" data-tab="admin">后台界面 <span class="count">8</span></button>
+    <button class="doc-tab" data-tab="flow">流程图 <span class="count">13</span></button>
+    <span class="doc-tips">点击页内按钮可交互 · 数据为示例</span>
+  </div>
+</nav>
+
+<main class="doc-main">
+<div class="ov">
+  <div class="ov-head">
+    <div>
+      <h2>总览 · 地推模块在整体产品中的位置</h2>
+      <p>现有功能与地推新增在同一套框架内编号：<b>C</b> 小程序端、<b>A</b> 后台、<b>F</b> 流程图；每组先「现有」后「地推新增」。</p>
+    </div>
+    <div class="ov-legend">
+      <span><i style="background:#cbd5cf"></i>现有</span>
+      <span><i style="background:#22c55e"></i>地推新增</span>
+      <span><i style="background:#0bbf63"></i>C 端</span>
+      <span><i style="background:#0a3a29"></i>后台</span>
+    </div>
+  </div>
+  <div class="ov-grid">
+    <div class="ov-col">
+      <div class="ov-col-h"><span class="lg" style="background:#cbd5cf"></span>小程序端 · 现有<small>5 屏</small></div>
+      <div class="ov-list">
+        <div><span>C-现有 01</span>首页 / 金刚区</div>
+        <div><span>C-现有 02</span>任务大厅</div>
+        <div><span>C-现有 03</span>任务详情</div>
+        <div><span>C-现有 04</span>我的</div>
+        <div><span>C-现有 05</span>钱包 · 提现</div>
+      </div>
+    </div>
+    <div class="ov-col">
+      <div class="ov-col-h"><span class="lg" style="background:#22c55e"></span>小程序端 · 地推<small>12 屏</small></div>
+      <div class="ov-list">
+        <div class="new"><span>C-地推 01</span>地推中心（入口）</div>
+        <div class="new"><span>C-地推 02</span>团队广场</div>
+        <div class="new"><span>C-地推 03</span>团队广场 · 空态</div>
+        <div class="new"><span>C-地推 04</span>团队详情 / 申请</div>
+        <div class="new"><span>C-地推 05</span>我的团队 · 成员</div>
+        <div class="new"><span>C-地推 06</span>我的团队 · 团长</div>
+        <div class="new"><span>C-地推 07</span>推广任务列表</div>
+        <div class="new"><span>C-地推 08</span>任务详情 / 推广位</div>
+        <div class="new"><span>C-地推 09</span>我的推广位</div>
+        <div class="new"><span>C-地推 10</span>交单</div>
+        <div class="new"><span>C-地推 11</span>交单 · 异常态</div>
+        <div class="new"><span>C-地推 12</span>收益中心</div>
+      </div>
+    </div>
+    <div class="ov-col">
+      <div class="ov-col-h"><span class="lg" style="background:#cbd5cf"></span>后台 · 现有<small>6 屏</small></div>
+      <div class="ov-list">
+        <div><span>A-现有 01</span>任务审核</div>
+        <div><span>A-现有 02</span>任务管理 / 复核</div>
+        <div><span>A-现有 03</span>提现审核</div>
+        <div><span>A-现有 04</span>对账中心</div>
+        <div><span>A-现有 05</span>用户管理</div>
+        <div><span>A-现有 06</span>校区管理</div>
+      </div>
+    </div>
+    <div class="ov-col">
+      <div class="ov-col-h"><span class="lg" style="background:#22c55e"></span>后台 · 地推<small>8 屏</small></div>
+      <div class="ov-list">
+        <div class="new"><span>A-地推 01</span>团队管理</div>
+        <div class="new"><span>A-地推 02</span>成员与等级</div>
+        <div class="new"><span>A-地推 03</span>等级佣金规则</div>
+        <div class="new"><span>A-地推 04</span>推广任务配置</div>
+        <div class="new"><span>A-地推 05</span>申请与交单审核</div>
+        <div class="new"><span>A-地推 06</span>结算批次</div>
+        <div class="new"><span>A-地推 07</span>结算批次 · 空态</div>
+        <div class="new"><span>A-地推 08</span>团队管理 · 异常态</div>
+      </div>
+    </div>
+  </div>
+  <div class="ov-foot">
+    <div class="ov-box reuse"><b>复用现有能力（不重复建设）</b>实名与学号校验 · 校区数据隔离 · 任务审核范式（队列/SLA/驳回原因）· 现金钱包与提现通道 · 财务对账口径 · 消息通知与站内信 · 角色权限与操作日志。</div>
+    <div class="ov-box new"><b>地推新增边界</b>团队实体与成员关系 · 团队等级与佣金规则 · 推广位（关键词/二维码/转赠）· 交单与审单 · 批次账单与结算快照 · 上级分佣。全部走现金账本，与任务积分分账。</div>
+  </div>
+</div>
+
+<section class="tab-panel on" id="panel-c">
+  <div class="note-bar">
+    <span class="ic"><svg><use href="#i-warn"/></svg></span>
+    <span><b>入口位置：</b>小程序首页金刚区新增「地推中心」（第 5 格），底部 TabBar 仍为 首页 / 任务 / 商城 / 社区 / 我的 五项，不新增 tab；地推中心为二级页，返回后落在首页。所有页面标题、卡片圆角 16px、间距 10px、绿色主色 <code>#0BBF63</code>、按钮高度 30/40px 均取自任务大厅与任务详情现有实现。</span>
+  </div>
+  <div class="ph-grid">
+    <!-- ================= C-现有 01 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-现有 01</span><span class="ptitle">首页 · 金刚区入口</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/index/index.vue</span>
+        <p class="purpose"><b>用途：</b>现有首页原样还原。地推中心的真实入口在这里——金刚区第 8 格，与任务大厅、商城、签到并列，不新增 tab。</p>
+        <p class="pinter"><b>关键交互：</b>金刚区点击进入对应模块 · 顶部切换校区 · 通知铃铛 · 推荐任务卡片进详情。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody has-tabbar">
+          <div class="ph">
+            <div>
+              <div class="ph-title">校园任务商城</div>
+              <div class="ph-sub">东湖校区 · 今日 12 个新任务</div>
+            </div>
+            <div class="bell"><span class="ic"><svg><use href="#i-bell"/></svg></span><span class="bell-dot"></span></div>
+          </div>
+          <div class="search"><span class="ic"><svg><use href="#i-search"/></svg></span>搜索任务、商品、团队</div>
+
+          <div class="king">
+            <div class="king-item"><div class="king-ic"><span class="ic"><svg><use href="#i-task"/></svg></span></div><span class="king-label">任务大厅</span></div>
+            <div class="king-item"><div class="king-ic b"><span class="ic"><svg><use href="#i-shop"/></svg></span></div><span class="king-label">校园商城</span></div>
+            <div class="king-item"><div class="king-ic o"><span class="ic"><svg><use href="#i-coins"/></svg></span></div><span class="king-label">每日签到</span></div>
+            <div class="king-item"><div class="king-ic p"><span class="ic"><svg><use href="#i-send"/></svg></span></div><span class="king-label">邀请好友</span></div>
+            <div class="king-item"><div class="king-ic b"><span class="ic"><svg><use href="#i-shop"/></svg></span></div><span class="king-label">二手闲置</span></div>
+            <div class="king-item"><div class="king-ic o"><span class="ic"><svg><use href="#i-file"/></svg></span></div><span class="king-label">优惠券</span></div>
+            <div class="king-item"><div class="king-ic"><span class="ic"><svg><use href="#i-msg"/></svg></span></div><span class="king-label">客服</span></div>
+            <div class="king-item"><div class="king-ic"><span class="ic"><svg><use href="#i-team"/></svg></span></div><span class="king-label">地推中心</span></div>
+          </div>
+
+          <div class="notice"><span class="notice-ic">i</span><span>地推中心已上线：加入团队做推广，佣金按批次结算</span></div>
+
+          <div class="card">
+            <div class="card-title-row"><span class="card-title">推荐任务</span><span class="sec-more">全部 ›</span></div>
+            <div style="display:flex;gap:10px">
+              <div style="flex:1;padding:10px;border-radius:10px;background:#f7f9f8">
+                <div style="font-size:12.5px;font-weight:700;line-height:1.4">校园快递代取<br>东区菜鸟驿站</div>
+                <div class="t-pts" style="margin-top:8px;font-size:16px">+120<small>积分</small></div>
+              </div>
+              <div style="flex:1;padding:10px;border-radius:10px;background:#f7f9f8">
+                <div style="font-size:12.5px;font-weight:700;line-height:1.4">食堂新品试吃<br>二食堂一楼</div>
+                <div class="t-pts" style="margin-top:8px;font-size:16px">+80<small>积分</small></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tcard">
+            <div class="t-img">极速<br>版</div>
+            <div class="t-main">
+              <div class="t-title">快手极速版 · 校园拉新推广</div>
+              <div class="t-meta"><span>推广任务</span><span class="dot"></span><span>东湖校区</span><span class="dot"></span><span>剩 86 份额</span></div>
+              <div class="t-foot"><div class="t-pts">¥8.00<small>/单</small></div><span class="btn-go">去推广</span></div>
+            </div>
+          </div>
+        </div>
+        <nav class="tabbar">
+          <div class="tb on"><span class="ic"><svg><use href="#i-home"/></svg></span><span class="tb-label">首页</span></div>
+          <div class="tb"><span class="ic"><svg><use href="#i-task"/></svg></span><span class="tb-label">任务</span></div>
+          <div class="tb featured"><span class="tb-ic"><span class="ic"><svg><use href="#i-shop"/></svg></span></span><span class="tb-label">商城</span></div>
+          <div class="tb"><span class="ic"><svg><use href="#i-msg"/></svg></span><span class="tb-label">社区</span></div>
+          <div class="tb"><span class="ic"><svg><use href="#i-user"/></svg></span><span class="tb-label">我的</span></div>
+        </nav>
+      </div></div>
+    </article>
+
+    <!-- ================= C-现有 02 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-现有 02</span><span class="ptitle">任务大厅</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/tasks/index.vue</span>
+        <p class="purpose"><b>用途：</b>现有任务大厅，是地推「推广任务」列表的视觉母版。页头 + 分段 + 搜索 + 分类 chips + 排序行 + 横卡列表的结构被地推页整段复用。</p>
+        <p class="pinter"><b>关键交互：</b>切换推荐/最新/高价 · 筛选分类与校区 · 卡片进入任务详情 · 底部 TabBar 保持 5 项。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody has-tabbar">
+          <div class="ph">
+            <div><div class="ph-title">任务大厅</div><div class="ph-sub">东湖校区 · 128 个任务可接</div></div>
+            <div class="bell"><span class="ic"><svg><use href="#i-bell"/></svg></span><span class="bell-dot"></span></div>
+          </div>
+          <div class="seg">
+            <div class="seg-item on">推荐</div>
+            <div class="seg-item">最新</div>
+            <div class="seg-item">高价</div>
+          </div>
+          <div class="search"><span class="ic"><svg><use href="#i-search"/></svg></span>搜索任务名称 / 发布方</div>
+          <div class="chips">
+            <span class="chip on">全部</span><span class="chip">跑腿</span><span class="chip">推广</span><span class="chip">问卷</span><span class="chip">探店</span>
+          </div>
+          <div class="sort-row"><span class="sort-item on">综合排序</span><span class="sort-item">最新发布</span><span class="sp"></span><span class="filter-btn">筛选 <span class="ic" style="width:12px;height:12px"><svg><use href="#i-chev"/></svg></span></span></div>
+          <div class="tcard">
+            <div class="t-img">代取<br>快递</div>
+            <div class="t-main">
+              <div class="t-title">校园快递代取 · 东区菜鸟驿站到宿舍</div>
+              <div class="tags"><span class="tag tag-orange">跑腿</span><span class="tag">限本校</span></div>
+              <div class="t-foot"><div class="t-pts">+120<small>积分</small></div><span class="btn-go">去接单</span></div>
+            </div>
+          </div>
+          <div class="tcard">
+            <div class="t-img" style="background:linear-gradient(135deg,#4f8ef7,#2f67df)">问卷<br>调研</div>
+            <div class="t-main">
+              <div class="t-title">大学生消费习惯问卷 · 约 8 分钟</div>
+              <div class="tags"><span class="tag tag-blue">问卷</span><span class="tag">线上</span></div>
+              <div class="t-foot"><div class="t-pts">+60<small>积分</small></div><span class="btn-go">去接单</span></div>
+            </div>
+          </div>
+          <div class="tcard">
+            <div class="t-img" style="background:linear-gradient(135deg,#f7a24f,#e56a16)">探店<br>打卡</div>
+            <div class="t-main">
+              <div class="t-title">二食堂新品试吃 · 到店拍照打卡</div>
+              <div class="tags"><span class="tag tag-orange">探店</span><span class="tag">需到店</span></div>
+              <div class="t-foot"><div class="t-pts">+80<small>积分</small></div><span class="btn-go">去接单</span></div>
+            </div>
+          </div>
+          <div class="tcard">
+            <div class="t-img" style="background:linear-gradient(135deg,#8b6ee8,#6d4bd8)">资料<br>整理</div>
+            <div class="t-main">
+              <div class="t-title">整理社团活动照片并归档 · 50 张</div>
+              <div class="tags"><span class="tag tag-purple">线上</span><span class="tag">可远程</span></div>
+              <div class="t-foot"><div class="t-pts">+200<small>积分</small></div><span class="btn-go">去接单</span></div>
+            </div>
+          </div>
+        </div>
+        <nav class="tabbar">
+          <div class="tb"><span class="ic"><svg><use href="#i-home"/></svg></span><span class="tb-label">首页</span></div>
+          <div class="tb on"><span class="ic"><svg><use href="#i-task"/></svg></span><span class="tb-label">任务</span></div>
+          <div class="tb featured"><span class="tb-ic"><span class="ic"><svg><use href="#i-shop"/></svg></span></span><span class="tb-label">商城</span></div>
+          <div class="tb"><span class="ic"><svg><use href="#i-msg"/></svg></span><span class="tb-label">社区</span></div>
+          <div class="tb"><span class="ic"><svg><use href="#i-user"/></svg></span><span class="tb-label">我的</span></div>
+        </nav>
+      </div></div>
+    </article>
+
+    <!-- ================= C-现有 03 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-现有 03</span><span class="ptitle">任务详情</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/task-detail/index.vue</span>
+        <p class="purpose"><b>用途：</b>现有任务详情，是地推「团队详情 / 推广任务详情」的结构母版：子页导航、标题卡、三列指标、说明卡、吸底操作栏。</p>
+        <p class="pinter"><b>关键交互：</b>返回 · 收藏 · 立即接单 · 查看任务步骤 · 底部安全区吸底。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody has-actionbar">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">任务详情</div><div class="subnav-right">···</div></div>
+          <div class="detail-head">
+            <div class="detail-h1">校园快递代取 · 东区菜鸟驿站到宿舍</div>
+            <div class="tags"><span class="tag tag-orange">跑腿</span><span class="tag tag-green">限本校</span><span class="tag">2h 内完成</span></div>
+            <div class="price-row"><div class="big">120<small> 积分</small></div><div class="sp"></div><div class="people">已接 36 人 · 余 14 个名额</div></div>
+          </div>
+          <div class="metric-strip">
+            <div><span class="metric-value">2h</span><span class="metric-label">小时内完成</span></div>
+            <div><span class="metric-value">24h</span><span class="metric-label">小时内审核</span></div>
+            <div><span class="metric-value">3/3</span><span class="metric-label">可提交次数</span></div>
+          </div>
+          <div class="card">
+            <span class="card-title">任务说明</span>
+            <div style="font-size:12.5px;line-height:1.85;color:#4b5563">从东区菜鸟驿站取件并送至指定宿舍楼下，需当面交付。取件时核对取件码，送达后拍摄包裹与门牌合照作为凭证。</div>
+            <div class="info-row" style="margin-top:6px"><span>任务地点</span><span class="v">东区菜鸟驿站 → 12 号楼</span></div>
+            <div class="info-row"><span>结算方式</span><span class="v">审核通过后发放积分</span></div>
+            <div class="info-row"><span>发布方</span><span class="v">校学生会 · 生活部</span></div>
+          </div>
+          <div class="card">
+            <span class="card-title">任务步骤</span>
+            <div class="rank-row"><span class="rank-no top">1</span><div class="rank-main"><div class="rank-name">到驿站取件</div><div class="rank-note">核对取件码，拍摄包裹</div></div></div>
+            <div class="rank-row"><span class="rank-no">2</span><div class="rank-main"><div class="rank-name">送达并交付</div><div class="rank-note">当面交付，确认签收</div></div></div>
+            <div class="rank-row"><span class="rank-no">3</span><div class="rank-main"><div class="rank-name">上传凭证</div><div class="rank-note">包裹与门牌合照 1 张</div></div></div>
+          </div>
+        </div>
+        <div class="actionbar">
+          <div class="ab-ic"><span class="ic"><svg><use href="#i-bell"/></svg></span>收藏</div>
+          <button class="ab-main">立即接单</button>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-现有 04 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-现有 04</span><span class="ptitle">我的</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/account/index.vue</span>
+        <p class="purpose"><b>用途：</b>现有个人中心。地推成员的「我的团队」「收益中心」沿用这里的资料卡 + 资产三列 + 功能列表骨架。</p>
+        <p class="pinter"><b>关键交互：</b>资料卡进设置 · 资产三列跳钱包/积分/优惠券 · 功能列表逐项跳转 · 实名状态展示。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody has-tabbar">
+          <div class="ph">
+            <div><div class="ph-title">我的</div><div class="ph-sub">东湖校区 · 已实名</div></div>
+            <div class="bell"><span class="ic"><svg><use href="#i-set"/></svg></span></div>
+          </div>
+          <div class="card" style="display:flex;align-items:center;gap:11px">
+            <div class="team-logo" style="width:48px;height:48px;border-radius:50%;font-size:16px">林</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:6px"><span style="font-size:16px;font-weight:800">林昭</span><span class="tag tag-green">校园达人</span></div>
+              <div class="team-sub">学号 2023××××21 · 东湖校区</div>
+            </div>
+            <span style="color:#c3cbd1;font-size:16px">›</span>
+          </div>
+          <div class="card" style="padding:13px 6px">
+            <div class="metric-strip" style="margin:0;box-shadow:none;padding:0">
+              <div><span class="metric-value">2,860</span><span class="metric-label">积分</span></div>
+              <div><span class="metric-value">¥126.40</span><span class="metric-label">余额</span></div>
+              <div><span class="metric-value">5</span><span class="metric-label">优惠券</span></div>
+            </div>
+          </div>
+          <div class="fn-list">
+            <div class="fn"><span class="fn-ic"><span class="ic"><svg><use href="#i-task"/></svg></span></span><span class="fn-label">我的任务</span><span class="fn-note">3 个进行中</span><span class="fn-arrow">›</span></div>
+            <div class="fn"><span class="fn-ic"><span class="ic"><svg><use href="#i-file"/></svg></span></span><span class="fn-label">我的发布</span><span class="fn-note">2 个待审核</span><span class="fn-arrow">›</span></div>
+            <div class="fn"><span class="fn-ic"><span class="ic"><svg><use href="#i-wallet"/></svg></span></span><span class="fn-label">钱包与提现</span><span class="fn-arrow">›</span></div>
+            <div class="fn"><span class="fn-ic"><span class="ic"><svg><use href="#i-shop"/></svg></span></span><span class="fn-label">我的订单</span><span class="fn-arrow">›</span></div>
+            <div class="fn"><span class="fn-ic"><span class="ic"><svg><use href="#i-shield"/></svg></span></span><span class="fn-label">实名认证</span><span class="fn-note" style="color:#08a152">已认证</span><span class="fn-arrow">›</span></div>
+            <div class="fn"><span class="fn-ic"><span class="ic"><svg><use href="#i-user"/></svg></span></span><span class="fn-label">收货地址</span><span class="fn-arrow">›</span></div>
+          </div>
+        </div>
+        <nav class="tabbar">
+          <div class="tb"><span class="ic"><svg><use href="#i-home"/></svg></span><span class="tb-label">首页</span></div>
+          <div class="tb"><span class="ic"><svg><use href="#i-task"/></svg></span><span class="tb-label">任务</span></div>
+          <div class="tb featured"><span class="tb-ic"><span class="ic"><svg><use href="#i-shop"/></svg></span></span><span class="tb-label">商城</span></div>
+          <div class="tb"><span class="ic"><svg><use href="#i-msg"/></svg></span><span class="tb-label">社区</span></div>
+          <div class="tb on"><span class="ic"><svg><use href="#i-user"/></svg></span><span class="tb-label">我的</span></div>
+        </nav>
+      </div></div>
+    </article>
+
+    <!-- ================= C-现有 05 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-现有 05</span><span class="ptitle">钱包 · 提现</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/assets/index.vue + withdraw/index.vue</span>
+        <p class="purpose"><b>用途：</b>现有现金钱包与提现入口。地推佣金直接进入这里，收益中心只做「来源分栏」，提现仍走同一条通道，不新建钱包。</p>
+        <p class="pinter"><b>关键交互：</b>可提现余额 · 提现（拉起现有提现页）· 明细筛选 · 冻结金额说明。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">我的钱包</div><div class="subnav-right">明细</div></div>
+          <div class="g-head">
+            <div class="lab"><span>可提现余额（元）</span><span>提现规则 ›</span></div>
+            <div class="num">126<small>.40</small></div>
+            <div class="foot"><span>冻结中 ¥48.00 · 审核中 ¥0.00</span><span class="pill">立即提现</span></div>
+          </div>
+          <div class="metric-strip">
+            <div><span class="metric-value">¥1,284</span><span class="metric-label">累计收入</span></div>
+            <div><span class="metric-value">¥48</span><span class="metric-label">冻结中</span></div>
+            <div><span class="metric-value">¥1,110</span><span class="metric-label">已提现</span></div>
+          </div>
+          <div class="seg"><div class="seg-item on">全部</div><div class="seg-item">收入</div><div class="seg-item">支出</div></div>
+          <div class="ledger">
+            <div class="lrow"><span class="l-ic">进</span><div class="l-main"><div class="l-title">任务奖励 · 快递代取</div><div class="l-note">11-04 18:22 · 积分兑换</div></div><span class="l-amt">+¥12.00</span></div>
+            <div class="lrow"><span class="l-ic orange">提</span><div class="l-main"><div class="l-title">提现到微信零钱</div><div class="l-note">11-03 10:15 · 已到账</div></div><span class="l-amt out">-¥50.00</span></div>
+            <div class="lrow"><span class="l-ic">进</span><div class="l-main"><div class="l-title">任务奖励 · 问卷调研</div><div class="l-note">11-02 20:41 · 积分兑换</div></div><span class="l-amt">+¥6.00</span></div>
+            <div class="lrow"><span class="l-ic gray">冻</span><div class="l-main"><div class="l-title">提现审核中 · 招商银行(6621)</div><div class="l-note">11-05 09:02 · T+1 到账</div></div><span class="l-amt gray">¥48.00</span></div>
+          </div>
+          <div class="card" style="background:#f7f9f8;box-shadow:none">
+            <div style="font-size:11.5px;line-height:1.7;color:#6b7280">提现门槛 ¥10.00，单笔上限 ¥500.00，每日 1 次。提现申请提交后进入后台「提现审核」，通过后 T+1 到账；审核中金额显示为冻结。</div>
+          </div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 01 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 01</span><span class="ptitle">地推中心（二级首页）</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/assets/index.vue + index/index.vue</span>
+        <p class="purpose"><b>用途：</b>从首页金刚区「地推中心」进入的二级首页，是地推模块唯一的 C 端总入口。页头沿用子页 <code>subnav</code>，收益头沿用资产页绿色 <code>wallet-head</code>，功能入口沿用我的页 <code>fn-list</code>。</p>
+        <p class="pinter"><b>关键交互：</b>切换概览/我的团队/收益 · 加入团队 · 我的推广位 · 交单 · 提现跳现有钱包。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">地推中心</div><div class="subnav-right">规则</div></div>
+          <div class="g-head">
+            <div class="lab"><span>本月佣金（元）</span><span>可提现 ¥126.40 ›</span></div>
+            <div class="num">486<small>.00</small></div>
+            <div class="foot"><span>待结算 ¥120.00 · 已结算 ¥366.00</span><span class="pill">去提现</span></div>
+          </div>
+          <div class="metric-strip">
+            <div><span class="metric-value">32</span><span class="metric-label">本月有效单</span></div>
+            <div><span class="metric-value">¥15.2</span><span class="metric-label">单均佣金</span></div>
+            <div><span class="metric-value">A2</span><span class="metric-label">我的等级</span></div>
+          </div>
+          <div class="seg"><div class="seg-item on">概览</div><div class="seg-item">我的团队</div><div class="seg-item">收益</div></div>
+          <div class="card" style="padding:13px">
+            <div class="card-title-row"><span class="card-title">我的团队</span><span class="sec-more">全部 ›</span></div>
+            <div class="team-top">
+              <div class="team-logo">东</div>
+              <div style="flex:1;min-width:0">
+                <div class="team-name">东湖校园推广大队</div>
+                <div class="team-sub">团长 陈曦 · 东湖校区 · 成员 28 人</div>
+              </div>
+              <span class="pill-s">已加入</span>
+            </div>
+            <div class="team-stat">
+              <div><b>28</b><span>团队成员</span></div>
+              <div><b>6</b><span>本月新增</span></div>
+              <div><b>¥2,140</b><span>团队佣金</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title-row"><span class="card-title">可推广任务</span><span class="sec-more">全部 ›</span></div>
+            <div class="tcard" style="margin-top:8px;padding:10px">
+              <div class="t-img" style="width:64px;height:64px;font-size:13px">极速<br>版</div>
+              <div class="t-main">
+                <div class="t-title">快手极速版 · 校园拉新</div>
+                <div class="t-meta"><span>剩 86 份额</span><span class="dot"></span><span>¥8.00/单</span></div>
+                <div class="t-foot"><div class="t-pts">¥8.00<small>/单</small></div><span class="btn-go">去推广</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="fn-list">
+            <div class="fn"><span class="fn-ic">位</span><span class="fn-label">我的推广位</span><span class="fn-note">3 个</span><span class="fn-arrow">›</span></div>
+            <div class="fn"><span class="fn-ic">交</span><span class="fn-label">交单记录</span><span class="fn-note">8 待审</span><span class="fn-arrow">›</span></div>
+            <div class="fn"><span class="fn-ic">队</span><span class="fn-label">团队广场</span><span class="fn-arrow">›</span></div>
+            <div class="fn"><span class="fn-ic">规</span><span class="fn-label">推广规则与结算说明</span><span class="fn-arrow">›</span></div>
+          </div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 02 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 02</span><span class="ptitle">团队广场</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/tasks/index.vue（页头/搜索/chips/列表卡）</span>
+        <p class="purpose"><b>用途：</b>团队广场与任务大厅同一骨架：标题 + 搜索 + 分类 chips + 排序行 + 列表卡，只是把任务卡换成团队卡。开发时可直接复制任务大厅模板改字段。</p>
+        <p class="pinter"><b>关键交互：</b>按校区筛选 · 搜索团队名 · 排序（佣金/人数/活跃）· 点卡片进团队详情并申请加入。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">团队广场</div><div class="subnav-right">我的</div></div>
+          <div class="search"><span class="ic"><svg><use href="#i-search"/></svg></span>搜索团队名称 / 团长</div>
+          <div class="chips"><span class="chip on">全部校区</span><span class="chip">东湖</span><span class="chip">城北</span><span class="chip">南苑</span></div>
+          <div class="sort-row"><span class="sort-item on">综合</span><span class="sort-item">佣金高</span><span class="sort-item">人数多</span><span class="sp"></span><span class="filter-btn">筛选<span class="ic" style="width:11px;height:11px"><svg><use href="#i-chev"/></svg></span></span></div>
+          <div class="team-hero" style="padding:12px">
+            <div class="team-top">
+              <div class="team-logo">东</div>
+              <div style="flex:1;min-width:0">
+                <div class="team-name">东湖校园推广大队</div>
+                <div class="team-sub">团长 陈曦 · 东湖校区 · A3 级团队</div>
+              </div>
+              <span class="btn-go">申请加入</span>
+            </div>
+            <div class="tags"><span class="tag tag-green">佣金加成 5%</span><span class="tag">月结</span><span class="tag tag-blue">审核 2h 内</span></div>
+            <div class="team-stat">
+              <div><b>28</b><span>成员</span></div>
+              <div><b>1,246</b><span>本月单量</span></div>
+              <div><b>¥2.1万</b><span>团队佣金</span></div>
+            </div>
+          </div>
+          <div class="team-hero" style="padding:12px">
+            <div class="team-top">
+              <div class="team-logo" style="background:linear-gradient(135deg,#4f8ef7,#2f67df)">城</div>
+              <div style="flex:1;min-width:0">
+                <div class="team-name">城北轻骑兵</div>
+                <div class="team-sub">团长 苏禾 · 城北校区 · A2 级团队</div>
+              </div>
+              <span class="btn-go ghost">申请加入</span>
+            </div>
+            <div class="tags"><span class="tag tag-green">佣金加成 3%</span><span class="tag">周结</span></div>
+            <div class="team-stat">
+              <div><b>16</b><span>成员</span></div>
+              <div><b>684</b><span>本月单量</span></div>
+              <div><b>¥9,820</b><span>团队佣金</span></div>
+            </div>
+          </div>
+          <div class="team-hero" style="padding:12px">
+            <div class="team-top">
+              <div class="team-logo" style="background:linear-gradient(135deg,#f7a24f,#e56a16)">南</div>
+              <div style="flex:1;min-width:0">
+                <div class="team-name">南苑新媒体小组</div>
+                <div class="team-sub">团长 许南 · 南苑校区 · A1 级团队</div>
+              </div>
+              <span class="btn-go ghost">申请加入</span>
+            </div>
+            <div class="tags"><span class="tag">暂未开通佣金加成</span><span class="tag">月结</span></div>
+            <div class="team-stat">
+              <div><b>9</b><span>成员</span></div>
+              <div><b>212</b><span>本月单量</span></div>
+              <div><b>¥3,060</b><span>团队佣金</span></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 03 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 03</span><span class="ptitle">团队广场 · 空态</span><span class="pstate empty">空态</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/tasks/index.vue（.task-empty）+ referrals 空态</span>
+        <p class="purpose"><b>用途：</b>当前校区尚无团队、或筛选后无结果时使用。写法与任务大厅空态一致：白卡 + 浅绿图标块 + 主按钮，不单独造插画。</p>
+        <p class="pinter"><b>关键交互：</b>清除筛选 · 申请成为团长（提交后台审核）· 返回全部校区。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">团队广场</div><div class="subnav-right">我的</div></div>
+          <div class="search"><span class="ic"><svg><use href="#i-search"/></svg></span>搜索团队名称 / 团长</div>
+          <div class="chips"><span class="chip">全部校区</span><span class="chip">东湖</span><span class="chip on">南苑</span></div>
+          <div class="empty">
+            <div class="empty-mark"><span class="ic" style="width:22px;height:22px"><svg><use href="#i-team"/></svg></span></div>
+            <div class="empty-title">南苑校区还没有地推团队</div>
+            <div class="empty-copy">该校区暂未开放团队入驻。你可以先申请成为团长，审核通过后即可创建团队并招募成员。</div>
+            <div class="empty-action">申请成为团长</div>
+            <div style="margin-top:10px;font-size:11.5px;color:#aeb3bb">或 &nbsp;<span style="color:#08a152;font-weight:600">切换到其他校区</span></div>
+          </div>
+          <div class="fn-list">
+            <div class="fn"><span class="fn-ic">规</span><span class="fn-label">团长权益与考核标准</span><span class="fn-arrow">›</span></div>
+          </div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 04 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 04</span><span class="ptitle">团队详情 · 申请加入</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/task-detail/index.vue（详情头 + 信息行 + 吸底栏）</span>
+        <p class="purpose"><b>用途：</b>团队详情复用任务详情的详情头、<code>info-row</code> 与吸底 <code>action-bar</code>。申请加入时的入团校验（实名、校区一致、无在途团队）在此页说明。</p>
+        <p class="pinter"><b>关键交互：</b>查看成员排行 · 入团条件勾选 · 吸底「申请加入」提交后台「地推申请审核」。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody has-actionbar">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">团队详情</div><div class="subnav-right">分享</div></div>
+          <div class="team-hero">
+            <div class="team-top">
+              <div class="team-logo">东</div>
+              <div style="flex:1;min-width:0">
+                <div class="team-name">东湖校园推广大队</div>
+                <div class="team-sub">团长 陈曦 · 东湖校区 · 创建于 2026-03</div>
+              </div>
+            </div>
+            <div class="tags"><span class="tag tag-green">A3 级团队</span><span class="tag tag-orange">招募中</span><span class="tag">月结</span><span class="tag tag-blue">审核 2h 内</span></div>
+            <div class="team-stat">
+              <div><b>28</b><span>成员</span></div>
+              <div><b>1,246</b><span>本月单量</span></div>
+              <div><b>96%</b><span>审单通过率</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <span class="card-title">团队介绍</span>
+            <div style="font-size:12.5px;line-height:1.75;color:#767c85">东湖校区最早一批地推团队，主做校园拉新与到店推广。每周复盘一次，新人配有带教。佣金按平台批次统一结算，团队加成 5% 由平台承担，不摊到成员单价。</div>
+          </div>
+          <div class="card">
+            <span class="card-title">入团条件</span>
+            <div class="info-row"><span class="ic"><svg><use href="#i-shield"/></svg></span>已完成实名认证<span class="v" style="color:#08a152">已通过</span></div>
+            <div class="info-row"><span class="ic"><svg><use href="#i-building"/></svg></span>校区归属一致<span class="v" style="color:#08a152">东湖校区</span></div>
+            <div class="info-row"><span class="ic"><svg><use href="#i-team"/></svg></span>当前未加入其他团队<span class="v" style="color:#08a152">符合</span></div>
+            <div class="info-row hl"><span class="ic"><svg><use href="#i-warn"/></svg></span>需团长审核，约 2 小时内<span class="v" style="color:#f2620a">待提交</span></div>
+          </div>
+          <div class="card">
+            <div class="card-title-row"><span class="card-title">成员排行</span><span class="sec-more">本周 ›</span></div>
+            <div class="rank-row"><span class="rank-no top">1</span><div class="rank-main"><div class="rank-name">周迟</div><div class="rank-note">A2 · 有效单 68</div></div><span class="rank-val">¥604</span></div>
+            <div class="rank-row"><span class="rank-no top">2</span><div class="rank-main"><div class="rank-name">林昭</div><div class="rank-note">A2 · 有效单 54</div></div><span class="rank-val">¥486</span></div>
+            <div class="rank-row"><span class="rank-no">3</span><div class="rank-main"><div class="rank-name">赵一鸣</div><div class="rank-note">A1 · 有效单 41</div></div><span class="rank-val">¥328</span></div>
+          </div>
+        </div>
+        <div class="actionbar">
+          <div class="ab-ic"><span class="ic"><svg><use href="#i-msg"/></svg></span>咨询</div>
+          <div class="ab-main">申请加入</div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 05 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 05</span><span class="ptitle">我的团队 · 成员视角</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/account/index.vue + tasks/index.vue（seg 分段）</span>
+        <p class="purpose"><b>用途：</b>普通成员看到的团队页。分段控件与任务大厅同款；成员行沿用列表行高与分割线，等级用现有 <code>tag</code> 语义色，不新增徽章样式。</p>
+        <p class="pinter"><b>关键交互：</b>切换成员/团队任务/团队收益 · 查看成员资料 · 退出团队（二次确认）。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">我的团队</div><div class="subnav-right">设置</div></div>
+          <div class="team-hero" style="padding:13px">
+            <div class="team-top">
+              <div class="team-logo" style="width:44px;height:44px;font-size:15px">东</div>
+              <div style="flex:1;min-width:0">
+                <div class="team-name" style="font-size:15px">东湖校园推广大队</div>
+                <div class="team-sub">我的身份：成员 · A2 · 加入 68 天</div>
+              </div>
+              <span class="pill-s">正常</span>
+            </div>
+          </div>
+          <div class="seg"><div class="seg-item on">成员 28</div><div class="seg-item">团队任务</div><div class="seg-item">团队收益</div></div>
+          <div class="sort-row"><span class="sort-item on">按贡献</span><span class="sort-item">按加入时间</span><span class="sp"></span><span class="filter-btn">仅看在线</span></div>
+          <div class="fn-list" style="margin-top:8px">
+            <div class="fn"><span class="fn-ic" style="background:#fff2e5;color:#f2620a">陈</span><span class="fn-label">陈曦<span class="fn-note" style="display:block">团长 · A3 · 有效单 132</span></span><span class="tag tag-orange">团长</span></div>
+            <div class="fn"><span class="fn-ic">周</span><span class="fn-label">周迟<span class="fn-note" style="display:block">副团长 · A2 · 有效单 68</span></span><span class="tag tag-purple">副团</span></div>
+            <div class="fn"><span class="fn-ic">林</span><span class="fn-label">林昭<span class="fn-note" style="display:block">成员 · A2 · 有效单 54</span></span><span class="tag">A2</span></div>
+            <div class="fn"><span class="fn-ic">赵</span><span class="fn-label">赵一鸣<span class="fn-note" style="display:block">成员 · A1 · 有效单 41</span></span><span class="tag">A1</span></div>
+            <div class="fn"><span class="fn-ic">苏</span><span class="fn-label">苏禾<span class="fn-note" style="display:block">成员 · A1 · 有效单 12</span></span><span class="tag tag-gray">待激活</span></div>
+          </div>
+          <div class="card" style="background:#f7f9f8;box-shadow:none">
+            <div style="font-size:11.5px;line-height:1.7;color:#6b7280">团队佣金由平台按批次统一结算：成员佣金直接进个人钱包，团队加成部分由团长分配，分配记录可在「团队收益」查看。</div>
+          </div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 06 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 06</span><span class="ptitle">我的团队 · 团长视角</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/publisher/index.vue（发布者管理台）</span>
+        <p class="purpose"><b>用途：</b>团长视角复用发布者管理台的结构：数据头 + 待办列表 + 内联操作按钮。审核动作轻量，不跳新页。</p>
+        <p class="pinter"><b>关键交互：</b>同意/拒绝入团申请 · 设副团长 · 查看团队交单 · 分配团队加成。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">团队管理</div><div class="subnav-right">规则</div></div>
+          <div class="g-head" style="padding:14px">
+            <div class="lab"><span>团队本月佣金（元）</span><span>待分配 ¥120.00</span></div>
+            <div class="num" style="font-size:28px">2,140<small>.00</small></div>
+            <div class="foot"><span>成员 28 · 有效单 1,246</span><span class="ghost-pill">去分配</span></div>
+          </div>
+          <div class="seg"><div class="seg-item on">待审核 3</div><div class="seg-item">成员</div><div class="seg-item">交单</div></div>
+          <div class="fn-list" style="margin-top:8px">
+            <div class="fn" style="align-items:flex-start;padding:12px 13px">
+              <span class="fn-ic">许</span>
+              <span class="fn-label">许南<span class="fn-note" style="display:block">东湖校区 · 实名已通过 · 申请 2h 前</span></span>
+              <span style="display:flex;gap:6px;flex:none"><span class="mini-btn muted">拒绝</span><span class="mini-btn">同意</span></span>
+            </div>
+            <div class="fn" style="align-items:flex-start;padding:12px 13px">
+              <span class="fn-ic">李</span>
+              <span class="fn-label">李知遥<span class="fn-note" style="display:block">东湖校区 · 实名已通过 · 申请 5h 前</span></span>
+              <span style="display:flex;gap:6px;flex:none"><span class="mini-btn muted">拒绝</span><span class="mini-btn">同意</span></span>
+            </div>
+            <div class="fn" style="align-items:flex-start;padding:12px 13px">
+              <span class="fn-ic">王</span>
+              <span class="fn-label">王雨<span class="fn-note" style="display:block">城北校区 · <span style="color:#d92d20">校区不一致</span> · 申请 6h 前</span></span>
+              <span style="display:flex;gap:6px;flex:none"><span class="mini-btn muted">拒绝</span><span class="mini-btn" style="border-color:#e3e7e5;color:#aeb3bb">同意</span></span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title-row"><span class="card-title">团队交单</span><span class="sec-more">全部 ›</span></div>
+            <div class="info-row"><span class="ic"><svg><use href="#i-file"/></svg></span>快手极速版 · 周迟<span class="v" style="color:#f2620a">待审核</span></div>
+            <div class="info-row"><span class="ic"><svg><use href="#i-file"/></svg></span>快手极速版 · 林昭<span class="v" style="color:#08a152">已通过</span></div>
+            <div class="info-row"><span class="ic"><svg><use href="#i-file"/></svg></span>美团到店 · 赵一鸣<span class="v" style="color:#d92d20">不合格</span></div>
+          </div>
+          <div class="notice"><span class="notice-ic">i</span><span>连续 2 个批次团队通过率低于 80%，团队等级将降级</span></div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 07 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 07</span><span class="ptitle">推广任务列表</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/tasks/index.vue（chips + 横卡列表）</span>
+        <p class="purpose"><b>用途：</b>推广任务列表直接复用任务大厅的横卡 <code>tcard</code>：左图、标题、meta 行、价格与按钮。差异只在右下角按钮文案与「剩 N 份额」这个新字段。</p>
+        <p class="pinter"><b>关键交互：</b>分类筛选 · 排序 · 领推广位（扣份额）· 进任务详情查看结算规则。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">推广任务</div><div class="subnav-right">记录</div></div>
+          <div class="search"><span class="ic"><svg><use href="#i-search"/></svg></span>搜索推广任务</div>
+          <div class="chips"><span class="chip on">全部</span><span class="chip">拉新</span><span class="chip">到店</span><span class="chip">问卷</span></div>
+          <div class="sort-row"><span class="sort-item on">综合</span><span class="sort-item">佣金高</span><span class="sort-item">份额多</span><span class="sp"></span><span class="filter-btn">筛选<span class="ic" style="width:11px;height:11px"><svg><use href="#i-chev"/></svg></span></span></div>
+          <div class="tcard">
+            <div class="t-img">极速<br>版</div>
+            <div class="t-main">
+              <div class="t-title">快手极速版 · 校园拉新推广</div>
+              <div class="t-meta"><span>拉新</span><span class="dot"></span><span>东湖校区</span><span class="dot"></span><span>剩 86 份额</span></div>
+              <div class="t-foot"><div class="t-pts">¥8.00<small>/单</small></div><span class="btn-go">领推广位</span></div>
+            </div>
+          </div>
+          <div class="tcard">
+            <div class="t-img" style="background:linear-gradient(135deg,#4f8ef7,#2f67df)">美团<br>到店</div>
+            <div class="t-main">
+              <div class="t-title">美团到店 · 二食堂商圈探店</div>
+              <div class="t-meta"><span>到店</span><span class="dot"></span><span>东湖校区</span><span class="dot"></span><span>剩 24 份额</span></div>
+              <div class="t-foot"><div class="t-pts">¥12.00<small>/单</small></div><span class="btn-go">领推广位</span></div>
+            </div>
+          </div>
+          <div class="tcard">
+            <div class="t-img" style="background:linear-gradient(135deg,#f7a24f,#e56a16)">问卷</div>
+            <div class="t-main">
+              <div class="t-title">大学生消费习惯问卷 · 有效回收</div>
+              <div class="t-meta"><span>问卷</span><span class="dot"></span><span>全校区</span><span class="dot"></span><span>剩 140 份额</span></div>
+              <div class="t-foot"><div class="t-pts">¥3.50<small>/份</small></div><span class="btn-go ghost">已领 2 个</span></div>
+            </div>
+          </div>
+          <div class="tcard">
+            <div class="t-img" style="background:linear-gradient(135deg,#9aa6b2,#6b7280)">已<br>满</div>
+            <div class="t-main">
+              <div class="t-title">京东校园卡 · 开卡激活</div>
+              <div class="t-meta"><span>拉新</span><span class="dot"></span><span>城北校区</span><span class="dot"></span><span>已满额</span></div>
+              <div class="t-foot"><div class="t-pts" style="color:#aeb3bb">¥20.00<small>/单</small></div><span class="btn-go disabled">已结束</span></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 08 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 08</span><span class="ptitle">任务详情 · 领推广位</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/task-detail/index.vue + referrals（关键词/二维码）</span>
+        <p class="purpose"><b>用途：</b>推广任务详情 = 现有任务详情的详情头 + 信息行 + 吸底栏，额外插入「推广位」卡片：关键词口令、二维码、转赠。二维码块沿用邀请页的二维码面板写法。</p>
+        <p class="pinter"><b>关键交互：</b>复制推广关键词 · 保存二维码 · 转赠推广位 · 吸底领推广位/继续交单。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody has-actionbar">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">推广任务详情</div><div class="subnav-right">分享</div></div>
+          <div class="detail-head">
+            <div class="detail-h1">快手极速版 · 校园拉新推广</div>
+            <div class="tags"><span class="tag tag-orange">拉新</span><span class="tag">线下</span><span class="tag tag-green">结算中</span><span class="tag tag-blue">东湖校区</span></div>
+            <div class="price-row"><span class="big">¥8.00<small>/单</small></span><span class="sp"></span><span class="people">剩 86 份额 · 312 人已领</span></div>
+          </div>
+          <div class="metric-strip">
+            <div><span class="metric-value">24h</span><span class="metric-label">审单时效</span></div>
+            <div><span class="metric-value">85%</span><span class="metric-label">历史通过率</span></div>
+            <div><span class="metric-value">T+3</span><span class="metric-label">批次结算</span></div>
+          </div>
+          <div class="card">
+            <span class="card-title">结算规则</span>
+            <div class="info-row"><span class="ic"><svg><use href="#i-coins"/></svg></span>单份有效单佣金<span class="v">¥8.00</span></div>
+            <div class="info-row"><span class="ic"><svg><use href="#i-team"/></svg></span>团队成员加成<span class="v">+5%（平台承担）</span></div>
+            <div class="info-row"><span class="ic"><svg><use href="#i-wallet"/></svg></span>结算方式<span class="v">批次 → 现金钱包</span></div>
+            <div class="info-row hl"><span class="ic"><svg><use href="#i-warn"/></svg></span>无效单判定<span class="v" style="color:#f2620a">同设备 / 非本校 / 截图重复</span></div>
+          </div>
+          <div class="pos-card">
+            <div class="pos-top"><span class="pos-tag">我的推广位</span><span class="pos-title">快手极速版 · 东湖</span><span class="pill-s">生效中</span></div>
+            <div class="kw-box"><span class="kw">KSDX-EH-8842</span><span class="kw-copy" data-copy="KSDX-EH-8842">复制</span></div>
+            <div class="qr-panel">
+              <svg class="qr-svg" id="qrSvg" viewBox="0 0 25 25"></svg>
+              <div class="qr-side">
+                <div class="t">扫码直达推广页</div>
+                <div class="s">学生扫码注册并填写邀请码即计入你的推广位；二维码可保存到相册线下张贴。</div>
+                <div class="mini-actions" style="justify-content:flex-start"><span class="mini-btn">保存</span><span class="mini-btn muted">转赠</span></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10.5px;color:#aeb3bb">已交单 12 / 有效 10 · <span style="color:#08a152;font-weight:600">交单 →</span></div>
+          </div>
+        </div>
+        <div class="actionbar">
+          <div class="ab-ic"><span class="ic"><svg><use href="#i-msg"/></svg></span>咨询</div>
+          <div class="ab-main ghost" style="flex:none;width:96px">再领 1 个</div>
+          <div class="ab-main">去交单</div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 09 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 09</span><span class="ptitle">我的推广位</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/assets/index.vue（分段 + 明细行）</span>
+        <p class="purpose"><b>用途：</b>推广位管理。列表行尺寸、分割线与资产页明细一致；状态用现有 <code>pill-s</code> 四色，不新增色板。</p>
+        <p class="pinter"><b>关键交互：</b>按状态筛选 · 复制关键词 · 转赠（需对方未占用）· 释放份额 · 进详情交单。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">我的推广位</div><div class="subnav-right">规则</div></div>
+          <div class="seg"><div class="seg-item on">全部 6</div><div class="seg-item">生效中 4</div><div class="seg-item">已释放 2</div></div>
+          <div class="pos-card">
+            <div class="pos-top"><span class="pos-tag">拉新</span><span class="pos-title">快手极速版 · 东湖</span><span class="pill-s">生效中</span></div>
+            <div class="kw-box"><span class="kw">KSDX-EH-8842</span><span class="kw-copy" data-copy="KSDX-EH-8842">复制</span></div>
+            <div class="progress"><i style="width:14%"></i></div>
+            <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:10.5px;color:#aeb3bb"><span>已交 12 / 份额 86</span><span>有效率 83%</span></div>
+            <div class="mini-actions"><span class="mini-btn muted">释放</span><span class="mini-btn">去交单</span></div>
+          </div>
+          <div class="pos-card">
+            <div class="pos-top"><span class="pos-tag" style="background:#eaf2ff;color:#2f6bde">到店</span><span class="pos-title">美团到店 · 二食堂商圈</span><span class="pill-s">生效中</span></div>
+            <div class="kw-box"><span class="kw">MT-EH-2317</span><span class="kw-copy" data-copy="MT-EH-2317">复制</span></div>
+            <div class="progress"><i style="width:33%"></i></div>
+            <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:10.5px;color:#aeb3bb"><span>已交 8 / 份额 24</span><span>有效率 100%</span></div>
+            <div class="mini-actions"><span class="mini-btn muted">释放</span><span class="mini-btn">去交单</span></div>
+          </div>
+          <div class="pos-card">
+            <div class="pos-top"><span class="pos-tag" style="background:#f0eaff;color:#6d4bd8">问卷</span><span class="pos-title">消费习惯问卷 · 全校区</span><span class="pill-s orange">待激活</span></div>
+            <div class="kw-box"><span class="kw">QN-ALL-5561</span><span class="kw-copy" data-copy="QN-ALL-5561">复制</span></div>
+            <div style="margin-top:7px;font-size:11px;color:#f2620a">需先完成实名认证才可交单</div>
+            <div class="mini-actions"><span class="mini-btn muted">释放</span><span class="mini-btn" style="border-color:#e3e7e5;color:#aeb3bb">去交单</span></div>
+          </div>
+          <div class="pos-card" style="opacity:.72">
+            <div class="pos-top"><span class="pos-tag" style="background:#f2f4f3;color:#aeb3bb">拉新</span><span class="pos-title">京东校园卡 · 城北</span><span class="pill-s gray">已释放</span></div>
+            <div style="margin-top:7px;font-size:11px;color:#aeb3bb">11-02 释放 · 剩余 4 份额已退回任务池</div>
+          </div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 10 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 10</span><span class="ptitle">交单</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/task-claim/index.vue（task-sum / upload-box / steps）</span>
+        <p class="purpose"><b>用途：</b>交单页 1:1 套用现有任务提交页：顶部任务摘要卡、指标条、材料指引、分步上传（虚线绿框）、吸底提交。业务上只把「任务步骤」换成「推广凭证」。</p>
+        <p class="pinter"><b>关键交互：</b>选推广位 · 填写推广人数 · 上传截图（最多 3 张）· 勾选真实性承诺 · 提交进后台审单。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody has-actionbar">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">提交推广结果</div><div class="subnav-right">规则</div></div>
+          <div class="card" style="display:flex;gap:11px;align-items:center">
+            <div class="t-img" style="width:52px;height:52px;border-radius:10px;font-size:12px">极速<br>版</div>
+            <div class="t-main">
+              <div style="font-size:13.5px;font-weight:700;line-height:1.4">快手极速版 · 校园拉新推广</div>
+              <div class="tags"><span class="tag tag-orange">拉新</span><span class="pill-s">KSDX-EH-8842</span></div>
+            </div>
+            <span class="t-pts" style="font-size:15px">¥8.00</span>
+          </div>
+          <div class="metric-strip">
+            <div><span class="metric-value">12</span><span class="metric-label">本推广位已交</span></div>
+            <div><span class="metric-value">3/5</span><span class="metric-label">今日提交次数</span></div>
+            <div><span class="metric-value">24h</span><span class="metric-label">审单时效</span></div>
+          </div>
+          <div class="card">
+            <span class="card-title">本次推广结果</span>
+            <div class="field">
+              <div class="field-label">推广位<small>不可改</small></div>
+              <div class="info-row" style="padding:8px 0;border-bottom:0"><span class="ic"><svg><use href="#i-qr"/></svg></span>快手极速版 · 东湖<span class="v">KSDX-EH-8842</span></div>
+            </div>
+            <div class="field">
+              <div class="field-label">有效推广人数<small>每人 1 单</small></div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div class="stepper"><button>−</button><span>3</span><button>＋</button></div>
+                <span style="font-size:11px;color:#aeb3bb">预计佣金 ¥24.00</span>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label">注册截图<small>最多 3 张</small></div>
+              <div class="upload-grid">
+                <div class="uploaded">截图 1<span class="del">×</span></div>
+                <div class="uploaded">截图 2<span class="del">×</span></div>
+                <div class="upload-box"><span class="camera-mark">＋</span>上传截图<small>1/3 张</small></div>
+              </div>
+              <div class="form-note">需能同时看到注册手机号后四位与邀请码，模糊或截断将判为不合格。</div>
+            </div>
+            <div class="field">
+              <div class="field-label">补充说明<small>选填</small></div>
+              <textarea class="textarea" style="height:56px">二食堂门口地推，3 人现场注册。</textarea>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;margin-top:10px;font-size:11.5px;color:#767c85"><span style="width:15px;height:15px;border-radius:4px;background:#0bbf63;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;flex:none">✓</span>我承诺提交的推广记录真实有效</div>
+          </div>
+        </div>
+        <div class="actionbar">
+          <div class="ab-main ghost" style="flex:none;width:96px">存草稿</div>
+          <div class="ab-main">提交审核</div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 11 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 11</span><span class="ptitle">交单 · 异常态</span><span class="pstate error">异常</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/task-claim/index.vue（.state-error / .review-alert / .form-err）</span>
+        <p class="purpose"><b>用途：</b>三种异常在现有任务提交页都有原样写法：提交失败（<code>state-error</code>）、上次被驳回（<code>review-alert</code>）、单次额度用尽（禁用按钮）。此处三合一演示。</p>
+        <p class="pinter"><b>关键交互：</b>重试 · 查看驳回原因与不合格步骤 · 额度用尽时按钮置灰并给出次日重置时间。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody has-actionbar">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">提交推广结果</div><div class="subnav-right">规则</div></div>
+          <div class="state-error">
+            <span class="se-icon">!</span>
+            <div class="se-body"><span class="se-title">提交失败 · 网络超时</span><span class="se-copy">截图已保存在本地草稿，恢复网络后可继续提交。</span></div>
+            <span class="se-action">重试</span>
+          </div>
+          <div class="card" style="border:1px solid #f6d3ce;background:#fffafa">
+            <div style="display:flex;align-items:center;gap:7px"><span class="se-icon" style="width:20px;height:20px;font-size:11px">!</span><span style="font-size:13.5px;font-weight:800;color:#9b2c25">上次提交未通过</span></div>
+            <div style="margin-top:6px;font-size:11.5px;line-height:1.65;color:#b07a72">截图未显示邀请码，无法核对推广位归属。请重新截图后提交。</div>
+            <div style="margin-top:9px;padding:9px 10px;border-radius:8px;background:#fff;border:1px solid #fae5e2">
+              <div style="display:flex;justify-content:space-between;font-size:11.5px"><b style="color:#9b2c25">第 2 步 · 上传注册截图</b><span style="color:#d92d20">不合格</span></div>
+              <div style="margin-top:3px;font-size:11px;color:#b07a72">原因码：凭证不完整（MISSING_INVITE_CODE）</div>
+            </div>
+          </div>
+          <div class="card">
+            <span class="card-title">本次提交额度</span>
+            <div class="metric-strip" style="margin-top:2px;box-shadow:none;padding:8px 3px">
+              <div><span class="metric-value" style="color:#d92d20">5/5</span><span class="metric-label">今日已用</span></div>
+              <div><span class="metric-value">0</span><span class="metric-label">剩余次数</span></div>
+              <div><span class="metric-value">00:41</span><span class="metric-label">次日重置</span></div>
+            </div>
+            <div class="form-note" style="color:#f2620a">今日提交次数已用尽，明日 00:00 重置。如遇系统问题请联系团长或客服。</div>
+          </div>
+          <div class="card" style="background:#f7f9f8;box-shadow:none">
+            <div style="font-size:11.5px;line-height:1.7;color:#6b7280">不合格单不扣份额，也不计佣金；同一推广位连续 3 次不合格将暂停交单 24 小时，并计入团队通过率。</div>
+          </div>
+        </div>
+        <div class="actionbar">
+          <div class="ab-main disabled">提交审核（额度已用尽）</div>
+        </div>
+      </div></div>
+    </article>
+
+    <!-- ================= C-地推 12 ================= -->
+    <article class="pblock">
+      <div class="pcap">
+        <div class="ptop"><span class="pnum">C-地推 12</span><span class="ptitle">收益中心</span></div>
+        <span class="palign">对齐 apps/user-app/src/pages/assets/index.vue（wallet-head + 明细行）</span>
+        <p class="purpose"><b>用途：</b>收益中心不做第二套钱包：头部只展示「推广佣金」这一来源，明细按批次列出，点提现仍跳现有提现页。金额口径与后台结算批次一致。</p>
+        <p class="pinter"><b>关键交互：</b>切换已结算/待结算/已撤回 · 查看批次明细 · 提现（跳现有钱包）· 团队加成分配记录。</p>
+      </div>
+      <div class="device"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sb-r"><span class="sb-bars"><i></i><i></i><i></i><i></i></span>5G<span class="sb-bat"></span></span></div>
+        <div class="sbody">
+          <div class="subnav"><div class="subnav-back">‹</div><div class="subnav-title">收益中心</div><div class="subnav-right">规则</div></div>
+          <div class="g-head">
+            <div class="lab"><span>推广佣金（元）</span><span>结算说明 ›</span></div>
+            <div class="num">486<small>.00</small></div>
+            <div class="foot"><span>待结算 ¥120.00 · 已入钱包 ¥366.00</span><span class="pill">去提现</span></div>
+          </div>
+          <div class="metric-strip">
+            <div><span class="metric-value">32</span><span class="metric-label">有效单</span></div>
+            <div><span class="metric-value">4</span><span class="metric-label">参与批次</span></div>
+            <div><span class="metric-value">¥15.2</span><span class="metric-label">单均</span></div>
+          </div>
+          <div class="seg"><div class="seg-item on">全部</div><div class="seg-item">已结算</div><div class="seg-item">待结算</div><div class="seg-item">已撤回</div></div>
+          <div class="notice"><span class="notice-ic">i</span><span>批次 B20261101 已结算，¥246.00 已入现金钱包</span></div>
+          <div class="ledger">
+            <div class="lrow">
+              <span class="l-ic">批</span>
+              <div class="l-main"><div class="l-title">批次 B20261101 · 快手极速版</div><div class="l-note">11-01 ~ 11-01 · 有效 18 单 · 含加成 5%</div></div>
+              <div style="text-align:right"><div class="l-amt">+¥246.00</div><div class="pill-s" style="margin-top:3px">已结算</div></div>
+            </div>
+            <div class="lrow">
+              <span class="l-ic">批</span>
+              <div class="l-main"><div class="l-title">批次 B20261105 · 美团到店</div><div class="l-note">11-05 ~ 11-07 · 有效 9 单</div></div>
+              <div style="text-align:right"><div class="l-amt gray" style="font-size:13px">¥108.00</div><div class="pill-s orange" style="margin-top:3px">待结算</div></div>
+            </div>
+            <div class="lrow">
+              <span class="l-ic gray">撤</span>
+              <div class="l-main"><div class="l-title">批次 B20261028 · 京东校园卡</div><div class="l-note">10-28 · 3 单判定无效</div></div>
+              <div style="text-align:right"><div class="l-amt gray" style="font-size:13px">-¥36.00</div><div class="pill-s red" style="margin-top:3px">已撤回</div></div>
+            </div>
+            <div class="lrow">
+              <span class="l-ic">加</span>
+              <div class="l-main"><div class="l-title">团队加成分配 · 东湖推广大队</div><div class="l-note">11-01 批次 · 团长分配</div></div>
+              <div style="text-align:right"><div class="l-amt">+¥24.00</div><div class="pill-s" style="margin-top:3px">已结算</div></div>
+            </div>
+          </div>
+          <div class="card" style="background:#f7f9f8;box-shadow:none">
+            <div style="font-size:11.5px;line-height:1.7;color:#6b7280">佣金按「批次」结算：后台生成批次并审核通过后，金额进入现金钱包，可在「我的 · 钱包」提现。积分任务奖励与推广佣金分账，互不占用额度。</div>
+          </div>
+        </div>
+      </div></div>
+    </article>
+  </div>
+</section>
+
+<section class="tab-panel" id="panel-admin">
+  <div class="note-bar">
+    <span class="ic"><svg><use href="#i-warn"/></svg></span>
+    <span><b>菜单归属：</b>不新增一级分组。团队与成员挂在「用户中心」，推广任务与审核挂在「运营与消息」，佣金规则与结算挂在「资产与财务」；页面容器、页头、统计卡、筛选条、表格与弹窗全部沿用 <code>apps/admin-web/src/styles/xq.css</code> 与 <code>TaskListPage.tsx</code> 的写法。</span>
+  </div>
+  <!-- ================= A-现有 01 ================= -->
+  <article class="admin-block">
+    <div class="acap">
+      <div class="atop"><span class="anum">A-现有 01</span><span class="atitle">任务审核</span></div>
+      <span class="aalign">对齐 apps/admin-web/src/features/tasks/TaskAuditPage.tsx</span>
+      <p class="apurpose"><b>用途：</b>现有任务审核队列，是地推「交单审核」的后台母版：PageHead + 四统计卡 + 筛选卡 + Tabs + 表格 + 分页。</p>
+      <p class="apinter"><b>关键交互：</b>状态/类型/关键词筛选 · 批量通过（二次确认）· 行内通过/驳回 · 查看提交详情。</p>
+    </div>
+    <div class="admin-fit" data-fit><div class="scaler" data-nav="任务审核" data-group="tasks">
+      <div class="xq-page-head">
+        <div><h2>任务审核</h2><div class="sub">审核用户提交的任务发布申请，通过后进入任务大厅</div></div>
+        <div class="xq-actions"><button class="xq-btn primary"><span class="ic"><svg><use href="#i-plus"/></svg></span>批量通过</button></div>
+      </div>
+      <div class="xq-stats">
+        <div class="xq-stat"><div class="t">待审核任务</div><div class="v">18</div><div class="d down">4 条已超 24h</div></div>
+        <div class="xq-stat"><div class="t">今日通过</div><div class="v">42</div><div class="d up">通过率 87.5%</div></div>
+        <div class="xq-stat"><div class="t">今日驳回</div><div class="v">6</div><div class="d">多为材料不完整</div></div>
+        <div class="xq-stat"><div class="t">平均审核时长</div><div class="v">3.2<small>h</small></div><div class="d">目标 ≤ 12h</div></div>
+      </div>
+      <div class="xq-card">
+        <div class="xq-filter">
+          <div class="xq-select">全部状态<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-select">全部类型<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-input"><span class="ic"><svg><use href="#i-search"/></svg></span>搜索任务标题 / 发布人</div>
+          <div class="grow"></div>
+          <button class="xq-btn primary">查询</button>
+          <button class="xq-btn">重置</button>
+        </div>
+      </div>
+      <div class="xq-card flush">
+        <div class="xq-tabs" style="padding:0 20px">
+          <div class="it on">待审核 <span class="badge">18</span></div>
+          <div class="it">已通过 <span class="badge">1,204</span></div>
+          <div class="it">已驳回 <span class="badge">96</span></div>
+        </div>
+        <table class="xq-table">
+          <thead><tr><th style="width:300px">任务标题</th><th>发布人</th><th>类型</th><th>积分</th><th>提交时间</th><th>状态</th><th style="width:150px">操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div class="nm">校园快递代取 · 东区到宿舍</div><div class="sub">ID: TK20261105001</div></td>
+              <td><div class="xq-ucell"><span class="ava">李</span><div><div class="nm">李知遥</div><div class="id">ID:10231</div></div></div></td>
+              <td>跑腿</td><td class="num">120</td><td>11-05 09:12</td>
+              <td><span class="xq-pill orange">待审核</span></td>
+              <td><span class="xq-link">通过</span><span class="xq-link danger">驳回</span></td>
+            </tr>
+            <tr>
+              <td><div class="nm">大学生消费习惯问卷</div><div class="sub">ID: TK20261105002</div></td>
+              <td><div class="xq-ucell"><span class="ava blue">王</span><div><div class="nm">王雨</div><div class="id">ID:10277</div></div></div></td>
+              <td>问卷</td><td class="num">60</td><td>11-05 09:40</td>
+              <td><span class="xq-pill orange">待审核</span></td>
+              <td><span class="xq-link">通过</span><span class="xq-link danger">驳回</span></td>
+            </tr>
+            <tr>
+              <td><div class="nm">二食堂新品试吃 · 到店打卡</div><div class="sub">ID: TK20261104018</div></td>
+              <td><div class="xq-ucell"><span class="ava purple">陈</span><div><div class="nm">陈曦</div><div class="id">ID:10104</div></div></div></td>
+              <td>探店</td><td class="num">80</td><td>11-04 21:06</td>
+              <td><span class="xq-pill red">已超时</span></td>
+              <td><span class="xq-link">通过</span><span class="xq-link danger">驳回</span></td>
+            </tr>
+            <tr>
+              <td><div class="nm">社团活动照片整理归档</div><div class="sub">ID: TK20261104011</div></td>
+              <td><div class="xq-ucell"><span class="ava orange">赵</span><div><div class="nm">赵一鸣</div><div class="id">ID:10088</div></div></div></td>
+              <td>线上</td><td class="num">200</td><td>11-04 18:22</td>
+              <td><span class="xq-pill orange">待审核</span></td>
+              <td><span class="xq-link">通过</span><span class="xq-link danger">驳回</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="xq-pager"><span>共 18 条</span><div class="pgs"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>›</span></div></div>
+      </div>
+    </div></div>
+  </article>
+
+  <!-- ================= A-现有 02 ================= -->
+  <article class="admin-block">
+    <div class="acap">
+      <div class="atop"><span class="anum">A-现有 02</span><span class="atitle">任务管理 · 发布复核</span><span class="astate" style="background:#fdf0d5;color:#b45309">含弹窗</span></div>
+      <span class="aalign">对齐 apps/admin-web/src/features/tasks/TaskListPage.tsx</span>
+      <p class="apurpose"><b>用途：</b>现有任务管理与发布复核。地推「推广任务配置」的列表与复核弹窗沿用同一套 Table + Modal + Descriptions 写法。</p>
+      <p class="apinter"><b>关键交互：</b>状态筛选 · 发布复核弹窗查看快照 · 通过后上线 / 驳回填原因 · 分页。</p>
+    </div>
+    <div class="admin-fit" data-fit><div class="scaler" data-nav="任务管理" data-group="tasks">
+      <div class="xq-page-head">
+        <div><h2>任务管理</h2><div class="sub">全量任务与发布复核记录 · 支持按校区隔离查看</div></div>
+        <div class="xq-actions"><button class="xq-btn"><span class="ic"><svg><use href="#i-file"/></svg></span>导出</button><button class="xq-btn primary"><span class="ic"><svg><use href="#i-plus"/></svg></span>新建任务</button></div>
+      </div>
+      <div class="xq-card">
+        <div class="xq-filter">
+          <div class="xq-select">全部状态<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-select">东湖校区<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-select">全部类型<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-input"><span class="ic"><svg><use href="#i-search"/></svg></span>任务标题 / ID</div>
+          <div class="grow"></div>
+          <button class="xq-btn primary">查询</button>
+          <button class="xq-btn">重置</button>
+        </div>
+      </div>
+      <div class="xq-card flush">
+        <div class="xq-card-title" style="padding:0 20px;margin-bottom:0">任务列表 <span class="sub">共 268 个</span></div>
+        <table class="xq-table">
+          <thead><tr><th style="width:280px">任务</th><th>发布方</th><th>校区</th><th>积分</th><th>名额</th><th>状态</th><th>更新时间</th><th style="width:120px">操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div class="nm">校园快递代取 · 东区到宿舍</div><div class="sub">TK20261105001</div></td>
+              <td>李知遥</td><td>东湖校区</td><td class="num">120</td><td class="num">14/50</td>
+              <td><span class="xq-pill orange">待复核</span></td><td>11-05 09:12</td>
+              <td><span class="xq-link">复核</span><span class="xq-link">详情</span></td>
+            </tr>
+            <tr>
+              <td><div class="nm">大学生消费习惯问卷</div><div class="sub">TK20261105002</div></td>
+              <td>王雨</td><td>东湖校区</td><td class="num">60</td><td class="num">180/300</td>
+              <td><span class="xq-pill green">进行中</span></td><td>11-05 09:40</td>
+              <td><span class="xq-link">复核</span><span class="xq-link">详情</span></td>
+            </tr>
+            <tr>
+              <td><div class="nm">二食堂新品试吃 · 到店打卡</div><div class="sub">TK20261104018</div></td>
+              <td>陈曦</td><td>城北校区</td><td class="num">80</td><td class="num">50/50</td>
+              <td><span class="xq-pill gray">已结束</span></td><td>11-04 21:06</td>
+              <td><span class="xq-link muted">复核</span><span class="xq-link">详情</span></td>
+            </tr>
+            <tr>
+              <td><div class="nm">社团活动照片整理归档</div><div class="sub">TK20261104011</div></td>
+              <td>赵一鸣</td><td>东湖校区</td><td class="num">200</td><td class="num">3/10</td>
+              <td><span class="xq-pill red">已驳回</span></td><td>11-04 18:22</td>
+              <td><span class="xq-link">复核</span><span class="xq-link">详情</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="xq-pager"><span>共 268 条</span><div class="pgs"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>…</span><span>27</span><span>›</span></div></div>
+      </div>
+      <div class="xq-modal-mask on" style="padding-top:90px">
+        <div class="xq-modal" style="width:560px">
+          <div class="xq-modal-head">
+            <div><h3>任务发布复核</h3><p>TK20261105001 · 校园快递代取 · 东湖校区</p></div>
+            <button class="xq-modal-close"><span class="ic"><svg><use href="#i-close"/></svg></span></button>
+          </div>
+          <div class="xq-modal-body">
+            <div class="xq-kv"><span>发布人</span><b>李知遥 · 已实名 · 信用 96</b></div>
+            <div class="xq-kv"><span>任务类型</span><b>跑腿 / 线下</b></div>
+            <div class="xq-kv"><span>奖励设置</span><b>120 积分 · 平台不补贴</b></div>
+            <div class="xq-kv"><span>名额</span><b>50 人（余 36）</b></div>
+            <div class="xq-kv"><span>有效期</span><b>2026-11-05 至 2026-11-12</b></div>
+            <div class="xq-kv"><span>风控校验</span><b style="color:#16a34a">通过 · 同校区 · 预算充足</b></div>
+            <div class="xq-snapshot">
+              <div class="xq-snapshot-head"><b>发布快照 · 复核后不可改</b><span class="xq-lock">只读</span></div>
+              <div class="xq-snapshot-row"><span>积分单价</span><b>120 / 单</b></div>
+              <div class="xq-snapshot-row"><span>预算总额</span><b>6,000 积分</b></div>
+            </div>
+          </div>
+          <div class="xq-modal-foot">
+            <button class="xq-btn">取消</button>
+            <button class="xq-btn danger" data-toast="请填写驳回原因">驳回</button>
+            <button class="xq-btn primary" data-toast="已复核通过，任务进入任务大厅">通过并上线</button>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </article>
+
+  <!-- ================= A-现有 03 ================= -->
+  <article class="admin-block">
+    <div class="acap">
+      <div class="atop"><span class="anum">A-现有 03</span><span class="atitle">提现审核</span></div>
+      <span class="aalign">对齐 apps/admin-web/src/features/assets/WithdrawalsPage.tsx</span>
+      <p class="apurpose"><b>用途：</b>现有提现审核。地推佣金结算后产生的提现，与任务奖励走同一条审核流，不新增第二个提现入口。</p>
+      <p class="apinter"><b>关键交互：</b>渠道/状态/关键词筛选 · 通过打款 · 驳回退回余额 · 查看银行卡与实名信息。</p>
+    </div>
+    <div class="admin-fit" data-fit><div class="scaler" data-nav="提现审核" data-group="finance">
+      <div class="xq-page-head"><div><h2>提现审核</h2><div class="sub">全部提现申请 · 含任务奖励与地推佣金</div></div></div>
+      <div class="xq-stats">
+        <div class="xq-stat"><div class="t">今日申请笔数</div><div class="v">36</div><div class="d">全部状态合计</div></div>
+        <div class="xq-stat"><div class="t">今日通过金额</div><div class="v">¥4,820<small>.00</small></div><div class="d up">按完成时间统计</div></div>
+        <div class="xq-stat"><div class="t">待审核笔数</div><div class="v" style="color:#d97706">12</div><div class="d down">需尽快处理</div></div>
+        <div class="xq-stat"><div class="t">本月累计提现</div><div class="v">¥86,240<small>.00</small></div><div class="d">已成功出款合计</div></div>
+      </div>
+      <div class="xq-card">
+        <div class="xq-filter">
+          <div class="xq-select">全部渠道<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-select">待审核<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-input"><span class="ic"><svg><use href="#i-search"/></svg></span>用户昵称 / 持卡人</div>
+          <div class="grow"></div>
+          <button class="xq-btn primary">查询</button>
+          <button class="xq-btn">重置</button>
+        </div>
+      </div>
+      <div class="xq-card flush">
+        <table class="xq-table">
+          <thead><tr><th style="width:200px">用户</th><th>提现方式</th><th>金额</th><th>手续费</th><th>实际到账</th><th>状态</th><th>申请时间</th><th style="width:120px">操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div class="xq-ucell"><span class="ava">林</span><div><div class="nm">林昭</div><div class="id">ID:10231</div></div></div></td>
+              <td>招商银行(6621)</td><td class="money">¥186.40</td><td>¥0.00</td><td class="money">¥186.40</td>
+              <td><span class="xq-pill orange">待审核</span></td><td>11-05 09:02</td>
+              <td><span class="xq-link">通过</span><span class="xq-link danger">驳回</span></td>
+            </tr>
+            <tr>
+              <td><div class="xq-ucell"><span class="ava blue">周</span><div><div class="nm">周迟</div><div class="id">ID:10277</div></div></div></td>
+              <td>微信零钱</td><td class="money">¥52.00</td><td>¥0.50</td><td class="money">¥51.50</td>
+              <td><span class="xq-pill orange">待审核</span></td><td>11-05 08:41</td>
+              <td><span class="xq-link">通过</span><span class="xq-link danger">驳回</span></td>
+            </tr>
+            <tr>
+              <td><div class="xq-ucell"><span class="ava purple">苏</span><div><div class="nm">苏禾</div><div class="id">ID:10104</div></div></div></td>
+              <td>支付宝</td><td class="money">¥96.00</td><td>¥0.00</td><td class="money">¥96.00</td>
+              <td><span class="xq-pill green">已打款</span></td><td>11-04 17:22</td>
+              <td><span class="xq-link">凭证</span></td>
+            </tr>
+            <tr>
+              <td><div class="xq-ucell"><span class="ava orange">许</span><div><div class="nm">许南</div><div class="id">ID:10088</div></div></div></td>
+              <td>微信零钱</td><td class="money">¥300.00</td><td>¥1.00</td><td class="money">¥299.00</td>
+              <td><span class="xq-pill red">已驳回</span></td><td>11-04 15:06</td>
+              <td><span class="xq-link muted">查看原因</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="xq-pager"><span>共 12 条</span><div class="pgs"><span>‹</span><span class="on">1</span><span>2</span><span>›</span></div></div>
+      </div>
+    </div></div>
+  </article>
+
+  <!-- ================= A-现有 04 ================= -->
+  <article class="admin-block">
+    <div class="acap">
+      <div class="atop"><span class="anum">A-现有 04</span><span class="atitle">对账中心</span></div>
+      <span class="aalign">对齐 apps/admin-web/src/features/assets/ReconcilePage.tsx</span>
+      <p class="apurpose"><b>用途：</b>现有对账中心。地推「结算批次」在财务侧复用这里的对账口径与差异处理方式，新增的只是佣金来源标签。</p>
+      <p class="apinter"><b>关键交互：</b>按渠道/周期筛选 · 查看差异明细 · 导出对账单 · 标记差异已处理。</p>
+    </div>
+    <div class="admin-fit" data-fit><div class="scaler" data-nav="对账中心" data-group="finance">
+      <div class="xq-page-head">
+        <div><h2>对账中心</h2><div class="sub">支付渠道 · 积分 · 佣金三类对账统一入口</div></div>
+        <div class="xq-actions"><button class="xq-btn"><span class="ic"><svg><use href="#i-file"/></svg></span>导出对账单</button></div>
+      </div>
+      <div class="xq-stats">
+        <div class="xq-stat"><div class="t">本期交易笔数</div><div class="v">12,846</div><div class="d">含商城订单与提现</div></div>
+        <div class="xq-stat"><div class="t">渠道金额</div><div class="v">¥248,620<small>.00</small></div><div class="d">微信 / 支付宝合计</div></div>
+        <div class="xq-stat"><div class="t">系统金额</div><div class="v">¥248,596<small>.00</small></div><div class="d">账本汇总</div></div>
+        <div class="xq-stat"><div class="t">差异金额</div><div class="v" style="color:#dc2626">¥24<small>.00</small></div><div class="d down">3 笔待核</div></div>
+      </div>
+      <div class="xq-card">
+        <div class="xq-filter">
+          <div class="xq-select">全部渠道<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-select">2026-11<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-select">全部状态<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="grow"></div>
+          <button class="xq-btn">发起对账</button>
+        </div>
+      </div>
+      <div class="xq-card flush">
+        <div class="xq-tabs" style="padding:0 20px">
+          <div class="it on">支付渠道</div><div class="it">积分</div><div class="it">佣金</div>
+        </div>
+        <table class="xq-table">
+          <thead><tr><th>对账批次</th><th>渠道</th><th>交易笔数</th><th>渠道金额</th><th>系统金额</th><th>差异</th><th>状态</th><th>对账时间</th><th style="width:110px">操作</th></tr></thead>
+          <tbody>
+            <tr><td>RC2026110401</td><td>微信支付</td><td class="num">8,246</td><td class="money">¥162,480.00</td><td class="money">¥162,480.00</td><td>¥0.00</td><td><span class="xq-pill green">已平账</span></td><td>11-05 01:10</td><td><span class="xq-link">明细</span></td></tr>
+            <tr><td>RC2026110402</td><td>支付宝</td><td class="num">4,600</td><td class="money">¥86,140.00</td><td class="money">¥86,116.00</td><td style="color:#dc2626;font-weight:700">¥24.00</td><td><span class="xq-pill red">有差异</span></td><td>11-05 01:12</td><td><span class="xq-link">差异明细</span></td></tr>
+            <tr><td>RC2026110301</td><td>微信支付</td><td class="num">7,912</td><td class="money">¥154,220.00</td><td class="money">¥154,220.00</td><td>¥0.00</td><td><span class="xq-pill green">已平账</span></td><td>11-04 01:08</td><td><span class="xq-link">明细</span></td></tr>
+            <tr><td>RC2026110302</td><td>支付宝</td><td class="num">4,102</td><td class="money">¥78,604.00</td><td class="money">¥78,604.00</td><td>¥0.00</td><td><span class="xq-pill green">已平账</span></td><td>11-04 01:09</td><td><span class="xq-link">明细</span></td></tr>
+          </tbody>
+        </table>
+        <div class="xq-pager"><span>共 8 条</span><div class="pgs"><span>‹</span><span class="on">1</span><span>›</span></div></div>
+      </div>
+    </div></div>
+  </article>
+
+  <!-- ================= A-现有 05 ================= -->
+  <article class="admin-block">
+    <div class="acap">
+      <div class="atop"><span class="anum">A-现有 05</span><span class="atitle">用户管理</span></div>
+      <span class="aalign">对齐 apps/admin-web/src/features/users/UsersPage.tsx</span>
+      <p class="apurpose"><b>用途：</b>现有用户管理。地推成员的实名信息、校区归属、黑名单状态全部读自这里，不重复建用户表。</p>
+      <p class="apinter"><b>关键交互：</b>按校区/角色/状态筛选 · 查看用户详情 · 冻结/解冻 · 实名审核入口。</p>
+    </div>
+    <div class="admin-fit" data-fit><div class="scaler" data-nav="用户管理" data-group="users">
+      <div class="xq-page-head"><div><h2>用户管理</h2><div class="sub">平台注册用户 · 按校区隔离查看</div></div></div>
+      <div class="xq-card">
+        <div class="xq-filter">
+          <div class="xq-select">全部校区<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-select">全部角色<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-select">全部状态<span class="ic"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="xq-input"><span class="ic"><svg><use href="#i-search"/></svg></span>昵称 / 学号 / 手机号</div>
+          <div class="grow"></div>
+          <button class="xq-btn primary">查询</button>
+          <button class="xq-btn">重置</button>
+        </div>
+      </div>
+      <div class="xq-card flush">
+        <table class="xq-table">
+          <thead><tr><th style="width:220px">用户</th><th>学号</th><th>校区</th><th>角色</th><th>积分</th><th>状态</th><th>注册时间</th><th style="width:110px">操作</th></tr></thead>
+          <tbody>
+            <tr><td><div class="xq-ucell"><span class="ava">林</span><div><div class="nm">林昭</div><div class="id">ID:10231</div></div></div></td><td>2023××××21</td><td>东湖校区</td><td>校园达人</td><td class="num">2,860</td><td><span class="xq-pill green">正常</span></td><td>2025-09-01</td><td><span class="xq-link">详情</span></td></tr>
+            <tr><td><div class="xq-ucell"><span class="ava blue">周</span><div><div class="nm">周迟</div><div class="id">ID:10277</div></div></div></td><td>2024××××08</td><td>东湖校区</td><td>普通用户</td><td class="num">640</td><td><span class="xq-pill green">正常</span></td><td>2026-03-12</td><td><span class="xq-link">详情</span></td></tr>
+            <tr><td><div class="xq-ucell"><span class="ava purple">苏</span><div><div class="nm">苏禾</div><div class="id">ID:10104</div></div></div></td><td>2022××××33</td><td>城北校区</td><td>校园达人</td><td class="num">4,120</td><td><span class="xq-pill green">正常</span></td><td>2025-09-08</td><td><span class="xq-link">详情</span></td></tr>
+            <tr><td><div class="xq-ucell"><span class="ava orange">许</span><div><div class="nm">许南</div><div class="id">ID:10088</div></div></div></td><td>2023××××47</td><td>东湖校区</td><td>普通用户</td><td class="num">120</td><td><span class="xq-pill red">已冻结</span></td><td>2025-10-02</td><td><span class="xq-link danger">解冻</span></td></tr>
+          </tbody>
+        </table>
+        <div class="xq-pager"><span>共 6,218 条</span><div class="pgs"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>…</span><span>622</span><span>›</span></div></div>
+      </div>
+    </div></div>
+  </article>
+
+  <!-- ================= A-现有 06 ================= -->
+  <article class="admin-block">
+    <div class="acap">
+      <div class="atop"><span class="anum">A-现有 06</span><span class="atitle">校区管理</span></div>
+      <span class="aalign">对齐 apps/admin-web/src/features/campuses/CampusesPage.tsx</span>
+      <p class="apurpose"><b>用途：</b>现有校区管理。地推团队的「强绑校区」直接复用这里的校区主数据与启停状态，不新建校区表。</p>
+      <p class="apinter"><b>关键交互：</b>新增校区 · 启用/停用 · 查看已开通模块 · 校区数据隔离配置。</p>
+    </div>
+    <div class="admin-fit" data-fit><div class="scaler" data-nav="校区管理" data-group="security">
+      <div class="xq-page-head">
+        <div><h2>校区管理</h2><div class="sub">校区是数据隔离的最小单位，团队、任务、成员均强绑校区</div></div>
+        <div class="xq-actions"><button class="xq-btn primary"><span class="ic"><svg><use href="#i-plus"/></svg></span>新增校区</button></div>
+      </div>
+      <div class="xq-alert info"><span class="ic"><svg><use href="#i-warn"/></svg></span><span>停用校区后，该校区的地推团队与新批次将停止生成；已结算佣金不受影响，成员仍可查看历史收益。</span></div>
+      <div class="xq-card flush">
+        <div class="xq-card-title" style="padding:0 20px">校区列表 <span class="sub">共 4 个</span></div>
+        <table class="xq-table">
+          <thead><tr><th style="width:220px">校区</th><th>负责人</th><th>用户数</th><th>地推团队</th><th>已开通模块</th><th>状态</th><th>创建时间</th><th style="width:120px">操作</th></tr></thead>
+          <tbody>
+            <tr><td><div class="xq-team"><span class="lg" style="background:linear-gradient(135deg,#12d978,#08a152)">东</span><div><div class="nm">东湖校区</div><div class="sub">CAMPUS-EH-01</div></div></div></td><td>运营管理员</td><td class="num">4,286</td><td class="num">3</td><td>任务 / 商城 / 地推</td><td><span class="xq-pill green">已启用</span></td><td>2025-08-20</td><td><span class="xq-link">编辑</span></td></tr>
+            <tr><td><div class="xq-team"><span class="lg" style="background:linear-gradient(135deg,#4f8ef7,#2f67df)">城</span><div><div class="nm">城北校区</div><div class="sub">CAMPUS-CB-02</div></div></div></td><td>王运营</td><td class="num">1,842</td><td class="num">2</td><td>任务 / 商城 / 地推</td><td><span class="xq-pill green">已启用</span></td><td>2025-09-04</td><td><span class="xq-link">编辑</span></td></tr>
+            <tr><td><div class="xq-team"><span class="lg" style="background:linear-gradient(135deg,#f7a24f,#e56a16)">南</span><div><div class="nm">南苑校区</div><div class="sub">CAMPUS-NY-03</div></div></div></td><td>李运营</td><td class="num">0</td><td class="num">0</td><td>任务 / 商城</td><td><span class="xq-pill gray">未启用</span></td><td>2026-10-24</td><td><span class="xq-link">编辑</span></td></tr>
+          </tbody>
+        </table>
+        <div class="xq-pager"><span>共 4 条</span><div class="pgs"><span>‹</span><span class="on">1</span><span>›</span></div></div>
+      </div>
+    </div></div>
+  </article>
+
+<!--ADMIN_SCREENS-->
+</section>
+
+<section class="tab-panel" id="panel-flow">
+<!--FLOW_SECTION-->
+</section>
+</main>
+
+<div id="toast"></div>
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 顶部标签 ---------- */
+  var tabs = [].slice.call(document.querySelectorAll('.doc-tab'));
+  function switchTab(name) {
+    tabs.forEach(function (t) { t.classList.toggle('on', t.dataset.tab === name); });
+    ['c', 'admin', 'flow'].forEach(function (k) {
+      var p = document.getElementById('panel-' + k);
+      if (p) p.classList.toggle('on', k === name);
+    });
+    if (name === 'admin') window.setTimeout(fitAdmin, 40);
+  }
+  tabs.forEach(function (t) { t.addEventListener('click', function () { switchTab(t.dataset.tab); }); });
+
+  /* ---------- 轻提示 ---------- */
+  var toastEl = document.getElementById('toast'), toastTimer;
+  function toast(msg) {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('on'); }, 2000);
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-toast]');
+    if (!t || t.disabled) return;
+    toast(t.getAttribute('data-toast'));
+  });
+
+  /* ---------- 后台菜单（沿用 App.tsx ADMIN_GROUPS 结构） ---------- */
+  var MENU = [
+    { key: 'workbench', label: '工作台', icon: 'i-grid', pages: ['工作台'] },
+    { key: 'users', label: '用户中心', icon: 'i-user', pages: ['用户管理', '实名审核', '地推团队', '地推成员等级'] },
+    { key: 'tasks', label: '任务中心', icon: 'i-task', pages: ['任务审核', '任务管理', '任务模板'] },
+    { key: 'mall', label: '商城中心', icon: 'i-shop', pages: ['商品管理', '闲置审核', '商品分类', '库存管理', '优惠券'] },
+    { key: 'orders', label: '订单与售后', icon: 'i-cart', pages: ['订单管理', '售后管理'] },
+    { key: 'finance', label: '资产与财务', icon: 'i-wallet', pages: ['提现审核', '积分管理', '对账中心', '地推佣金规则', '地推结算批次'] },
+    { key: 'community', label: '社区内容', icon: 'i-msg', pages: ['社区管理', '举报处理'] },
+    { key: 'operations', label: '运营与消息', icon: 'i-mega', pages: ['活动运营', '功能灰度发布', '数据看板', '消息通知', '地推任务配置', '地推申请审核'] },
+    { key: 'config', label: '配置中心', icon: 'i-set', pages: ['配置中心', '工单客服', '隐私与合规', '上线检查'] },
+    { key: 'security', label: '权限与审计', icon: 'i-shield', pages: ['角色权限', '校区管理', '操作日志'] }
+  ];
+
+  function siderHTML(activeGroup, activePage) {
+    var groups = MENU.map(function (g) {
+      var on = g.key === activeGroup;
+      var items = g.pages.map(function (p) {
+        var badge = p === '地推申请审核' ? '<span class="badge">46</span>' : '';
+        return '<a class="' + (on && p === activePage ? 'on' : '') + '">' + p + badge + '</a>';
+      }).join('');
+      return '<div class="xq-group">' +
+        '<div class="xq-gtitle' + (on ? ' on' : '') + '"><span class="ic"><svg><use href="#' + g.icon + '"/></svg></span>' + g.label + '<span class="ic chev"><svg><use href="#i-chev"/></svg></span></div>' +
+        (on ? '<div class="xq-sub">' + items + '</div>' : '') + '</div>';
+    }).join('');
+    return '<aside class="xq-sider">' +
+      '<div class="xq-brand"><span class="logo">校</span>校圈 Admin</div>' +
+      '<div class="xq-menu">' + groups + '</div>' +
+      '<div class="xq-sider-foot">© 校圈科技 · 校园任务商城</div></aside>';
+  }
+
+  function headerHTML(crumbGroup, crumbPage) {
+    return '<div class="xq-header">' +
+      '<div class="xq-hl"><span class="xq-collapse"><span class="ic" style="width:14px;height:14px"><svg><use href="#i-grid"/></svg></span></span>' +
+      '<span>' + crumbGroup + '</span><span class="crumb-sep">/</span><b>' + crumbPage + '</b></div>' +
+      '<div class="xq-hr"><span class="xq-bell"><span class="ic"><svg><use href="#i-bell"/></svg></span><span class="dot"></span></span>' +
+      '<span class="txt">修改密码</span><span class="txt">退出登录</span>' +
+      '<div class="xq-user"><span class="av">运</span><div><strong>运营管理员</strong><small>平台运营</small></div></div></div></div>';
+  }
+
+  function buildShells() {
+    [].slice.call(document.querySelectorAll('.admin-fit .scaler[data-nav]')).forEach(function (scaler) {
+      var page = scaler.getAttribute('data-nav');
+      var gkey = scaler.getAttribute('data-group');
+      var group = MENU.filter(function (g) { return g.key === gkey; })[0] || MENU[0];
+      var content = document.createElement('div');
+      content.className = 'xq-content';
+      while (scaler.firstChild) content.appendChild(scaler.firstChild);
+      var shell = document.createElement('div');
+      shell.className = 'xq-shell';
+      shell.innerHTML = siderHTML(gkey, page) + '<div class="xq-main">' + headerHTML(group.label, page) + '</div>';
+      shell.querySelector('.xq-main').appendChild(content);
+      scaler.appendChild(shell);
+    });
+  }
+
+  /* ---------- 1440 画布等比缩放 ---------- */
+  function fitAdmin() {
+    [].slice.call(document.querySelectorAll('.admin-fit[data-fit]')).forEach(function (box) {
+      var scaler = box.querySelector('.scaler');
+      if (!scaler) return;
+      var w = box.clientWidth;
+      if (!w) return;
+      var scale = Math.min(1, w / 1440);
+      scaler.style.transformOrigin = 'top left';
+      scaler.style.transform = 'scale(' + scale + ')';
+      box.style.height = (scaler.offsetHeight * scale) + 'px';
+    });
+  }
+  window.addEventListener('resize', function () {
+    if (document.getElementById('panel-admin').classList.contains('on')) fitAdmin();
+  });
+
+  /* ---------- 通用交互 ---------- */
+  document.addEventListener('click', function (e) {
+    var seg = e.target.closest('.seg .seg-item, .xq-tabs .it, .xq-modal-seg button');
+    if (!seg) return;
+    var siblings = [].slice.call(seg.parentNode.children);
+    siblings.forEach(function (s) { s.classList.toggle('on', s === seg); });
+  });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('[data-copy]');
+    if (!c) return;
+    toast('已复制「' + c.getAttribute('data-copy') + '」');
+  });
+  document.addEventListener('click', function (e) {
+    var o = e.target.closest('[data-open]');
+    if (!o) return;
+    var t = document.getElementById(o.getAttribute('data-open'));
+    if (t) t.hidden = false;
+  });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('[data-close]');
+    if (!c) return;
+    var t = document.getElementById(c.getAttribute('data-close'));
+    if (t) t.hidden = true;
+  });
+  var qr = document.getElementById('qrSvg');
+  if (qr) {
+    var NS = 'http://www.w3.org/2000/svg', seed = 20261105;
+    function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    for (var y = 0; y < 25; y++) {
+      for (var x = 0; x < 25; x++) {
+        var finder = (x < 7 && y < 7) || (x > 17 && y < 7) || (x < 7 && y > 17);
+        var on = finder
+          ? (x === 0 || x === 6 || y === 0 || y === 6 || (x > 1 && x < 5 && y > 1 && y < 5) || (x > 1 && x < 5 && y === 0) || (y > 1 && y < 5 && x === 0))
+          : rnd() > 0.55;
+        if (!on) continue;
+        var r = document.createElementNS(NS, 'rect');
+        r.setAttribute('x', x); r.setAttribute('y', y);
+        r.setAttribute('width', '1'); r.setAttribute('height', '1');
+        r.setAttribute('fill', '#191b1f');
+        qr.appendChild(r);
+      }
+    }
+  }
+
+  buildShells();
+  window.addEventListener('load', fitAdmin);
+  window.setTimeout(fitAdmin, 60);
+
+  /* FLOW_JS */
+})();
+</script>
+</body>
+</html>

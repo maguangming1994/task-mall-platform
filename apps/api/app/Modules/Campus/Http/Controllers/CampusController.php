@@ -152,12 +152,21 @@ class CampusController extends Controller
                 ->where(function ($q) use ($user): void {
                     $q->where('buyer_user_id', $user->id)->orWhere('seller_user_id', $user->id);
                 })
-                ->exists();
-            if ($openOrders) {
+                ->latest('id')
+                ->limit(10)
+                ->get(['public_id', 'status', 'created_at']);
+            if ($openOrders->isNotEmpty()) {
                 return ApiResponse::error(
                     'CAMPUS_CHANGE_BLOCKED_ORDERS',
                     '您有未完成的闲置订单，履约完成后才能更换学校。',
                     422,
+                    [
+                        'orders' => $openOrders->map(fn (SecondHandOrder $order) => [
+                            'id' => $order->public_id,
+                            'status' => $order->status,
+                            'created_at' => $order->created_at?->toIso8601String(),
+                        ])->values(),
+                    ],
                 );
             }
 

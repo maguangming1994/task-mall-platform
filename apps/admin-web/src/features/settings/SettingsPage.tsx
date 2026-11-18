@@ -94,6 +94,7 @@ const linkOptions = [
   { value: 'notifications', label: '消息通知' },
   { value: 'orders', label: '我的订单' },
   { value: 'assets', label: '我的资产' },
+  { value: 'push', label: '地推中心' },
 ]
 
 const navigationTargetOptions = [

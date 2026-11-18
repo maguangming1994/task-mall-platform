@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Auth\Services\PhoneVerificationService;
+use App\Modules\Campus\Models\Campus;
+use App\Modules\Campus\Models\CampusMembershipChange;
 use App\Modules\Growth\Models\Referral;
 use App\Modules\Growth\Services\AdminReferralTeamService;
 use App\Modules\Identity\Services\IdentityVerificationSettingsService;
@@ -18,6 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Throwable;
 
 class AdminUserCenterController extends Controller
@@ -90,7 +93,7 @@ class AdminUserCenterController extends Controller
         ]);
 
         $query = User::query()
-            ->with(['assetAccount', 'identities', 'taskPublisher'])
+            ->with(['assetAccount', 'identities', 'taskPublisher', 'campus'])
             ->select('users.*')
             ->selectSub(fn ($sub) => $sub->from('task_claims')->selectRaw('COUNT(*)')->whereColumn('task_claims.user_id', 'users.id'), 'task_claim_count')
             ->selectSub(fn ($sub) => $sub->from('task_claims')->selectRaw('COUNT(*)')->whereColumn('task_claims.user_id', 'users.id')->where('task_claims.status', 'approved'), 'approved_task_count')
@@ -150,6 +153,135 @@ class AdminUserCenterController extends Controller
         });
 
         return ApiResponse::success($presented);
+    }
+
+    /**
+     * 强制改校的学校候选（不受 campus.manage 权限限制，供用户管理侧使用）。
+     */
+    public function campusOptions(): JsonResponse
+    {
+        $items = Campus::query()
+            ->where('status', 'active')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['public_id', 'name', 'province', 'city', 'isolation_mode'])
+            ->map(fn (Campus $campus) => [
+                'id' => $campus->public_id,
+                'name' => $campus->name,
+                'province' => $campus->province,
+                'city' => $campus->city,
+                'isolation_mode' => $campus->isolation_mode ?? 'legacy',
+            ])
+            ->values();
+
+        return ApiResponse::success(['items' => $items]);
+    }
+
+    /**
+     * 用户换校历史时间线。
+     */
+    public function campusHistory(User $user): JsonResponse
+    {
+        $items = CampusMembershipChange::query()
+            ->with(['fromCampus:id,public_id,name', 'toCampus:id,public_id,name'])
+            ->where('user_id', $user->id)
+            ->latest('created_at')
+            ->limit(50)
+            ->get()
+            ->map(fn (CampusMembershipChange $change) => [
+                'id' => (string) $change->id,
+                'from' => $change->fromCampus === null ? null : ['id' => $change->fromCampus->public_id, 'name' => $change->fromCampus->name],
+                'to' => ['id' => $change->toCampus->public_id, 'name' => $change->toCampus->name],
+                'reason' => $change->reason,
+                'changed_by_admin' => $change->changed_by_admin_id !== null,
+                'created_at' => $change->created_at?->toIso8601String(),
+            ])
+            ->values();
+
+        return ApiResponse::success([
+            'items' => $items,
+            'current' => $user->campus === null ? null : [
+                'id' => $user->campus->public_id,
+                'name' => $user->campus->name,
+                'isolation_mode' => $user->campus->isolation_mode ?? 'legacy',
+            ],
+            'profile' => [
+                'grade_year' => $user->grade_year,
+                'major' => $user->major,
+                'college' => $user->college,
+            ],
+        ]);
+    }
+
+    /**
+     * 管理员强制改校：不受 30 天冷却与未履约订单限制，必填原因并写入换校审计。
+     */
+    public function forceCampus(Request $request, User $user, AuditLogger $audit): JsonResponse
+    {
+        $currentYear = (int) date('Y');
+        $data = $request->validate([
+            'campus_id' => [
+                'required',
+                Rule::exists('campuses', 'public_id')->where('status', 'active'),
+            ],
+            'grade_year' => ['sometimes', 'nullable', 'integer', 'min:1900', 'max:'.$currentYear],
+            'major' => ['sometimes', 'nullable', 'string', 'max:30'],
+            'college' => ['sometimes', 'nullable', 'string', 'max:60'],
+            'reason' => ['required', 'string', 'min:5', 'max:255'],
+        ]);
+        /** @var AdminUser $actor */
+        $actor = $request->user();
+        $campus = Campus::query()->where('public_id', $data['campus_id'])->firstOrFail();
+        $fromCampusId = $user->campus_id;
+
+        if ($fromCampusId === $campus->id && ! array_key_exists('grade_year', $data) && ! array_key_exists('major', $data) && ! array_key_exists('college', $data)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'campus_id' => ['目标学校与当前绑定学校一致，无需改校。'],
+            ]);
+        }
+
+        $presented = DB::transaction(function () use ($actor, $user, $campus, $fromCampusId, $data, $audit): array {
+            $updates = ['campus_id' => $campus->id];
+            foreach (['grade_year', 'major', 'college'] as $key) {
+                if (array_key_exists($key, $data)) {
+                    $updates[$key] = $data[$key];
+                }
+            }
+            $before = [
+                'campus_id' => $fromCampusId,
+                'grade_year' => $user->grade_year,
+                'major' => $user->major,
+                'college' => $user->college,
+            ];
+            $user->update($updates);
+
+            if ($fromCampusId !== $campus->id) {
+                CampusMembershipChange::query()->create([
+                    'user_id' => $user->id,
+                    'from_campus_id' => $fromCampusId,
+                    'to_campus_id' => $campus->id,
+                    'reason' => trim($data['reason']),
+                    'changed_by_admin_id' => $actor->id,
+                ]);
+            }
+
+            $audit->record(
+                $actor,
+                'user.campus_changed',
+                'user',
+                $user->public_id,
+                $before,
+                ['campus_id' => $campus->id, 'grade_year' => $user->grade_year, 'major' => $user->major, 'college' => $user->college],
+                trim($data['reason']),
+            );
+
+            return [
+                'campus' => ['id' => $campus->public_id, 'name' => $campus->name, 'isolation_mode' => $campus->isolation_mode ?? 'legacy'],
+                'profile' => ['grade_year' => $user->grade_year, 'major' => $user->major, 'college' => $user->college],
+            ];
+        });
+
+        return ApiResponse::success($presented, 200, '用户学校已强制修改。');
     }
 
     public function referrals(Request $request, SystemSettingService $settings): JsonResponse
@@ -329,6 +461,16 @@ class AdminUserCenterController extends Controller
                 'coupons_available' => $asset?->coupon_available ?? 0,
             ],
             'task_metrics' => ['claimed' => (int) $user->getAttribute('task_claim_count'), 'approved' => $approved],
+            'campus' => $user->campus === null ? null : [
+                'id' => $user->campus->public_id,
+                'name' => $user->campus->name,
+                'isolation_mode' => $user->campus->isolation_mode ?? 'legacy',
+            ],
+            'campus_profile' => [
+                'grade_year' => $user->grade_year,
+                'major' => $user->major,
+                'college' => $user->college,
+            ],
             'cash_order_count' => $cashOrders,
             'referral_count' => (int) $user->getAttribute('referral_count'),
             'verification' => [

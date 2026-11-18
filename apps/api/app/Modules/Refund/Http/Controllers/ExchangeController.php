@@ -44,7 +44,7 @@ class ExchangeController extends Controller
     public function adminIndex(Request $request): JsonResponse
     {
         $status = $request->validate(['status' => ['nullable', 'string', 'max:24']])['status'] ?? null;
-        $query = Exchange::query()->latest();
+        $query = Exchange::query()->with(['order:id,order_no', 'user:id,public_id,nickname'])->latest();
         if ($status) {
             $query->where('status', $status);
         }
@@ -125,6 +125,6 @@ class ExchangeController extends Controller
             return ['id' => $shipment->public_id, 'direction' => $shipment->direction, 'method' => $shipment->method, 'carrier_code' => $shipment->carrier_code, 'tracking_no' => $shipment->tracking_no, 'no_logistics_note' => $shipment->no_logistics_note, 'paid_shipping_amount' => $shipment->paid_shipping_amount, 'status' => $shipment->status, 'shipped_at' => $shipment->shipped_at?->toIso8601String(), 'received_at' => $shipment->received_at?->toIso8601String(), 'compensation' => $compensation ? ReturnShippingCompensationController::data($compensation) : null];
         });
 
-        return ['id' => $exchange->public_id, 'exchange_no' => $exchange->exchange_no, 'order_item_id' => $exchange->order_item_id, 'quantity' => $exchange->quantity, 'reason_code' => $exchange->reason_code, 'reason_name' => $exchange->reason_name_snapshot, 'status' => $exchange->status, 'responsibility_party' => $exchange->responsibility_party, 'return_shipping_payer' => $exchange->return_shipping_payer, 'replacement_shipping_payer' => $exchange->replacement_shipping_payer, 'return_method' => $exchange->return_method, 'review_note' => $exchange->review_note, 'return_deadline_at' => $exchange->return_deadline_at?->toIso8601String(), 'replacement_auto_complete_at' => $exchange->replacement_auto_complete_at?->toIso8601String(), 'shipments' => $shipments, 'created_at' => $exchange->created_at->toIso8601String()];
+        return ['id' => $exchange->public_id, 'exchange_no' => $exchange->exchange_no, 'order_no' => $exchange->order?->order_no, 'user' => $exchange->user ? ['id' => $exchange->user->public_id, 'nickname' => $exchange->user->nickname] : null, 'order_item_id' => $exchange->order_item_id, 'quantity' => $exchange->quantity, 'reason_code' => $exchange->reason_code, 'reason_name' => $exchange->reason_name_snapshot, 'status' => $exchange->status, 'responsibility_party' => $exchange->responsibility_party, 'return_shipping_payer' => $exchange->return_shipping_payer, 'replacement_shipping_payer' => $exchange->replacement_shipping_payer, 'return_method' => $exchange->return_method, 'review_note' => $exchange->review_note, 'return_deadline_at' => $exchange->return_deadline_at?->toIso8601String(), 'replacement_auto_complete_at' => $exchange->replacement_auto_complete_at?->toIso8601String(), 'shipments' => $shipments, 'created_at' => $exchange->created_at->toIso8601String()];
     }
 }

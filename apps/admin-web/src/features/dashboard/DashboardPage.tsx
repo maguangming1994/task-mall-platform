@@ -76,8 +76,8 @@ export function DashboardPage() {
           <div className="xq-stats">
             <div className="xq-stat">
               <div className="t">今日新增任务</div>
-              <div className="v">{metrics?.tasks.published ?? 0}</div>
-              <div className="d up">已发布任务总量</div>
+              <div className="v">{metrics?.tasks.created_today ?? 0}</div>
+              <div className="d up">今日 0 点起创建</div>
             </div>
             <div className="xq-stat">
               <div className="t">待审核事项</div>

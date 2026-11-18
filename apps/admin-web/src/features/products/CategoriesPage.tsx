@@ -139,7 +139,6 @@ export function CategoriesPage() {
               ),
             },
             { title: '商品数', dataIndex: 'product_count' },
-            { title: '兑换积分系数', render: () => '—' },
             {
               title: '状态',
               render: (_: unknown, item: ManagedProductCategory) => (

@@ -8,7 +8,9 @@ use App\Modules\Auth\Services\WechatProviderSettingsService;
 use App\Modules\Notification\Services\NotificationSceneConfigService;
 use App\Modules\Operations\Services\ModuleGateService;
 use App\Modules\Operations\Services\ReleaseControlService;
+use App\Modules\Campus\Models\CampusMembershipChange;
 use App\Modules\Payment\Services\PaymentCapabilityService;
+use App\Modules\Settings\Services\SystemSettingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -27,6 +29,7 @@ class ClientCapabilitiesController extends Controller
         PaymentCapabilityService $payments,
         WechatProviderSettingsService $wechatSettings,
         NotificationSceneConfigService $notificationScenes,
+        SystemSettingService $settings,
     ): JsonResponse {
         $data = validator([
             'client_platform' => $request->header('X-Client-Platform'),
@@ -71,11 +74,52 @@ class ClientCapabilitiesController extends Controller
             || $user->major === null
         );
 
+        // 校区隔离：当前学校档案 + 换校冷却状态（供换校页与阻断态直接渲染）
+        $campus = null;
+        $campusChange = null;
+        if ($user !== null && $user->campus_id !== null) {
+            $campusModel = $user->campus;
+            if ($campusModel !== null) {
+                $campus = [
+                    'id' => $campusModel->public_id,
+                    'name' => $campusModel->name,
+                    'isolation_mode' => $campusModel->isolation_mode ?? 'legacy',
+                ];
+            }
+            try {
+                $cooldownDays = (int) ($settings->read('campus.change_cooldown_days')['value'] ?? 30);
+            } catch (\Throwable) {
+                $cooldownDays = 30;
+            }
+            $lastChange = CampusMembershipChange::query()
+                ->where('user_id', $user->id)
+                ->whereNull('changed_by_admin_id')
+                ->where('reason', '!=', 'backfill_default')
+                ->latest('created_at')
+                ->first();
+            $boundAt = CampusMembershipChange::query()
+                ->where('user_id', $user->id)
+                ->where('to_campus_id', $user->campus_id)
+                ->latest('created_at')
+                ->first(['created_at'])?->created_at;
+            $nextChangeAt = $lastChange === null
+                ? null
+                : $lastChange->created_at->copy()->addDays(max(0, $cooldownDays));
+            $campusChange = [
+                'cooldown_days' => $cooldownDays,
+                'bound_at' => $boundAt?->toIso8601String(),
+                'next_available_at' => $nextChangeAt?->toIso8601String(),
+                'can_change' => $nextChangeAt === null || $nextChangeAt->isPast(),
+            ];
+        }
+
         return ApiResponse::success([
             'version' => 6,
             // 本次模块判定实际使用的校区（public_id；登录用户以账号校区为准），无校区上下文时为 null
             'campus_id' => $gates->campusPublicIdFromRequest($request),
             'campus_required' => $campusRequired,
+            'campus' => $campus,
+            'campus_change' => $campusChange,
             'campus_profile' => $user !== null ? [
                 'grade_year' => $user->grade_year,
                 'major' => $user->major,

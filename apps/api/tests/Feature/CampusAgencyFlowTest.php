@@ -269,6 +269,34 @@ class CampusAgencyFlowTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_only_super_admin_can_switch_campus_isolation_mode(): void
+    {
+        $this->seed(RbacSeeder::class);
+        $agent = $this->createAdmin('campus-isolation-agent', 'campus_agent');
+        $root = $this->createAdmin('campus-isolation-root', 'super_admin');
+        $campus = Campus::query()->create(['code' => 'isolation-campus', 'name' => '隔离学校', 'status' => 'active']);
+        $agent->campuses()->attach($campus->id, ['is_primary' => true]);
+
+        $this->withToken($this->login($agent))
+            ->withHeader('X-Campus-Id', $campus->public_id)
+            ->putJson('/api/v1/admin/campuses/'.$campus->public_id, [
+                'code' => $campus->code,
+                'name' => $campus->name,
+                'status' => 'active',
+                'isolation_mode' => 'strict',
+            ])->assertForbidden()->assertJsonPath('code', 'CAMPUS_ISOLATION_FORBIDDEN');
+
+        $this->assertSame('legacy', $campus->fresh()->isolation_mode);
+
+        $this->withToken($this->login($root))
+            ->putJson('/api/v1/admin/campuses/'.$campus->public_id, [
+                'code' => $campus->code,
+                'name' => $campus->name,
+                'status' => 'active',
+                'isolation_mode' => 'strict',
+            ])->assertOk()->assertJsonPath('data.isolation_mode', 'strict');
+    }
+
     public function test_only_active_campus_agent_accounts_can_be_assigned_and_primary_must_be_selected(): void
     {
         $this->seed(RbacSeeder::class);

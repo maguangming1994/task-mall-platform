@@ -253,6 +253,7 @@ class CampusCommunityActivityFlowTest extends TestCase
         $login = $this->postJson('/api/v1/auth/phone/login', ['phone' => $phone, 'verification_code' => '246810'], $headers)->assertOk();
         $token = $login->json('data.access_token');
         $user = User::query()->where('public_id', $login->json('data.user.id'))->firstOrFail();
+        $this->bindTestCampus($user);
         foreach ($this->withToken($token)->getJson('/api/v1/me/legal-consents/pending?scope=community')->assertOk()->json('data') as $index => $document) {
             $this->withToken($token)->withHeaders(['Idempotency-Key' => "campus-consent-{$phone}-{$index}", 'X-Client-Platform' => 'h5-browser'])
                 ->postJson('/api/v1/me/legal-consents', ['legal_document_version_id' => $document['id'], 'action' => 'accept', 'acknowledge_service_restriction' => false])

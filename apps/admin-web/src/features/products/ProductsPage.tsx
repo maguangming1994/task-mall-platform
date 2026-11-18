@@ -191,7 +191,7 @@ export function ProductsPage() {
                 <PCell name={item.name} sub={`SKU: ${item.skus[0]?.sku_code ?? '—'}`} img={item.gallery_images[0]?.url ?? null} />
               ),
             },
-            { title: '分类', render: () => '—' },
+            { title: '分类', render: (_: unknown, item: ManagedProduct) => item.category?.name ?? '—' },
             { title: '售价', render: (_: unknown, item: ManagedProduct) => priceOf(item) },
             { title: '库存', render: (_: unknown, item: ManagedProduct) => {
               const stock = stockOf(item)

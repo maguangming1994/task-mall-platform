@@ -317,7 +317,6 @@ export function RolesPage() {
             title: '操作', width: 130, render: (_: unknown, role: AdminRole) => (
               <Links items={[
                 { label: '编辑', onClick: () => openRoleEditor(role) },
-                !role.system_role && { label: '删除', danger: true, onClick: () => messageApi.info('角色删除能力暂未开放，可通过编辑收回全部权限。') },
               ]} />
             ),
           },

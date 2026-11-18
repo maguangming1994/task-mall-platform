@@ -49,6 +49,7 @@ export interface ManagedCampus {
   reference_locations?: Array<{ name: string; address: string; district: string; latitude: number; longitude: number }>
   coordinate_system?: 'WGS84'
   status: 'active' | 'disabled'
+  isolation_mode: 'legacy' | 'strict'
   sort_order: number
   users_count: number
   updated_at: string | null
@@ -65,6 +66,8 @@ export interface CampusOperationSummary {
   without_primary_agent: number
   agent_total: number
   user_total: number
+  isolation_strict: number
+  isolation_legacy: number
 }
 
 export interface CampusCatalogMetadata {
@@ -394,7 +397,7 @@ export interface ManagedTaskRiskCase { id: string; task_id: string; source: stri
 export type ProductPurchaseMode = 'cash' | 'points' | 'cash_points'
 export interface ManagedPurchaseOption { id: string; purchase_mode: ProductPurchaseMode; cash_amount: number; points: number; enabled: boolean; channels: string[]; version: number }
 export interface ManagedProductSku { id: string; sku_code: string; name: string; specs: Record<string, string>; fulfillment_type: 'logistics' | 'no_logistics' | 'virtual_delivery'; shipping_template_id: string | null; stock: number; status: string; purchase_options: ManagedPurchaseOption[] }
-export interface ManagedProduct { id: string; name: string; subtitle: string | null; description: string; gallery_images: Array<{ asset_id?: string; url: string; alt?: string | null; sort_order: number }>; status: 'draft' | 'on_sale' | 'off_shelf'; version: number; definition_version: number; skus: ManagedProductSku[] }
+export interface ManagedProduct { id: string; name: string; subtitle: string | null; description: string; category: { id: string; name: string } | null; gallery_images: Array<{ asset_id?: string; url: string; alt?: string | null; sort_order: number }>; status: 'draft' | 'on_sale' | 'off_shelf'; version: number; definition_version: number; skus: ManagedProductSku[] }
 export type ManagedShippingChargeType = 'fixed' | 'by_quantity' | 'by_weight'
 export type ManagedShippingFreeRuleType = 'product' | 'sku' | 'cash_threshold' | 'quantity_threshold'
 export interface ManagedShippingRegion {
@@ -605,8 +608,8 @@ export interface ReconciliationRun { id: string; provider: string; business_date
 export interface ManagedAfterSaleReason { id: string; code: string; name: string; service_types: string[]; default_responsibility: string; return_shipping_payer: string; evidence_required: boolean; enabled: boolean; sort_order: number; version: number }
 export interface ReturnShippingCompensation { id: string; source_type: string; requested_amount: number; approved_amount: number; status: string; carrier_code: string; tracking_no: string; payment_proof_file_id: string; review_note: string | null; paid_at: string | null; created_at: string }
 export interface AfterSaleShipment { id?: string; direction?: string; method?: string; carrier_code?: string | null; tracking_no?: string | null; no_logistics_note?: string | null; paid_shipping_amount?: number; status?: string; shipped_at?: string | null; received_at?: string | null; compensation?: ReturnShippingCompensation | null }
-export interface ManagedRefund { id: string; refund_no: string; service_type: string; reason_name: string; status: string; refund_cash_amount: number; refund_points: number; responsibility_party: string; return_shipping_payer: string; return_method: string | null; review_note?: string | null; user_action_deadline_at: string | null; return_shipment?: AfterSaleShipment | null; compensation?: ReturnShippingCompensation | null; created_at: string }
-export interface ManagedExchange { id: string; exchange_no: string; reason_name: string; status: string; quantity: number; responsibility_party: string; return_shipping_payer: string; replacement_shipping_payer: string; return_method: string; review_note?: string | null; return_deadline_at: string | null; replacement_auto_complete_at?: string | null; shipments?: AfterSaleShipment[]; created_at: string }
+export interface ManagedRefund { id: string; refund_no: string; order_no?: string | null; user?: { id: string; nickname: string } | null; service_type: string; reason_name: string; status: string; refund_cash_amount: number; refund_points: number; responsibility_party: string; return_shipping_payer: string; return_method: string | null; review_note?: string | null; user_action_deadline_at: string | null; return_shipment?: AfterSaleShipment | null; compensation?: ReturnShippingCompensation | null; created_at: string }
+export interface ManagedExchange { id: string; exchange_no: string; order_no?: string | null; user?: { id: string; nickname: string } | null; reason_name: string; status: string; quantity: number; responsibility_party: string; return_shipping_payer: string; replacement_shipping_payer: string; return_method: string; review_note?: string | null; return_deadline_at: string | null; replacement_auto_complete_at?: string | null; shipments?: AfterSaleShipment[]; created_at: string }
 export interface ManagedCommunityPost { id: string; author: { id: string; nickname: string }; title: string; content: string; status: string; current_version_no: number; published_version_no: number | null; comment_count: number; reward_granted: boolean; created_at: string }
 export interface ManagedCommunityComment { id: string; post_id: string; parent_comment_id: string | null; author: { id: string; nickname: string }; content: string; status: string; reward_granted: boolean; created_at: string }
 export interface ManagedContentReport { id: string; content_type: 'post' | 'comment'; content_id: string; reason_code: string; description: string | null; status: string; created_at: string }
@@ -733,7 +736,7 @@ export interface CommunityHomepageConfigInput {
   expected_version?: number | null
   reason: string
 }
-export interface OperationsMetrics { users: { active_total: number; new_today: number }; tasks: { published: number; pending_reviews: number }; orders: { paid_today: number; paid_cash_today: number; pending_fulfillment: number }; after_sales: { pending_refunds: number; pending_exchanges: number }; community: { published_posts: number; pending_reviews: number; open_reports: number }; finance: { reconciliation_differences: number; pending_withdrawals: number }; notifications: { unread_total: number; failed_deliveries: number; retrying_deliveries: number }; generated_at: string }
+export interface OperationsMetrics { users: { active_total: number; new_today: number }; tasks: { published: number; created_today: number; pending_reviews: number }; orders: { paid_today: number; paid_cash_today: number; pending_fulfillment: number }; after_sales: { pending_refunds: number; pending_exchanges: number }; community: { published_posts: number; pending_reviews: number; open_reports: number }; finance: { reconciliation_differences: number; pending_withdrawals: number }; notifications: { unread_total: number; failed_deliveries: number; retrying_deliveries: number }; generated_at: string }
 
 export interface AnalyticsTrendPoint { date: string; count: number }
 export interface OperationsAnalytics {
@@ -826,6 +829,7 @@ export interface AdminAuditLog {
   after: Record<string, unknown> | null
   reason: string | null
   request_id: string | null
+  ip_fingerprint: string | null
   created_at: string
 }
 
@@ -851,6 +855,32 @@ export interface ManagedEndUser {
   task_metrics: { claimed: number; approved: number }; cash_order_count: number; referral_count: number
   verification: { phone: boolean; profile: boolean; wechat: boolean }; created_at: string; last_login_at: string | null
   task_publishing_permission: ManagedTaskPublishingPermission
+  campus: { id: string; name: string; isolation_mode: 'legacy' | 'strict' } | null
+  campus_profile: { grade_year: number | null; major: string | null; college: string | null }
+}
+export interface UserCampusOption {
+  id: string; name: string; province: string | null; city: string | null; isolation_mode: 'legacy' | 'strict'
+}
+export interface UserCampusHistoryEntry {
+  id: string
+  from: { id: string; name: string } | null
+  to: { id: string; name: string }
+  reason: string
+  changed_by_admin: boolean
+  created_at: string | null
+}
+export interface UserCampusProfile { grade_year: number | null; major: string | null; college: string | null }
+export interface UserCampusHistory {
+  items: UserCampusHistoryEntry[]
+  current: { id: string; name: string; isolation_mode: 'legacy' | 'strict' } | null
+  profile: UserCampusProfile
+}
+export interface ForceUserCampusInput {
+  campus_id: string
+  grade_year?: number | null
+  major?: string | null
+  college?: string | null
+  reason: string
 }
 export interface ManagedReferral {
   id: string; inviter: { id: string; nickname: string; phone_masked: string | null }; referred_user: { id: string; nickname: string; phone_masked: string | null }
@@ -1002,6 +1032,7 @@ const validationFieldLabels: Record<string, string> = {
   app_id: 'AppID',
   app_secret: 'AppSecret',
   timeout_seconds: '请求超时时间',
+  isolation_mode: '隔离模式',
   reason: '修改原因',
   current_password: '当前管理员密码',
   mfa_code: 'MFA 验证码',
@@ -1890,6 +1921,18 @@ export async function updateManagedEndUserTaskPublishingPermission(userId: strin
     body: JSON.stringify({ granted, reason }),
   })
 }
+export async function campusOptions(): Promise<{ items: UserCampusOption[] }> {
+  return request('/admin/user-center/campus-options')
+}
+export async function userCampusHistory(userId: string): Promise<UserCampusHistory> {
+  return request(`/admin/user-center/users/${encodeURIComponent(userId)}/campus-history`)
+}
+export async function forceUserCampus(userId: string, input: ForceUserCampusInput): Promise<{ campus: { id: string; name: string; isolation_mode: 'legacy' | 'strict' }; profile: UserCampusProfile }> {
+  return request(`/admin/user-center/users/${encodeURIComponent(userId)}/campus`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
 export async function listManagedReferrals(filters: { keyword?: string; status?: string } = {}): Promise<{ items: ManagedReferral[]; pagination: { total: number } }> {
   const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => Boolean(value)) as Array<[string, string]>)
   const search = query.toString()
@@ -1928,7 +1971,7 @@ export async function listNotificationDeliveries(): Promise<{ items: ManagedNoti
 export async function retryNotificationDelivery(id: number, reason: string): Promise<ManagedNotificationDelivery> { return request(`/admin/notification-deliveries/${id}/retry`, { method: 'POST', body: JSON.stringify({ reason }) }) }
 export async function listManagedCampuses(filters: {
   keyword?: string; province?: string; catalog_type?: string; education_level?: string; catalog_status?: string;
-  status?: string; agent_coverage?: string; branding_status?: string; page?: number; page_size?: number
+  status?: string; agent_coverage?: string; branding_status?: string; isolation_mode?: 'legacy' | 'strict'; page?: number; page_size?: number
 } = {}): Promise<ManagedCampusList> {
   const query = new URLSearchParams()
   Object.entries(filters).forEach(([key, value]) => {
@@ -1944,7 +1987,7 @@ export async function listManagedCampusAgents(filters: { keyword?: string; statu
   return request(`/admin/campus-agents${query.size ? `?${query.toString()}` : ''}`)
 }
 export async function listCampusAgentOptions(): Promise<{ items: CampusAgentOption[] }> { return request('/admin/campus-agent-options') }
-type ManagedCampusWriteInput = Pick<ManagedCampus, 'code' | 'name' | 'emblem_asset_id' | 'emblem_url' | 'logo_asset_id' | 'logo_url' | 'province' | 'city' | 'district' | 'address' | 'latitude' | 'longitude' | 'status' | 'sort_order'>
+type ManagedCampusWriteInput = Pick<ManagedCampus, 'code' | 'name' | 'emblem_asset_id' | 'emblem_url' | 'logo_asset_id' | 'logo_url' | 'province' | 'city' | 'district' | 'address' | 'latitude' | 'longitude' | 'status' | 'sort_order'> & { isolation_mode?: ManagedCampus['isolation_mode'] }
 
 export async function createManagedCampus(input: ManagedCampusWriteInput): Promise<ManagedCampus> {
   return request('/admin/campuses', { method: 'POST', body: JSON.stringify(input) })
@@ -2126,4 +2169,241 @@ export async function listSecondHandRefunds(filters: { status?: string; page?: n
 }
 export async function arbitrateSecondHandRefund(id: string, input: { decision: 'approve' | 'reject'; note: string }): Promise<ManagedSecondHandRefund> {
   return request(`/admin/second-hand/refunds/${encodeURIComponent(id)}/arbitrate`, { method: 'POST', body: JSON.stringify(input) })
+}
+
+// ===== 地推运营 =====
+export interface PushTeamItem {
+  id: string
+  name: string
+  slogan: string | null
+  intro: string | null
+  level_code: string
+  level_name: string
+  status: 'recruiting' | 'active' | 'suspended' | 'closed'
+  settlement_cycle: 'weekly' | 'monthly'
+  review_hours: number
+  member_limit: number
+  member_count: number
+  month_orders: number
+  month_commission: string
+  team_bonus_rate: number
+  leader: { id: string; nickname: string } | null
+  campus: { id: string; name: string } | null
+}
+export interface PushTeamList {
+  items: PushTeamItem[]
+  pagination: { page: number; page_size: number; total: number }
+  summary: { total: number; recruiting: number; members: number; month_orders: number }
+}
+export interface PushTeamInput {
+  campus_id?: number
+  name?: string
+  slogan?: string | null
+  intro?: string | null
+  leader_user_id?: string | null
+  level_code?: string
+  status?: string
+  settlement_cycle?: string
+  review_hours?: number
+  member_limit?: number
+}
+
+export interface PushMemberItem {
+  id: number
+  user_id: string | null
+  nickname: string
+  team_name: string | null
+  role: 'leader' | 'member'
+  level_code: string
+  status: 'active' | 'left'
+  month_orders: number
+  month_commission: string
+  joined_at: string | null
+}
+export interface PushMemberList {
+  items: PushMemberItem[]
+  pagination: { page: number; page_size: number; total: number }
+  summary: { active: number; leaders: number; month_orders: number }
+}
+
+export interface PushLevelItem {
+  code: string
+  name: string
+  coefficient: number
+  team_bonus_rate: number
+  min_monthly_orders: number
+  sort_order: number
+  status: 'active' | 'inactive'
+}
+
+export interface PushTaskItem {
+  id: string
+  title: string
+  description: string | null
+  cover_text: string | null
+  reward_amount: string
+  quota: number
+  claimed_count: number
+  remaining: number | null
+  per_user_limit: number
+  starts_at: string | null
+  ends_at: string | null
+  status: 'draft' | 'published' | 'closed'
+}
+export interface PushTaskList {
+  items: PushTaskItem[]
+  pagination: { page: number; page_size: number; total: number }
+}
+export interface PushTaskInput {
+  campus_id?: number
+  title?: string
+  description?: string | null
+  cover_text?: string | null
+  reward_amount?: number
+  quota?: number
+  per_user_limit?: number
+  starts_at?: string | null
+  ends_at?: string | null
+  status?: string
+}
+
+export interface PushApplicationItem {
+  id: string
+  type: 'join' | 'leader'
+  status: 'pending' | 'approved' | 'rejected'
+  team_name: string | null
+  message: string | null
+  review_note: string | null
+  created_at: string | null
+  reviewed_at: string | null
+  user: { id: string; nickname: string } | null
+  team: { id: string; name: string } | null
+}
+export interface PushApplicationList {
+  items: PushApplicationItem[]
+  pagination: { page: number; page_size: number; total: number }
+  summary: { pending: number; leader_pending: number }
+}
+
+export interface PushSubmissionItem {
+  id: string
+  status: 'pending' | 'approved' | 'rejected'
+  images: string[]
+  remark: string | null
+  contact_name: string | null
+  contact_phone: string | null
+  reject_reason: string | null
+  level_code: string
+  commission: string
+  team_bonus: string
+  settled: boolean
+  created_at: string | null
+  reviewed_at: string | null
+  task: PushTaskItem | null
+  user: { id: string; nickname: string } | null
+}
+export interface PushSubmissionList {
+  items: PushSubmissionItem[]
+  pagination: { page: number; page_size: number; total: number }
+  summary: { pending: number; approved: number; rejected: number }
+}
+
+export interface PushSettlementMember {
+  id: string
+  batch_no: string
+  period_start: string
+  period_end: string
+  status: 'draft' | 'pending' | 'paid'
+  submission_count: number
+  total_commission: string
+  total_team_bonus: string
+  total_amount: string
+  confirmed_at: string | null
+  paid_at: string | null
+  created_at: string | null
+  items?: Array<{
+    id: number
+    user_id: string | null
+    nickname: string
+    team_name: string | null
+    level_code: string
+    submission_count: number
+    commission: string
+    team_bonus: string
+    status: 'pending' | 'paid'
+  }>
+}
+export interface PushSettlementList {
+  items: PushSettlementMember[]
+  pagination: { page: number; page_size: number; total: number }
+  summary: { pending_amount: string; paid_amount: string }
+}
+
+const pushQuery = (filters: Record<string, unknown>) => {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') query.set(key, String(value))
+  })
+  return query.size ? `?${query.toString()}` : ''
+}
+
+export function listPushTeams(filters: Record<string, unknown> = {}): Promise<PushTeamList> {
+  return request(`/admin/push/teams${pushQuery(filters)}`)
+}
+export function createPushTeam(input: PushTeamInput): Promise<PushTeamItem> {
+  return request('/admin/push/teams', { method: 'POST', body: JSON.stringify(input) })
+}
+export function updatePushTeam(id: string, input: PushTeamInput): Promise<PushTeamItem> {
+  return request(`/admin/push/teams/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+export function listPushMembers(filters: Record<string, unknown> = {}): Promise<PushMemberList> {
+  return request(`/admin/push/members${pushQuery(filters)}`)
+}
+export function updatePushMember(id: number, input: { level_code?: string; status?: string }): Promise<{ updated: boolean }> {
+  return request(`/admin/push/members/${id}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+export function listPushLevels(): Promise<{ items: PushLevelItem[] }> {
+  return request('/admin/push/levels')
+}
+export function savePushLevel(input: Partial<PushLevelItem> & { code: string }): Promise<PushLevelItem> {
+  return request('/admin/push/levels', { method: 'POST', body: JSON.stringify(input) })
+}
+export function updatePushLevel(code: string, input: Partial<PushLevelItem>): Promise<PushLevelItem> {
+  return request(`/admin/push/levels/${encodeURIComponent(code)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+export function listPushTasks(filters: Record<string, unknown> = {}): Promise<PushTaskList> {
+  return request(`/admin/push/tasks${pushQuery(filters)}`)
+}
+export function createPushTask(input: PushTaskInput): Promise<PushTaskItem> {
+  return request('/admin/push/tasks', { method: 'POST', body: JSON.stringify(input) })
+}
+export function updatePushTask(id: string, input: PushTaskInput): Promise<PushTaskItem> {
+  return request(`/admin/push/tasks/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+export function listPushApplications(filters: Record<string, unknown> = {}): Promise<PushApplicationList> {
+  return request(`/admin/push/applications${pushQuery(filters)}`)
+}
+export function reviewPushApplication(id: string, input: { decision: 'approve' | 'reject'; note?: string }): Promise<PushApplicationItem> {
+  return request(`/admin/push/applications/${encodeURIComponent(id)}/review`, { method: 'POST', body: JSON.stringify(input) })
+}
+export function listPushSubmissions(filters: Record<string, unknown> = {}): Promise<PushSubmissionList> {
+  return request(`/admin/push/submissions${pushQuery(filters)}`)
+}
+export function reviewPushSubmission(id: string, input: { decision: 'approve' | 'reject'; reason?: string }): Promise<PushSubmissionItem> {
+  return request(`/admin/push/submissions/${encodeURIComponent(id)}/review`, { method: 'POST', body: JSON.stringify(input) })
+}
+export function listPushSettlements(filters: Record<string, unknown> = {}): Promise<PushSettlementList> {
+  return request(`/admin/push/settlements${pushQuery(filters)}`)
+}
+export function createPushSettlement(input: { period_start: string; period_end: string }): Promise<PushSettlementMember> {
+  return request('/admin/push/settlements', { method: 'POST', body: JSON.stringify(input) })
+}
+export function getPushSettlement(id: string): Promise<PushSettlementMember> {
+  return request(`/admin/push/settlements/${encodeURIComponent(id)}`)
+}
+export function confirmPushSettlement(id: string): Promise<PushSettlementMember> {
+  return request(`/admin/push/settlements/${encodeURIComponent(id)}/confirm`, { method: 'POST', body: JSON.stringify({}) })
+}
+export function payPushSettlement(id: string): Promise<PushSettlementMember> {
+  return request(`/admin/push/settlements/${encodeURIComponent(id)}/pay`, { method: 'POST', body: JSON.stringify({}) })
 }

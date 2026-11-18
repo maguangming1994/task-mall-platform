@@ -120,6 +120,7 @@ class TaskClaimService
                 'credit_score' => isset($content['publisher_credit_score']) ? (int) $content['publisher_credit_score'] : null,
             ],
             'status' => $task->status, 'published_at' => $task->published_at?->toIso8601String(), 'historical_claim_count' => TaskClaim::query()->where('task_id', $task->id)->count(),
+            'is_platform_wide' => (bool) $task->is_platform_wide,
             'active_reservation_count' => $active, 'successful_reward_count' => $successful, 'remaining_reward_slots' => $remaining,
             'completed_user_count' => $completedClaims->count(),
             'pass_rate_percent' => $reviewedClaimCount === 0 ? null : (int) round($completedClaims->count() / $reviewedClaimCount * 100),

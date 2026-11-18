@@ -51,6 +51,8 @@ export interface HallTask {
   location_text?: string | null
   urgent?: boolean
   bounty?: boolean
+  /** 平台投放任务：strict 校区下可跨校展示 */
+  is_platform_wide?: boolean
   gallery?: string[]
   publisher: { id?: string; publisher_type?: string; display_name: string; publisher_badge: string; verification_status: string; avatar_url?: string | null; credit_score?: number | null }
   can_claim: boolean

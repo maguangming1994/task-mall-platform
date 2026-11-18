@@ -337,6 +337,7 @@ class TaskDefinitionService
             'description_format' => $version->content['description_format'] ?? 'rich_text_html',
             'description_schema_version' => $version->content['description_schema_version'] ?? 1,
             'creation_channel' => $task->creation_channel,
+            'is_platform_wide' => (bool) $task->is_platform_wide,
             'source_task_template' => $task->source_task_template_id === null ? null : [
                 'id' => TaskTemplate::query()->whereKey($task->source_task_template_id)->value('public_id'),
                 'version_no' => $task->source_task_template_version_no,

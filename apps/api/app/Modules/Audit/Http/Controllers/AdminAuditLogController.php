@@ -98,6 +98,7 @@ class AdminAuditLogController extends Controller
                 'after' => $redactor->redact($log->after_value),
                 'reason' => $log->reason,
                 'request_id' => $log->request_id,
+                'ip_fingerprint' => $log->ip_hash ? substr($log->ip_hash, 0, 12) : null,
                 'created_at' => $log->created_at?->toIso8601String(),
             ];
         })->values();

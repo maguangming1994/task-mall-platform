@@ -57,7 +57,7 @@ import { ImageSourceModal, type ImageSourceValue } from '../../components/ImageS
 import { CampusModuleDrawer } from './CampusModuleDrawer'
 
 type CampusImageValue = ImageSourceValue | null
-type CampusForm = Pick<ManagedCampus, 'code' | 'name' | 'province' | 'city' | 'district' | 'address' | 'latitude' | 'longitude' | 'status' | 'sort_order'> & {
+type CampusForm = Pick<ManagedCampus, 'code' | 'name' | 'province' | 'city' | 'district' | 'address' | 'latitude' | 'longitude' | 'status' | 'sort_order' | 'isolation_mode'> & {
   emblem_image: CampusImageValue
   logo_image: CampusImageValue
 }
@@ -72,6 +72,7 @@ type CampusFilters = {
   status: string
   agent_coverage: string
   branding_status: string
+  isolation_mode: ManagedCampus['isolation_mode'] | undefined
   page: number
   page_size: number
 }
@@ -79,11 +80,11 @@ type AgentFilters = { keyword: string; status: string; assignment: string; page:
 
 const emptyCampus: CampusForm = {
   code: '', name: '', province: '', city: '', district: '', address: '',
-  latitude: null, longitude: null, status: 'disabled', sort_order: 100,
+  latitude: null, longitude: null, status: 'disabled', sort_order: 100, isolation_mode: 'legacy',
   emblem_image: null, logo_image: null,
 }
 const initialCampusFilters: CampusFilters = {
-  keyword: '', province: '', catalog_type: '', education_level: '', status: '', agent_coverage: '', branding_status: '', page: 1, page_size: 20,
+  keyword: '', province: '', catalog_type: '', education_level: '', status: '', agent_coverage: '', branding_status: '', isolation_mode: undefined, page: 1, page_size: 20,
 }
 const initialAgentFilters: AgentFilters = { keyword: '', status: '', assignment: '', page: 1, page_size: 20 }
 
@@ -159,6 +160,8 @@ export function CampusManagementPage() {
   const { admin } = useAdminAuth()
   const canGovernAgents = admin?.permissions.includes('rbac.manage') ?? false
   const canManageCampuses = admin?.permissions.includes('campus.manage') ?? false
+  // 隔离模式属于平台级策略，仅超级管理员可切换
+  const canSwitchIsolation = admin?.roles.includes('super_admin') ?? false
   // 功能模块矩阵写入仅平台超管（campus.module_manage）；代理只读
   const canManageModules = admin?.permissions.includes('campus.module_manage') ?? false
   const [campusData, setCampusData] = useState<ManagedCampusList | null>(null)
@@ -244,6 +247,44 @@ export function CampusManagementPage() {
       longitude: campus.longitude,
       status: campus.status,
       sort_order: campus.sort_order,
+      isolation_mode: campus.isolation_mode,
+    })
+  }
+
+  const toggleIsolation = (campus: ManagedCampus) => {
+    const next = campus.isolation_mode === 'strict' ? 'legacy' : 'strict'
+    Modal.confirm({
+      title: next === 'strict' ? `将「${campus.name}」切换为严格隔离？` : `将「${campus.name}」切换为传统模式？`,
+      content: next === 'strict'
+        ? '严格隔离后，该校仅展示本校用户产生的社区内容与闲置商品，跨校内容不可见。若仍有缺少校区归属的内容，切换会失败并提示先执行数据回填。'
+        : '传统模式下该校用户可浏览全平台内容。',
+      okText: next === 'strict' ? '确认严格隔离' : '确认切换传统',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await updateManagedCampus(campus.id, {
+            code: campus.code,
+            name: campus.name,
+            emblem_asset_id: campus.emblem_asset_id,
+            emblem_url: campus.emblem_url,
+            logo_asset_id: campus.logo_asset_id,
+            logo_url: campus.logo_url,
+            province: campus.province,
+            city: campus.city,
+            district: campus.district,
+            address: campus.address,
+            latitude: campus.latitude,
+            longitude: campus.longitude,
+            status: campus.status,
+            sort_order: campus.sort_order,
+            isolation_mode: next,
+          })
+          messageApi.success(next === 'strict' ? '已切换为严格隔离模式。' : '已切换为传统模式。')
+          await refreshAfterWrite()
+        } catch (error) {
+          messageApi.error(error instanceof ApiError ? error.message : '隔离模式切换失败。')
+        }
+      },
     })
   }
 
@@ -388,6 +429,7 @@ export function CampusManagementPage() {
         <Select allowClear placeholder="学校类型" value={campusFilters.catalog_type || undefined} onChange={(value) => setCampusFilters((current) => ({ ...current, catalog_type: value ?? '', page: 1 }))} options={[{ value: 'ordinary', label: '普通高校' }, { value: 'adult', label: '成人高校' }, { value: 'manual', label: '人工创建' }]} style={{ width: 130 }} />
         <Select allowClear placeholder="办学层次" value={campusFilters.education_level || undefined} onChange={(value) => setCampusFilters((current) => ({ ...current, education_level: value ?? '', page: 1 }))} options={[{ value: '本科', label: '本科' }, { value: '专科', label: '高职专科' }, { value: '成人高等学校', label: '成人高校' }]} style={{ width: 130 }} />
         <Select allowClear placeholder="运营状态" value={campusFilters.status || undefined} onChange={(value) => setCampusFilters((current) => ({ ...current, status: value ?? '', page: 1 }))} options={[{ value: 'active', label: '已开通' }, { value: 'disabled', label: '待开通 / 暂停' }]} style={{ width: 145 }} />
+        <Select allowClear placeholder="隔离模式" value={campusFilters.isolation_mode || undefined} onChange={(value) => setCampusFilters((current) => ({ ...current, isolation_mode: (value ?? undefined) as CampusFilters['isolation_mode'], page: 1 }))} options={[{ value: 'strict', label: '严格隔离' }, { value: 'legacy', label: '传统模式' }]} style={{ width: 130 }} />
         <Select allowClear placeholder="代理覆盖" value={campusFilters.agent_coverage || undefined} onChange={(value) => setCampusFilters((current) => ({ ...current, agent_coverage: value ?? '', page: 1 }))} options={[{ value: 'assigned', label: '已分配代理' }, { value: 'unassigned', label: '未分配代理' }, { value: 'primary_missing', label: '缺少主代理' }]} style={{ width: 140 }} />
         <Select allowClear placeholder="校徽状态" value={campusFilters.branding_status || undefined} onChange={(value) => setCampusFilters((current) => ({ ...current, branding_status: value ?? '', page: 1 }))} options={[{ value: 'configured', label: '校徽已配置' }, { value: 'missing', label: '校徽待补充' }]} style={{ width: 140 }} />
         <Button onClick={() => { setCampusKeyword(''); setCampusFilters(initialCampusFilters) }}>重置</Button>
@@ -416,6 +458,23 @@ export function CampusManagementPage() {
           { title: '目录属性', width: 150, render: (_, row) => <Space orientation="vertical" size={3}><Tag color={row.catalog_type === 'ordinary' ? 'blue' : row.catalog_type === 'adult' ? 'purple' : 'default'}>{catalogTypeLabel(row.catalog_type)}</Tag><Typography.Text type="secondary">{row.education_level ?? '未设置层次'}</Typography.Text></Space> },
           { title: '地区 / 主管部门', width: 230, render: (_, row) => <><span>{[row.province, row.city].filter(Boolean).join(' · ') || '地区待完善'}</span><span className="table-subline">{row.supervising_authority ?? row.address ?? '主管部门待完善'}</span></> },
           { title: '运营状态', width: 125, render: (_, row) => <Space orientation="vertical" size={4}><Tag color={row.status === 'active' ? 'success' : 'default'}>{row.status === 'active' ? '已开通' : '待开通 / 暂停'}</Tag>{row.catalog_status === 'unlisted' && <Tag color="error">已退出名录</Tag>}</Space> },
+          {
+            title: '隔离模式',
+            width: 140,
+            render: (_, row) => {
+              const strict = row.isolation_mode === 'strict'
+              return (
+                <Space orientation="vertical" size={4}>
+                  <Tag color={strict ? 'volcano' : 'default'}>{strict ? '严格隔离' : '传统模式'}</Tag>
+                  {canSwitchIsolation && canManageCampuses && (
+                    <Button size="small" type="link" style={{ paddingInline: 0 }} onClick={() => toggleIsolation(row)}>
+                      切换为{strict ? '传统' : '严格'}
+                    </Button>
+                  )}
+                </Space>
+              )
+            },
+          },
           { title: '用户', dataIndex: 'users_count', width: 90, render: (value: number) => `${value} 人` },
           { title: '学校代理', width: 285, render: (_, row) => row.agents.length ? <Space wrap>{row.agents.map((agent) => <Tag key={agent.id} color={agent.is_primary ? 'blue' : undefined}>{agent.display_name}{agent.is_primary ? ' · 主代理' : ''}</Tag>)}</Space> : <Typography.Text type="secondary">尚未分配</Typography.Text> },
           { title: '更新时间', width: 170, render: (_, row) => formatTime(row.updated_at) },
@@ -538,7 +597,7 @@ export function CampusManagementPage() {
             { title: '操作', width: 106, render: (_, point) => <Button size="small" onClick={() => campusForm.setFieldsValue({ latitude: point.latitude, longitude: point.longitude, address: point.address, district: point.district })}>采用此校址</Button> },
           ]} />
         </Form.Item>}
-        <div className="campus-form-grid"><Form.Item name="status" label="运营状态"><Select options={[{ value: 'active', label: '已开通运营' }, { value: 'disabled', label: '待开通 / 暂停' }]} /></Form.Item><Form.Item name="sort_order" label="前台排序"><InputNumber style={{ width: '100%' }} min={0} max={9999} /></Form.Item></div>
+        <div className="campus-form-grid"><Form.Item name="status" label="运营状态"><Select options={[{ value: 'active', label: '已开通运营' }, { value: 'disabled', label: '待开通 / 暂停' }]} /></Form.Item><Form.Item name="sort_order" label="前台排序"><InputNumber style={{ width: '100%' }} min={0} max={9999} /></Form.Item><Form.Item name="isolation_mode" label="隔离模式" extra={canSwitchIsolation ? undefined : '仅平台超级管理员可切换'}><Select disabled={!canSwitchIsolation} options={[{ value: 'legacy', label: '传统模式' }, { value: 'strict', label: '严格隔离' }]} /></Form.Item></div>
       </Form>
     </Modal>
 

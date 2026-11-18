@@ -28,6 +28,8 @@ export interface SecondHandItem {
   description?: string
   favorite_count?: number
   is_owner?: boolean
+  /** 发布时所属学校（换校后用于跨校标识） */
+  campus_name?: string | null
 }
 
 export interface SecondHandSellerProfile {

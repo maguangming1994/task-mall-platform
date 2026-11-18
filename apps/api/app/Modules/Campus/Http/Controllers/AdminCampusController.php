@@ -33,6 +33,7 @@ class AdminCampusController extends Controller
             'status' => ['sometimes', 'in:active,disabled'],
             'agent_coverage' => ['sometimes', 'in:assigned,unassigned,primary_missing'],
             'branding_status' => ['sometimes', 'in:configured,missing'],
+            'isolation_mode' => ['sometimes', 'in:legacy,strict'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'page_size' => ['sometimes', 'integer', 'min:10', 'max:100'],
         ]);
@@ -60,7 +61,8 @@ class AdminCampusController extends Controller
                 'agents',
                 fn (Builder $agents) => $agents->where('admin_user_campus.is_primary', true),
             ))
-            ->when(isset($filters['branding_status']), fn (Builder $query) => $this->applyBrandingStatus($query, $filters['branding_status']));
+            ->when(isset($filters['branding_status']), fn (Builder $query) => $this->applyBrandingStatus($query, $filters['branding_status']))
+            ->when(isset($filters['isolation_mode']), fn (Builder $query) => $query->where('isolation_mode', $filters['isolation_mode']));
 
         $paginator = $query
             ->with(['agents.roles', 'emblemAsset', 'logoAsset'])
@@ -76,6 +78,8 @@ class AdminCampusController extends Controller
             'active' => (clone $scope)->where('status', 'active')->count(),
             'disabled' => (clone $scope)->where('status', 'disabled')->count(),
             'official_listed' => (clone $scope)->where('catalog_status', 'listed')->count(),
+            'isolation_strict' => (clone $scope)->where('isolation_mode', 'strict')->count(),
+            'isolation_legacy' => (clone $scope)->where('isolation_mode', 'legacy')->count(),
             'branding_configured' => $this->applyBrandingStatus(clone $scope, 'configured')->count(),
             'branding_missing' => $this->applyBrandingStatus(clone $scope, 'missing')->count(),
             'without_primary_agent' => (clone $scope)
@@ -214,11 +218,18 @@ class AdminCampusController extends Controller
     {
         $before = $this->present($campus->load(['agents.roles', 'emblemAsset', 'logoAsset'])->loadCount('users'));
         $data = $this->validateCampus($request, $campus);
+        /** @var AdminUser $actor */
+        $actor = $request->user();
+        // 隔离模式属于平台级策略：学校代理可维护本校资料，但不得自行切换隔离口径
+        if (array_key_exists('isolation_mode', $data)
+            && ($campus->isolation_mode ?? 'legacy') !== $data['isolation_mode']
+            && ! $actor->roles()->where('code', 'super_admin')->exists()) {
+            return ApiResponse::error('CAMPUS_ISOLATION_FORBIDDEN', '仅平台超级管理员可以切换学校隔离模式。', 403);
+        }
+        $this->assertIsolationSwitchAllowed($campus, $data);
         if ($campus->official_school_code !== null) {
             unset($data['code'], $data['name'], $data['province'], $data['city']);
         }
-        /** @var AdminUser $actor */
-        $actor = $request->user();
         $campus->update($data);
         $after = $this->present($campus->fresh()->load(['agents.roles', 'emblemAsset', 'logoAsset'])->loadCount('users'));
         $audit->record($actor, 'campus.update', 'campus', $campus->public_id, $before, $after);
@@ -292,6 +303,7 @@ class AdminCampusController extends Controller
             'latitude' => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
             'status' => ['required', 'in:active,disabled'],
+            'isolation_mode' => ['sometimes', 'in:legacy,strict'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:9999'],
             'emblem_asset_id' => ['sometimes', 'nullable', 'string', 'size:26', Rule::exists('media_assets', 'public_id')->where('status', 'active')],
             'emblem_url' => ['sometimes', 'nullable', app()->environment('production') ? 'url:https' : 'url:http,https', 'max:2048'],
@@ -355,6 +367,43 @@ class AdminCampusController extends Controller
                     ->orWhere('emblem_url', ''))));
     }
 
+    /**
+     * 切换隔离模式的准入校验：兜底校必须保持 legacy；转 strict 前该校 UGC 不得存在 NULL 归属。
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function assertIsolationSwitchAllowed(Campus $campus, array $data): void
+    {
+        if (! array_key_exists('isolation_mode', $data)) {
+            return;
+        }
+        $target = $data['isolation_mode'];
+        if ($target === ($campus->isolation_mode ?? 'legacy')) {
+            return;
+        }
+        if ($target === 'legacy') {
+            return;
+        }
+        if ($campus->public_id === 'default-campus') {
+            throw ValidationException::withMessages([
+                'isolation_mode' => ['默认学校是未确认用户的兜底校区，必须保持「传统」模式。'],
+            ]);
+        }
+
+        $userIds = DB::table('users')->select('id')->where('campus_id', $campus->id);
+        $nullPosts = DB::table('community_posts')->whereNull('campus_id')->whereIn('user_id', $userIds)->count();
+        $nullItems = DB::table('second_hand_items')->whereNull('campus_id')->whereIn('user_id', $userIds)->count();
+        if ($nullPosts + $nullItems > 0) {
+            throw ValidationException::withMessages([
+                'isolation_mode' => [sprintf(
+                    '该校仍有 %d 条社区内容、%d 件闲置缺少校区归属，请先执行数据回填（php artisan campus:backfill）后再切换为严格模式。',
+                    $nullPosts,
+                    $nullItems,
+                )],
+            ]);
+        }
+    }
+
     private function scopedCampuses(Request $request): Builder
     {
         $query = Campus::query();
@@ -393,6 +442,7 @@ class AdminCampusController extends Controller
             'logo_asset_id' => $campus->logo_asset_id,
             'logo_url' => $this->brandUrl($campus->logo_asset_id, $campus->logoAsset, $campus->logo_url),
             'status' => $campus->status,
+            'isolation_mode' => $campus->isolation_mode ?? 'legacy',
             'sort_order' => $campus->sort_order,
             'users_count' => $campus->users_count ?? 0,
             'updated_at' => $campus->updated_at?->toIso8601String(),

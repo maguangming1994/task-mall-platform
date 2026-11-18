@@ -92,10 +92,7 @@ export function InventoryPage() {
   return (
     <div className="xq-page">
       {contextHolder}
-      <PageHead title="库存管理" extra={<>
-        <Button style={{ marginRight: 10 }} onClick={() => messageApi.info('库存流水能力待接入。')}>库存流水</Button>
-        <Button type="primary" onClick={() => messageApi.info('批量补货能力待接入。')}>+ 批量补货</Button>
-      </>} />
+      <PageHead title="库存管理" />
 
       <div className="xq-stats">
         <StatCard title="SKU 总数" value={stats.total} delta={`在售 ${stats.onSale}`} />
@@ -171,7 +168,6 @@ export function InventoryPage() {
                 return (
                   <Links items={[
                     { label: state === 'normal' ? '调整' : '补货', onClick: () => { form.resetFields(); setAdjustTarget(item) } },
-                    { label: '流水', onClick: () => messageApi.info('库存流水能力待接入。') },
                   ]} />
                 )
               },

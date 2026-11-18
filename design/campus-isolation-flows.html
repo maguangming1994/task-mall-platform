@@ -2,29 +2,30 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>校区强隔离 · UI 流程与页面设计稿（评审稿）</title>
+<title>校区强隔离 · 历史页面稿（页面已并入 在线UI-1）</title>
 <style>
 :root{
-  --brand:#0E9F6E; --brand-deep:#0B7A5C; --brand-dark:#085C45; --brand-soft:#E7F6EF; --brand-mist:#F2FAF7;
-  --amber:#E8920C; --amber-soft:#FDF1DE;
-  --blue:#2F7DE1; --blue-soft:#EAF2FE;
-  --violet:#7656E8; --violet-soft:#F0EDFE;
-  --red:#E5484D; --red-soft:#FDECEC;
-  --ink:#102338; --ink-2:#46586C; --ink-3:#8B99AA; --ink-4:#B3BECB;
-  --line:#E6ECF1; --line-2:#F0F4F7;
-  --bg:#F2F6F8; --card:#FFFFFF;
+  --brand:#0BBF63; --brand-deep:#08A152; --brand-dark:#0A3D23; --brand-soft:#E7F9EF; --brand-mist:#F2FBF6;
+  --amber:#FF7A1A; --amber-soft:#FFF2E5;
+  --blue:#3B82F6; --blue-soft:#EAF2FF;
+  --violet:#6B7B8C; --violet-soft:#F2F4F3;
+  --red:#FF3B30; --red-soft:#FFEEEA;
+  --ink:#191B1F; --ink-2:#767C85; --ink-3:#AEB3BB; --ink-4:#C9CDD3;
+  --line:#EDEFEF; --line-2:#F5F6F6;
+  --bg:#F4F6F4; --card:#FFFFFF;
   --shadow-card:0 6px 22px rgba(16,52,44,.06);
   --shadow-float:0 12px 34px rgba(16,52,44,.14);
   --r-s:8px; --r-m:12px; --r-l:16px; --r-xl:22px;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
-body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);background-image:radial-gradient(circle at 1px 1px,#dde5ea 1px,transparent 0);background-size:22px 22px;padding-bottom:90px}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);padding-bottom:90px}
 .num{font-family:"DIN Alternate","SF Pro Display","Helvetica Neue",sans-serif;font-feature-settings:"tnum"}
 .wrap{max-width:1280px;margin:0 auto;padding:0 32px}
 
 /* ---------- 封面 ---------- */
-.masthead{background:linear-gradient(135deg,#0B7A5C 0%,#0E9F6E 55%,#13B883 100%);color:#fff;padding:52px 0 60px;position:relative;overflow:hidden}
+.masthead{background:linear-gradient(135deg,#08A152 0%,#0BBF63 55%,#12D978 100%);color:#fff;padding:52px 0 60px;position:relative;overflow:hidden}
 .masthead::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.16),transparent 65%)}
 .masthead .wrap{position:relative;z-index:1}
 .kicker{font-size:12px;font-weight:700;letter-spacing:.22em;opacity:.85}
@@ -82,7 +83,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
 .m-card{background:#fff;border-radius:14px;margin:10px 12px;padding:14px;box-shadow:0 2px 10px rgba(16,52,44,.05)}
 .m-banner{display:flex;gap:9px;align-items:flex-start;background:var(--amber-soft);border:1px solid #F7E3BC;border-radius:12px;padding:11px 13px;font-size:11.5px;color:#92651B;line-height:1.6;margin:10px 12px}
 .m-banner.blue{background:var(--blue-soft);border-color:#C9DEF8;color:#2B5FA6}
-.m-btn{display:block;text-align:center;background:linear-gradient(120deg,#12B77E,#0A8E60);color:#fff;font-weight:800;font-size:13.5px;border-radius:999px;padding:12px 0;box-shadow:0 6px 14px rgba(14,159,110,.25)}
+.m-btn{display:block;text-align:center;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-weight:800;font-size:13.5px;border-radius:999px;padding:12px 0;box-shadow:0 6px 14px rgba(11,191,99,.25)}
 .m-btn.ghost{background:#fff;color:var(--ink-2);border:1px solid var(--line);box-shadow:none}
 .m-btn.disabled{background:#EDF1F4;color:var(--ink-4);box-shadow:none}
 .m-btn.sm{padding:9px 0;font-size:12.5px}
@@ -128,10 +129,10 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
 .a-head .t{font-size:12.5px;font-weight:800;color:var(--ink-2);margin-left:6px}
 .a-body{padding:18px}
 .a-layout{display:flex;min-height:420px}
-.a-side{width:180px;background:#0F1F2E;color:#9FB3C5;padding:16px 0;flex:none}
+.a-side{width:180px;background:var(--brand-dark);color:#A8C3B4;padding:16px 0;flex:none}
 .a-side .lg{color:#fff;font-weight:800;font-size:13px;padding:4px 18px 18px;display:flex;gap:8px;align-items:center}
 .a-side .mi{font-size:12px;padding:10px 18px;display:flex;gap:8px;align-items:center}
-.a-side .mi.on{background:rgba(18,183,126,.16);color:#3ED8A4;border-right:2.5px solid #12B77E;font-weight:700}
+.a-side .mi.on{background:rgba(11,191,99,.18);color:#67E3A6;border-right:2.5px solid var(--brand);font-weight:700}
 .a-main{flex:1;padding:18px 20px;background:#F7F9FA;min-width:0}
 .a-title{font-size:15px;font-weight:800;margin-bottom:4px}
 .a-sub{font-size:11.5px;color:var(--ink-3);margin-bottom:14px}
@@ -178,7 +179,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
 .stat-c .sl{font-size:11px;color:var(--ink-3);margin-top:3px}
 .stat-c .sv.g{color:var(--brand-deep)} .stat-c .sv.y{color:var(--amber)} .stat-c .sv.r{color:var(--red)} .stat-c .sv.b{color:var(--blue)}
 .drawer-note{font-size:11.5px;color:var(--ink-3);background:#F4F7F9;border-radius:9px;padding:9px 12px;line-height:1.65}
-.mono{font-family:Consolas,"Courier New",monospace;font-size:11px;background:#10212B;color:#9FD8BE;border-radius:10px;padding:14px 16px;line-height:1.75;overflow-x:auto;white-space:pre}
+.mono{font-family:Consolas,"Courier New",monospace;font-size:11px;background:var(--brand-dark);color:#9FD8BE;border-radius:10px;padding:14px 16px;line-height:1.75;overflow-x:auto;white-space:pre}
 .mono .c1{color:#6B8296}.mono .c2{color:#F0C674}.mono .c3{color:#8FD0FF}
 .checkbox-line{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--ink-2);line-height:1.6}
 .checkbox-line .cb{width:16px;height:16px;border-radius:4px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;flex:none;margin-top:1px}
@@ -191,9 +192,41 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
 
 /* ---------- 状态覆盖表 ---------- */
 .state-table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:var(--shadow-card)}
-.state-table th{background:#0F1F2E;color:#C8D6E2;text-align:left;padding:11px 14px;font-size:12px}
+.state-table th{background:var(--brand-dark);color:#C8D6E2;text-align:left;padding:11px 14px;font-size:12px}
 .state-table td{padding:11px 14px;border-top:1px solid var(--line-2);color:var(--ink-2);line-height:1.6}
 .state-table td:first-child{font-weight:800;color:var(--ink);white-space:nowrap}
+
+/* ---------- 05 地推模块：泳道与复用标注 ---------- */
+.fb{display:inline-block;font-size:9.5px;font-weight:800;border-radius:5px;padding:1.5px 6px;letter-spacing:.02em;white-space:nowrap}
+.fb.reuse{background:var(--blue-soft);color:var(--blue)}
+.fb.new{background:var(--brand-soft);color:var(--brand-deep)}
+.fnode .fb{margin-top:7px}
+.flow-badges{display:flex;gap:18px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-3);margin:0 0 12px}
+.flow-badges span{display:inline-flex;align-items:center;gap:6px}
+.lanes{display:flex;flex-direction:column;gap:12px;margin:4px 0 6px}
+.lane{display:flex;align-items:stretch;gap:10px}
+.lane-tag{width:92px;flex:none;background:var(--brand-dark);color:#D6E3ED;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:11.5px;font-weight:800;line-height:1.5;padding:10px 6px}
+.lane-tag small{display:block;font-size:9.5px;font-weight:600;color:#7E96AB;margin-top:3px;letter-spacing:.04em}
+.lane .flow{flex:1;flex-wrap:wrap;margin:0;min-width:0}
+.lane .fnode{min-width:128px;padding:11px 12px}
+.lane .fnode .ft{font-size:12.5px}
+.lane .fnode .fs{font-size:10.5px}
+.lane .fnode .fb{font-size:9px;padding:1px 5px}
+.lane .farrow{padding:0 4px;font-size:15px}
+.lane-note{font-size:11.5px;color:var(--ink-3);line-height:1.7;margin:10px 0 0}
+.lane-note b{color:var(--ink-2)}
+
+/* ---------- 统一入口单屏模式 ---------- */
+body.ci-single .masthead,body.ci-single .sec-head,body.ci-single .sec-desc,body.ci-single .foot{display:none}
+body.ci-single{padding-bottom:24px}
+body.ci-single .wrap{padding:20px 12px 32px;max-width:none}
+body.ci-single .phones{display:block}
+body.ci-single .admin-grid{display:block}
+body.ci-single .phone-block,body.ci-single .admin-block{display:none}
+body.ci-single .phone-block.ci-target{display:block;margin:0 auto;max-width:640px}
+body.ci-single .phone{margin:0 auto}
+body.ci-single .admin-block.ci-target{display:block;margin:0 auto;max-width:1320px}
+body.ci-single .phone-block.ci-target .phone{box-shadow:0 12px 44px rgba(0,0,0,.14)}
 
 .foot{margin-top:70px;text-align:center;font-size:12px;color:var(--ink-4);line-height:2}
 @media(max-width:900px){.stat-cards{grid-template-columns:repeat(2,1fr)}.a-side{display:none}}
@@ -203,95 +236,36 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
 
 <header class="masthead">
   <div class="wrap">
-    <div class="kicker">CAMPUS ISOLATION · UI/UX FLOWS</div>
-    <h1>校区强隔离 · UI 流程与页面设计稿</h1>
-    <p>覆盖《校区强隔离改造方案》与 P0+P1 实施清单中全部<strong>新增/变化的界面与交互流程</strong>：小程序端选校门禁、老用户兜底确认、换校（30 天冷却）、平台投放标识、严格校区空态；管理端隔离模式开关、强制改校、平台投放勾选、数据回填报告。设计稿先行，不含业务代码。</p>
+    <div class="kicker">CAMPUS ISOLATION · PAGES</div>
+    <h1>校区强隔离 · 历史页面稿（已并入 在线UI-1）</h1>
+    <p>11 张小程序页面与 4 个后台界面已就地迁入 <a href="在线UI-1/sub-screens.html" style="color:#fff;font-weight:800;text-decoration:underline">sub-screens.html</a>（C 端）与 <a href="在线UI-1/admin-screens.html" style="color:#fff;font-weight:800;text-decoration:underline">admin-screens.html</a>（后台），按业务主线插在相邻现有屏之后；三条流程 A/B/C 与地推流程 D/E 也已就地并入 <a href="在线UI-1/index.html#flows-main" style="color:#fff;font-weight:800;text-decoration:underline">统一流程视图</a>。本文件仅作历史对照，不再作为浏览入口。</p>
     <div class="meta-row">
-      <span class="meta-chip">版本 <b>v1.0</b> 评审稿</span>
+      <span class="meta-chip">版本 <b>v1.4</b> 归档稿</span>
       <span class="meta-chip">依据 <b>CAMPUS_STRICT_ISOLATION_PLAN v1.2</b></span>
-      <span class="meta-chip">小程序 <b>8 个流程 / 11 屏</b></span>
-      <span class="meta-chip">管理端 <b>4 个界面</b></span>
-      <span class="meta-chip">绑定档案 <b>学校 + 年级 + 专业（手动填写）</b></span>
-      <span class="meta-chip">视觉沿用 <b>UI 3.0 Token</b></span>
+      <span class="meta-chip">小程序 <b>11 屏</b></span>
+      <span class="meta-chip">管理端 <b>4 界面</b></span>
+      <span class="meta-chip">流程 <b>已就地并入统一入口（12–14 / 20–21）</b></span>
+      <span class="meta-chip">色板 <b>#0BBF63 / #08A152</b></span>
     </div>
   </div>
 </header>
 
 <div class="wrap">
 
-<!-- ==================== 01 全局流程 ==================== -->
-<div class="sec-head"><span class="sec-no">01</span><h2>全局流程地图</h2><span class="sec-note">先确认流程，再看单屏</span></div>
-
-<p class="sec-desc">三条主链路：<b>① 新用户/未绑校</b> 走选校门禁；<b>② 存量兜底用户</b> 走强弹窗确认；<b>③ 已绑校用户</b> 正常浏览，换校受 30 天冷却与未履约订单约束。管理端负责隔离灰度与数据治理。</p>
-
-<h3 style="font-size:14px;font-weight:800;margin:18px 0 10px">流程 A · 启动与绑校门禁（小程序）</h3>
-<div class="flow">
-  <div class="fnode"><div class="ft">启动 / 登录</div><div class="fs">拉取 client-capabilities</div></div>
-  <div class="farrow">→</div>
-  <div class="fnode key"><div class="ft">campus_required?</div><div class="fs">登录 && 未绑校 = true</div></div>
-  <div class="farrow"><div><div>→</div><div class="fcond">true</div></div></div>
-  <div class="fnode warn"><div class="ft">三步绑定门禁</div><div class="fs">M1 学校 → M1b 年级 → M1c 专业</div></div>
-  <div class="farrow">→</div>
-  <div class="fnode"><div class="ft">PUT /me/campus</div><div class="fs">校+年级+专业 · 写审计 · 冷启动</div></div>
-</div>
-<div class="flow" style="margin-top:14px">
-  <div class="fnode key"><div class="ft">campus_required?</div><div class="fs">= false（已绑校）</div></div>
-  <div class="farrow"><div><div>→</div><div class="fcond">false</div></div></div>
-  <div class="fnode"><div class="ft">正常进入首页</div><div class="fs">内容 = 绑定校 + 平台投放任务</div></div>
-  <div class="farrow">→</div>
-  <div class="fnode"><div class="ft">浏览 / 交易 / UGC</div><div class="fs">写入一律盖绑定校</div></div>
-</div>
-
-<h3 style="font-size:14px;font-weight:800;margin:22px 0 10px">流程 B · 存量兜底用户确认（D6）</h3>
-<div class="flow">
-  <div class="fnode"><div class="ft">老用户登录</div><div class="fs">曾被回填至默认学校</div></div>
-  <div class="farrow">→</div>
-  <div class="fnode warn"><div class="ft">强制确认弹窗</div><div class="fs">屏 M2 · 确认 / 重新选择</div></div>
-  <div class="farrow">→</div>
-  <div class="fnode"><div class="ft">确认默认校</div><div class="fs">直接生效</div></div>
-  <div class="farrow"><div class="fcond">或</div></div>
-  <div class="fnode"><div class="ft">重新选择学校</div><div class="fs">走选校列表（不计入 30 天冷却）</div></div>
-</div>
-
-<h3 style="font-size:14px;font-weight:800;margin:22px 0 10px">流程 C · 换校（D5）</h3>
-<div class="flow">
-  <div class="fnode"><div class="ft">我的 → 切换学校</div><div class="fs">屏 M5 换校页</div></div>
-  <div class="farrow">→</div>
-  <div class="fnode key"><div class="ft">前置校验</div><div class="fs">冷却期? / 未履约闲置订单?</div></div>
-  <div class="farrow"><div><div>→</div><div class="fcond">通过</div></div></div>
-  <div class="fnode"><div class="ft">确认弹窗</div><div class="fs">资产随人 · UGC 留原校说明</div></div>
-  <div class="farrow">→</div>
-  <div class="fnode"><div class="ft">换校成功</div><div class="fs">清缓存 · 冷启动 · 写审计</div></div>
-</div>
-<div class="flow" style="margin-top:14px">
-  <div class="fnode key"><div class="ft">前置校验</div></div>
-  <div class="farrow"><div><div>→</div><div class="fcond">冷却中</div></div></div>
-  <div class="fnode danger"><div class="ft">422 TOO_FREQUENT</div><div class="fs">屏 M6 · 倒计时下次可换日期</div></div>
-  <div class="farrow"><div class="fcond">有订单</div></div>
-  <div class="fnode danger"><div class="ft">422 BLOCKED_ORDERS</div><div class="fs">屏 M6 · 提示先完成/取消订单</div></div>
-</div>
-
-<div class="legend">
-  <span><i style="background:var(--brand)"></i>判定节点</span>
-  <span><i style="background:var(--amber)"></i>阻断/门禁界面</span>
-  <span><i style="background:var(--red)"></i>错误分支</span>
-  <span><i style="background:#C9D4DC"></i>普通页面</span>
-</div>
-
-<!-- ==================== 02 小程序端 ==================== -->
-<div class="sec-head"><span class="sec-no">02</span><h2>小程序端页面（11 屏）</h2><span class="sec-note">手机稿 · 9:19.2 · 沿用 UI 3.0 Token</span></div>
+<!-- ==================== 01 小程序端 ==================== -->
+<div class="sec-head"><span class="sec-no">01</span><h2>小程序端页面（11 屏）</h2><span class="sec-note">手机稿 · 已并入统一入口</span></div>
 <p class="sec-desc">M1/M1b/M1c 为三步绑定门禁（学校 → 年级 → 专业手动填写）；M2 为老用户兜底确认（补全年级专业）；M3~M6 为既有页面的新增状态与拦截；M7/M8 为内容侧变化（平台投放标识、严格校区空态）；M9 为「我的发布」跨校视角说明。</p>
 
 <div class="phones">
 
   <!-- M1 选校门禁 -->
-  <div class="phone-block">
+  <div class="phone-block" id="ci-m1">
     <div class="phone-tag"><span class="pn">M1</span>选校门禁（新页面）<span class="badge-new">新增</span></div>
     <div class="phone">
       <div class="p-status"><span>9:41</span><span>📶 🔋</span></div>
       <div class="p-body" style="background:linear-gradient(180deg,#EAF6F0,#F7FAF9 40%)">
         <div style="text-align:center;padding:26px 24px 0">
-          <div style="width:64px;height:64px;border-radius:22px;background:linear-gradient(135deg,#12B77E,#0A8E60);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:28px">🏫</div>
+          <div style="width:64px;height:64px;border-radius:22px;background:linear-gradient(135deg,#12D978,#08A152);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:28px">🏫</div>
           <div style="font-size:17px;font-weight:800">先选择你的学校</div>
           <div style="font-size:12px;color:var(--ink-3);margin-top:7px;line-height:1.7">不同学校的内容、任务与闲置互不互通</div>
           <div style="display:flex;gap:5px;justify-content:center;margin-top:12px">
@@ -315,13 +289,13 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- M1b 选择年级 -->
-  <div class="phone-block">
+  <div class="phone-block" id="ci-m1b">
     <div class="phone-tag"><span class="pn">M1b</span>选择年级（新页面）<span class="badge-new">新增</span></div>
     <div class="phone">
       <div class="p-status"><span>9:41</span><span>📶 🔋</span></div>
       <div class="p-body" style="background:linear-gradient(180deg,#EAF6F0,#F7FAF9 40%)">
         <div style="text-align:center;padding:26px 24px 0">
-          <div style="width:64px;height:64px;border-radius:22px;background:linear-gradient(135deg,#4FB695,#0E9F6E);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:28px">🎓</div>
+          <div style="width:64px;height:64px;border-radius:22px;background:linear-gradient(135deg,#12D978,#08A152);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:28px">🎓</div>
           <div style="font-size:17px;font-weight:800">你是哪一级？</div>
           <div style="font-size:12px;color:var(--ink-3);margin-top:7px">已选学校：<b style="color:var(--brand-deep)">南昌大学</b>　更换 ›</div>
           <div style="display:flex;gap:5px;justify-content:center;margin-top:12px">
@@ -348,7 +322,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- M1c 填写专业 -->
-  <div class="phone-block">
+  <div class="phone-block" id="ci-m1c">
     <div class="phone-tag"><span class="pn">M1c</span>填写专业 · 手动输入（新页面）<span class="badge-new">新增</span></div>
     <div class="phone">
       <div class="p-status"><span>9:41</span><span>📶 🔋</span></div>
@@ -381,7 +355,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- M2 老用户兜底确认 -->
-  <div class="phone-block">
+  <div class="phone-block" id="ci-m2">
     <div class="phone-tag"><span class="pn">M2</span>老用户兜底确认（D6 强弹窗）<span class="badge-new">新增</span></div>
     <div class="phone">
       <div class="p-status"><span>9:41</span><span>📶 🔋</span></div>
@@ -417,7 +391,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- M3 匿名浏览 -->
-  <div class="phone-block">
+  <div class="phone-block" id="ci-m3">
     <div class="phone-tag"><span class="pn">M3</span>匿名浏览（D2 全公开）<span class="badge-flow">既有+状态</span></div>
     <div class="phone">
       <div class="p-status"><span>9:41</span><span>📶 🔋</span></div>
@@ -435,7 +409,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- M4 CAMPUS_NOT_BOUND 拦截 -->
-  <div class="phone-block">
+  <div class="phone-block" id="ci-m4">
     <div class="phone-tag"><span class="pn">M4</span>未绑校写操作拦截（403）<span class="badge-new">新增</span></div>
     <div class="phone">
       <div class="p-status"><span>9:41</span><span>📶 🔋</span></div>
@@ -459,7 +433,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- M5 换校页 -->
-  <div class="phone-block">
+  <div class="phone-block" id="ci-m5">
     <div class="phone-tag"><span class="pn">M5</span>换校页 + 归属说明（D5）<span class="badge-flow">改造</span></div>
     <div class="phone">
       <div class="p-status"><span>9:41</span><span>📶 🔋</span></div>
@@ -483,7 +457,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- M6 换校被阻断 -->
-  <div class="phone-block">
+  <div class="phone-block" id="ci-m6">
     <div class="phone-tag"><span class="pn">M6</span>换校阻断（冷却中 / 未履约订单）<span class="badge-new">新增</span></div>
     <div class="phone">
       <div class="p-status"><span>9:41</span><span>📶 🔋</span></div>
@@ -506,7 +480,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- M7 平台投放标识 -->
-  <div class="phone-block">
+  <div class="phone-block" id="ci-m7">
     <div class="phone-tag"><span class="pn">M7</span>平台投放任务标识（D3/D8）<span class="badge-flow">内容态</span></div>
     <div class="phone">
       <div class="p-status"><span>9:41</span><span>📶 🔋</span></div>
@@ -524,7 +498,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- M8 严格校区空态 -->
-  <div class="phone-block">
+  <div class="phone-block" id="ci-m8">
     <div class="phone-tag"><span class="pn">M8</span>严格校区空态（legacy→strict 后）<span class="badge-flow">状态</span></div>
     <div class="phone">
       <div class="p-status"><span>9:41</span><span>📶 🔋</span></div>
@@ -547,7 +521,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- M9 我的发布（跨校视角） -->
-  <div class="phone-block">
+  <div class="phone-block" id="ci-m9">
     <div class="phone-tag"><span class="pn">M9</span>我的发布 · 历史归属（D5 配套）<span class="badge-flow">改造</span></div>
     <div class="phone">
       <div class="p-status"><span>9:41</span><span>📶 🔋</span></div>
@@ -567,13 +541,13 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
 </div>
 
 <!-- ==================== 03 管理后台 ==================== -->
-<div class="sec-head"><span class="sec-no">03</span><h2>管理后台页面（4 界面）</h2><span class="sec-note">桌面端 · 嵌入现有 admin-web 布局</span></div>
+<div class="sec-head"><span class="sec-no">02</span><h2>管理后台页面（4 界面）</h2><span class="sec-note">桌面端 · 已并入统一入口</span></div>
 <p class="sec-desc">A1 学校库增加隔离模式列与开关；A2 用户详情增加强制改校；A3 任务编辑增加平台投放勾选；A4 为回填命令的可视化报告页（dry-run 结果评审用）。</p>
 
 <div class="admin-grid">
 
   <!-- A1 学校库 · 隔离模式 -->
-  <div class="admin-block">
+  <div class="admin-block" id="ci-a1">
     <div class="phone-tag"><span class="pn">A1</span>学校库 · 隔离模式开关（P2 灰度入口）<span class="badge-new">改造</span></div>
     <div class="admin">
       <div class="a-head"><span class="dot" style="background:#FF5F57"></span><span class="dot" style="background:#FEBC2E"></span><span class="dot" style="background:#28C840"></span><span class="t">admin-web · 学校与代理运营 / 学校库</span></div>
@@ -612,7 +586,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- A2 用户详情 · 强制改校 -->
-  <div class="admin-block">
+  <div class="admin-block" id="ci-a2">
     <div class="phone-tag"><span class="pn">A2</span>用户管理 · 强制改校弹窗（D5 管理侧）<span class="badge-new">新增</span></div>
     <div class="admin" style="position:relative">
       <div class="a-head"><span class="dot" style="background:#FF5F57"></span><span class="dot" style="background:#FEBC2E"></span><span class="dot" style="background:#28C840"></span><span class="t">admin-web · 用户管理 / 用户详情</span></div>
@@ -652,7 +626,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- A3 任务编辑 · 平台投放 -->
-  <div class="admin-block">
+  <div class="admin-block" id="ci-a3">
     <div class="phone-tag"><span class="pn">A3</span>任务编辑 · 平台投放勾选（D8）<span class="badge-new">改造</span></div>
     <div class="admin">
       <div class="a-head"><span class="dot" style="background:#FF5F57"></span><span class="dot" style="background:#FEBC2E"></span><span class="dot" style="background:#28C840"></span><span class="t">admin-web · 任务管理 / 新建任务</span></div>
@@ -675,7 +649,7 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
   </div>
 
   <!-- A4 数据治理 · 回填报告 -->
-  <div class="admin-block">
+  <div class="admin-block" id="ci-a4">
     <div class="phone-tag"><span class="pn">A4</span>数据治理 · 回填 dry-run 报告（P1 配套）<span class="badge-new">新增</span></div>
     <div class="admin">
       <div class="a-head"><span class="dot" style="background:#FF5F57"></span><span class="dot" style="background:#FEBC2E"></span><span class="dot" style="background:#28C840"></span><span class="t">admin-web · 数据治理 / 校区归属回填</span></div>
@@ -726,34 +700,32 @@ tasks:  <span class="c2">25</span> null → 5 platform / 18 backfill / <span cla
 
 </div>
 
-<!-- ==================== 04 状态覆盖 ==================== -->
-<div class="sec-head"><span class="sec-no">04</span><h2>状态与异常覆盖清单</h2><span class="sec-note">对照设计基线第 3 节，逐屏验收</span></div>
-<table class="state-table">
-  <tr><th style="width:170px">界面</th><th>已覆盖状态</th><th>对应错误码 / 机制</th></tr>
-  <tr><td>M1 选学校</td><td>默认列表 / 搜索 / 省市区分组 / 加载骨架 / 网络错误重试 / 已选高亮 / 步骤指示</td><td><code>campus_required</code> 触发（含档案不完整）</td></tr>
-  <tr><td>M1b 选年级</td><td>今年~前5年网格 / 其他·已毕业 / 换学校返回 / 必选校验</td><td><code>users.grade_year</code></td></tr>
-  <tr><td>M1c 填专业</td><td>手动输入 ≤30 字 / 字数计数 / 学院选填 / 空值拦截 / 三步一次提交</td><td><code>users.major</code> 必填 / <code>users.college</code> 选填</td></tr>
-  <tr><td>M2 兜底确认</td><td>强弹窗（不可跳过）/ 确认 / 改选（不计冷却）/ 补全年级专业</td><td>回填标记 <code>reason=backfill_default</code></td></tr>
-  <tr><td>M3 匿名浏览</td><td>带头浏览 / 无头空集（strict）/ 登录引导横幅</td><td>无头 fail-close；写操作拉起登录</td></tr>
-  <tr><td>M4 未绑校拦截</td><td>写操作统一弹窗 / 返回浏览</td><td><code>403 CAMPUS_NOT_BOUND</code></td></tr>
-  <tr><td>M5 换校页</td><td>可换 / 冷却状态展示 / 归属说明 / 二次确认 / 成功冷启动</td><td><code>require_restart</code>；写 <code>campus_membership_changes</code></td></tr>
-  <tr><td>M6 换校阻断</td><td>冷却倒计时 / 未履约订单列表直达 / 客服入口</td><td><code>422 TOO_FREQUENT</code> / <code>422 BLOCKED_ORDERS</code></td></tr>
-  <tr><td>M7 平台投放</td><td>徽章 / 分类筛选 / 详情页规则说明</td><td><code>is_platform_wide</code></td></tr>
-  <tr><td>M8 校区空态</td><td>空列表 + 发布 CTA / 隔离说明条（首现）</td><td>strict 作用域</td></tr>
-  <tr><td>M9 我的发布</td><td>本校内容 / 原校内容置灰 + 徽章 / 可管理不可再发布</td><td>UGC 留原校（D5）</td></tr>
-  <tr><td>A1 学校库</td><td>隔离开关 + 二次确认 / 默认学校禁改 / 按模式筛选</td><td><code>isolation_mode</code> + 审计</td></tr>
-  <tr><td>A2 强制改校</td><td>原因必填 / 影响说明 / 换校历史时间线</td><td>管理员接口写审计</td></tr>
-  <tr><td>A3 任务编辑</td><td>投放范围单选联动 / 学校禁用态 / 确认勾选</td><td><code>is_platform_wide</code> 写审计</td></tr>
-  <tr><td>A4 回填报告</td><td>dry-run 只读 / 执行二次验证 / 回滚映射 / 校验未清零拦截</td><td><code>campus:backfill</code> 命令产物</td></tr>
-</table>
-
+<!-- 状态覆盖清单已并入 index.html 流程 12–14 / 20–21 的节点标注，避免同一表出现两遍 -->
 <div class="foot">
-  校区强隔离 UI 流程与页面设计稿 v1.1 · 2026-10-07<br>
+  校区强隔离 · 页面稿 v1.4 · 2026-11-08<br>
+  v1.4 就地融入：三条流程 A/B/C 与地推流程 D/E 已并入 <a href="在线UI-1/index.html#flows-main" style="color:var(--brand-deep)">在线UI-1/index.html</a> 的连续流程序列（12–14、20–21）；11 屏 + 4 界面已迁入 <a href="在线UI-1/sub-screens.html" style="color:var(--brand-deep)">sub-screens.html</a> / <a href="在线UI-1/admin-screens.html" style="color:var(--brand-deep)">admin-screens.html</a> 并就地插序；本文件仅作历史对照；主色由 #0E9F6E 收敛为 #0BBF63 / #08A152<br>
+  v1.2 变更：追加地推流程 D/E（已迁出）<br>
   v1.1 变更：绑定档案升级为「学校 + 年级 + 专业（手动填写）」，选校门禁改为三步流程；老用户兜底确认同步补全年级专业；管理端支持查看/修正年级专业档案<br>
-  依据 CAMPUS_STRICT_ISOLATION_PLAN v1.2 / CAMPUS_ISOLATION_P0P1_IMPLEMENTATION v1 · 视觉沿用 UI 3.0 Token（品牌绿 #0E9F6E 体系）<br>
+  依据 CAMPUS_STRICT_ISOLATION_PLAN v1.2 / CAMPUS_ISOLATION_P0P1_IMPLEMENTATION v1 · 视觉沿用 在线UI-1 绿色 Token（#0BBF63 / #08A152）<br>
   评审通过后进入 P0+P1 开发；M1/M2 与 A1 开关为灰度放行前提
 </div>
 
 </div>
+
+<script>
+/* 统一入口单屏模式：带 #ci-m1 / #ci-a1 时只显示目标页，便于 iframe 逐屏翻页 */
+(function(){
+  var blocks = Array.prototype.slice.call(document.querySelectorAll('.phone-block, .admin-block'));
+  function apply(){
+    var id = location.hash ? location.hash.slice(1) : '';
+    var hit = null;
+    blocks.forEach(function(b){ if(b.id === id) hit = b; });
+    document.body.classList.toggle('ci-single', !!hit);
+    blocks.forEach(function(b){ b.classList.toggle('ci-target', b === hit); });
+  }
+  window.addEventListener('hashchange', apply);
+  apply();
+})();
+</script>
 </body>
 </html>

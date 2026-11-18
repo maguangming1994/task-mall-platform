@@ -56,3 +56,25 @@ export function selectAccountCampus(campusId: string, accessToken: string) {
     data: { campus_id: campusId },
   })
 }
+
+export interface CampusBindingPayload {
+  campus_id: string
+  grade_year?: number
+  major?: string
+  college?: string
+}
+
+export interface CampusBindingResult extends Campus {
+  /** 换校成功后需要清理业务缓存并重启 */
+  require_restart?: boolean
+}
+
+/** 绑校 / 换校：每次提交都会写入年级、专业等档案字段 */
+export function bindAccountCampus(payload: CampusBindingPayload, accessToken: string) {
+  return apiRequest<CampusBindingResult>({
+    path: '/me/campus',
+    method: 'PUT',
+    accessToken,
+    data: { ...payload },
+  })
+}

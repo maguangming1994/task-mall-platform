@@ -7,6 +7,7 @@ import {
   WalletOutlined,
   MessageOutlined,
   NotificationOutlined,
+  RocketOutlined,
   SettingOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
@@ -31,8 +32,8 @@ const lazyOf = (loader: () => Promise<Record<string, ComponentType>>, name: stri
 
 const DashboardPage = lazyOf(() => import('../features/dashboard/DashboardPage'), 'DashboardPage')
 const TaskAuditPage = lazyOf(() => import('../features/tasks/TaskAuditPage'), 'TaskAuditPage')
-const TaskListPage = lazyOf(() => import('../features/tasks/TaskListPage'), 'TaskListPage')
-const TaskTemplatesPage = lazyOf(() => import('../features/tasks/TaskTemplatesPage'), 'TaskTemplatesPage')
+const TaskManagementPage = lazyOf(() => import('../features/tasks/TaskManagementPage'), 'TaskManagementPage')
+const TaskTemplateCenterPage = lazyOf(() => import('../features/tasks/TaskTemplateCenterPage'), 'TaskTemplateCenterPage')
 const ProductsPage = lazyOf(() => import('../features/products/ProductsPage'), 'ProductsPage')
 const CategoriesPage = lazyOf(() => import('../features/products/CategoriesPage'), 'CategoriesPage')
 const InventoryPage = lazyOf(() => import('../features/products/InventoryPage'), 'InventoryPage')
@@ -40,24 +41,28 @@ const CouponsPage = lazyOf(() => import('../features/products/CouponsPage'), 'Co
 const SecondHandAuditPage = lazyOf(() => import('../features/second-hand/SecondHandAuditPage'), 'SecondHandAuditPage')
 const OrdersPage = lazyOf(() => import('../features/orders/OrdersPage'), 'OrdersPage')
 const AfterSalesPage = lazyOf(() => import('../features/after-sales/AfterSalesPage'), 'AfterSalesPage')
-const WithdrawalsPage = lazyOf(() => import('../features/assets/WithdrawalsPage'), 'WithdrawalsPage')
+const AssetManagementPage = lazyOf(() => import('../features/assets/AssetManagementPage'), 'AssetManagementPage')
 const PointsPage = lazyOf(() => import('../features/assets/PointsPage'), 'PointsPage')
-const ReconcilePage = lazyOf(() => import('../features/assets/ReconcilePage'), 'ReconcilePage')
 const UsersPage = lazyOf(() => import('../features/users/UsersPage'), 'UsersPage')
-const CommunityPage = lazyOf(() => import('../features/community/CommunityPage'), 'CommunityPage')
+const CommunityManagementPage = lazyOf(() => import('../features/community/CommunityManagementPage'), 'CommunityManagementPage')
 const SupportPage = lazyOf(() => import('../features/support/SupportPage'), 'SupportPage')
 const CampaignsPage = lazyOf(() => import('../features/operations/CampaignsPage'), 'CampaignsPage')
 const OperationsPage = lazyOf(() => import('../features/operations/OperationsPage'), 'OperationsPage')
-const ReportsPage = lazyOf(() => import('../features/operations/ReportsPage'), 'ReportsPage')
 const NotifyPage = lazyOf(() => import('../features/operations/NotifyPage'), 'NotifyPage')
 const DataBoardPage = lazyOf(() => import('../features/dashboard/DataBoardPage'), 'DataBoardPage')
-const ConfigPage = lazyOf(() => import('../features/settings/ConfigPage'), 'ConfigPage')
+const SettingsPage = lazyOf(() => import('../features/settings/SettingsPage'), 'SettingsPage')
 const RolesPage = lazyOf(() => import('../features/security/RolesPage'), 'RolesPage')
-const CampusesPage = lazyOf(() => import('../features/campuses/CampusesPage'), 'CampusesPage')
+const CampusManagementPage = lazyOf(() => import('../features/campuses/CampusManagementPage'), 'CampusManagementPage')
 const AuditLogsPage = lazyOf(() => import('../features/security/AuditLogsPage'), 'AuditLogsPage')
 const IdentityReviewPage = lazyOf(() => import('../features/identity/IdentityReviewPage'), 'IdentityReviewPage')
 const PrivacyPage = lazyOf(() => import('../features/privacy/PrivacyPage'), 'PrivacyPage')
 const ReadinessPage = lazyOf(() => import('../features/readiness/ReadinessPage'), 'ReadinessPage')
+const PushTeamsPage = lazyOf(() => import('../features/push/PushTeamsPage'), 'PushTeamsPage')
+const PushMembersPage = lazyOf(() => import('../features/push/PushMembersPage'), 'PushMembersPage')
+const PushRulesPage = lazyOf(() => import('../features/push/PushRulesPage'), 'PushRulesPage')
+const PushTasksPage = lazyOf(() => import('../features/push/PushTasksPage'), 'PushTasksPage')
+const PushReviewsPage = lazyOf(() => import('../features/push/PushReviewsPage'), 'PushReviewsPage')
+const PushSettlementsPage = lazyOf(() => import('../features/push/PushSettlementsPage'), 'PushSettlementsPage')
 
 export const ADMIN_GROUPS: AdminGroupDef[] = [
   { key: 'workbench', label: '工作台', icon: <DashboardOutlined />, pages: [
@@ -69,8 +74,8 @@ export const ADMIN_GROUPS: AdminGroupDef[] = [
   ] },
   { key: 'tasks', label: '任务中心', icon: <ProfileOutlined />, pages: [
     { path: '/tasks/audit', title: '任务审核', navCode: 'tasks', element: TaskAuditPage },
-    { path: '/tasks/list', title: '任务管理', navCode: 'tasks', element: TaskListPage },
-    { path: '/tasks/templates', title: '任务模板', navCode: 'task_templates', element: TaskTemplatesPage },
+    { path: '/tasks/list', title: '任务管理', navCode: 'tasks', element: TaskManagementPage },
+    { path: '/tasks/templates', title: '任务模板中心', navCode: 'task_templates', element: TaskTemplateCenterPage },
   ] },
   { key: 'mall', label: '商城中心', icon: <ShopOutlined />, pages: [
     { path: '/mall/products', title: '商品管理', navCode: 'mall', element: ProductsPage },
@@ -84,13 +89,11 @@ export const ADMIN_GROUPS: AdminGroupDef[] = [
     { path: '/after-sales', title: '售后管理', navCode: 'orders', element: AfterSalesPage },
   ] },
   { key: 'finance', label: '资产与财务', icon: <WalletOutlined />, pages: [
-    { path: '/finance/withdrawals', title: '提现审核', navCode: 'finance', element: WithdrawalsPage },
+    { path: '/finance/withdrawals', title: '资产与提现复核', navCode: 'finance', element: AssetManagementPage },
     { path: '/finance/points', title: '积分管理', navCode: 'finance', element: PointsPage },
-    { path: '/finance/reconcile', title: '对账中心', navCode: 'finance', element: ReconcilePage },
   ] },
   { key: 'community', label: '社区内容', icon: <MessageOutlined />, pages: [
-    { path: '/community', title: '社区管理', navCode: 'community', element: CommunityPage },
-    { path: '/community/reports', title: '举报处理', navCode: 'community', element: ReportsPage },
+    { path: '/community', title: '社区运营', navCode: 'community', element: CommunityManagementPage },
   ] },
   { key: 'operations', label: '运营与消息', icon: <NotificationOutlined />, pages: [
     { path: '/operations/campaigns', title: '活动运营', navCode: 'operations', element: CampaignsPage },
@@ -98,15 +101,23 @@ export const ADMIN_GROUPS: AdminGroupDef[] = [
     { path: '/operations/data-board', title: '数据看板', navCode: 'data_board', element: DataBoardPage },
     { path: '/operations/notify', title: '消息通知', navCode: 'operations', element: NotifyPage },
   ] },
+  { key: 'push', label: '地推运营', icon: <RocketOutlined />, pages: [
+    { path: '/push/teams', title: '团队管理', navCode: 'push', element: PushTeamsPage },
+    { path: '/push/members', title: '成员与等级', navCode: 'push', element: PushMembersPage },
+    { path: '/push/rules', title: '等级佣金规则', navCode: 'push', element: PushRulesPage },
+    { path: '/push/tasks', title: '推广任务配置', navCode: 'push', element: PushTasksPage },
+    { path: '/push/reviews', title: '申请与交单审核', navCode: 'push', element: PushReviewsPage },
+    { path: '/push/settlements', title: '结算批次', navCode: 'push', element: PushSettlementsPage },
+  ] },
   { key: 'config', label: '配置中心', icon: <SettingOutlined />, pages: [
-    { path: '/config', title: '配置中心', navCode: 'settings', element: ConfigPage },
+    { path: '/config', title: '配置中心', navCode: 'settings', element: SettingsPage },
     { path: '/support/tickets', title: '工单客服', navCode: 'support', element: SupportPage },
     { path: '/config/privacy', title: '隐私与合规', navCode: 'privacy', element: PrivacyPage },
     { path: '/config/readiness', title: '上线检查', navCode: 'readiness', element: ReadinessPage },
   ] },
   { key: 'security', label: '权限与审计', icon: <SafetyCertificateOutlined />, pages: [
     { path: '/security/roles', title: '角色权限', navCode: 'security', element: RolesPage },
-    { path: '/security/campuses', title: '校区管理', navCode: 'campuses', element: CampusesPage },
+    { path: '/security/campuses', title: '学校与代理', navCode: 'campuses', element: CampusManagementPage },
     { path: '/security/logs', title: '操作日志', navCode: 'security', element: AuditLogsPage },
   ] },
 ]

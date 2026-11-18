@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Auth\Models\UserDevice;
+use App\Modules\Auth\Models\UserSession;
+use App\Modules\Auth\Services\AccessTokenService;
 use App\Modules\Campus\Http\Controllers\CampusController;
 use App\Modules\Campus\Http\Middleware\RequireBoundCampus;
 use App\Modules\Campus\Http\Middleware\ResolveCampusScope;
@@ -57,6 +60,25 @@ class CampusIsolationTest extends TestCase
             'password' => 'password',
             'status' => 'active',
         ]);
+    }
+
+    private function tokenFor(User $user): string
+    {
+        $device = UserDevice::query()->create([
+            'user_id' => $user->id,
+            'device_fingerprint_hash' => hash('sha256', 'campus-test-'.$user->id),
+            'client_platform' => 'h5_browser',
+            'last_active_at' => now(),
+        ]);
+        $session = UserSession::query()->create([
+            'user_id' => $user->id,
+            'user_device_id' => $device->id,
+            'refresh_token_hash' => hash('sha256', 'campus-test-refresh-'.$user->id),
+            'issued_at' => now(),
+            'expires_at' => now()->addDay(),
+        ]);
+
+        return app(AccessTokenService::class)->issue($user, $session)['token'];
     }
 
     private function createTask(Campus $campus, bool $platformWide = false): Task
@@ -143,16 +165,12 @@ class CampusIsolationTest extends TestCase
     {
         $user = User::factory()->create(['campus_id' => null]);
 
-        $response = $this->actingAs($user)->postJson('/api/v1/community/posts', [
+        $response = $this->withToken($this->tokenFor($user))->postJson('/api/v1/community/posts', [
             'title' => '测试',
             'content' => '测试内容',
         ]);
 
-        // 未绑校时 campus_scope_bound = false（通过中间件直接验证）
-        $request = Request::create('/api/v1/community/posts', 'POST');
-        $request->setUserResolver(fn () => $user);
-        $request->attributes->set('campus_scope_bound', false);
-        $this->assertFalse($request->attributes->get('campus_scope_bound'));
+        $response->assertForbidden()->assertJsonPath('code', 'CAMPUS_NOT_BOUND');
     }
 
     /**
@@ -167,7 +185,7 @@ class CampusIsolationTest extends TestCase
 
         // A 校 strict 下可见
         $requestA = Request::create('/api/v1/tasks', 'GET', [], [], [], ['HTTP_X_CAMPUS_ID' => $this->campusA->public_id]);
-        $middleware = new ResolveCampusScope;
+        $middleware = app(ResolveCampusScope::class);
         $middleware->handle($requestA, fn () => new Response);
         $this->assertTrue($requestA->attributes->get('campus_strict'));
 

@@ -2,7 +2,10 @@
 
 namespace App\Modules\Refund\Models;
 
+use App\Models\User;
+use App\Modules\Order\Models\Order;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
@@ -30,5 +33,15 @@ class Refund extends Model
     public function returnShipment(): HasOne
     {
         return $this->hasOne(ReturnShipment::class);
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

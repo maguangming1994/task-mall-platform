@@ -44,7 +44,7 @@ class RefundController extends Controller
     public function adminIndex(Request $request): JsonResponse
     {
         $status = $request->validate(['status' => ['nullable', 'string', 'max:24']])['status'] ?? null;
-        $query = Refund::query()->latest();
+        $query = Refund::query()->with(['order:id,order_no', 'user:id,public_id,nickname'])->latest();
         if ($status) {
             $query->where('status', $status);
         }
@@ -108,6 +108,6 @@ class RefundController extends Controller
         $shipment = $r->returnShipment()->first();
         $compensation = $shipment ? ReturnShippingCompensation::query()->where('source_type', 'refund_return')->where('source_id', $shipment->id)->first() : null;
 
-        return ['id' => $r->public_id, 'refund_no' => $r->refund_no, 'service_type' => $r->service_type, 'reason_code' => $r->reason_code, 'reason_name' => $r->reason_name_snapshot, 'status' => $r->status, 'refund_cash_amount' => $r->refund_cash_amount, 'refund_wallet_amount' => $r->refund_wallet_amount, 'refund_external_amount' => $r->refund_external_amount, 'refund_points' => $r->refund_points, 'responsibility_party' => $r->responsibility_party, 'return_shipping_payer' => $r->return_shipping_payer, 'return_method' => $r->return_method, 'review_note' => $r->review_note, 'user_action_deadline_at' => $r->user_action_deadline_at?->toIso8601String(), 'original_shipping_refunded' => $r->original_shipping_refunded, 'return_shipment' => $shipment ? ['carrier_code' => $shipment->carrier_code, 'tracking_no' => $shipment->tracking_no, 'paid_shipping_amount' => $shipment->paid_shipping_amount, 'status' => $shipment->status, 'submitted_at' => $shipment->submitted_at?->toIso8601String()] : null, 'compensation' => $compensation ? ReturnShippingCompensationController::data($compensation) : null, 'created_at' => $r->created_at->toIso8601String()];
+        return ['id' => $r->public_id, 'refund_no' => $r->refund_no, 'order_no' => $r->order?->order_no, 'user' => $r->user ? ['id' => $r->user->public_id, 'nickname' => $r->user->nickname] : null, 'service_type' => $r->service_type, 'reason_code' => $r->reason_code, 'reason_name' => $r->reason_name_snapshot, 'status' => $r->status, 'refund_cash_amount' => $r->refund_cash_amount, 'refund_wallet_amount' => $r->refund_wallet_amount, 'refund_external_amount' => $r->refund_external_amount, 'refund_points' => $r->refund_points, 'responsibility_party' => $r->responsibility_party, 'return_shipping_payer' => $r->return_shipping_payer, 'return_method' => $r->return_method, 'review_note' => $r->review_note, 'user_action_deadline_at' => $r->user_action_deadline_at?->toIso8601String(), 'original_shipping_refunded' => $r->original_shipping_refunded, 'return_shipment' => $shipment ? ['carrier_code' => $shipment->carrier_code, 'tracking_no' => $shipment->tracking_no, 'paid_shipping_amount' => $shipment->paid_shipping_amount, 'status' => $shipment->status, 'submitted_at' => $shipment->submitted_at?->toIso8601String()] : null, 'compensation' => $compensation ? ReturnShippingCompensationController::data($compensation) : null, 'created_at' => $r->created_at->toIso8601String()];
     }
 }
