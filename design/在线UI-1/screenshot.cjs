@@ -82,6 +82,10 @@ const jobs = [
   { file: sub,  screen: 'order-detail',    name: '55-order-detail' },
   { file: sub,  screen: 'coupon-center',   name: '56-coupon-center' },
   { file: sub,  screen: 'legal-docs',      name: '57-legal' },
+  { file: sub,  screen: 'mt-list',         name: '58-material-list' },
+  { file: sub,  screen: 'mt-detail',       name: '59-material-detail' },
+  { file: sub,  screen: 'mt-post',         name: '60-material-post' },
+  { file: sub,  screen: 'mt-request',      name: '61-material-request' },
 ];
 
 (async () => {

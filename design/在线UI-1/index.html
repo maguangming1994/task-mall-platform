@@ -138,12 +138,12 @@ a{text-decoration:none;color:inherit}
   <div class="wrap">
     <span class="badge">🎨 校圈 v13 绿色商业风 · 统一浏览入口</span>
     <h1>校园任务商城 · UI 全览（小程序 + 管理端）</h1>
-    <p>校园互助任务 + 积分商城 + 校园社区 + 校园闲置 + IM 私信 + 地推模块 + 校区强隔离，共 <b>103</b> 张设计图、<b>29</b> 条核心业务流程。页面稿按原有两端结构呈现：<b>C 端 75 屏</b>（sub-screens.html）、<b>后台 38 屏</b>（admin-screens.html），新流程与新页面均按业务主线就地排入。</p>
+    <p>校园互助任务 + 积分商城 + 校园社区 + 校园闲置 + 资料共享 + IM 私信 + 地推模块 + 校区强隔离，共 <b>110</b> 张设计图、<b>30</b> 条核心业务流程。页面稿按原有两端结构呈现：<b>C 端 79 屏</b>（sub-screens.html）、<b>后台 41 屏</b>（admin-screens.html），新流程与新页面均按业务主线就地排入。</p>
     <div class="stats">
-      <div class="stat"><b>103</b><span>设计图总数</span></div>
-      <div class="stat"><b>75</b><span>C 端页面</span></div>
-      <div class="stat"><b>38</b><span>后台页面</span></div>
-      <div class="stat"><b>29</b><span>核心流程</span></div>
+      <div class="stat"><b>110</b><span>设计图总数</span></div>
+      <div class="stat"><b>79</b><span>C 端页面</span></div>
+      <div class="stat"><b>41</b><span>后台页面</span></div>
+      <div class="stat"><b>30</b><span>核心流程</span></div>
     </div>
   </div>
 </header>
@@ -151,7 +151,7 @@ a{text-decoration:none;color:inherit}
 <div class="wrap">
 
   <!-- ========== 核心流程 ========== -->
-  <div class="sec-h" id="flows-main"><i></i><h2>核心业务流程（29 条）</h2><span class="sub">点击流程节点可直达对应页面图 · <b style="color:#08A152">2026-10-05 复核：标记页面已全部翻新完成（红/橙标记已清零）</b></span></div>
+  <div class="sec-h" id="flows-main"><i></i><h2>核心业务流程（30 条）</h2><span class="sub">点击流程节点可直达对应页面图 · <b style="color:#08A152">2026-10-05 复核：标记页面已全部翻新完成（红/橙标记已清零）</b></span></div>
 
   <div class="flow">
     <div class="flow-head"><span class="no">1</span><h3>接单赚钱流程</h3><span class="tagline">接任务 → 完成服务 → 赚积分</span></div>
@@ -600,6 +600,23 @@ a{text-decoration:none;color:inherit}
     </div>
   </div>
 
+  <div class="flow">
+    <div class="flow-head"><span class="no">30</span><h3>资料共享流程</h3><span class="tagline">浏览 → 获取网盘 → 投喂审核 → 额度奖励 → 求资料</span></div>
+    <div class="flow-chain">
+      <a class="fnode enter" data-i="83"><span class="n">58</span><b>资料共享首页</b><p>搜索/分类/最新投喂</p></a>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <a class="fnode warn" data-i="84"><span class="n">59</span><b>资料详情</b><p>获取网盘链接/提取码</p></a>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <a class="fnode" data-i="85"><span class="n">60</span><b>投喂资料</b><p>智能解析/提交审核</p></a>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <a class="fnode" data-i="86"><span class="n">61</span><b>求资料</b><p>提交需求/查看进度</p></a>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <a class="fnode" data-i="87"><span class="n">a27</span><b>资料审核</b><p>通过赠 10 次额度</p></a>
+      <span class="farrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <a class="fnode" data-i="89"><span class="n">a29</span><b>需求与举报</b><p>处理/回复/下架</p></a>
+    </div>
+  </div>
+
   <!-- ========== 三方核对 ========== -->
   <div class="sec-h" id="audit"><i></i><h2>设计 / 小程序 / 后端 三方核对</h2><span class="sub">2026-10-04 · 功能链路核对（视觉翻新状态见下方 10-05 复核区块）</span></div>
 
@@ -607,6 +624,7 @@ a{text-decoration:none;color:inherit}
     <table>
       <tr><th>模块 / 页面</th><th>设计稿</th><th>小程序</th><th>后端 API</th><th>状态与结论</th></tr>
       <tr><td><b>核心 38 屏</b>（Tab/任务/商城/社区/闲置/IM/钱包/签到）</td><td><span class="pill ok">✓ 已出图</span></td><td><span class="pill ok">✓ 已实现</span></td><td><span class="pill ok">✓ 就绪</span></td><td>主链路闭环完整</td></tr>
+      <tr><td><b>资料共享模块</b> 58-61 + a27-a29</td><td><span class="pill ok">✓ 7 屏已出图</span></td><td><span class="pill ok">✓ 列表/详情/投喂/求资料</span></td><td><span class="pill ok">✓ materials / material-requests</span></td><td><span class="pill ok">已闭环</span> 网盘解析、每日额度、投喂奖励、审核/分类/举报</td></tr>
       <tr><td><b>搜索页</b> 07-search</td><td><span class="pill ok">✓ 已出图</span></td><td><span class="pill ok">✓ 已实现</span></td><td><span class="pill ok">✓ 就绪</span></td><td><span class="pill ok">已闭环</span> 全局搜索页 + 首页入口</td></tr>
       <tr><td><b>闲置确认购买页</b> 24-sh-buy</td><td><span class="pill ok">✓ 已出图</span></td><td><span class="pill warn">△ 详情页弹窗替代</span></td><td><span class="pill ok">✓ 就绪</span></td><td>功能闭环 OK，交互与设计不一致，可接受</td></tr>
       <tr><td><b>TA 的闲置（卖家主页）</b> 33-sh-user</td><td><span class="pill ok">✓ 已出图</span></td><td><span class="pill ok">✓ 已实现</span></td><td><span class="pill ok">✓ seller 筛选就绪</span></td><td><span class="pill ok">已闭环</span> 闲置详情/私信可进入卖家主页</td></tr>
@@ -650,7 +668,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <!-- ========== 页面画廊 ========== -->
-  <div class="sec-h" id="gal"><i></i><h2>全部页面图（103 屏）</h2><span class="sub">小程序 390 × 844 · 管理端 1440 × 900 · 点击放大 · ← → 键翻页 · 页面稿：<a href="sub-screens.html">C 端 75 屏</a> · <a href="admin-screens.html">后台 38 屏</a></span></div>
+  <div class="sec-h" id="gal"><i></i><h2>全部页面图（110 屏）</h2><span class="sub">小程序 390 × 844 · 管理端 1440 × 900 · 点击放大 · ← → 键翻页 · 页面稿：<a href="sub-screens.html">C 端 79 屏</a> · <a href="admin-screens.html">后台 41 屏</a></span></div>
 
   <div class="group">
     <div class="group-title"><h3>一级 Tab 页面</h3><span>5 屏 · 底部凸起商城按钮</span></div>
@@ -707,10 +725,20 @@ a{text-decoration:none;color:inherit}
     <div class="grid grid-pc" id="g11"></div>
   </div>
 
+  <div class="group">
+    <div class="group-title"><h3>资料共享模块</h3><span>4 屏 · 列表/详情获取/投喂智能解析/求资料</span></div>
+    <div class="grid" id="g12"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>资料共享 · 管理端</h3><span>3 屏 · 资料审核/分类管理/求资料与举报</span></div>
+    <div class="grid grid-pc" id="g13"></div>
+  </div>
+
   <p class="footer">
     校圈 · 校园任务商城 · UI v13 绿色商业风全套设计稿（小程序 + 管理端）<br>
     小程序图 390 × 844（iPhone 14 逻辑分辨率）· 管理端图 1440 × 900 · 唯一设计基准目录：design/在线UI-1<br>
-    统一入口：29 条流程 + 113 屏 · 页面源 sub-screens.html（C 端 75 屏）/ admin-screens.html（后台 38 屏）· 地推 20 屏与校区隔离 15 屏已就地并入两端页面稿，不再单列
+    统一入口：30 条流程 + 110 屏 · 页面源 sub-screens.html（C 端 79 屏）/ admin-screens.html（后台 41 屏）· 地推 20 屏与校区隔离 15 屏已就地并入两端页面稿，不再单列
   </p>
 </div>
 
@@ -809,9 +837,16 @@ var PAGES = [
   {f:'a26-auditlog',n:'操作日志',pc:1},
   {f:'55-order-detail',n:'商城订单详情'},
   {f:'56-coupon-center',n:'领券中心'},
-  {f:'57-legal',n:'协议与隐私'}
+  {f:'57-legal',n:'协议与隐私'},
+  {f:'58-material-list',n:'资料共享 · 列表'},
+  {f:'59-material-detail',n:'资料详情 · 获取网盘'},
+  {f:'60-material-post',n:'投喂资料 · 智能解析'},
+  {f:'61-material-request',n:'求资料 · 提交需求'},
+  {f:'a27-material-audit',n:'资料审核',pc:1},
+  {f:'a28-material-category',n:'资料分类',pc:1},
+  {f:'a29-material-request',n:'求资料与举报',pc:1}
 ];
-var GROUPS = {g1:[0,1,2,3,4], g2:[5,6,7,8,51], g3:[9,10,11,80], g4:[12,13], g5:[14,15,16,17,18,19,33,34,35,36,52,53,81], g6:[20,21,22,23,24,27,28,29,30,31,32,37], g7:[25,26], g8:[80,38,39,40,49], g9:[41,42,43], g10:[82,44,45,46,47,48,50], g11:[54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79]};
+var GROUPS = {g1:[0,1,2,3,4], g2:[5,6,7,8,51], g3:[9,10,11,80], g4:[12,13], g5:[14,15,16,17,18,19,33,34,35,36,52,53,81], g6:[20,21,22,23,24,27,28,29,30,31,32,37], g7:[25,26], g8:[80,38,39,40,49], g9:[41,42,43], g10:[82,44,45,46,47,48,50], g11:[54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79], g12:[83,84,85,86], g13:[87,88,89]};
 
 function card(i){
   var p = PAGES[i];

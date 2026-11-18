@@ -52,6 +52,9 @@ use App\Modules\Inventory\Http\Controllers\ShippingQuoteController;
 use App\Modules\Legal\Http\Controllers\AdminLegalDocumentController;
 use App\Modules\Legal\Http\Controllers\LegalDocumentController;
 use App\Modules\Legal\Http\Controllers\UserLegalConsentController;
+use App\Modules\Material\Http\Controllers\AdminMaterialController;
+use App\Modules\Material\Http\Controllers\MaterialController;
+use App\Modules\Material\Http\Controllers\MaterialRequestController;
 use App\Modules\Media\Http\Controllers\AdminMediaController;
 use App\Modules\Media\Http\Controllers\MediaAssetController;
 use App\Modules\Notification\Http\Controllers\NotificationController;
@@ -160,6 +163,13 @@ Route::middleware(['auth.optional', 'module.gate:module_community'])->group(func
     Route::get('/community/activities/{activity}', [CommunityActivityController::class, 'show']);
 });
 Route::get('/after-sale-reasons', [AfterSaleReasonController::class, 'index'])->middleware(['auth.optional', 'module.gate:module_after_sale']);
+
+// 资料共享：浏览、搜索与详情（未登录可浏览）
+Route::middleware(['auth.optional', 'module.gate:module_material'])->group(function () {
+    Route::get('/materials/meta', [MaterialController::class, 'meta']);
+    Route::get('/materials', [MaterialController::class, 'index']);
+    Route::get('/materials/{material}', [MaterialController::class, 'show']);
+});
 Route::put('/files/{file}/content', [UploadController::class, 'proxyUpload'])->middleware('throttle:30,1');
 Route::post('/payment-notifications/wechat', [WechatPaymentNotificationController::class, 'store'])->middleware('throttle:120,1');
 Route::post('/refund-notifications/wechat', [WechatRefundNotificationController::class, 'store'])->middleware('throttle:120,1');
@@ -375,6 +385,20 @@ Route::middleware('auth.access')->group(function () {
         Route::post('/chat/conversations/{conversation}/read', [ChatController::class, 'read'])->middleware('legal.consent:account');
     });
 
+    // 资料共享：获取网盘地址、投喂、求资料与举报
+    Route::middleware('module.gate:module_material')->group(function () {
+        Route::post('/materials/{material}/fetch', [MaterialController::class, 'fetch'])->middleware(['legal.consent:account', 'throttle:30,1']);
+        Route::post('/materials/{material}/reports', [MaterialController::class, 'report'])->middleware(['legal.consent:account', 'throttle:20,1']);
+    });
+    Route::middleware('module.gate:module_material_post')->group(function () {
+        Route::get('/my-materials', [MaterialController::class, 'mine'])->middleware('legal.consent:account');
+        Route::post('/materials', [MaterialController::class, 'store'])->middleware(['campus.bound', 'legal.consent:account', 'throttle:10,1']);
+    });
+    Route::middleware('module.gate:module_material_request')->group(function () {
+        Route::get('/my-material-requests', [MaterialRequestController::class, 'mine'])->middleware('legal.consent:account');
+        Route::post('/material-requests', [MaterialRequestController::class, 'store'])->middleware(['campus.bound', 'legal.consent:account', 'throttle:10,1']);
+    });
+
     // 地推：团队、推广任务、推广位、交单与收益（独立于任务积分口径）
     Route::prefix('push')->group(function () {
         Route::get('/center', [UserPushController::class, 'center']);
@@ -420,6 +444,19 @@ Route::prefix('admin')->group(function () {
         Route::put('/campuses/{campus}/agents', [AdminCampusController::class, 'agents'])->middleware('admin.permission:rbac.manage');
         Route::get('/campus-agents', [AdminCampusController::class, 'agentIndex'])->middleware('admin.permission:rbac.manage');
         Route::get('/campus-agent-options', [AdminCampusController::class, 'agentOptions'])->middleware('admin.permission:rbac.manage');
+
+        // 资料共享管理
+        Route::get('/material/categories', [AdminMaterialController::class, 'categories'])->middleware('admin.permission:material.manage');
+        Route::post('/material/categories', [AdminMaterialController::class, 'storeCategory'])->middleware('admin.permission:material.manage');
+        Route::put('/material/categories/{category}', [AdminMaterialController::class, 'updateCategory'])->middleware('admin.permission:material.manage');
+        Route::delete('/material/categories/{category}', [AdminMaterialController::class, 'destroyCategory'])->middleware('admin.permission:material.manage');
+        Route::get('/materials', [AdminMaterialController::class, 'materials'])->middleware('admin.permission:material.manage');
+        Route::get('/materials/{material}', [AdminMaterialController::class, 'show'])->middleware('admin.permission:material.manage');
+        Route::post('/materials/{material}/review', [AdminMaterialController::class, 'review'])->middleware('admin.permission:material.manage');
+        Route::get('/material-requests', [AdminMaterialController::class, 'requests'])->middleware('admin.permission:material.manage');
+        Route::put('/material-requests/{materialRequest:public_id}', [AdminMaterialController::class, 'updateRequest'])->middleware('admin.permission:material.manage');
+        Route::get('/material-reports', [AdminMaterialController::class, 'reports'])->middleware('admin.permission:material.manage');
+        Route::post('/material-reports/{materialReport:public_id}/handle', [AdminMaterialController::class, 'handleReport'])->middleware('admin.permission:material.manage');
         // 地推运营：团队/成员/等级规则/推广任务/申请与交单/结算批次
         Route::prefix('push')->group(function () {
             Route::get('/teams', [AdminPushController::class, 'teams'])->middleware('admin.permission:push.view');

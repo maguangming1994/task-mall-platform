@@ -21,5 +21,6 @@ class DatabaseSeeder extends Seeder
         $this->call(SystemSettingDefinitionSeeder::class);
         $this->call(AfterSaleReasonSeeder::class);
         $this->call(SecondHandCategorySeeder::class);
+        $this->call(MaterialSeeder::class);
     }
 }

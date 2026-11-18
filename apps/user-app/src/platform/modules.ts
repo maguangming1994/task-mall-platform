@@ -14,6 +14,9 @@ export type ModuleCode =
   | 'module_referrals'
   | 'module_checkin'
   | 'module_second_hand'
+  | 'module_material'
+  | 'module_material_post'
+  | 'module_material_request'
   | 'module_membership'
   | 'module_follow'
   | 'module_identity_verification'
@@ -43,6 +46,9 @@ export const MODULE_REGISTRY: Record<ModuleCode, ModuleDefinition> = {
   module_referrals: { code: 'module_referrals', name: '邀请推荐', parent: null, icon: '/static/icons/module-referrals.svg' },
   module_checkin: { code: 'module_checkin', name: '每日签到', parent: null, icon: '/static/icons/module-check-in.svg' },
   module_second_hand: { code: 'module_second_hand', name: '校园闲置', parent: null, icon: '/static/icons/module-mall-trade.svg' },
+  module_material: { code: 'module_material', name: '资料共享', parent: null, icon: '/static/icons/service-tasks.svg' },
+  module_material_post: { code: 'module_material_post', name: '投喂资料', parent: 'module_material', icon: '/static/icons/module-community-post.svg' },
+  module_material_request: { code: 'module_material_request', name: '求资料', parent: 'module_material', icon: '/static/icons/service-support.svg' },
   module_membership: { code: 'module_membership', name: '校园 PLUS 会员', parent: null, icon: '/static/icons/module-referrals.svg' },
   module_follow: { code: 'module_follow', name: '关注作者', parent: null, icon: '/static/icons/module-community.svg' },
   module_identity_verification: { code: 'module_identity_verification', name: '实名认证', parent: null, icon: '/static/icons/service-verify.svg' },
@@ -64,4 +70,5 @@ export const HOME_LINK_MODULE: Partial<Record<HomeLinkType, ModuleCode>> = {
   orders: 'module_mall_trade',
   assets: 'module_wallet',
   second_hand: 'module_second_hand',
+  material: 'module_material',
 }

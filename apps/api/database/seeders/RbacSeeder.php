@@ -29,6 +29,7 @@ class RbacSeeder extends Seeder
             ['code' => 'push.review', 'name' => '审核地推申请与交单', 'group' => 'push'],
             ['code' => 'push.settle', 'name' => '管理地推结算批次', 'group' => 'push'],
             ['code' => 'community.review', 'name' => '审核社区内容', 'group' => 'community'],
+            ['code' => 'material.manage', 'name' => '管理资料共享', 'group' => 'material'],
             ['code' => 'product.manage', 'name' => '管理商品与优惠券', 'group' => 'mall'],
             ['code' => 'fulfillment.manage', 'name' => '管理库存与履约', 'group' => 'mall'],
             ['code' => 'after_sale.review', 'name' => '审核售后', 'group' => 'after_sale'],
@@ -51,8 +52,8 @@ class RbacSeeder extends Seeder
         $rolePermissions = [
             'super_admin' => array_column($permissions, 'code'),
             'platform_admin' => ['user.view_masked', 'identity.review', 'privacy.manage', 'legal.manage', 'task.view', 'task.manage', 'task.frontend_publish', 'push.view', 'push.review', 'audit.view_own'],
-            'operations_admin' => ['user.view_masked', 'task.view', 'task.manage', 'product.manage', 'operations.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.rule_manage', 'push.task_manage', 'push.review', 'audit.view_own'],
-            'campus_agent' => ['user.view_masked', 'identity.review', 'task.view', 'task.manage', 'task.review', 'community.review', 'product.manage', 'campus.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.task_manage', 'push.review', 'audit.view_own'],
+            'operations_admin' => ['user.view_masked', 'task.view', 'task.manage', 'product.manage', 'operations.manage', 'material.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.rule_manage', 'push.task_manage', 'push.review', 'audit.view_own'],
+            'campus_agent' => ['user.view_masked', 'identity.review', 'task.view', 'task.manage', 'task.review', 'community.review', 'material.manage', 'product.manage', 'campus.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.task_manage', 'push.review', 'audit.view_own'],
             'task_reviewer' => ['user.view_masked', 'task.view', 'task.review', 'after_sale.review', 'push.view', 'push.review', 'audit.view_own'],
             'community_reviewer' => ['user.view_masked', 'community.review', 'audit.view_own'],
             'customer_service' => ['user.view_masked', 'identity.review', 'privacy.manage', 'task.view', 'after_sale.review', 'push.view', 'audit.view_own'],

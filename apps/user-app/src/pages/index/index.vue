@@ -743,6 +743,7 @@ function openProducts() { openPrimaryNavigation('products') }
 function openCommunity() { openPrimaryNavigation('community') }
 function openOrders() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/orders/index' }) : openLogin() }
 function openSecondHand() { uni.navigateTo({ url: '/pages/second-hand/index' }) }
+function openMaterial() { uni.navigateTo({ url: '/pages/material/index' }) }
 function openNotifications() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/notifications/index' }) : openLogin() }
 function openAssets() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/assets/index' }) : openLogin() }
 function openPushCenter() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/push-center/index' }) : openLogin() }
@@ -765,11 +766,13 @@ function navigateHomeLink(link: HomeLinkType) {
   if (link === 'assets') return openAssets()
   if (link === 'push') return openPushCenter()
   if (link === 'second_hand' || link === 'secondhand') return openSecondHand()
+  if (link === 'material') return openMaterial()
 }
 
 // 金刚区跳转：支持 tasks:<category> 直达大厅指定分类。
 function handleKingLink(link: string, id: string) {
   if (link === 'secondhand' || id === 'cat-secondhand') return openSecondHand()
+  if (link === 'material' || id === 'cat-material') return openMaterial()
   if (link === 'push' || id === 'pt-center') return openPushCenter()
   if (link.startsWith('tasks:')) {
     const categoryValue = link.slice('tasks:'.length)

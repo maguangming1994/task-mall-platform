@@ -211,6 +211,7 @@ const baseServices = [
   { id: 'publisher', mark: '发', label: '发布任务', note: '创建与管理', tone: 'violet', action: openPublisher, icon: '/static/icons/module-task-publish.svg' },
   { id: 'orders', mark: '单', label: '我的订单', note: '支付与履约', tone: 'orange', action: () => openOrders(), icon: '/static/icons/service-orders.svg' },
   { id: 'second_hand', mark: '闲', label: '校园闲置', note: '买卖二手好物', tone: 'green', action: openSecondHand, icon: '/static/icons/service-tasks.svg' },
+  { id: 'material', mark: '资', label: '资料共享', note: '真题 · 笔记 · 网盘', tone: 'blue', action: openMaterial, icon: '/static/icons/service-tasks.svg' },
   { id: 'second_hand_orders', mark: '订', label: '闲置订单', note: '买卖交易记录', tone: 'orange', action: () => openSecondHandOrders(), icon: '/static/icons/service-orders.svg' },
   { id: 'chat', mark: '聊', label: '消息聊天', note: '与同学沟通', tone: 'blue', action: openChat, icon: '/static/icons/service-messages.svg' },
   { id: 'after_sales', mark: '售', label: '售后服务', note: '退款与换货', tone: 'red', action: openAfterSales, icon: '/static/icons/service-aftersale.svg' },
@@ -230,6 +231,7 @@ const serviceModuleMap: Record<string, ModuleCode> = {
   orders: 'module_mall_trade',
   second_hand: 'module_second_hand',
   second_hand_orders: 'module_second_hand',
+  material: 'module_material',
   chat: 'module_second_hand',
   after_sales: 'module_after_sale',
   referrals: 'module_referrals',
@@ -446,6 +448,7 @@ function openPushCenter() { uni.navigateTo({ url: '/pages/push-center/index' }) 
 function openCheckIn() { uni.navigateTo({ url: '/pages/check-in/index' }) }
 function openNotifications() { uni.navigateTo({ url: '/pages/notifications/index' }) }
 function openSecondHand() { uni.navigateTo({ url: '/pages/second-hand/index' }) }
+function openMaterial() { uni.navigateTo({ url: '/pages/material/index' }) }
 function openMySecondHand() { uni.navigateTo({ url: '/pages/second-hand-my/index' }) }
 function openSecondHandOrders(role?: 'buyer' | 'seller') { uni.navigateTo({ url: `/pages/second-hand-orders/index${role ? `?role=${role}` : ''}` }) }
 function openChat() { uni.navigateTo({ url: '/pages/chat/index' }) }

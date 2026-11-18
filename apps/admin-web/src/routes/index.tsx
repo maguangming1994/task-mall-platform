@@ -8,6 +8,7 @@ import {
   MessageOutlined,
   NotificationOutlined,
   RocketOutlined,
+  ReadOutlined,
   SettingOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
@@ -63,6 +64,9 @@ const PushRulesPage = lazyOf(() => import('../features/push/PushRulesPage'), 'Pu
 const PushTasksPage = lazyOf(() => import('../features/push/PushTasksPage'), 'PushTasksPage')
 const PushReviewsPage = lazyOf(() => import('../features/push/PushReviewsPage'), 'PushReviewsPage')
 const PushSettlementsPage = lazyOf(() => import('../features/push/PushSettlementsPage'), 'PushSettlementsPage')
+const MaterialAuditPage = lazyOf(() => import('../features/material/MaterialAuditPage'), 'MaterialAuditPage')
+const MaterialCategoryPage = lazyOf(() => import('../features/material/MaterialCategoryPage'), 'MaterialCategoryPage')
+const MaterialRequestPage = lazyOf(() => import('../features/material/MaterialRequestPage'), 'MaterialRequestPage')
 
 export const ADMIN_GROUPS: AdminGroupDef[] = [
   { key: 'workbench', label: '工作台', icon: <DashboardOutlined />, pages: [
@@ -94,6 +98,11 @@ export const ADMIN_GROUPS: AdminGroupDef[] = [
   ] },
   { key: 'community', label: '社区内容', icon: <MessageOutlined />, pages: [
     { path: '/community', title: '社区运营', navCode: 'community', element: CommunityManagementPage },
+  ] },
+  { key: 'material', label: '资料共享', icon: <ReadOutlined />, pages: [
+    { path: '/material/audit', title: '资料审核', navCode: 'material', element: MaterialAuditPage },
+    { path: '/material/categories', title: '资料分类', navCode: 'material', element: MaterialCategoryPage },
+    { path: '/material/requests', title: '求资料与举报', navCode: 'material', element: MaterialRequestPage },
   ] },
   { key: 'operations', label: '运营与消息', icon: <NotificationOutlined />, pages: [
     { path: '/operations/campaigns', title: '活动运营', navCode: 'operations', element: CampaignsPage },

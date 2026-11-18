@@ -49,6 +49,9 @@ const jobs = [
   { screen: 'admin-data',        name: 'a24-data' },
   { screen: 'admin-campus',      name: 'a25-campus' },
   { screen: 'admin-auditlog',    name: 'a26-auditlog' },
+  { screen: 'admin-material-audit',    name: 'a27-material-audit' },
+  { screen: 'admin-material-category', name: 'a28-material-category' },
+  { screen: 'admin-material-request',  name: 'a29-material-request' },
 ];
 
 (async () => {
@@ -60,6 +63,7 @@ const jobs = [
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
     await page.goto('file:///' + file.replace(/\\/g, '/'), { waitUntil: 'load', timeout: 60000 });
     await page.evaluate((sc) => {
+      document.body.classList.add('shot');
       document.body.setAttribute('data-screen', sc);
     }, j.screen);
     await page.waitForTimeout(500);

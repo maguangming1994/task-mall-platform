@@ -2629,6 +2629,173 @@ tasks:  <span class="c2">25</span> null → 5 platform / 18 backfill / <span cla
   window.addEventListener('resize', fit);
 })();
 </script>
+<style>
+/* ============ 资料共享（新增模块） ============ */
+body[data-screen="admin-material-audit"] .screen[data-screen="admin-material-audit"],
+body[data-screen="admin-material-category"] .screen[data-screen="admin-material-category"],
+body[data-screen="admin-material-request"] .screen[data-screen="admin-material-request"]{display:block}
+/* 出图时仅展示目标屏，并隐藏屏目录浮层 */
+body[data-screen] .screen.on{display:none}
+body.shot .pt-switch{display:none}
+</style>
+
+<!-- ================= 资料共享：资料审核 ================= -->
+<div class="screen" data-screen="admin-material-audit" data-kind="新增" data-title="资料审核">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item on"><span class="ic">📚</span> 资料共享</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="bread">首页 / 资料共享 <b>/ 资料审核</b></div>
+      <div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div>
+    </div>
+    <div class="content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="page-title" style="margin:0">资料审核</div>
+        <div><button class="btn">刷新</button></div>
+      </div>
+      <div class="filter-bar">
+        <select class="sel"><option>待审核</option><option>已通过</option><option>已驳回</option><option>已下架</option></select>
+        <select class="sel"><option>全部分类</option><option>考研资料</option><option>考试资料</option><option>专业课资料</option><option>实验报告</option></select>
+        <input class="inp" placeholder="资料名称 / 投喂人">
+        <button class="btn">查询</button>
+        <button class="btn ghost">重置</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tr><th>资料信息</th><th>分类</th><th>网盘 / 提取码</th><th>状态</th><th>投喂人</th><th>浏览/获取</th><th>操作</th></tr>
+          <tr><td><div class="goods"><span class="gimg">PDF</span><span class="ginfo"><b>兽医执业</b><span>用户投喂 · 2026-11-18 10:21</span></span></div></td><td>其他资源</td><td>百度网盘 · xk9d</td><td><span class="tag orange">待审核</span></td><td><div class="u"><span class="uav">陈</span><span class="uinfo"><b>陈同学</b><span>ID:10421</span></span></div></td><td>0 / 0</td><td class="act"><a>查看</a><a>通过</a><a class="danger">驳回</a></td></tr>
+          <tr><td><div class="goods"><span class="gimg">W</span><span class="ginfo"><b>2026江西专升本试卷大全</b><span>平台上传 · 2026-11-17 18:02</span></span></div></td><td>考试资料</td><td>百度网盘 · ab12</td><td><span class="tag green">已通过</span></td><td>管理员</td><td>128 / 46</td><td class="act"><a>查看</a><a class="danger">下架</a></td></tr>
+          <tr><td><div class="goods"><span class="gimg">PDF</span><span class="ginfo"><b>晓燕四级单词笔记</b><span>平台上传 · 2026-11-17 09:10</span></span></div></td><td>考试资料</td><td>百度网盘 · cd34</td><td><span class="tag green">已通过</span></td><td>管理员</td><td>96 / 31</td><td class="act"><a>查看</a><a class="danger">下架</a></td></tr>
+          <tr><td><div class="goods"><span class="gimg">W</span><span class="ginfo"><b>临床助理零基础课程</b><span>用户投喂 · 2026-11-16 21:45</span></span></div></td><td>专业课资料</td><td>夸克网盘 · ef56</td><td><span class="tag red">已驳回</span></td><td><div class="u"><span class="uav">林</span><span class="uinfo"><b>林同学</b><span>ID:10633</span></span></div></td><td>0 / 0</td><td class="act"><a>查看</a></td></tr>
+          <tr><td><div class="goods"><span class="gimg">PDF</span><span class="ginfo"><b>猫科学习全套资料</b><span>平台上传 · 2026-11-15 14:30</span></span></div></td><td>专业课资料</td><td>百度网盘 · gh78</td><td><span class="tag green">已通过</span></td><td>管理员</td><td>210 / 77</td><td class="act"><a>查看</a><a class="danger">下架</a></td></tr>
+        </table>
+        <div class="pager">共 32 条 <span class="pbtn">&lt;</span><span class="pbtn on">1</span><span class="pbtn">2</span><span class="pbtn">&gt;</span></div>
+      </div>
+      <div style="margin-top:14px;background:#F0FBF5;border:1px solid #CBEFD9;border-radius:10px;padding:10px 14px;font-size:12px;color:#0A6B42">
+        审核通过后自动赠送给投喂用户 10 次长期获取额度（同一资料仅赠送一次）；驳回时必须填写原因并同步给用户。
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ================= 资料共享：分类管理 ================= -->
+<div class="screen" data-screen="admin-material-category" data-kind="新增" data-title="资料分类">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item on"><span class="ic">📚</span> 资料共享</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="bread">首页 / 资料共享 <b>/ 资料分类</b></div>
+      <div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div>
+    </div>
+    <div class="content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="page-title" style="margin:0">资料分类</div>
+        <button class="btn primary">+ 新增分类</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tr><th>分类名称</th><th>排序</th><th>已上架资料</th><th>状态</th><th>操作</th></tr>
+          <tr><td>考研资料</td><td>10</td><td>18</td><td><span class="tag green">启用</span></td><td class="act"><a>编辑</a><a>停用</a><a class="danger">删除</a></td></tr>
+          <tr><td>考试资料</td><td>20</td><td>42</td><td><span class="tag green">启用</span></td><td class="act"><a>编辑</a><a>停用</a><a class="danger">删除</a></td></tr>
+          <tr><td>专业课资料</td><td>30</td><td>67</td><td><span class="tag green">启用</span></td><td class="act"><a>编辑</a><a>停用</a><a class="danger">删除</a></td></tr>
+          <tr><td>公共课资料</td><td>40</td><td>25</td><td><span class="tag green">启用</span></td><td class="act"><a>编辑</a><a>停用</a><a class="danger">删除</a></td></tr>
+          <tr><td>实验报告</td><td>50</td><td>9</td><td><span class="tag green">启用</span></td><td class="act"><a>编辑</a><a>停用</a><a class="danger">删除</a></td></tr>
+          <tr><td>其他资源</td><td>60</td><td>14</td><td><span class="tag gray">停用</span></td><td class="act"><a>编辑</a><a>启用</a><a class="danger">删除</a></td></tr>
+        </table>
+      </div>
+      <div style="margin-top:14px;background:#FAFBFA;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:12px;color:#767C85">
+        分类下已有资料时不可删除，可先将分类停用；停用后用户端不再展示该分类入口，但已上架资料仍可被搜索到。
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ================= 资料共享：求资料与侵权举报 ================= -->
+<div class="screen" data-screen="admin-material-request" data-kind="新增" data-title="求资料与举报">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item on"><span class="ic">📚</span> 资料共享</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="bread">首页 / 资料共享 <b>/ 求资料与举报</b></div>
+      <div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div>
+    </div>
+    <div class="content">
+      <div style="display:flex;gap:18px;border-bottom:1px solid var(--line);margin-bottom:16px">
+        <div style="padding:0 2px 10px;font-size:14px;font-weight:700;color:#0A6B42;border-bottom:2px solid #0A6B42">求资料需求</div>
+        <div style="padding:0 2px 10px;font-size:14px;color:#767C85">侵权举报</div>
+      </div>
+      <div class="filter-bar">
+        <select class="sel"><option>待处理</option><option>处理中</option><option>已找到</option><option>已关闭</option></select>
+        <input class="inp" placeholder="需求标题 / 内容">
+        <button class="btn">查询</button>
+        <button class="btn ghost">重置</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tr><th>需求内容</th><th>提交人</th><th>状态</th><th>提交时间</th><th>最近处理</th><th>操作</th></tr>
+          <tr><td><b>高等数学期末历年真题</b><br><span style="color:#8c8c8c">需要近五年期末试卷，含答案解析。</span></td><td><div class="u"><span class="uav">陈</span><span class="uinfo"><b>陈同学</b><span>ID:10421</span></span></div></td><td><span class="tag orange">待处理</span></td><td>2026-11-18 09:12</td><td>—</td><td class="act"><a>处理</a></td></tr>
+          <tr><td><b>兽医执业资格考试大纲</b><br><span style="color:#8c8c8c">需要 2026 年最新版，含题型说明。</span></td><td><div class="u"><span class="uav">林</span><span class="uinfo"><b>林同学</b><span>ID:10633</span></span></div></td><td><span class="tag blue">处理中</span></td><td>2026-11-17 20:40</td><td>2026-11-18 08:30</td><td class="act"><a>处理</a></td></tr>
+          <tr><td><b>大学物理实验报告模板</b><br><span style="color:#8c8c8c">要本校老师要求的格式，最好有示例。</span></td><td><div class="u"><span class="uav">周</span><span class="uinfo"><b>周同学</b><span>ID:10777</span></span></div></td><td><span class="tag green">已找到</span></td><td>2026-11-16 15:05</td><td>2026-11-17 11:20</td><td class="act"><a>处理</a></td></tr>
+        </table>
+        <div class="pager">共 23 条 <span class="pbtn">&lt;</span><span class="pbtn on">1</span><span class="pbtn">2</span><span class="pbtn">3</span><span class="pbtn">&gt;</span></div>
+      </div>
+      <div style="margin-top:14px;background:#FAFBFA;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:12px;color:#767C85">
+        求资料需求仅用户本人与管理员可见，不消耗资料获取次数；处理结果与回复会展示在用户端「我的需求」。
+      </div>
+    </div>
+  </div>
+</div>
+</div>
 
 </body>
 </html>

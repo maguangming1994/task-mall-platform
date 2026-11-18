@@ -64,6 +64,9 @@ class ReleaseControlSeeder extends Seeder
             ['code' => 'module_follow', 'name' => '关注作者'],
             ['code' => 'module_identity_verification', 'name' => '实名认证'],
             ['code' => 'module_feedback', 'name' => '意见反馈'],
+            ['code' => 'module_material', 'name' => '资料共享'],
+            ['code' => 'module_material_post', 'name' => '投喂资料'],
+            ['code' => 'module_material_request', 'name' => '求资料'],
         ] as $flag) {
             FeatureFlag::query()->firstOrCreate(
                 ['code' => $flag['code']],
