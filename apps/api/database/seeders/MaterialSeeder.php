@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Modules\Material\Models\Material;
 use App\Modules\Material\Models\MaterialCategory;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class MaterialSeeder extends Seeder
 {
@@ -20,7 +21,10 @@ class MaterialSeeder extends Seeder
         ];
 
         foreach ($categories as $item) {
-            MaterialCategory::query()->firstOrCreate(['name' => $item['name']], $item + ['status' => 'active']);
+            MaterialCategory::query()->firstOrCreate(
+                ['name' => $item['name']],
+                $item + ['status' => 'active', 'public_id' => (string) Str::ulid()],
+            );
         }
 
         // 演示资料仅用于本地/测试环境，生产环境不注入示例内容。
@@ -43,6 +47,7 @@ class MaterialSeeder extends Seeder
             Material::query()->firstOrCreate(
                 ['title' => $demo['title'], 'source' => 'admin'],
                 [
+                    'public_id' => (string) Str::ulid(),
                     'campus_id' => null,
                     'category_id' => $categoryIds[$demo['category']] ?? null,
                     'uploader_name' => '管理员',

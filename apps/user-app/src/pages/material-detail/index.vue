@@ -53,7 +53,7 @@
             <text class="action-quota">剩余 {{ remaining }} 次</text>
           </view>
           <text class="action-note">获取后展示网盘链接与提取码，同一资料重复获取不再消耗次数。</text>
-          <button class="action-btn" :disabled="fetching" @click="doFetch">{{ fetching ? '获取中…' : '获取网盘地址' }}</button>
+          <button class="action-btn" :disabled="fetching" @click="doFetch()">{{ fetching ? '获取中…' : '获取网盘地址' }}</button>
         </view>
 
         <!-- 未获取：额度已用完 -->

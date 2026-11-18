@@ -26,7 +26,7 @@ class ClientCapabilitiesModuleGateTest extends TestCase
         return $headers;
     }
 
-    public function test_payload_is_version_6_with_17_modules_and_experimental_flags(): void
+    public function test_payload_is_version_6_with_20_modules_and_experimental_flags(): void
     {
         $response = $this->getJson('/api/v1/client-capabilities', $this->baseHeaders('cap-device-1'));
 
@@ -38,7 +38,15 @@ class ClientCapabilitiesModuleGateTest extends TestCase
 
         $flags = $response->json('data.feature_flags');
         // 已上线模块全局默认 enabled；以下暂未上线能力默认 disabled，入口在客户端隐藏。
-        $unlaunched = ['module_membership', 'module_follow', 'module_identity_verification', 'module_feedback'];
+        $unlaunched = [
+            'module_membership',
+            'module_follow',
+            'module_identity_verification',
+            'module_feedback',
+            'module_material',
+            'module_material_post',
+            'module_material_request',
+        ];
         foreach (app(ModuleRegistry::class)->codes() as $code) {
             $this->assertArrayHasKey($code, $flags, "缺少模块开关 {$code}");
             $this->assertSame(

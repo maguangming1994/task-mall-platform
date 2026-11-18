@@ -70,7 +70,7 @@ class CampusModuleMatrixTest extends TestCase
         return $modules;
     }
 
-    public function test_matrix_returns_17_modules_groups_and_three_packages(): void
+    public function test_matrix_returns_20_modules_groups_and_three_packages(): void
     {
         [, $token] = $this->superAdmin();
         $campus = $this->campus();
@@ -78,7 +78,7 @@ class CampusModuleMatrixTest extends TestCase
         $response = $this->withToken($token)->getJson("/api/v1/admin/campuses/{$campus->public_id}/modules")
             ->assertOk()
             ->assertJsonPath('data.campus.id', $campus->public_id)
-            ->assertJsonCount(17, 'data.modules')
+            ->assertJsonCount(20, 'data.modules')
             ->assertJsonCount(3, 'data.packages');
 
         $modules = collect($response->json('data.modules'))->keyBy('code');
@@ -165,8 +165,8 @@ class CampusModuleMatrixTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.campus.id', $campus->public_id);
 
-        // 17 行显式覆盖；套餐内开、套餐外（含子模块）关
-        $this->assertSame(17, CampusFeatureFlag::query()->where('campus_id', $campus->id)->count());
+        // 20 行显式覆盖；套餐内开、套餐外（含子模块）关
+        $this->assertSame(20, CampusFeatureFlag::query()->where('campus_id', $campus->id)->count());
         $map = $this->moduleMap($token, $campus);
         $this->assertTrue($map['module_second_hand']['effective']);
         $this->assertTrue($map['module_mall']['effective']);
@@ -207,7 +207,7 @@ class CampusModuleMatrixTest extends TestCase
 
         // 只读：已分配学校的矩阵可看
         $this->withToken($agentToken)->getJson("/api/v1/admin/campuses/{$campus->public_id}/modules")
-            ->assertOk()->assertJsonCount(17, 'data.modules');
+            ->assertOk()->assertJsonCount(20, 'data.modules');
 
         // 写入 403（代理无 campus.module_manage）
         $this->withToken($agentToken)->putJson(
