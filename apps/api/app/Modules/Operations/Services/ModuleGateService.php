@@ -192,6 +192,15 @@ class ModuleGateService
 
         $global = $this->releases->evaluation($code, $subject, $platform);
 
+        // 按端独立开关覆盖全局开关，但校区显式关闭仍是最高优先级，避免 H5 全开绕过校区隔离。
+        if ($global['platform_override'] !== null) {
+            if (! $global['platform_override']) {
+                return false;
+            }
+
+            return ($this->overrides($campusId)[$code] ?? 'inherit') !== 'disabled';
+        }
+
         // 全局总闸门：disabled 或开关记录缺失时，校区覆盖不可开启
         if ($global['mode'] === null || $global['mode'] === 'disabled') {
             return false;

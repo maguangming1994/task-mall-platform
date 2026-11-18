@@ -56,14 +56,14 @@ class AdminOperationsController extends Controller
     public function releaseControl(): JsonResponse
     {
         return ApiResponse::success([
-            'feature_flags' => FeatureFlag::query()->orderBy('code')->get()->map(fn (FeatureFlag $flag) => $flag->only(['code', 'name', 'mode', 'rollout_percentage', 'audience', 'placeholder_title_reviewing', 'placeholder_desc_reviewing', 'placeholder_title_reviewed', 'placeholder_desc_reviewed', 'version', 'updated_at'])),
+            'feature_flags' => FeatureFlag::query()->orderBy('code')->get()->map(fn (FeatureFlag $flag) => $flag->only(['code', 'name', 'mode', 'rollout_percentage', 'audience', 'platform_modes', 'placeholder_title_reviewing', 'placeholder_desc_reviewing', 'placeholder_title_reviewed', 'placeholder_desc_reviewed', 'version', 'updated_at'])),
             'releases' => DeploymentRelease::query()->with('events')->latest()->limit(30)->get()->map(fn (DeploymentRelease $release) => ['id' => $release->public_id, 'release_version' => $release->release_version, 'environment' => $release->environment, 'commit_sha' => $release->commit_sha, 'artifact_hash' => $release->artifact_hash, 'configuration_hash' => $release->configuration_hash, 'status' => $release->status, 'rollout_percentage' => $release->rollout_percentage, 'deployed_at' => $release->deployed_at?->toIso8601String(), 'rolled_back_at' => $release->rolled_back_at?->toIso8601String(), 'events' => $release->events->map->only(['event_type', 'from_status', 'to_status', 'rollout_percentage', 'reason', 'evidence_hash', 'created_at'])]),
         ]);
     }
 
     public function updateFeatureFlag(Request $request, FeatureFlag $flag, ReleaseControlService $service): JsonResponse
     {
-        $data = $request->validate(['mode' => ['required', 'in:disabled,percentage,enabled'], 'rollout_percentage' => ['required', 'integer', 'min:0', 'max:100'], 'audience' => ['nullable', 'array'], 'audience.platforms' => ['nullable', 'array'], 'audience.platforms.*' => ['in:wechat-mini,h5-wechat,h5-browser'], 'audience.subject_allowlist' => ['nullable', 'array', 'max:100'], 'audience.subject_allowlist.*' => ['string', 'max:80'], 'expected_version' => ['required', 'integer', 'min:1'], 'reason' => ['required', 'string', 'min:5', 'max:500'], 'placeholder' => ['nullable', 'array'], 'placeholder.title_reviewing' => ['nullable', 'string', 'max:160'], 'placeholder.desc_reviewing' => ['nullable', 'string', 'max:2000'], 'placeholder.title_reviewed' => ['nullable', 'string', 'max:160'], 'placeholder.desc_reviewed' => ['nullable', 'string', 'max:2000']]); /** @var AdminUser $admin */
+        $data = $request->validate(['mode' => ['required', 'in:disabled,percentage,enabled'], 'rollout_percentage' => ['required', 'integer', 'min:0', 'max:100'], 'audience' => ['nullable', 'array'], 'audience.platforms' => ['nullable', 'array'], 'audience.platforms.*' => ['in:wechat-mini,h5-wechat,h5-browser'], 'audience.subject_allowlist' => ['nullable', 'array', 'max:100'], 'audience.subject_allowlist.*' => ['string', 'max:80'], 'platform_modes' => ['nullable', 'array'], 'platform_modes.wechat-mini' => ['nullable', 'in:inherit,enabled,disabled'], 'platform_modes.h5' => ['nullable', 'in:inherit,enabled,disabled'], 'expected_version' => ['required', 'integer', 'min:1'], 'reason' => ['required', 'string', 'min:5', 'max:500'], 'placeholder' => ['nullable', 'array'], 'placeholder.title_reviewing' => ['nullable', 'string', 'max:160'], 'placeholder.desc_reviewing' => ['nullable', 'string', 'max:2000'], 'placeholder.title_reviewed' => ['nullable', 'string', 'max:160'], 'placeholder.desc_reviewed' => ['nullable', 'string', 'max:2000']]); /** @var AdminUser $admin */
         $admin = $request->user();
         $placeholder = isset($data['placeholder']) ? [
             'title_reviewing' => $data['placeholder']['title_reviewing'] ?? null,
@@ -71,9 +71,9 @@ class AdminOperationsController extends Controller
             'title_reviewed' => $data['placeholder']['title_reviewed'] ?? null,
             'desc_reviewed' => $data['placeholder']['desc_reviewed'] ?? null,
         ] : null;
-        $updated = $service->updateFlag($admin, $flag, $data['mode'], $data['rollout_percentage'], $data['audience'] ?? [], $data['expected_version'], $data['reason'], $placeholder);
+        $updated = $service->updateFlag($admin, $flag, $data['mode'], $data['rollout_percentage'], $data['audience'] ?? [], $data['expected_version'], $data['reason'], $placeholder, $data['platform_modes'] ?? null);
 
-        return ApiResponse::success($updated->only(['code', 'name', 'mode', 'rollout_percentage', 'audience', 'placeholder_title_reviewing', 'placeholder_desc_reviewing', 'placeholder_title_reviewed', 'placeholder_desc_reviewed', 'version', 'updated_at']));
+        return ApiResponse::success($updated->only(['code', 'name', 'mode', 'rollout_percentage', 'audience', 'platform_modes', 'placeholder_title_reviewing', 'placeholder_desc_reviewing', 'placeholder_title_reviewed', 'placeholder_desc_reviewed', 'version', 'updated_at']));
     }
 
     public function transitionRelease(Request $request, DeploymentRelease $release, ReleaseControlService $service): JsonResponse

@@ -14,7 +14,7 @@ class ReleaseControlSeeder extends Seeder
             ['code' => 'community_video', 'name' => '社区视频内容'],
             ['code' => 'external_notifications', 'name' => '微信与短信外部投递'],
         ] as $flag) {
-            FeatureFlag::query()->firstOrCreate(['code' => $flag['code']], $flag + ['mode' => 'disabled', 'rollout_percentage' => 0, 'version' => 1]);
+            FeatureFlag::query()->firstOrCreate(['code' => $flag['code']], $flag + ['mode' => 'disabled', 'rollout_percentage' => 0, 'platform_modes' => ['h5' => 'enabled'], 'version' => 1]);
         }
 
         // 审核状态全局开关：enabled=审核中（展示审核中文案），disabled=审核过（展示审核过文案）
@@ -48,6 +48,8 @@ class ReleaseControlSeeder extends Seeder
                     'name' => $flag['name'],
                     'mode' => 'enabled',
                     'rollout_percentage' => 100,
+                    // H5 端默认全量开放；提现涉及资金合规，保持跟随全局。
+                    'platform_modes' => ['h5' => $flag['code'] === 'module_withdraw' ? 'inherit' : 'enabled'],
                     'version' => 1,
                     'placeholder_title_reviewing' => $flag['reviewing'][0],
                     'placeholder_desc_reviewing' => $flag['reviewing'][1],
@@ -74,6 +76,7 @@ class ReleaseControlSeeder extends Seeder
                     'name' => $flag['name'],
                     'mode' => 'disabled',
                     'rollout_percentage' => 0,
+                    'platform_modes' => ['h5' => 'enabled'],
                     'version' => 1,
                     'placeholder_title_reviewing' => '开发中',
                     'placeholder_desc_reviewing' => '该功能正在开发中，敬请期待。',
@@ -88,6 +91,7 @@ class ReleaseControlSeeder extends Seeder
             FeatureFlag::query()->where('code', 'module_withdraw')->update([
                 'mode' => 'disabled',
                 'rollout_percentage' => 0,
+                'platform_modes' => ['h5' => 'inherit'],
                 'placeholder_title_reviewing' => '开发中',
                 'placeholder_desc_reviewing' => '该功能正在开发中，敬请期待。',
                 'placeholder_title_reviewed' => '开发中',

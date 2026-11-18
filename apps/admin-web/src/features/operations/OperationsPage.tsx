@@ -34,10 +34,14 @@ interface RuleFormValue { enabled: boolean; channels: string[]; reason: string }
 interface CampaignFormValue { name: string; title: string; body: string; channels: string[]; scheduled_at?: string }
 interface CancelFormValue { reason: string }
 interface PlaceholderFormValue { title_reviewing: string; desc_reviewing: string; title_reviewed: string; desc_reviewed: string }
+type PlatformModeValue = 'inherit' | 'enabled' | 'disabled'
+interface PlatformModeFormValue { wechat_mini: PlatformModeValue; h5: PlatformModeValue; reason: string }
 
 const environmentNames: Record<string, string> = { local: '本地开发环境', testing: '自动测试环境', staging: '预发布环境', production: '生产环境' }
 const uatStatusNames: Record<string, string> = { passed: '全部验收通过', passed_local: '本地自动验收通过', failed: '验收未通过' }
 const featureModeNames: Record<string, string> = { disabled: '已关闭', percentage: '灰度开放', enabled: '已全量开放' }
+const platformModeNames: Record<string, string> = { inherit: '跟随全局', enabled: '已开启', disabled: '已关闭' }
+const platformModeOptions = [{ value: 'inherit', label: '跟随全局' }, { value: 'enabled', label: '开启' }, { value: 'disabled', label: '关闭' }]
 const releaseStatusNames: Record<string, string> = { prepared: '待发布', canary: '灰度发布中', deployed: '已完成发布', rolled_back: '已回滚' }
 const readinessCheckNames: Record<string, string> = { database: '数据库', cache: '缓存服务', storage: '文件存储', migrations: '数据库结构' }
 const channelNames: Record<string, string> = { in_app: '站内消息', wechat: '微信消息（旧版）', wechat_mini: '小程序订阅消息', sms: '短信' }
@@ -108,6 +112,8 @@ export function OperationsPage() {
   const [cancelForm] = Form.useForm<CancelFormValue>()
   const [placeholderForm] = Form.useForm<PlaceholderFormValue>()
   const [editingPlaceholder, setEditingPlaceholder] = useState<ManagedFeatureFlag | null>(null)
+  const [platformForm] = Form.useForm<PlatformModeFormValue>()
+  const [editingPlatformFlag, setEditingPlatformFlag] = useState<ManagedFeatureFlag | null>(null)
   const [messageApi, contextHolder] = message.useMessage()
   const templateChannel = Form.useWatch('channel', templateForm)
   const managedSceneName = (value: string) => rules.find((rule) => rule.scene_code === value)?.name ?? sceneName(value)
@@ -275,6 +281,64 @@ export function OperationsPage() {
     finally { setSubmitting(false) }
   }
 
+  const openPlatformEditor = (flag: ManagedFeatureFlag) => {
+    if (!canDeploy) return
+    platformForm.setFieldsValue({
+      wechat_mini: flag.platform_modes?.['wechat-mini'] ?? 'inherit',
+      h5: flag.platform_modes?.h5 ?? 'inherit',
+      reason: '',
+    })
+    setEditingPlatformFlag(flag)
+  }
+
+  const savePlatformModes = async (values: PlatformModeFormValue) => {
+    if (!canDeploy || !editingPlatformFlag) return
+    setSubmitting(true)
+    try {
+      await updateFeatureFlag(editingPlatformFlag.code, {
+        mode: editingPlatformFlag.mode,
+        rollout_percentage: editingPlatformFlag.rollout_percentage,
+        audience: editingPlatformFlag.audience ?? {},
+        platform_modes: { 'wechat-mini': values.wechat_mini, h5: values.h5 },
+        expected_version: editingPlatformFlag.version,
+        reason: values.reason,
+      })
+      setEditingPlatformFlag(null)
+      await load()
+      messageApi.success('按端开关已更新')
+    } catch (error) { messageApi.error(error instanceof Error ? error.message : '按端开关更新失败') }
+    finally { setSubmitting(false) }
+  }
+
+  const openAllH5 = () => {
+    if (!canDeploy) return
+    const targets = featureFlags.filter((flag) => flag.code !== 'review_in_progress' && flag.code !== 'module_withdraw')
+    Modal.confirm({
+      title: 'H5 端全量开放',
+      content: `将把 ${targets.length} 个功能在 H5 端设为开启，小程序端配置保持不变；提现与审核状态开关不会被修改。`,
+      okText: '确认全量开放',
+      cancelText: '取消',
+      onOk: async () => {
+        setSubmitting(true)
+        try {
+          for (const flag of targets) {
+            await updateFeatureFlag(flag.code, {
+              mode: flag.mode,
+              rollout_percentage: flag.rollout_percentage,
+              audience: flag.audience ?? {},
+              platform_modes: { ...(flag.platform_modes ?? {}), h5: 'enabled' },
+              expected_version: flag.version,
+              reason: 'H5 测试环境全量开放功能。',
+            })
+          }
+          await load()
+          messageApi.success(`H5 端已开放 ${targets.length} 个功能`)
+        } catch (error) { messageApi.error(error instanceof Error ? error.message : 'H5 全量开放失败') }
+        finally { setSubmitting(false) }
+      },
+    })
+  }
+
   const reviewFlag = featureFlags.find((f) => f.code === 'review_in_progress')
   const setReviewStatus = async (reviewing: boolean) => {
     if (!canDeploy || !reviewFlag) return
@@ -344,9 +408,20 @@ export function OperationsPage() {
       <Tag color={reviewFlag.mode === 'enabled' ? 'gold' : 'green'}>{reviewFlag.mode === 'enabled' ? '审核中' : '审核过'}</Tag>
       <Button size="small" type={reviewFlag.mode === 'enabled' ? 'default' : 'primary'} onClick={() => void setReviewStatus(true)} disabled={reviewFlag.mode === 'enabled'}>切到审核中</Button>
       <Button size="small" type={reviewFlag.mode === 'disabled' ? 'default' : 'primary'} onClick={() => void setReviewStatus(false)} disabled={reviewFlag.mode === 'disabled'}>切到审核过</Button>
+      <Button size="small" type="primary" loading={submitting} onClick={openAllH5}>H5 全量开放</Button>
     </Space>}>
       <Alert showIcon type="info" message="审核中/审核过两套占位文案可按模块单独编辑；关闭模块时小程序展示当前审核状态对应的文案。" style={{ marginBottom: 16 }} />
-      <Table rowKey="code" dataSource={featureFlags.filter((f) => f.code !== 'review_in_progress')} pagination={false} columns={[{ title: '功能', render: (_: unknown, row: ManagedFeatureFlag) => <>{row.name}<Typography.Text type="secondary"> · {row.code}</Typography.Text></> }, { title: '开放状态', dataIndex: 'mode', render: (value: string) => <Tag color={value === 'disabled' ? 'default' : value === 'enabled' ? 'green' : 'cyan'}>{featureModeNames[value] ?? '未知状态'}</Tag> }, { title: '开放比例', render: (_: unknown, row: ManagedFeatureFlag) => `${row.rollout_percentage}% · 配置版本 v${row.version}` }, { title: '占位文案', render: (_: unknown, row: ManagedFeatureFlag) => row.code.startsWith('module_') ? <Space direction="vertical" size={0}><Typography.Text type="secondary">审核中：{row.placeholder_title_reviewing || '—'}</Typography.Text><Typography.Text type="secondary">审核过：{row.placeholder_title_reviewed || '—'}</Typography.Text></Space> : <Typography.Text type="secondary">—</Typography.Text> }, { title: '操作', render: (_: unknown, row: ManagedFeatureFlag) => <Space><Button size="small" onClick={() => void setFlag(row, 0)}>关闭</Button><Button size="small" onClick={() => void setFlag(row, 10)}>开放 10%</Button><Button size="small" type="primary" onClick={() => void setFlag(row, 100)}>全部开放</Button>{row.code.startsWith('module_') && <Button size="small" icon={<EditOutlined />} onClick={() => openPlaceholderEditor(row)}>文案</Button>}</Space> }]} />
+      <Table rowKey="code" dataSource={featureFlags.filter((f) => f.code !== 'review_in_progress')} pagination={false} columns={[
+        { title: '功能', render: (_: unknown, row: ManagedFeatureFlag) => <>{row.name}<Typography.Text type="secondary"> · {row.code}</Typography.Text></> },
+        { title: '开放状态', dataIndex: 'mode', render: (value: string) => <Tag color={value === 'disabled' ? 'default' : value === 'enabled' ? 'green' : 'cyan'}>{featureModeNames[value] ?? '未知状态'}</Tag> },
+        { title: '开放比例', render: (_: unknown, row: ManagedFeatureFlag) => `${row.rollout_percentage}% · 配置版本 v${row.version}` },
+        { title: '按端控制', render: (_: unknown, row: ManagedFeatureFlag) => <Space direction="vertical" size={0}>
+          <span>小程序：{platformModeNames[row.platform_modes?.['wechat-mini'] ?? 'inherit']}</span>
+          <span>H5：{platformModeNames[row.platform_modes?.h5 ?? 'inherit']}</span>
+        </Space> },
+        { title: '占位文案', render: (_: unknown, row: ManagedFeatureFlag) => row.code.startsWith('module_') ? <Space direction="vertical" size={0}><Typography.Text type="secondary">审核中：{row.placeholder_title_reviewing || '—'}</Typography.Text><Typography.Text type="secondary">审核过：{row.placeholder_title_reviewed || '—'}</Typography.Text></Space> : <Typography.Text type="secondary">—</Typography.Text> },
+        { title: '操作', render: (_: unknown, row: ManagedFeatureFlag) => <Space><Button size="small" onClick={() => void setFlag(row, 0)}>关闭</Button><Button size="small" onClick={() => void setFlag(row, 10)}>开放 10%</Button><Button size="small" type="primary" onClick={() => void setFlag(row, 100)}>全部开放</Button><Button size="small" onClick={() => openPlatformEditor(row)}>按端</Button>{row.code.startsWith('module_') && <Button size="small" icon={<EditOutlined />} onClick={() => openPlaceholderEditor(row)}>文案</Button>}</Space> },
+      ]} />
     </Card>}
     {canDeploy && <Card bordered={false} title="系统发布记录" style={{ marginTop: 16 }}><Table rowKey="id" dataSource={releases} pagination={false} columns={[{ title: '发布版本', dataIndex: 'release_version', render: releaseVersion }, { title: '运行环境', dataIndex: 'environment', render: (value: string) => environmentNames[value] ?? '其他环境' }, { title: '发布状态', render: (_: unknown, row: ManagedRelease) => <Tag color={row.status === 'rolled_back' ? 'red' : row.status === 'deployed' ? 'green' : 'cyan'}>{releaseStatusNames[row.status] ?? '未知状态'}</Tag> }, { title: '开放比例', render: (_: unknown, row: ManagedRelease) => `${row.rollout_percentage}%` }, { title: '代码版本', render: (_: unknown, row: ManagedRelease) => <Tooltip title="代码提交标识"><Typography.Text code copyable={{ text: row.commit_sha }}>{row.commit_sha.slice(0, 10)}</Typography.Text></Tooltip> }]} /></Card>}
 
@@ -359,6 +434,21 @@ export function OperationsPage() {
         <Typography.Title level={5} style={{ marginTop: 16 }}>审核过文案</Typography.Title>
         <Form.Item name="title_reviewed" label="标题" rules={[{ required: true, max: 160, message: '请输入标题（最多 160 字）' }]}><Input maxLength={160} placeholder="服务维护中" /></Form.Item>
         <Form.Item name="desc_reviewed" label="描述" rules={[{ required: true, max: 2000, message: '请输入描述（最多 2000 字）' }]}><Input.TextArea rows={3} maxLength={2000} showCount placeholder="该功能正在进行服务升级，预计很快恢复，感谢你的耐心等待。" /></Form.Item>
+      </Form>
+    </Modal>
+
+    <Modal title={editingPlatformFlag ? `按端控制 · ${editingPlatformFlag.name}` : '按端控制'} open={editingPlatformFlag !== null} onCancel={() => setEditingPlatformFlag(null)} onOk={() => platformForm.submit()} okText="保存按端配置" cancelText="取消" confirmLoading={submitting} destroyOnHidden width={520}>
+      <Form form={platformForm} layout="vertical" onFinish={savePlatformModes}>
+        <Alert showIcon type="info" message="按端开关优先于全局与校区设置；H5 同时覆盖公众号与普通浏览器。" style={{ marginBottom: 16 }} />
+        <Form.Item name="wechat_mini" label="微信小程序">
+          <Select options={platformModeOptions} />
+        </Form.Item>
+        <Form.Item name="h5" label="H5（公众号 / 浏览器）">
+          <Select options={platformModeOptions} />
+        </Form.Item>
+        <Form.Item name="reason" label="变更原因" rules={[{ required: true, min: 5, message: '请填写至少 5 个字符的变更原因' }]}>
+          <Input.TextArea rows={3} maxLength={500} showCount />
+        </Form.Item>
       </Form>
     </Modal>
 

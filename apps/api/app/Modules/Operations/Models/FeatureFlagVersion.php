@@ -7,7 +7,7 @@ use LogicException;
 
 class FeatureFlagVersion extends Model
 {
-    protected $fillable = ['feature_flag_id', 'version', 'mode', 'rollout_percentage', 'audience', 'reason', 'created_by_admin_id'];
+    protected $fillable = ['feature_flag_id', 'version', 'mode', 'rollout_percentage', 'audience', 'platform_modes', 'reason', 'created_by_admin_id'];
 
     protected static function booted(): void
     {
@@ -17,6 +17,6 @@ class FeatureFlagVersion extends Model
 
     protected function casts(): array
     {
-        return ['rollout_percentage' => 'integer', 'audience' => 'array', 'version' => 'integer'];
+        return ['rollout_percentage' => 'integer', 'audience' => 'array', 'platform_modes' => 'array', 'version' => 'integer'];
     }
 }
