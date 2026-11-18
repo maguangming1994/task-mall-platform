@@ -73,6 +73,9 @@ class WechatPaymentSettingsService
             'api_v3_key' => $secretStates['api_v3_key'],
             'merchant_private_key' => $secretStates['merchant_private_key'],
             'platform_certificate' => $secretStates['platform_certificate'],
+            // 场景 AppID 绑定：自动取自小程序/公众号配置，无需重复填写。
+            'mini_app_id' => (string) ($configuration['mini_app_id'] ?? ''),
+            'official_account_app_id' => (string) ($configuration['official_account_app_id'] ?? ''),
             'ready' => $this->isReady($configuration),
             'last_tested_at' => $record?->last_tested_at?->toIso8601String(),
             'last_test_status' => $record?->last_test_status,
@@ -109,6 +112,7 @@ class WechatPaymentSettingsService
         $settings = $this->validateSettings($settings);
         $credentials = Arr::only($credentials, self::SECRET_FIELDS);
         $this->validateCredentials($credentials);
+        $this->assertEnabledConfigurationComplete($settings, $credentials);
 
         DB::transaction(function () use ($settings, $credentials, $reason, $actor): void {
             $this->systemSettings->saveDraft(self::SETTING_KEY, $settings, $reason, $actor);
@@ -253,6 +257,49 @@ class WechatPaymentSettingsService
         }
         if (filled($credentials['platform_certificate'] ?? null) && openssl_x509_read((string) $credentials['platform_certificate']) === false) {
             throw ValidationException::withMessages(['platform_certificate' => '上传内容不是有效的 PEM 平台证书。']);
+        }
+    }
+
+    /**
+     * 启用微信支付前必须补齐商户参数、密钥、证书、回调地址，并至少绑定一个场景 AppID。
+     * 缺失项以中文逐条列出，避免保存成功但线上不可用。
+     *
+     * @param  array<string, mixed>  $settings
+     * @param  array<string, mixed>  $credentials
+     */
+    private function assertEnabledConfigurationComplete(array $settings, array $credentials): void
+    {
+        if (($settings['driver'] ?? '') !== 'wechat') {
+            return;
+        }
+        $merged = [...$this->effective(), ...$settings];
+        foreach (self::SECRET_FIELDS as $field) {
+            if (array_key_exists($field, $credentials)) {
+                $merged[$field] = $credentials[$field];
+            }
+        }
+        $required = [
+            'merchant_id' => '商户号',
+            'merchant_certificate_serial' => '商户证书序列号',
+            'api_v3_key' => 'APIv3 密钥',
+            'merchant_private_key' => '商户私钥',
+            'platform_certificate' => '微信支付平台证书',
+            'notify_url' => '支付回调地址',
+        ];
+        $missing = [];
+        foreach ($required as $field => $label) {
+            if (blank($merged[$field] ?? null)) {
+                $missing[] = $label;
+            }
+        }
+        if (blank($this->wechatSettings->effective('mini')['app_id'])
+            && blank($this->wechatSettings->effective('official_account')['app_id'])) {
+            $missing[] = '小程序或公众号 AppID（场景绑定）';
+        }
+        if ($missing !== []) {
+            throw ValidationException::withMessages([
+                'driver' => '启用微信支付前请补齐：'.implode('、', $missing).'。',
+            ]);
         }
     }
 

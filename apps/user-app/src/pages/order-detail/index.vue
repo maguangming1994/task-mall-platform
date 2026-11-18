@@ -68,6 +68,7 @@ import { useAuthStore } from '@/stores/auth'
 import { redirectToLogin } from '@/utils/authRedirect'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
+import { invokeWechatJsapiPayment } from '@/platform/wechatPay'
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_mall_trade'))
@@ -123,6 +124,8 @@ async function payOrder() {
     const redirected = await invokeWechat(payment)
     if (!redirected) await pollPayment(payment.id, payment.order_id)
   } catch (error) {
+    // 取消或失败时清除待支付标记，避免页面停在“支付确认中”无法重试。
+    if (order.value) clearPendingPayment(order.value.id)
     const message = error instanceof Error ? error.message : '支付发起失败'
     if (order.value.cash_payment_method === 'wallet' && message.includes('余额不足')) {
       const result = await uni.showModal({ title: '余额不足', content: '当前余额无法支付该订单，是否先去充值？', confirmText: '去充值' })
@@ -146,6 +149,10 @@ async function invokeWechat(payment: Payment): Promise<boolean> {
     // #endif
     return true
   }
+  // #ifdef H5
+  // 公众号内：kind 为 jsapi，先唤起微信收银台，再由下方轮询确认到账。
+  if (payload.kind === 'jsapi') await invokeWechatJsapiPayment(payload)
+  // #endif
   // #ifdef MP-WEIXIN
   await uni.requestPayment({ provider: 'wxpay', timeStamp: payload.timeStamp, nonceStr: payload.nonceStr, package: payload.package, signType: 'RSA', paySign: payload.paySign })
   // #endif

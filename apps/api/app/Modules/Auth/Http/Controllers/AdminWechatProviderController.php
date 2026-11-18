@@ -39,6 +39,7 @@ class AdminWechatProviderController extends Controller
             'driver' => ['required', 'in:local,wechat'],
             'app_id' => ['present', 'nullable', 'string', 'max:64'],
             'timeout_seconds' => ['required', 'integer', 'min:1', 'max:30'],
+            'login_enabled' => ['sometimes', 'boolean'],
             'app_secret' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'token' => ['sometimes', 'nullable', 'string', 'max:500'],
             'encoding_aes_key' => ['sometimes', 'nullable', 'string', 'max:1000'],
@@ -53,7 +54,7 @@ class AdminWechatProviderController extends Controller
         /** @var AdminUser $admin */
         $admin = $request->user();
         $before = $settings->snapshot()[$provider] ?? null;
-        $nextSettings = $settings->buildSettings($provider, Arr::only($data, ['driver', 'app_id', 'timeout_seconds']));
+        $nextSettings = $settings->buildSettings($provider, Arr::only($data, ['driver', 'app_id', 'timeout_seconds', 'login_enabled']));
         $credentials = [];
         foreach (['app_secret', 'token', 'encoding_aes_key'] as $field) {
             if (($data['clear_'.$field] ?? false) && filled($data[$field] ?? null)) {

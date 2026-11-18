@@ -30,7 +30,7 @@ class WechatProviderSettingsService
 
     public function __construct(private readonly SystemSettingService $systemSettings) {}
 
-    /** @return array{driver:string,app_id:string,app_secret:?string,token:?string,encoding_aes_key:?string,timeout_seconds:int} */
+    /** @return array{driver:string,app_id:string,app_secret:?string,token:?string,encoding_aes_key:?string,timeout_seconds:int,login_enabled:bool} */
     public function effective(string $provider): array
     {
         $this->assertProvider($provider);
@@ -47,6 +47,8 @@ class WechatProviderSettingsService
             'token' => $credentials['token'],
             'encoding_aes_key' => $credentials['encoding_aes_key'],
             'timeout_seconds' => (int) ($resolved['configuration']['timeout_seconds'] ?? 5),
+            // 登录开关缺省开启，兼容未保存过该字段的历史配置。
+            'login_enabled' => (bool) ($resolved['configuration']['login_enabled'] ?? true),
         ];
     }
 
@@ -66,18 +68,18 @@ class WechatProviderSettingsService
     }
 
     /** @param array<string, mixed> $input
-     * @return array{driver:string,app_id:string,timeout_seconds:int}
+     * @return array{driver:string,app_id:string,timeout_seconds:int,login_enabled:bool}
      */
     public function buildSettings(string $provider, array $input): array
     {
         $this->assertProvider($provider);
-        $current = Arr::only($this->effective($provider), ['driver', 'app_id', 'timeout_seconds']);
-        $unknown = array_diff(array_keys($input), ['driver', 'app_id', 'timeout_seconds']);
+        $current = Arr::only($this->effective($provider), ['driver', 'app_id', 'timeout_seconds', 'login_enabled']);
+        $unknown = array_diff(array_keys($input), ['driver', 'app_id', 'timeout_seconds', 'login_enabled']);
         if ($unknown !== []) {
             throw ValidationException::withMessages(['settings' => '包含不支持的微信配置字段。']);
         }
 
-        foreach (['driver', 'app_id', 'timeout_seconds'] as $field) {
+        foreach (['driver', 'app_id', 'timeout_seconds', 'login_enabled'] as $field) {
             if (array_key_exists($field, $input)) {
                 $current[$field] = $input[$field];
             }
@@ -95,6 +97,7 @@ class WechatProviderSettingsService
         $this->assertProvider($provider);
         $settings = $this->validateSettings($settings);
         $credentials = Arr::only($credentials, self::SECRET_FIELDS);
+        $this->assertLoginConfigurationComplete($provider, $settings, $credentials);
 
         DB::transaction(function () use ($provider, $settings, $credentials, $reason, $actor): void {
             $settingKey = $this->settingKey($provider);
@@ -204,6 +207,9 @@ class WechatProviderSettingsService
             'token' => $secrets['token'],
             'encoding_aes_key' => $secrets['encoding_aes_key'],
             'timeout_seconds' => $configuration['timeout_seconds'],
+            'login_enabled' => $configuration['login_enabled'],
+            // 公众号网页授权域名：仅作核对展示，实际授权域名需在微信公众平台配置为同一域名。
+            'oauth_redirect_domain' => $provider === 'official_account' ? $this->officialAccountDomain() : null,
             'ready' => $configuration['driver'] === 'wechat'
                 && $configuration['app_id'] !== ''
                 && filled($configuration['app_secret']),
@@ -270,14 +276,58 @@ class WechatProviderSettingsService
         ];
     }
 
+    /**
+     * 启用登录时必须同时具备 AppID 与 AppSecret，缺失时明确列出并阻止保存。
+     *
+     * @param  array<string, mixed>  $settings
+     * @param  array<string, mixed>  $credentials
+     */
+    private function assertLoginConfigurationComplete(string $provider, array $settings, array $credentials): void
+    {
+        if (($settings['driver'] ?? '') !== 'wechat' || ($settings['login_enabled'] ?? true) !== true) {
+            return;
+        }
+        $current = $this->effective($provider);
+        $appId = trim((string) ($settings['app_id'] ?? ''));
+        $appSecret = array_key_exists('app_secret', $credentials)
+            ? $credentials['app_secret']
+            : $current['app_secret'];
+
+        $missing = [];
+        if ($appId === '') {
+            $missing[] = 'AppID';
+        }
+        if (blank($appSecret)) {
+            $missing[] = 'AppSecret';
+        }
+        if ($missing !== []) {
+            throw ValidationException::withMessages([
+                'login_enabled' => '启用微信登录前请补齐：'.implode('、', $missing).'。',
+            ]);
+        }
+    }
+
+    private function officialAccountDomain(): string
+    {
+        $configured = trim((string) config('wechat_auth.official_account.oauth_redirect_domain', ''));
+        $url = $configured !== '' ? $configured : (string) config('app.url', '');
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return is_string($host) ? $host : '';
+    }
+
     /** @param array<string, mixed> $value
-     * @return array{driver:string,app_id:string,timeout_seconds:int}
+     * @return array{driver:string,app_id:string,timeout_seconds:int,login_enabled:bool}
      */
     private function validateSettings(array $value): array
     {
         $driver = (string) ($value['driver'] ?? '');
         $appId = trim((string) ($value['app_id'] ?? ''));
         $timeout = $value['timeout_seconds'] ?? null;
+        $loginEnabled = $value['login_enabled'] ?? true;
+        if (! is_bool($loginEnabled)) {
+            throw ValidationException::withMessages(['login_enabled' => '登录开关必须为布尔值。']);
+        }
         if (! in_array($driver, ['local', 'wechat'], true)) {
             throw ValidationException::withMessages(['driver' => '运行模式只能为本地模拟或真实微信。']);
         }
@@ -288,7 +338,7 @@ class WechatProviderSettingsService
             throw ValidationException::withMessages(['timeout_seconds' => '请求超时必须为 1 至 30 秒的整数。']);
         }
 
-        return ['driver' => $driver, 'app_id' => $appId, 'timeout_seconds' => $timeout];
+        return ['driver' => $driver, 'app_id' => $appId, 'timeout_seconds' => $timeout, 'login_enabled' => $loginEnabled];
     }
 
     /** @param array<string, mixed> $credentials */

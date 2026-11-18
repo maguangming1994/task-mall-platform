@@ -508,6 +508,8 @@ export interface WechatAppSettings {
   token: SecureValueState
   encoding_aes_key: SecureValueState
   timeout_seconds: number
+  login_enabled: boolean
+  oauth_redirect_domain: string | null
   ready: boolean
   last_tested_at: string | null
   last_test_status: 'success' | 'failed' | null
@@ -529,6 +531,8 @@ export interface WechatPaymentSettings {
   api_v3_key: SecureValueState
   merchant_private_key: SecureValueState
   platform_certificate: SecureValueState
+  mini_app_id: string
+  official_account_app_id: string
   ready: boolean
   last_tested_at: string | null
   last_test_status: 'success' | 'failed' | null

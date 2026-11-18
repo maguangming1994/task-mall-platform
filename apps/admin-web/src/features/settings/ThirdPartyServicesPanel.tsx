@@ -29,7 +29,7 @@ type WechatFormValues = RecentValues & {
   official_account: AppFormValues
 }
 type AppFormValues = {
-  driver: 'local' | 'wechat'; app_id: string; timeout_seconds: number
+  driver: 'local' | 'wechat'; app_id: string; timeout_seconds: number; login_enabled: boolean
   app_secret: string; token: string; encoding_aes_key: string
   clear_app_secret: boolean; clear_token: boolean; clear_encoding_aes_key: boolean
 }
@@ -78,12 +78,16 @@ function RecentFields() {
 }
 
 const appDefaults: AppFormValues = {
-  driver: 'local', app_id: '', timeout_seconds: 5, app_secret: '', token: '', encoding_aes_key: '',
+  driver: 'local', app_id: '', timeout_seconds: 5, login_enabled: true,
+  app_secret: '', token: '', encoding_aes_key: '',
   clear_app_secret: false, clear_token: false, clear_encoding_aes_key: false,
 }
 
 function appValues(settings: WechatAppSettings): AppFormValues {
-  return { ...appDefaults, driver: settings.driver, app_id: settings.app_id, timeout_seconds: settings.timeout_seconds }
+  return {
+    ...appDefaults, driver: settings.driver, app_id: settings.app_id,
+    timeout_seconds: settings.timeout_seconds, login_enabled: settings.login_enabled,
+  }
 }
 
 export function ThirdPartyServicesPanel() {
@@ -91,6 +95,7 @@ export function ThirdPartyServicesPanel() {
   const [payment, setPayment] = useState<WechatPaymentSettings | null>(null)
   const [identity, setIdentity] = useState<IdentityVerificationSettings | null>(null)
   const [loading, setLoading] = useState(false)
+  const [denied, setDenied] = useState(false)
   const [busy, setBusy] = useState('')
   const [verificationFile, setVerificationFile] = useState<UploadFile | null>(null)
   const [privateKey, setPrivateKey] = useState<UploadFile | null>(null)
@@ -122,6 +127,8 @@ export function ThirdPartyServicesPanel() {
         clear_access_key_secret: false, clear_security_token: false, reason: '', current_password: '', mfa_code: '',
       })
     } catch (error) {
+      // 非超级管理员后端返回 403：直接隐藏整个配置区，避免暴露字段结构。
+      if (error instanceof ApiError && error.status === 403) { setDenied(true); return }
       messageApi.error(errorText(error, '第三方服务配置加载失败。'))
     } finally { setLoading(false) }
   }, [identityForm, messageApi, paymentForm, wechatForm])
@@ -148,7 +155,8 @@ export function ThirdPartyServicesPanel() {
       setBusy(`wechat-${provider}`)
       await verifyRecent(values)
       const input: Record<string, unknown> = {
-        reason: values.reason.trim(), driver: app.driver, app_id: app.app_id?.trim() ?? '', timeout_seconds: Number(app.timeout_seconds),
+        reason: values.reason.trim(), driver: app.driver, app_id: app.app_id?.trim() ?? '',
+        timeout_seconds: Number(app.timeout_seconds), login_enabled: Boolean(app.login_enabled),
       }
       for (const field of secretFields) {
         const value = app[field]?.trim() ?? ''
@@ -255,6 +263,10 @@ export function ThirdPartyServicesPanel() {
         <Form.Item name={[provider, 'timeout_seconds']} label="请求超时"><InputNumber min={1} max={30} addonAfter="秒" style={{ width: '100%' }} /></Form.Item>
       </div>
       <Form.Item name={[provider, 'app_id']} label="AppID" rules={[{ pattern: /^$|^wx[A-Za-z0-9]{6,62}$/, message: 'AppID 应以 wx 开头。' }]}><Input maxLength={64} /></Form.Item>
+      <Form.Item name={[provider, 'login_enabled']} label="启用微信登录" valuePropName="checked" extra="关闭后该端登录方式列表不再提供微信登录，保存即生效。"><Switch /></Form.Item>
+      {isOa && <Form.Item label="网页授权回调域名（只读核对）" extra="需与微信公众平台「网页授权域名」完全一致。">
+        <Typography.Text code>{state.oauth_redirect_domain || '未配置，请检查站点域名'}</Typography.Text>
+      </Form.Item>}
       <Form.Item name={[provider, 'app_secret']} label={<Space>AppSecret {secretTag(state.app_secret)}</Space>}><Input.Password autoComplete="new-password" placeholder="留空表示保留当前值" /></Form.Item>
       {state.app_secret.configured && <Form.Item name={[provider, 'clear_app_secret']} valuePropName="checked"><Checkbox>清除已保存 AppSecret</Checkbox></Form.Item>}
       {isOa && <>
@@ -292,6 +304,9 @@ export function ThirdPartyServicesPanel() {
         <div className="third-party-two-column"><Form.Item name="merchant_id" label="商户号"><Input /></Form.Item><Form.Item name="merchant_certificate_serial" label="商户证书序列号"><Input /></Form.Item></div>
         <Form.Item name="notify_url" label="支付回调 HTTPS 地址"><Input /></Form.Item>
         <Form.Item name="refund_notify_url" label="退款回调 HTTPS 地址"><Input /></Form.Item>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 4 }}>场景 AppID 绑定（由「微信应用」AppID 自动同步）：</Typography.Paragraph>
+        <Typography.Text>小程序：{payment?.mini_app_id || '未配置'}</Typography.Text><br />
+        <Typography.Text>公众号：{payment?.official_account_app_id || '未配置'}</Typography.Text>
       </section>
       <section className="third-party-section">
         <Typography.Title level={5}>密钥与证书</Typography.Title>
@@ -338,6 +353,10 @@ export function ThirdPartyServicesPanel() {
     <RecentFields />
     <Button type="primary" loading={busy === 'identity-save'} onClick={() => void saveIdentity()}>保存实名认证配置</Button>
   </Form>
+
+  if (denied) return <Card bordered={false} className="third-party-card" title={<Space><ApiOutlined />第三方服务配置</Space>}>
+    <Alert showIcon type="warning" message="仅超级管理员可查看和修改微信与支付配置。" description="如需调整，请联系超级管理员操作。" />
+  </Card>
 
   return <Card bordered={false} className="third-party-card" title={<Space><ApiOutlined />第三方服务配置</Space>} extra={<Button icon={<ReloadOutlined />} loading={loading} onClick={() => void load()}>刷新</Button>}>
     {contextHolder}

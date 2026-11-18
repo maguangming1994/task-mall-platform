@@ -178,12 +178,12 @@ class SystemSettingDefinitionSeeder extends Seeder
                 'aliyun' => ['type' => 'object'],
             ]], 'normal'],
             ['auth.wechat_mini', 'accounts', '微信小程序配置', 'object', null, [
-                'driver' => 'local', 'app_id' => '', 'timeout_seconds' => 5,
+                'driver' => 'local', 'app_id' => '', 'timeout_seconds' => 5, 'login_enabled' => true,
             ], ['required_keys' => ['driver', 'app_id', 'timeout_seconds'], 'properties' => [
                 'timeout_seconds' => ['type' => 'integer', 'min' => 1, 'max' => 30],
             ]], 'normal'],
             ['auth.wechat_official_account', 'accounts', '微信公众号配置', 'object', null, [
-                'driver' => 'local', 'app_id' => '', 'timeout_seconds' => 5,
+                'driver' => 'local', 'app_id' => '', 'timeout_seconds' => 5, 'login_enabled' => true,
             ], ['required_keys' => ['driver', 'app_id', 'timeout_seconds'], 'properties' => [
                 'timeout_seconds' => ['type' => 'integer', 'min' => 1, 'max' => 30],
             ]], 'normal'],

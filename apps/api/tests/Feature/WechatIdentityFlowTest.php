@@ -324,6 +324,28 @@ class WechatIdentityFlowTest extends TestCase
             ->assertJsonMissing(['wechat_oa']);
     }
 
+    public function test_capabilities_follow_the_published_wechat_login_switch(): void
+    {
+        $this->seed(SystemSettingDefinitionSeeder::class);
+        $definition = SystemSettingDefinition::query()->where('setting_key', 'auth.wechat_official_account')->firstOrFail();
+        SystemSettingVersion::query()->create([
+            'setting_definition_id' => $definition->id,
+            'version' => 1,
+            'value' => ['driver' => 'local', 'app_id' => '', 'timeout_seconds' => 5, 'login_enabled' => false],
+            'source' => 'publish',
+            'reason' => '测试关闭公众号登录后的客户端能力。',
+            'published_at' => now(),
+        ]);
+        Cache::forget('system-setting:active:auth.wechat_official_account');
+
+        $this->getJson('/api/v1/client-capabilities', $this->headers('h5-wechat', 'oa-login-disabled'))
+            ->assertOk()
+            ->assertJsonPath('data.login_methods', ['phone']);
+        $this->getJson('/api/v1/client-capabilities', $this->headers('wechat-mini', 'mini-login-still-on'))
+            ->assertOk()
+            ->assertJsonPath('data.login_methods.0', 'wechat_mini');
+    }
+
     public function test_capabilities_follow_the_published_mall_wallet_payment_switch(): void
     {
         $this->seed(SystemSettingDefinitionSeeder::class);

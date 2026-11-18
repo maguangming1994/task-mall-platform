@@ -12,5 +12,7 @@ return [
         'app_secret' => env('WECHAT_OA_APP_SECRET'),
         'token' => env('WECHAT_OA_TOKEN'),
         'encoding_aes_key' => env('WECHAT_OA_ENCODING_AES_KEY'),
+        // 仅用于后台核对展示；实际网页授权域名需在微信公众平台配置为同一域名。
+        'oauth_redirect_domain' => env('WECHAT_OA_OAUTH_REDIRECT_DOMAIN'),
     ],
 ];

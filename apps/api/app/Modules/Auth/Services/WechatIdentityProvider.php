@@ -45,6 +45,9 @@ class WechatIdentityProvider
     public function available(string $channel): bool
     {
         $configuration = $this->settings->effective($this->providerName($channel));
+        if (($configuration['login_enabled'] ?? true) !== true) {
+            return false;
+        }
         if ($configuration['driver'] === 'local') {
             return app()->environment(['local', 'testing']);
         }

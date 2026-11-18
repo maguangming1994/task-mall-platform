@@ -77,6 +77,7 @@ import { computed, ref } from 'vue'
 import { createRechargePayment, createWalletRecharge, getWalletAccount, getWalletRecharge, listWalletRecharges, type RechargeMethod, type WalletAccount, type WalletRecharge } from '@/api/assets'
 import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { clientPlatform } from '@/platform/runtime'
+import { invokeWechatJsapiPayment } from '@/platform/wechatPay'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
@@ -169,6 +170,10 @@ async function continueOnlinePayment() {
       /* #endif */
       return
     }
+    /* #ifdef H5 */
+    // 公众号内：kind 为 jsapi，先唤起微信收银台，再由下方轮询确认到账。
+    if (payload.kind === 'jsapi') await invokeWechatJsapiPayment(payload)
+    /* #endif */
     /* #ifdef MP-WEIXIN */
     await uni.requestPayment({ provider: 'wxpay', timeStamp: payload.timeStamp, nonceStr: payload.nonceStr, package: payload.package, signType: 'RSA', paySign: payload.paySign })
     /* #endif */
