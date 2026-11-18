@@ -110,7 +110,7 @@ class BusinessNotificationService
     /**
      * 公众号订阅通知只能跳转绝对地址，把站内深链转成 H5 hash 路由。
      *
-     * @param array<string,string> $variables
+     * @param  array<string,string>  $variables
      */
     private function deepLinkUrl(string $template, array $variables): string
     {

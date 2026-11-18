@@ -18,9 +18,7 @@ class WechatJssdkService
 
     private const HTTP_TIMEOUT_SECONDS = 8;
 
-    public function __construct(private readonly WechatProviderSettingsService $settings)
-    {
-    }
+    public function __construct(private readonly WechatProviderSettingsService $settings) {}
 
     /** @return array{appId:string,timestamp:int,nonceStr:string,signature:string} */
     public function signature(string $url): array

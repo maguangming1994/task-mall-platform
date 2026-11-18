@@ -50,7 +50,7 @@ class WechatOfficialAccountMenuService
     }
 
     /**
-     * @param array<int,array<string,mixed>>|null $buttons
+     * @param  array<int,array<string,mixed>>|null  $buttons
      * @return array{configured:bool,button:array<int,mixed>,default_button:array<int,mixed>}
      */
     public function publish(?array $buttons = null): array
