@@ -303,8 +303,8 @@ function createDefaultHome(): HomeContent {
         { id: 'cat-skill', label: '技能服务', note: '修电脑修车', mark: '技', tone: 'violet', icon_url: '/static/icons/cat-skill.svg', link_type: 'tasks:skill' },
         { id: 'cat-lost', label: '失物招领', note: '寻物启事', mark: '失', tone: 'pink', icon_url: '/static/icons/cat-lost.svg', link_type: 'tasks:lost_found' },
         { id: 'cat-teamup', label: '组队拼单', note: '搭子拼团', mark: '队', tone: 'cyan', icon_url: '/static/icons/cat-teamup.svg', link_type: 'tasks:teamup' },
-        { id: 'cat-research', label: '问卷调研', note: '填问卷', mark: '研', tone: 'yellow', icon_url: '/static/icons/cat-research.svg', link_type: 'tasks:research' },
         { id: 'pt-center', label: '地推中心', note: '校园推广', mark: '推', tone: 'green', icon_url: '', link_type: 'push' },
+        { id: 'cat-material-share', label: '资料共享', note: '投喂求资料', mark: '资', tone: 'violet', icon_url: '', link_type: 'material' },
       ],
       priority_entries: [
         { id: 'assets', mark: '资', icon_url: '/static/icons/module-wallet.svg' },
@@ -356,11 +356,14 @@ const categoryIconMap: Record<string, string> = {
   'cat-research': '/static/icons/cat-research.svg',
   'cat-all': '/static/icons/cat-all.svg',
 }
+/** 首页入口开关：新增模块 fail-close，其余模块沿用原有策略 */
+function linkAvailable(linkType: HomeLinkType) {
+  const code = HOME_LINK_MODULE[linkType]
+  if (!code) return true
+  return linkType === 'material' ? modules.isLaunched(code) : modules.isEnabled(code)
+}
 const quickEntries = computed(() => home.value.modules.quick_entries
-  .filter((item) => {
-    const code = HOME_LINK_MODULE[item.link_type as HomeLinkType]
-    return !code || modules.isEnabled(code)
-  })
+  .filter((item) => linkAvailable(item.link_type as HomeLinkType))
   .slice(0, 8)
   .map((item) => ({
     ...item,
@@ -753,8 +756,7 @@ function goCheckIn() { uni.navigateTo({ url: '/pages/check-in/index' }) }
 function openTaskDetail(id: string) { uni.navigateTo({ url: `/pages/task-detail/index?id=${id}` }) }
 
 function navigateHomeLink(link: HomeLinkType) {
-  const moduleCode = HOME_LINK_MODULE[link]
-  if (moduleCode && !modules.isEnabled(moduleCode)) {
+  if (!linkAvailable(link)) {
     uni.showToast({ title: '功能开发中，敬请期待', icon: 'none' })
     return
   }

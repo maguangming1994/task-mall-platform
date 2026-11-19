@@ -155,8 +155,8 @@ class HomeShowcaseSeeder extends Seeder
             ],
         ]);
 
-        // 金刚区：8 个校园分类入口（图标由用户端按 id 内置，保证离线可用）。
-        $this->publishSettingOnce($service, $admin, 'homepage.modules', 'cat-errand', [
+        // 金刚区：校园分类入口 + 新增地推中心、资料共享（图标由用户端按 id 内置，保证离线可用）。
+        $this->publishSettingOnce($service, $admin, 'homepage.modules', 'cat-material-share', [
             'page_background_url' => '',
             'notification_icon_url' => '',
             'quick_grid_background_url' => '',
@@ -171,8 +171,8 @@ class HomeShowcaseSeeder extends Seeder
                 ['id' => 'cat-skill', 'label' => '技能服务', 'note' => '修电脑修车', 'mark' => '技', 'tone' => 'violet', 'icon_url' => '', 'link_type' => 'tasks:skill'],
                 ['id' => 'cat-lost', 'label' => '失物招领', 'note' => '寻物启事', 'mark' => '失', 'tone' => 'pink', 'icon_url' => '', 'link_type' => 'tasks:lost_found'],
                 ['id' => 'cat-teamup', 'label' => '组队拼单', 'note' => '搭子拼团', 'mark' => '队', 'tone' => 'cyan', 'icon_url' => '', 'link_type' => 'tasks:teamup'],
-                ['id' => 'cat-research', 'label' => '问卷调研', 'note' => '填问卷', 'mark' => '研', 'tone' => 'yellow', 'icon_url' => '', 'link_type' => 'tasks:research'],
-                ['id' => 'cat-all', 'label' => '全部服务', 'note' => '更多', 'mark' => '全', 'tone' => 'gray', 'icon_url' => '', 'link_type' => 'tasks'],
+                ['id' => 'pt-center', 'label' => '地推中心', 'note' => '校园推广', 'mark' => '推', 'tone' => 'green', 'icon_url' => '', 'link_type' => 'push'],
+                ['id' => 'cat-material-share', 'label' => '资料共享', 'note' => '投喂求资料', 'mark' => '资', 'tone' => 'violet', 'icon_url' => '', 'link_type' => 'material'],
             ],
             'recommendation' => ['section_title' => '推荐任务', 'section_subtitle' => '校园互助，从身边的一件小事开始', 'title' => '完成新手任务', 'description' => '完善资料、熟悉流程，开启你的第一份奖励', 'tag' => '简单', 'reward_text' => '最高 +300 积分', 'time_text' => '约 3 分钟', 'icon_text' => '新', 'icon_url' => '', 'background_url' => '', 'link_type' => 'tasks'],
             'product_section' => ['section_title' => '精选兑换', 'section_subtitle' => '做任务赚积分，兑心仪好物', 'cards' => [
