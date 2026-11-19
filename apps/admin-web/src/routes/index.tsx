@@ -67,6 +67,7 @@ const PushSettlementsPage = lazyOf(() => import('../features/push/PushSettlement
 const MaterialAuditPage = lazyOf(() => import('../features/material/MaterialAuditPage'), 'MaterialAuditPage')
 const MaterialCategoryPage = lazyOf(() => import('../features/material/MaterialCategoryPage'), 'MaterialCategoryPage')
 const MaterialRequestPage = lazyOf(() => import('../features/material/MaterialRequestPage'), 'MaterialRequestPage')
+const PosterTemplatePage = lazyOf(() => import('../features/settings/PosterTemplatePage'), 'PosterTemplatePage')
 
 export const ADMIN_GROUPS: AdminGroupDef[] = [
   { key: 'workbench', label: '工作台', icon: <DashboardOutlined />, pages: [
@@ -123,6 +124,7 @@ export const ADMIN_GROUPS: AdminGroupDef[] = [
     { path: '/support/tickets', title: '工单客服', navCode: 'support', element: SupportPage },
     { path: '/config/privacy', title: '隐私与合规', navCode: 'privacy', element: PrivacyPage },
     { path: '/config/readiness', title: '上线检查', navCode: 'readiness', element: ReadinessPage },
+    { path: '/config/poster-templates', title: '海报模板管理', navCode: 'settings', element: PosterTemplatePage },
   ] },
   { key: 'security', label: '权限与审计', icon: <SafetyCertificateOutlined />, pages: [
     { path: '/security/roles', title: '角色权限', navCode: 'security', element: RolesPage },

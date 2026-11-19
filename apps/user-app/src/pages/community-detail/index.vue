@@ -140,6 +140,7 @@ import qrcode from 'qrcode-generator'
 import { computed, nextTick, ref } from 'vue'
 import CommunityCommentComposer from '@/components/CommunityCommentComposer.vue'
 import { communityAttachmentUrl, createCommunityComment, createCommunityRequestKey, DEFAULT_COMMUNITY_PUBLISHING_RULES, getCommunityPost, likeCommunityPost, listCommunityCategories, listCommunityComments, reportCommunityContent, unlikeCommunityPost, type CommunityComment, type CommunityPost, type CommunityPublishingRules } from '@/api/community'
+import { getPosterTemplate, type PosterTemplate } from '@/api/poster'
 import { ApiError } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
@@ -170,7 +171,28 @@ const posterVisible = ref(false)
 const posterReady = ref(false)
 const posterWidth = ref(330)
 const posterHeight = ref(520)
+const posterTemplate = ref<PosterTemplate | null>(null)
 const postId = ref('')
+const DEFAULT_POSTER_TEMPLATE: PosterTemplate = {
+  public_id: 'default',
+  code: 'community_post',
+  name: '默认模板',
+  canvas_width: 330,
+  canvas_height: 520,
+  background_type: 'gradient',
+  background_value: { stops: ['#0e799d', '#19c6d1', '#76df63'], angle: 135 },
+  banner_config: {
+    label_text: 'CAMPUS COMMUNITY', label_color: '#10213a', label_bg: '#ffdb4d',
+    title_text: '校园动态', title_color: '#ffffff',
+  },
+  body_config: { card_bg: 'rgba(255,255,255,.96)', category_color: '#60798d', content_color: '#173c58' },
+  qrcode_config: {
+    cta_text: '扫码查看动态详情', cta_color: '#173c58',
+    helper_text: '分享给同学，一起发现校园', helper_color: '#173c58',
+    brand_watermark: '任务商城 · 校园社区', brand_color: '#748895',
+    footer_text: '任务商城 · 校园成长与奖励平台', footer_color: '#ffffff',
+  },
+}
 const images = computed(() => (post.value?.attachments || []).filter((item) => item.type === 'image'))
 const posterCanvasStyle = computed(() => `width:${posterWidth.value}px;height:${posterHeight.value}px`)
 const posterPreviewStyle = computed(() => `width:${posterWidth.value}px;height:${posterHeight.value}px`)
@@ -330,15 +352,31 @@ async function shareToTimeline() {
 function isShareAbort(error: unknown) { return Boolean(error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') }
 function copyCommunityLink() { closeSharePanel(); uni.setClipboardData({ data: shareLink(), success: () => uni.showToast({ title: '链接已复制', icon: 'success' }) }) }
 
-function openPoster() {
+async function openPoster() {
   if (!post.value) return
   closeSharePanel()
-  const system = uni.getSystemInfoSync()
-  posterWidth.value = Math.max(300, Math.min(360, system.windowWidth - 48))
-  posterHeight.value = Math.round(posterWidth.value * 1.56)
   posterReady.value = false
+  posterTemplate.value = DEFAULT_POSTER_TEMPLATE
   posterVisible.value = true
-  nextTick(() => setTimeout(drawPoster, 100))
+
+  // 先展示默认模板，同时拉取后端模板（按当前日期命中的）
+  try {
+    const resp = await getPosterTemplate('community_post')
+    if (resp.template) {
+      posterTemplate.value = resp.template
+    }
+  } catch {
+    // 接口失败时使用默认模板，不阻塞体验
+  }
+
+  const system = uni.getSystemInfoSync()
+  const baseW = posterTemplate.value.canvas_width || 330
+  const baseH = posterTemplate.value.canvas_height || 520
+  const fitW = Math.max(300, Math.min(360, system.windowWidth - 48))
+  posterWidth.value = fitW
+  posterHeight.value = Math.round(fitW * (baseH / baseW))
+
+  nextTick(() => setTimeout(drawPoster, 80))
 }
 function closePoster() { posterVisible.value = false }
 function roundedRect(ctx: UniApp.CanvasContext, x: number, y: number, width: number, height: number, radius: number) {
@@ -346,15 +384,141 @@ function roundedRect(ctx: UniApp.CanvasContext, x: number, y: number, width: num
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + width - r, y); ctx.arcTo(x + width, y, x + width, y + r, r); ctx.lineTo(x + width, y + height - r); ctx.arcTo(x + width, y + height, x + width - r, y + height, r); ctx.lineTo(x + r, y + height); ctx.arcTo(x, y + height, x, y + height - r, r); ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r); ctx.closePath()
 }
 function posterLines(value: string, limit = 14) { const chars = Array.from(value); return [chars.slice(0, limit).join(''), chars.slice(limit, limit * 2).join('')].filter(Boolean) }
+
+function applyBackground(ctx: UniApp.CanvasContext, width: number, height: number, scale: number, template: PosterTemplate) {
+  const bg = template.background_value || {}
+  const type = template.background_type
+
+  if (type === 'gradient') {
+    const stops = Array.isArray(bg.stops) && bg.stops.length >= 2 ? (bg.stops as string[]) : ['#0e799d', '#19c6d1', '#76df63']
+    const gradient = ctx.createLinearGradient(0, 0, width, height)
+    stops.forEach((c, i) => gradient.addColorStop(i / Math.max(1, stops.length - 1), c))
+    ctx.setFillStyle(gradient); ctx.fillRect(0, 0, width, height)
+    // 圆角装饰（和原设计一致）
+    ctx.setFillStyle('rgba(255,255,255,.14)'); ctx.beginPath(); ctx.arc(scale * 288, scale * 56, scale * 82, 0, Math.PI * 2); ctx.fill()
+  } else if (type === 'solid') {
+    ctx.setFillStyle((bg.color as string) || '#ffffff'); ctx.fillRect(0, 0, width, height)
+  } else {
+    // image 背景：先铺底色兜底，图片加载完成后重绘
+    ctx.setFillStyle('#ffffff'); ctx.fillRect(0, 0, width, height)
+  }
+}
+
 function drawPoster() {
-  if (!post.value) return
-  const width = posterWidth.value; const height = posterHeight.value; const scale = width / 330; const ctx = uni.createCanvasContext('communityPosterCanvas'); const px = (value: number) => value * scale
-  const gradient = ctx.createLinearGradient(0, 0, width, height); gradient.addColorStop(0, '#0e799d'); gradient.addColorStop(.55, '#19c6d1'); gradient.addColorStop(1, '#76df63'); ctx.setFillStyle(gradient); ctx.fillRect(0, 0, width, height)
-  ctx.setFillStyle('rgba(255,255,255,.14)'); ctx.beginPath(); ctx.arc(px(288), px(56), px(82), 0, Math.PI * 2); ctx.fill(); ctx.setFillStyle('#ffdb4d'); roundedRect(ctx, px(22), px(23), px(112), px(24), px(12)); ctx.fill()
-  ctx.setFillStyle('#10213a'); ctx.setFontSize(px(11)); ctx.setTextAlign('center'); ctx.fillText('CAMPUS COMMUNITY', px(78), px(39)); ctx.setTextAlign('left'); ctx.setFillStyle('#fff'); ctx.setFontSize(px(15)); ctx.fillText('校园动态', px(22), px(75)); ctx.setFontSize(px(25)); posterLines(post.value.title).forEach((line, index) => ctx.fillText(line, px(22), px(116 + index * 34)))
-  ctx.setFillStyle('rgba(255,255,255,.96)'); roundedRect(ctx, px(18), px(188), px(294), px(296), px(24)); ctx.fill(); ctx.setFillStyle('#60798d'); ctx.setFontSize(px(12)); ctx.fillText(`# ${post.value.category_label}`, px(38), px(220)); ctx.setFillStyle('#173c58'); ctx.setFontSize(px(16)); posterLines(post.value.content, 18).slice(0, 2).forEach((line, index) => ctx.fillText(line, px(38), px(252 + index * 25)))
-  ctx.setFillStyle('#edf8fc'); roundedRect(ctx, px(36), px(315), px(258), px(48), px(14)); ctx.fill(); ctx.setFillStyle('#173c58'); ctx.setFontSize(px(12)); ctx.fillText('扫码查看动态详情', px(51), px(345))
-  const qr = qrcode(0, 'M'); qr.addData(shareLink()); qr.make(); const qrSize = px(86); const qrX = px(38); const qrY = px(382); const cells = qr.getModuleCount(); const cell = qrSize / cells; ctx.setFillStyle('#fff'); ctx.fillRect(qrX - px(7), qrY - px(7), qrSize + px(14), qrSize + px(14)); ctx.setFillStyle('#11344f'); for (let row = 0; row < cells; row += 1) for (let col = 0; col < cells; col += 1) if (qr.isDark(row, col)) ctx.fillRect(qrX + col * cell, qrY + row * cell, Math.ceil(cell), Math.ceil(cell)); ctx.setFillStyle('#173c58'); ctx.setFontSize(px(15)); ctx.fillText('分享给同学，一起发现校园', px(150), px(414)); ctx.setFillStyle('#748895'); ctx.setFontSize(px(10)); ctx.fillText('任务商城 · 校园社区', px(150), px(438)); ctx.setFillStyle('#fff'); ctx.setFontSize(px(10)); ctx.fillText('任务商城 · 校园成长与奖励平台', px(22), height - px(17)); ctx.draw(false, () => { posterReady.value = true })
+  if (!post.value || !posterTemplate.value) return
+  const tpl = posterTemplate.value
+  const width = posterWidth.value; const height = posterHeight.value; const scale = width / 330; const px = (v: number) => v * scale
+  const ctx = uni.createCanvasContext('communityPosterCanvas')
+  const banner = tpl.banner_config || {}
+  const body = tpl.body_config || {}
+  const qr = tpl.qrcode_config || {}
+
+  // 背景
+  applyBackground(ctx, width, height, scale, tpl)
+
+  // 顶部 Banner 标签 + 标题
+  const labelBg = (banner.label_bg as string) || '#ffdb4d'
+  const labelColor = (banner.label_color as string) || '#10213a'
+  const titleColor = (banner.title_color as string) || '#ffffff'
+  roundedRect(ctx, px(22), px(23), px(112), px(24), px(12)); ctx.setFillStyle(labelBg); ctx.fill()
+  ctx.setFillStyle(labelColor); ctx.setFontSize(px(11)); ctx.setTextAlign('center')
+  ctx.fillText((banner.label_text as string) || 'CAMPUS COMMUNITY', px(78), px(39)); ctx.setTextAlign('left')
+  ctx.setFillStyle(titleColor); ctx.setFontSize(px(15))
+  ctx.fillText((banner.title_text as string) || '校园动态', px(22), px(75))
+  ctx.setFontSize(px(25))
+  posterLines(post.value.title).forEach((line, index) => ctx.fillText(line, px(22), px(116 + index * 34)))
+
+  // 主体卡片
+  const cardBg = (body.card_bg as string) || 'rgba(255,255,255,.96)'
+  const catColor = (body.category_color as string) || '#60798d'
+  const contentColor = (body.content_color as string) || '#173c58'
+  ctx.setFillStyle(cardBg); roundedRect(ctx, px(18), px(188), px(294), px(296), px(24)); ctx.fill()
+  ctx.setFillStyle(catColor); ctx.setFontSize(px(12))
+  ctx.fillText(`# ${post.value.category_label}`, px(38), px(220))
+  ctx.setFillStyle(contentColor); ctx.setFontSize(px(16))
+  posterLines(post.value.content, 18).slice(0, 2).forEach((line, index) => ctx.fillText(line, px(38), px(252 + index * 25)))
+
+  // CTA 小标签
+  ctx.setFillStyle('#edf8fc'); roundedRect(ctx, px(36), px(315), px(258), px(48), px(14)); ctx.fill()
+  ctx.setFillStyle((qr.cta_color as string) || '#173c58'); ctx.setFontSize(px(12))
+  ctx.fillText((qr.cta_text as string) || '扫码查看动态详情', px(51), px(345))
+
+  // 二维码
+  const qrc = qrcode(0, 'M'); qrc.addData(shareLink()); qrc.make()
+  const qrSize = px(86); const qrX = px(38); const qrY = px(382); const cells = qrc.getModuleCount(); const cell = qrSize / cells
+  ctx.setFillStyle('#fff'); ctx.fillRect(qrX - px(7), qrY - px(7), qrSize + px(14), qrSize + px(14))
+  ctx.setFillStyle('#11344f')
+  for (let row = 0; row < cells; row += 1) for (let col = 0; col < cells; col += 1) if (qrc.isDark(row, col)) ctx.fillRect(qrX + col * cell, qrY + row * cell, Math.ceil(cell), Math.ceil(cell))
+
+  // 底部辅助文案 + 水印
+  ctx.setFillStyle((qr.helper_color as string) || '#173c58'); ctx.setFontSize(px(15))
+  ctx.fillText((qr.helper_text as string) || '分享给同学，一起发现校园', px(150), px(414))
+  ctx.setFillStyle((qr.brand_color as string) || '#748895'); ctx.setFontSize(px(10))
+  ctx.fillText((qr.brand_watermark as string) || '任务商城 · 校园社区', px(150), px(438))
+  ctx.setFillStyle((qr.footer_color as string) || '#fff'); ctx.setFontSize(px(10))
+  ctx.fillText((qr.footer_text as string) || '任务商城 · 校园成长与奖励平台', px(22), height - px(17))
+
+  // 如果是图片背景，加载后再绘一次
+  if (tpl.background_type === 'image') {
+    const imageUrl = (tpl.background_value?.image_url as string | undefined)
+    if (imageUrl) {
+      uni.getImageInfo({
+        src: imageUrl,
+        success: (info) => {
+          const rctx = uni.createCanvasContext('communityPosterCanvas')
+          // 先铺图片背景（cover 模式）
+          const imgRatio = info.width / info.height
+          const canvasRatio = width / height
+          let drawW = width; let drawH = height; let drawX = 0; let drawY = 0
+          if (imgRatio > canvasRatio) { drawW = height * imgRatio; drawX = (width - drawW) / 2 }
+          else { drawH = width / imgRatio; drawY = (height - drawH) / 2 }
+          rctx.drawImage(info.path, drawX, drawY, drawW, drawH)
+          // 复用当前函数的其余绘制逻辑：重绘在最上层
+          // 简化：用新的 ctx 把所有元素再画一遍
+          // 这里不重复调用 applyBackground，直接跳过背景绘制
+          // Banner
+          rctx.setFillStyle(labelBg); roundedRect(rctx, px(22), px(23), px(112), px(24), px(12)); rctx.fill()
+          rctx.setFillStyle(labelColor); rctx.setFontSize(px(11)); rctx.setTextAlign('center')
+          rctx.fillText((banner.label_text as string) || 'CAMPUS COMMUNITY', px(78), px(39)); rctx.setTextAlign('left')
+          rctx.setFillStyle(titleColor); rctx.setFontSize(px(15))
+          rctx.fillText((banner.title_text as string) || '校园动态', px(22), px(75))
+          rctx.setFontSize(px(25))
+          posterLines(post.value!.title).forEach((line, index) => rctx.fillText(line, px(22), px(116 + index * 34)))
+          // Body
+          rctx.setFillStyle(cardBg); roundedRect(rctx, px(18), px(188), px(294), px(296), px(24)); rctx.fill()
+          rctx.setFillStyle(catColor); rctx.setFontSize(px(12))
+          rctx.fillText(`# ${post.value!.category_label}`, px(38), px(220))
+          rctx.setFillStyle(contentColor); rctx.setFontSize(px(16))
+          posterLines(post.value!.content, 18).slice(0, 2).forEach((line, index) => rctx.fillText(line, px(38), px(252 + index * 25)))
+          // CTA box
+          rctx.setFillStyle('#edf8fc'); roundedRect(rctx, px(36), px(315), px(258), px(48), px(14)); rctx.fill()
+          rctx.setFillStyle((qr.cta_color as string) || '#173c58'); rctx.setFontSize(px(12))
+          rctx.fillText((qr.cta_text as string) || '扫码查看动态详情', px(51), px(345))
+          // QR
+          const qrr = qrcode(0, 'M'); qrr.addData(shareLink()); qrr.make()
+          const cells2 = qrr.getModuleCount(); const cell2 = qrSize / cells2
+          rctx.setFillStyle('#fff'); rctx.fillRect(qrX - px(7), qrY - px(7), qrSize + px(14), qrSize + px(14))
+          rctx.setFillStyle('#11344f')
+          for (let row = 0; row < cells2; row += 1) for (let col = 0; col < cells2; col += 1) if (qrr.isDark(row, col)) rctx.fillRect(qrX + col * cell2, qrY + row * cell2, Math.ceil(cell2), Math.ceil(cell2))
+          // Bottom text
+          rctx.setFillStyle((qr.helper_color as string) || '#173c58'); rctx.setFontSize(px(15))
+          rctx.fillText((qr.helper_text as string) || '分享给同学，一起发现校园', px(150), px(414))
+          rctx.setFillStyle((qr.brand_color as string) || '#748895'); rctx.setFontSize(px(10))
+          rctx.fillText((qr.brand_watermark as string) || '任务商城 · 校园社区', px(150), px(438))
+          rctx.setFillStyle((qr.footer_color as string) || '#fff'); rctx.setFontSize(px(10))
+          rctx.fillText((qr.footer_text as string) || '任务商城 · 校园成长与奖励平台', px(22), height - px(17))
+          rctx.draw(false, () => { posterReady.value = true })
+        },
+        fail: () => {
+          // 图片加载失败，保底完成渲染
+          ctx.draw(false, () => { posterReady.value = true })
+        },
+      })
+      return
+    }
+  }
+
+  ctx.draw(false, () => { posterReady.value = true })
 }
 function savePoster() {
   if (!posterReady.value) return

@@ -71,6 +71,8 @@ use App\Modules\Payment\Http\Controllers\AdminReconciliationController;
 use App\Modules\Payment\Http\Controllers\AdminWechatPaymentSettingsController;
 use App\Modules\Payment\Http\Controllers\PaymentController;
 use App\Modules\Payment\Http\Controllers\WechatPaymentNotificationController;
+use App\Modules\Poster\Http\Controllers\AdminPosterTemplateController;
+use App\Modules\Poster\Http\Controllers\PosterTemplateController;
 use App\Modules\Privacy\Http\Controllers\AccountCancellationController;
 use App\Modules\Privacy\Http\Controllers\AdminPrivacyRequestController;
 use App\Modules\Privacy\Http\Controllers\PrivacyRequestController;
@@ -128,6 +130,7 @@ Route::get('/home-content', [HomeContentController::class, 'show']);
 Route::get('/appearance-content', [AppearanceContentController::class, 'show']);
 Route::get('/app-navigation', [AppNavigationController::class, 'show']);
 Route::get('/icon-configs', [IconConfigController::class, 'index']);
+Route::get('/poster-templates/{code}', [PosterTemplateController::class, 'show'])->middleware('throttle:60,1');
 Route::get('/legal-documents', [LegalDocumentController::class, 'index']);
 // 公开的小程序基础配置（仅 AppID 等公开信息，凭据绝不外泄），供发布脚本/流水线自动读取
 Route::get('/app-config', [MiniProgramConfigController::class, 'show'])->middleware('throttle:60,1');
@@ -389,6 +392,7 @@ Route::middleware('auth.access')->group(function () {
     Route::middleware('module.gate:module_material')->group(function () {
         Route::post('/materials/{material}/fetch', [MaterialController::class, 'fetch'])->middleware(['legal.consent:account', 'throttle:30,1']);
         Route::post('/materials/{material}/reports', [MaterialController::class, 'report'])->middleware(['legal.consent:account', 'throttle:20,1']);
+        Route::get('/my-material-fetches', [MaterialController::class, 'myFetches'])->middleware('legal.consent:account');
     });
     Route::middleware('module.gate:module_material_post')->group(function () {
         Route::get('/my-materials', [MaterialController::class, 'mine'])->middleware('legal.consent:account');
@@ -453,6 +457,8 @@ Route::prefix('admin')->group(function () {
         Route::get('/materials', [AdminMaterialController::class, 'materials'])->middleware('admin.permission:material.manage');
         Route::get('/materials/{material}', [AdminMaterialController::class, 'show'])->middleware('admin.permission:material.manage');
         Route::post('/materials/{material}/review', [AdminMaterialController::class, 'review'])->middleware('admin.permission:material.manage');
+        Route::post('/materials', [AdminMaterialController::class, 'store'])->middleware('admin.permission:material.manage');
+        Route::put('/materials/{material}', [AdminMaterialController::class, 'update'])->middleware('admin.permission:material.manage');
         Route::get('/material-requests', [AdminMaterialController::class, 'requests'])->middleware('admin.permission:material.manage');
         Route::put('/material-requests/{materialRequest:public_id}', [AdminMaterialController::class, 'updateRequest'])->middleware('admin.permission:material.manage');
         Route::get('/material-reports', [AdminMaterialController::class, 'reports'])->middleware('admin.permission:material.manage');
@@ -532,6 +538,17 @@ Route::prefix('admin')->group(function () {
         Route::post('/privacy-requests/{privacyRequest}/resolve', [AdminPrivacyRequestController::class, 'resolve'])
             ->middleware(['admin.permission:privacy.manage', 'admin.recent_verification']);
         Route::get('/settings', [AdminSystemSettingController::class, 'index'])
+            ->middleware('admin.permission:settings.manage');
+        // 海报模板管理（与运营配置同级，平台管理员可调整所有业务场景的分享海报）
+        Route::get('/poster-templates', [AdminPosterTemplateController::class, 'index'])
+            ->middleware('admin.permission:settings.manage');
+        Route::post('/poster-templates', [AdminPosterTemplateController::class, 'store'])
+            ->middleware('admin.permission:settings.manage');
+        Route::get('/poster-templates/{posterTemplate:public_id}', [AdminPosterTemplateController::class, 'show'])
+            ->middleware('admin.permission:settings.manage');
+        Route::put('/poster-templates/{posterTemplate:public_id}', [AdminPosterTemplateController::class, 'update'])
+            ->middleware('admin.permission:settings.manage');
+        Route::delete('/poster-templates/{posterTemplate:public_id}', [AdminPosterTemplateController::class, 'destroy'])
             ->middleware('admin.permission:settings.manage');
         Route::get('/sms/settings', [AdminSmsProviderController::class, 'show'])
             ->middleware('admin.permission:settings.manage');
