@@ -129,6 +129,18 @@ a{text-decoration:none;color:inherit}
 .flow .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:var(--t2)}
 .flow .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 
+.jump{position:sticky;top:0;z-index:30;display:flex;gap:8px;flex-wrap:wrap;padding:12px 0;margin-bottom:8px;background:linear-gradient(180deg,var(--bg) 72%,rgba(238,242,239,0))}
+.jump a{font-size:13px;font-weight:700;color:var(--t2);border:1px solid var(--line);border-radius:999px;padding:7px 16px;background:#fff}
+.jump a:hover{color:var(--green);border-color:var(--green)}
+details.fold{margin:26px 0 0;border:1px solid var(--line);border-radius:16px;background:#fff;overflow:hidden}
+details.fold>summary{cursor:pointer;padding:18px 20px;font-size:15px;font-weight:800;color:var(--t1);list-style:none;display:flex;align-items:center;gap:10px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::before{content:"▸";color:var(--green);font-size:14px;font-weight:900}
+details.fold[open]>summary::before{content:"▾"}
+details.fold>summary span{margin-left:auto;font-size:12px;font-weight:400;color:var(--t3)}
+details.fold .sec-h{margin:10px 20px 16px}
+details.fold .flow{margin-left:20px;margin-right:20px}
+details.fold .audit{margin-left:20px;margin-right:20px}
 .footer{text-align:center;font-size:12px;color:var(--t3);margin-top:60px;line-height:1.8}
 </style>
 </head>
@@ -138,7 +150,7 @@ a{text-decoration:none;color:inherit}
   <div class="wrap">
     <span class="badge">🎨 校圈 v13 绿色商业风 · 2026-11-19 更新</span>
     <h1>校园任务商城 · UI 全览（小程序 + 管理端）</h1>
-    <p>校园互助任务 + 积分商城 + 校园社区 + 校园闲置 + 资料共享 + IM 私信 + 地推模块 + 校区强隔离，共 <b>127</b> 张设计图、<b>30</b> 条核心业务流程。页面稿按原有两端结构呈现：<b>C 端 85 屏</b>（sub-screens.html）、<b>后台 42 屏</b>（admin-screens.html），新流程与新页面均按业务主线就地排入。</p>
+    <p>校园互助任务 + 积分商城 + 校园社区 + 校园闲置 + 资料共享 + IM 私信 + 地推模块 + 校区强隔离，共 <b>127</b> 张设计图、<b>30</b> 条核心业务流程。<b>上方集中展示移动端（C 端 85 屏）</b>，<b>下方集中展示后台端（42 屏）</b>，各模块按业务归类；30 条流程与核对表默认收起，点顶部导航或标题即可展开。</p>
     <div class="stats">
       <div class="stat"><b>127</b><span>设计图总数</span></div>
       <div class="stat"><b>85</b><span>C 端页面</span></div>
@@ -149,6 +161,115 @@ a{text-decoration:none;color:inherit}
 </header>
 
 <div class="wrap">
+
+  <nav class="jump">
+    <a href="#mobile">移动端 · 全部页面</a>
+    <a href="#admin">后台端 · 全部页面</a>
+    <a href="#flows-main">业务流程 30 条</a>
+    <a href="#audit">核对与状态</a>
+  </nav>
+
+  <div class="sec-h" id="mobile"><i></i><h2>移动端（C 端 · 小程序 / H5）</h2><span class="sub">按模块归类 · 点击放大 · ← → 键翻页 · 页面稿：<a href="sub-screens.html">C 端 85 屏</a></span></div>
+
+  <div class="group">
+    <div class="group-title"><h3>一级 Tab 页面</h3><span>5 屏 · 底部凸起商城按钮</span></div>
+    <div class="grid" id="g1"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>任务接单模块</h3><span>5 屏 · 含底部弹层与发布详情</span></div>
+    <div class="grid" id="g2"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>积分兑换模块</h3><span>4 屏 · 商品详情/确认兑换/兑换成功/商城订单详情</span></div>
+    <div class="grid" id="g3"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>校园社区模块</h3><span>2 屏</span></div>
+    <div class="grid" id="g4"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>账户与通用页面</h3><span>13 屏 · 登录/搜索/签到/积分/券/领券中心/消息/钱包/充值/提现/地址/银行卡</span></div>
+    <div class="grid" id="g5"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>校园闲置模块</h3><span>12 屏 · 发布/市场/详情/购买/订单/我发布的/订单详情/评价/发货/退款/TA的闲置/审核</span></div>
+    <div class="grid" id="g6"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>IM 私信模块</h3><span>2 屏 · 会话列表/聊天详情</span></div>
+    <div class="grid" id="g7"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>商城售后与购物车</h3><span>5 屏 · 商城订单详情/售后列表/申请/进度/购物车</span></div>
+    <div class="grid" id="g8"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>社区活动模块</h3><span>3 屏 · 列表/详情/发布</span></div>
+    <div class="grid" id="g9"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>合规与增长模块</h3><span>7 屏 · 协议列表/协议确认/隐私/实名/邀请/海报/帮助</span></div>
+    <div class="grid" id="g10"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>资料共享模块</h3><span>4 屏 · 列表/详情获取/投喂智能解析/求资料</span></div>
+    <div class="grid" id="g12"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>资料共享 · 获取记录</h3><span>1 屏 · 获取记录/每日额度/失效状态</span></div>
+    <div class="grid" id="g16"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>地推模块（C 端）</h3><span>12 屏 · 地推中心/团队广场/团队详情/我的团队/团队管理/推广任务/任务详情/推广位/交单/异常态/收益</span></div>
+    <div class="grid" id="g14"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>校区强隔离（C 端）</h3><span>11 屏 · 选校门禁/年级专业/老用户兜底/匿名浏览/平台任务标识/严格空态/写操作拦截/历史归属/换校与阻断</span></div>
+    <div class="grid" id="g15"></div>
+  </div>
+
+  <div class="sec-h" id="admin"><i></i><h2>后台端（管理端 · 1440 × 900）</h2><span class="sub">按模块归类 · 页面稿：<a href="admin-screens.html">后台 42 屏</a></span></div>
+
+  <div class="group">
+    <div class="group-title"><h3>管理后台 · 主模块</h3><span>26 屏 · 工作台/审核/商城/财务/运营/配置/权限/审计</span></div>
+    <div class="grid grid-pc" id="g11"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>资料共享 · 管理端</h3><span>3 屏 · 资料审核/分类管理/求资料与举报</span></div>
+    <div class="grid grid-pc" id="g13"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>地推运营 · 管理端</h3><span>8 屏 · 交单审核/推广团队/团队成员/佣金规则/团队异常态/任务配置/结算批次/批次空态</span></div>
+    <div class="grid grid-pc" id="g17"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>校区强隔离 · 管理端</h3><span>4 屏 · 学校库开关/用户强制改校/平台投放任务/回填报告</span></div>
+    <div class="grid grid-pc" id="g18"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>配置中心 · 海报模板</h3><span>1 屏 · 模板预览/场景启用/停用兜底</span></div>
+    <div class="grid grid-pc" id="g19"></div>
+  </div>
+
+  <details class="fold" id="flowsFold">
+    <summary>业务流程与核对明细（30 条流程 + 127 屏核对表）<span>点击展开</span></summary>
 
   <!-- ========== 核心流程 ========== -->
   <div class="sec-h" id="flows-main"><i></i><h2>核心业务流程（30 条）</h2><span class="sub">点击流程节点可直达对应页面图 · <b style="color:#08A152">2026-11-19 全量复核：127 屏设计图全部就绪，红/橙标记保持清零</b></span></div>
@@ -638,7 +759,7 @@ a{text-decoration:none;color:inherit}
       <tr><td><b>购物车 / 帮助与反馈 / 发布任务详情</b></td><td><span class="pill ok">✓ 50-52 已出图</span></td><td><span class="pill ok">✓ 已实现</span></td><td><span class="pill ok">✓ 就绪</span></td><td>闭环完整</td></tr>
       <tr><td><b>IM 实时通信</b></td><td><span class="pill ok">✓ 已出图</span></td><td><span class="pill ok">✓ WebSocket 已接入</span></td><td><span class="pill ok">✓ Reverb 广播</span></td><td>断线重连增强为 P2 优化项</td></tr>
       <tr><td><b>微信 AppID</b></td><td><span class="pill na">—</span></td><td><span class="pill ok">✓ wx142866c45e952923</span></td><td><span class="pill na">—</span></td><td>已填写，可真机预览</td></tr>
-      <tr><td><b>地推模块</b> 62-73 + a30-a37</td><td><span class="pill ok">✓ 20 屏已出图</span></td><td><span class="pill ok">✓ 中心/团队/任务/推广位/交单/收益</span></td><td><span class="pill ok">✓ Push 模块与结算</span></td><td><span class="pill ok">已闭环</span> 团队等级、交单审核、结算批次全链路；2026-11-19 交互加固：重复交单、过期收口、跨团团长、团长悬空、人数一致性、任务时间校验</td></tr>
+      <tr><td><b>地推模块</b> 62-73 + a30-a37</td><td><span class="pill ok">✓ 20 屏已出图</span></td><td><span class="pill ok">✓ 中心/团队/任务/推广位/交单/收益</span></td><td><span class="pill ok">✓ Push 模块与结算</span></td><td><span class="pill ok">已闭环</span> 团队等级、交单审核、结算批次全链路；2026-11-19 五轮交互加固：① 重复交单、过期收口、跨团团长、团长悬空、人数一致性、任务时间校验；② 团队暂停后领位/交单拦截、退团收口推广位、入团审核校验团队状态、member_limit 不得低于在册、quota 不得低于已领；③ 限领只计进行中、关团/停团联动成员与推广位、恢复成员校验、驳回原因与交单前置校验、状态文案细化；④ 重开团队须重新指定团长、失效推广位拦截、待审核按钮态、待审申请自动清理、团队与任务状态提示；⑤ 推广位可主动放弃、关闭任务联动推广位、打款前必须确认批次、改价不追溯且团队加成按历史团长归属</td></tr>
       <tr><td><b>校区强隔离</b> 74-84 + a38-a41</td><td><span class="pill ok">✓ 15 屏已出图</span></td><td><span class="pill ok">✓ 选校门禁/换校/平台任务</span></td><td><span class="pill ok">✓ 校区作用域与回填</span></td><td><span class="pill ok">已闭环</span> 未绑校写操作拦截、历史归属、严格空态</td></tr>
       <tr><td><b>资料获取记录</b> 85-material-fetches</td><td><span class="pill ok">✓ 已出图</span></td><td><span class="pill ok">✓ 获取记录/额度/失效</span></td><td><span class="pill ok">✓ material-fetches</span></td><td><span class="pill ok">已闭环</span> 每日额度与 30 天记录保留</td></tr>
       <tr><td><b>海报模板管理</b> a42-poster</td><td><span class="pill ok">✓ 已出图</span></td><td><span class="pill ok">✓ 模板预览与场景启用</span></td><td><span class="pill ok">✓ 模板配置 API</span></td><td><span class="pill ok">已闭环</span> 单场景唯一启用 + 停用回退默认</td></tr>
@@ -657,15 +778,15 @@ a{text-decoration:none;color:inherit}
       <tr><td><b>生产版本</b></td><td><span class="pill ok">✓ 94eaea5</span></td><td>健康检查 ready，数据库/缓存/存储/迁移四项通过</td></tr>
       <tr><td><b>端能力开关</b></td><td><span class="pill ok">✓ 按端独立生效</span></td><td>H5 已全量开放（提现除外）；小程序保持原有状态；校区显式关闭仍最高优先</td></tr>
       <tr><td><b>核心交易链路</b></td><td><span class="pill ok">✓ 闭环</span></td><td>任务、商城、闲置、售后、钱包、结算全链路可用</td></tr>
-      <tr><td><b>已知待办</b></td><td><span class="pill warn">△ 4 项</span></td><td>① 首页金刚区「地推中心 / 资料共享」入口待生产配置；② 闲置邮寄为包邮简化版，缺运费与发货履约；③ 微信登录/支付/分享需真机再验收；④ 地推 P3 待业务确认：结算汇总口径、草稿批次可直接打款、改价后重算</td></tr>
+      <tr><td><b>已知待办</b></td><td><span class="pill warn">△ 4 项</span></td><td>① 闲置邮寄为包邮简化版，缺运费与发货履约；② 微信登录/支付/分享需真机再验收；③ 本轮地推五轮加固代码尚未提交并部署至生产；④ 后台地推团长字段仍为自由文本用户 ID，建议改为成员检索选择（体验优化）</td></tr>
     </table>
     <p style="margin:14px 2px 0;font-size:12.5px;color:var(--t2);line-height:1.7">
-      <b style="color:var(--t1)">结论：</b>设计与实现的主体框架已稳定，新增的地推、资料共享与校区隔离均已出图并接入页面稿；地推模块边界交互已加固并通过自动化回归。当前剩余事项集中在首页装修配置、交易履约细节与地推 P3 结算口径，不影响核心链路测试。
+      <b style="color:var(--t1)">结论：</b>设计与实现的主体框架已稳定，新增的地推、资料共享与校区隔离均已出图并接入页面稿；地推模块边界交互已加固并通过自动化回归，首页金刚区「地推中心 / 资料共享」入口已在生产验证可见。当前剩余事项集中在交易履约细节、地推加固代码上线部署与后台团长选择器体验优化，不影响核心链路测试。
     </p>
   </div>
 
   <!-- ========== 2026-11-19 地推模块交互加固 ========== -->
-  <div class="sec-h"><i></i><h2>地推模块交互加固（2026-11-19）</h2><span class="sub">按 P0 → P1 → P2 修复并补齐自动化测试 · P3 保留为待评估项</span></div>
+  <div class="sec-h"><i></i><h2>地推模块交互加固（2026-11-19 · 五轮）</h2><span class="sub">按 P0 → P3 分五轮修复并补齐自动化测试 · 结算与推广位规则已按业务口径落地</span></div>
 
   <div class="audit">
     <table style="min-width:1060px">
@@ -673,14 +794,34 @@ a{text-decoration:none;color:inherit}
       <tr><td><span class="pill warn">P0</span></td><td><b>同一推广位可重复交单</b></td><td><span class="pill ok">✓ 已修复</span></td><td>交单事务内锁定推广位，已存在 pending / approved 提交时直接拒绝</td></tr>
       <tr><td><span class="pill warn">P1</span></td><td><b>过期推广位仍可交单</b></td><td><span class="pill ok">✓ 已修复</span></td><td>交单前校验推广位与任务截止时间，过期即置 closed 并回退已领数量；推广位列表访问时自动收口</td></tr>
       <tr><td><span class="pill warn">P1</span></td><td><b>可把其他团队成员设为团长</b></td><td><span class="pill ok">✓ 已修复</span></td><td>后台更换团长时校验该用户在其他团队是否 active，冲突则拦截</td></tr>
+      <tr><td><span class="pill warn">P1</span></td><td><b>团队暂停后成员仍可领位 / 交单</b></td><td><span class="pill ok">✓ 已修复</span></td><td>领位与交单均校验所属团队状态，非 recruiting/active 直接拒绝</td></tr>
+      <tr><td><span class="pill warn">P1</span></td><td><b>退团后推广位未收口，额度被锁死</b></td><td><span class="pill ok">✓ 已修复</span></td><td>退团时在同一事务内收口该用户所有 active 推广位，置 closed 并回退任务已领数量</td></tr>
+      <tr><td><span class="pill warn">P1</span></td><td><b>入团审核不校验团队状态</b></td><td><span class="pill ok">✓ 已修复</span></td><td>通过入团前校验团队 status，暂停/关闭团队不可再批准入团</td></tr>
       <tr><td><span class="pill na">P2</span></td><td><b>团长记录被置为退出导致悬空</b></td><td><span class="pill ok">✓ 已修复</span></td><td>团长成员不允许直接标记 left；换团长 / 清空团长时原记录降为普通成员</td></tr>
       <tr><td><span class="pill na">P2</span></td><td><b>团队人数增量累加漂移</b></td><td><span class="pill ok">✓ 已修复</span></td><td>创建团队、换团长、成员状态变更、入团审核、退团后按 active 成员实时重算</td></tr>
       <tr><td><span class="pill na">P2</span></td><td><b>任务结束时间可早于开始时间</b></td><td><span class="pill ok">✓ 已修复</span></td><td>更新任务时合并本次入参与库内现有值，校验时间区间</td></tr>
-      <tr><td><span class="pill na">C 端</span></td><td><b>过期推广位仍展示「去交单」</b></td><td><span class="pill ok">✓ 已修复</span></td><td>推广位页与任务详情页统一显示「已过期」，并隐藏交单 / 领取入口</td></tr>
-      <tr><td><span class="pill na">验证</span></td><td><b>自动化回归</b></td><td><span class="pill ok">✓ 全部通过</span></td><td>PushTeamFlowTest 10 条用例 / 80 断言通过 · Pint 通过 · user-app vue-tsc 通过</td></tr>
+      <tr><td><span class="pill na">P2</span></td><td><b>member_limit 可改到低于在册人数</b></td><td><span class="pill ok">✓ 已修复</span></td><td>后台修改成员上限时校验 active 成员数，不得低于当前在册</td></tr>
+      <tr><td><span class="pill na">P2</span></td><td><b>quota 可改到低于 claimed_count</b></td><td><span class="pill ok">✓ 已修复</span></td><td>后台修改任务名额时校验已领取数量，不得低于</td></tr>
+      <tr><td><span class="pill warn">P1</span></td><td><b>限领次数把已关闭推广位也计入</b></td><td><span class="pill ok">✓ 已修复</span></td><td>每人限领统计只计 active 推广位，过期/退团收口后不再占用个人名额</td></tr>
+      <tr><td><span class="pill na">P2</span></td><td><b>关团/停团不联动成员与在途推广位</b></td><td><span class="pill ok">✓ 已修复</span></td><td>暂停/关闭时收口团队全部在途推广位；关闭时清退全部在册成员，成员可重新入团</td></tr>
+      <tr><td><span class="pill na">P2</span></td><td><b>恢复成员不受人数与团队状态约束</b></td><td><span class="pill ok">✓ 已修复</span></td><td>left → active 时校验团队状态与 member_limit，关闭/满员团队不可恢复成员</td></tr>
+      <tr><td><span class="pill na">C 端</span></td><td><b>驳回后无原因展示、交单页无前置校验</b></td><td><span class="pill ok">✓ 已修复</span></td><td>推广位返回最近交单状态与驳回原因；已提交的隐藏入口，驳回后可「重新交单」；交单页进入即拦截重复提交</td></tr>
+      <tr><td><span class="pill na">C 端</span></td><td><b>未开始/已结束/已领满共用同一提示</b></td><td><span class="pill ok">✓ 已修复</span></td><td>领取按钮与任务列表按状态显示「未开始 / 已结束 / 名额已领完 / 已达限领次数」</td></tr>
+      <tr><td><span class="pill na">C 端</span></td><td><b>过期推广位仍展示「去交单」</b></td><td><span class="pill ok">✓ 已修复</span></td><td>推广位页与任务详情页统一显示「已过期」，并隐藏交单 / 领取入口；canClaim 增加 starts_at 未开始判断</td></tr>
+      <tr><td><span class="pill na">C 端</span></td><td><b>非招募中团队仍显示可点击「申请入团」</b></td><td><span class="pill ok">✓ 已修复</span></td><td>团队详情页展示团队状态，非 recruiting 时按钮置灰</td></tr>
+      <tr><td><span class="pill na">P2</span></td><td><b>重开已关闭团队出现团长悬空</b></td><td><span class="pill ok">✓ 已修复</span></td><td>关闭时解除团长关联；从关闭态恢复招募/运营时必须重新指定在册团长</td></tr>
+      <tr><td><span class="pill na">P2</span></td><td><b>交单页未拦截失效推广位</b></td><td><span class="pill ok">✓ 已修复</span></td><td>交单页进入即判断推广位与任务状态，失效时展示提示页；任务详情失效推广位不可点击</td></tr>
+      <tr><td><span class="pill na">P2</span></td><td><b>待审核推广位仍显示「去交单」</b></td><td><span class="pill ok">✓ 已修复</span></td><td>任务详情按钮按最近交单显示「待审核 / 已通过 / 重新交单 / 去交单」</td></tr>
+      <tr><td><span class="pill na">P3</span></td><td><b>团队状态变更遗留待审申请</b></td><td><span class="pill ok">✓ 已修复</span></td><td>暂停/关闭团队时自动驳回全部 pending 入团申请并记录原因</td></tr>
+      <tr><td><span class="pill na">C 端</span></td><td><b>团队与任务状态提示缺失</b></td><td><span class="pill ok">✓ 已修复</span></td><td>我的团队增加暂停/关闭提示并隐藏审核入口；入团条件给出缺失项汇总；任务列表同步「已结束 / 名额已领完 / 未开始」</td></tr>
+      <tr><td><span class="pill na">P3</span></td><td><b>推广位无法主动放弃</b></td><td><span class="pill ok">✓ 已修复</span></td><td>推广位卡片新增「放弃」，回退任务名额与个人限领次数；已有待审/已通过交单时禁止放弃</td></tr>
+      <tr><td><span class="pill na">P3</span></td><td><b>关闭任务不联动在途推广位</b></td><td><span class="pill ok">✓ 已修复</span></td><td>任务关闭时收口该任务全部进行中推广位，并回退已领数量</td></tr>
+      <tr><td><span class="pill na">P3</span></td><td><b>草稿批次可直接打款</b></td><td><span class="pill ok">✓ 已修复</span></td><td>打款前必须完成批次确认，草稿状态直接打款返回 422</td></tr>
+      <tr><td><span class="pill na">P3</span></td><td><b>改价与团队加成口径</b></td><td><span class="pill ok">✓ 已明确</span></td><td>改价不追溯已审核交单，只影响后续审核；团队关闭后团队加成仍按历史团长归属</td></tr>
+      <tr><td><span class="pill na">验证</span></td><td><b>自动化回归</b></td><td><span class="pill ok">✓ 全部通过</span></td><td>PushTeamFlowTest 28 条用例 / 182 断言通过 · Pint 通过 · user-app vue-tsc 通过</td></tr>
     </table>
     <p style="margin:14px 2px 0;font-size:12.5px;color:var(--t2);line-height:1.7">
-      <b style="color:var(--t1)">结论：</b>地推「领位 → 交单 → 审核 → 结算」主链路保持闭环，本轮补强了重复交单、过期收口、团长唯一性与团队人数一致性等边界；P3 的结算汇总口径、草稿批次直接打款、改价后重算尚未处理，待业务确认后再排期。
+      <b style="color:var(--t1)">结论：</b>地推「领位 → 交单 → 审核 → 结算」主链路已闭环，五轮加固覆盖重复交单、过期收口、团长唯一性与重开校验、团队状态联动、退团与关团收口、恢复成员校验、入团门禁、限领口径、驳回原因、失效拦截、待审清理等 27 项问题；放弃推广位、任务关闭联动、打款确认门槛、改价不追溯与历史团长加成口径均已落地，仅后台团长字段仍为文本 ID，属体验优化项。
     </p>
   </div>
 
@@ -709,103 +850,7 @@ a{text-decoration:none;color:inherit}
     </p>
   </div>
 
-  <!-- ========== 页面画廊 ========== -->
-  <div class="sec-h" id="gal"><i></i><h2>全部页面图（127 屏）</h2><span class="sub">小程序 390 × 844 · 管理端 1440 × 900 · 点击放大 · ← → 键翻页 · 页面稿：<a href="sub-screens.html">C 端 85 屏</a> · <a href="admin-screens.html">后台 42 屏</a></span></div>
-
-  <div class="group">
-    <div class="group-title"><h3>一级 Tab 页面</h3><span>5 屏 · 底部凸起商城按钮</span></div>
-    <div class="grid" id="g1"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>任务接单模块</h3><span>5 屏 · 含底部弹层与发布详情</span></div>
-    <div class="grid" id="g2"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>积分兑换模块</h3><span>4 屏 · 商品详情/确认兑换/兑换成功/商城订单详情</span></div>
-    <div class="grid" id="g3"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>校园社区模块</h3><span>2 屏</span></div>
-    <div class="grid" id="g4"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>账户与通用页面</h3><span>13 屏 · 登录/搜索/签到/积分/券/领券中心/消息/钱包/充值/提现/地址/银行卡</span></div>
-    <div class="grid" id="g5"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>校园闲置模块</h3><span>12 屏 · 发布/市场/详情/购买/订单/我发布的/订单详情/评价/发货/退款/TA的闲置/审核</span></div>
-    <div class="grid" id="g6"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>IM 私信模块</h3><span>2 屏 · 会话列表/聊天详情</span></div>
-    <div class="grid" id="g7"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>商城售后与购物车</h3><span>5 屏 · 商城订单详情/售后列表/申请/进度/购物车</span></div>
-    <div class="grid" id="g8"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>社区活动模块</h3><span>3 屏 · 列表/详情/发布</span></div>
-    <div class="grid" id="g9"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>合规与增长模块</h3><span>7 屏 · 协议列表/协议确认/隐私/实名/邀请/海报/帮助</span></div>
-    <div class="grid" id="g10"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>PC 管理后台</h3><span>26 屏 · 1440 × 900 · 工作台/审核/商城/财务/运营/配置/权限/审计</span></div>
-    <div class="grid grid-pc" id="g11"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>资料共享模块</h3><span>4 屏 · 列表/详情获取/投喂智能解析/求资料</span></div>
-    <div class="grid" id="g12"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>资料共享 · 管理端</h3><span>3 屏 · 资料审核/分类管理/求资料与举报</span></div>
-    <div class="grid grid-pc" id="g13"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>地推模块（C 端）</h3><span>12 屏 · 地推中心/团队广场/团队详情/我的团队/团队管理/推广任务/任务详情/推广位/交单/异常态/收益</span></div>
-    <div class="grid" id="g14"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>校区强隔离（C 端）</h3><span>11 屏 · 选校门禁/年级专业/老用户兜底/匿名浏览/平台任务标识/严格空态/写操作拦截/历史归属/换校与阻断</span></div>
-    <div class="grid" id="g15"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>资料共享 · 获取记录</h3><span>1 屏 · 获取记录/每日额度/失效状态</span></div>
-    <div class="grid" id="g16"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>地推运营 · 管理端</h3><span>8 屏 · 交单审核/推广团队/团队成员/佣金规则/团队异常态/任务配置/结算批次/批次空态</span></div>
-    <div class="grid grid-pc" id="g17"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>校区强隔离 · 管理端</h3><span>4 屏 · 学校库开关/用户强制改校/平台投放任务/回填报告</span></div>
-    <div class="grid grid-pc" id="g18"></div>
-  </div>
-
-  <div class="group">
-    <div class="group-title"><h3>配置中心 · 海报模板</h3><span>1 屏 · 模板预览/场景启用/停用兜底</span></div>
-    <div class="grid grid-pc" id="g19"></div>
-  </div>
+  </details>
 
   <p class="footer">
     校圈 · 校园任务商城 · UI v13 绿色商业风全套设计稿（小程序 + 管理端）<br>
@@ -993,6 +1038,15 @@ document.addEventListener('keydown', function(e){
   if(e.key === 'ArrowRight') move(1);
 });
 
+document.querySelectorAll('.jump a').forEach(function(a){
+  a.addEventListener('click', function(){
+    var h = a.getAttribute('href');
+    if(h === '#flows-main' || h === '#audit'){
+      var f = document.getElementById('flowsFold');
+      if(f) f.open = true;
+    }
+  });
+});
 </script>
 </body>
 </html>
