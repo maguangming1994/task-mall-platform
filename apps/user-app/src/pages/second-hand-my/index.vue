@@ -85,6 +85,7 @@ import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
 import { useCampusProfileStore } from '@/stores/campusProfile'
 import { useCampusStore } from '@/stores/campus'
+import { navigateToLogin } from '@/utils/authRedirect'
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
@@ -121,6 +122,10 @@ async function handleShow() {
   void campusProfile.ensure()
   await modules.ensureReady()
   if (!moduleEnabled.value) return
+  if (!auth.isAuthenticated) {
+    navigateToLogin()
+    return
+  }
   load()
   loadCounts()
 }

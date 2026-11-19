@@ -46,6 +46,7 @@ import { resolveApiAssetUrl } from '@/api/http'
 import { formatDate } from '@/utils/dateTime'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
+import { navigateToLogin } from '@/utils/authRedirect'
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
@@ -65,7 +66,10 @@ function statusText(s: string) {
 async function load() {
   await modules.ensureReady()
   if (!moduleEnabled.value) return
-  if (!auth.accessToken) return
+  if (!auth.accessToken) {
+    navigateToLogin()
+    return
+  }
   loading.value = true
   try {
     const res = await listSecondHandOrders(auth.accessToken, { role: role.value })

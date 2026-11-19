@@ -95,6 +95,7 @@ import {
 import { resolveApiAssetUrl } from '@/api/http'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
+import { navigateToLogin } from '@/utils/authRedirect'
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
@@ -131,6 +132,10 @@ const categoryNames = computed(() => categories.value.map(c => c.name))
 const canSubmit = computed(() => form.title.trim().length >= 2 && Number(form.price) >= 0)
 
 onLoad((q) => {
+  if (!auth.isAuthenticated) {
+    navigateToLogin()
+    return
+  }
   editingId.value = typeof q?.id === 'string' ? q.id : ''
   void init()
 })

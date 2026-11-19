@@ -343,7 +343,7 @@ onLoad((options) => {
   if ((feedTabs.map(item => item.code) as string[]).includes(feed)) activeFeed.value = feed as CommunityFeed
   const category = typeof options?.category === 'string' ? options.category : ''
   if (category && fallbackCategories.some(item => item.code === category)) activeCategory.value = category as CommunityCategory['code']
-  if (options?.view === 'mine') activeView.value = 'mine'
+  if (options?.view === 'mine' && ensureAuth()) activeView.value = 'mine'
 })
 
 onShow(async () => {
