@@ -18,9 +18,9 @@
       <view :class="['seg-item', { on: tab === 'mine' }]" @click="openMine">我的任务</view>
     </view>
     <template v-if="tab === 'hall'">
-      <view class="search-full">
+      <view class="search-full" @click="focusSearch">
         <image class="search-icon" src="/static/icons/icon-search.svg" mode="aspectFit" />
-        <input v-model.trim="searchKeyword" class="search-input" placeholder="搜索任务，如「取快递」「带饭」" placeholder-class="search-ph" confirm-type="search" @confirm="loadHall" />
+        <input v-model.trim="searchKeyword" class="search-input" placeholder="搜索任务，如「取快递」「带饭」" placeholder-class="search-ph" confirm-type="search" :focus="searchFocused" @blur="searchFocused = false" @confirm="loadHall" />
       </view>
       <text v-if="!auth.isAuthenticated" class="guest-task-note">登录后可领取任务，并在「我的任务」中查看执行进度</text>
       <scroll-view scroll-x class="cats" :show-scrollbar="false">
@@ -175,6 +175,11 @@ const activityFeed = ref<TaskActivityEvent[]>([])
 const myClaims = ref<TaskClaim[]>([])
 const claimGroup = ref('')
 const searchKeyword = ref('')
+const searchFocused = ref(false)
+
+function focusSearch() {
+  searchFocused.value = true
+}
 const filterVisible = ref(false)
 const sortMode = ref<'default' | 'latest' | 'reward'>('default')
 const loading = ref(false)

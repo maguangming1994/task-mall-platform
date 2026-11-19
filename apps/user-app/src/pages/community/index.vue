@@ -16,8 +16,8 @@
       </view>
     </view>
 
-    <view v-if="searching" class="search-panel">
-      <input v-model="keyword" confirm-type="search" focus placeholder="搜索帖子标题、内容或同学" @confirm="searching = false" />
+    <view v-if="searching" class="search-panel" @click="focusSearch">
+      <input v-model="keyword" confirm-type="search" :focus="searchFocused" placeholder="搜索帖子标题、内容或同学" @blur="searchFocused = false" @confirm="searching = false" />
       <text @click="clearSearch">{{ keyword ? '清空' : '取消' }}</text>
     </view>
 
@@ -62,7 +62,7 @@
     <template v-if="activeView === 'square'">
       <view class="feed-heading">
         <view class="feed-heading-left">
-          <text class="search-glyph" @click="searching = true">⌕</text>
+          <text class="search-glyph" @click="openSearch">⌕</text>
           <view><text class="feed-title">{{ keyword ? '搜索结果' : feedHeadingTitle }}</text><text class="feed-copy">{{ feedHeadingCopy }}</text></view>
         </view>
         <view class="feed-heading-links">
@@ -209,7 +209,7 @@
 
 <script setup lang="ts">
 import { formatRelativeTime } from '@/utils/dateTime'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { onLoad, onPullDownRefresh, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import AppTabBar from '@/components/AppTabBar.vue'
 import CommunityCommentComposer from '@/components/CommunityCommentComposer.vue'
@@ -285,6 +285,16 @@ const activeFeed = ref<CommunityFeed>('discover')
 const activeCategory = ref<CommunityCategory['code'] | ''>('')
 const keyword = ref('')
 const searching = ref(false)
+const searchFocused = ref(false)
+
+function openSearch() {
+  searching.value = true
+  nextTick(() => { searchFocused.value = true })
+}
+
+function focusSearch() {
+  searchFocused.value = true
+}
 const showPublishSheet = ref(false)
 const openedPostId = ref('')
 const expandedIds = ref<string[]>([])

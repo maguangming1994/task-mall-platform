@@ -23,13 +23,15 @@
       <text class="bind-card-title">选择学校</text>
       <text class="bind-card-note">搜索学校名称、城市或地区</text>
 
-      <view class="bind-search">
+      <view class="bind-search" @click="focusSearch">
         <view class="bind-search-icon" />
         <input
           v-model="keyword"
           confirm-type="search"
           placeholder="搜索学校"
           placeholder-class="bind-placeholder"
+          :focus="searchFocused"
+          @blur="searchFocused = false"
           @confirm="searchCampus"
         />
         <text v-if="keyword" class="bind-search-clear" @click="clearKeyword">清除</text>
@@ -179,6 +181,11 @@ const stepItems = [
 ]
 const step = ref(1)
 const keyword = ref('')
+const searchFocused = ref(false)
+
+function focusSearch() {
+  searchFocused.value = true
+}
 const selectedCampus = ref<Campus | null>(null)
 const gradeChoice = ref<number | 'other' | null>(null)
 const customYear = ref('')

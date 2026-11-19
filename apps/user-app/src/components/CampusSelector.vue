@@ -58,7 +58,7 @@
           <text v-if="!canChange" class="campus-notice-blocked">{{ blockedHint }}</text>
         </view>
 
-        <view class="campus-search">
+        <view class="campus-search" @click="focusSearch">
           <view class="campus-search-icon" />
           <input
             v-model="keyword"
@@ -256,7 +256,10 @@ async function openSelector(focusSearch: boolean) {
   visible.value = true
   searchFocused.value = false
   keyboardHeight.value = 0
+  // #ifndef H5
+  // H5 未实现 onKeyboardHeightChange，调用会中断后续聚焦与列表加载逻辑
   uni.onKeyboardHeightChange(onKeyboardChange)
+  // #endif
   await nextTick()
   searchFocused.value = focusSearch
   if (!campus.items.length && !campus.loading && !campus.error) {
@@ -268,11 +271,19 @@ function closeSelector() {
   searchFocused.value = false
   visible.value = false
   keyboardHeight.value = 0
+  // #ifndef H5
   uni.offKeyboardHeightChange(onKeyboardChange)
+  // #endif
+}
+
+function focusSearch() {
+  searchFocused.value = true
 }
 
 onUnmounted(() => {
+  // #ifndef H5
   uni.offKeyboardHeightChange(onKeyboardChange)
+  // #endif
 })
 
 async function search() {

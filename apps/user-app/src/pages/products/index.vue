@@ -14,9 +14,9 @@
         </button>
       </view>
 
-      <view class="search-full">
+      <view class="search-full" @click="focusSearch">
         <text class="search-icon">⌕</text>
-        <input v-model="keyword" confirm-type="search" placeholder="搜索商品，如「柠檬茶」「键盘」" />
+        <input v-model="keyword" confirm-type="search" placeholder="搜索商品，如「柠檬茶」「键盘」" :focus="searchFocused" @blur="searchFocused = false" />
       </view>
 
       <view class="coupons">
@@ -174,6 +174,11 @@ const categories = ref<ProductCategory[]>([])
 const loading = ref(false)
 const loadError = ref('')
 const keyword = ref('')
+const searchFocused = ref(false)
+
+function focusSearch() {
+  searchFocused.value = true
+}
 const categoryId = ref('')
 const cartItemCount = ref(0)
 const auth = useAuthStore()

@@ -33,10 +33,10 @@
         </view>
       </view>
 
-      <view class="search-box">
+      <view class="search-box" @click="focusSearch">
         <text class="search-ic">⌕</text>
-        <input v-model="keyword" confirm-type="search" placeholder="搜索课程名、真题试卷、实验报告..." @confirm="loadList" />
-        <view class="search-btn" @click="loadList">搜索</view>
+        <input v-model="keyword" confirm-type="search" placeholder="搜索课程名、真题试卷、实验报告..." :focus="searchFocused" @blur="searchFocused = false" @confirm="loadList()" />
+        <view class="search-btn" @click.stop="loadList()">搜索</view>
       </view>
 
       <scroll-view class="cat-scroll" scroll-x :show-scrollbar="false">
@@ -113,6 +113,11 @@ const items = ref<MaterialItem[]>([])
 const meta = ref<MaterialMeta | null>(null)
 const loading = ref(false)
 const keyword = ref('')
+const searchFocused = ref(false)
+
+function focusSearch() {
+  searchFocused.value = true
+}
 const categoryId = ref('')
 const total = ref(0)
 

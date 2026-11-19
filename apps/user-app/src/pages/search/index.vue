@@ -2,14 +2,15 @@
   <view class="page">
     <view class="head">
       <view class="back" @click="goBack"><text class="back-ic">‹</text></view>
-      <view class="search-box">
+      <view class="search-box" @click="focusSearch">
         <text class="search-ic">⌕</text>
         <input
           v-model.trim="keyword"
           class="search-input"
           placeholder="搜任务 / 搜商品 / 搜闲置"
           confirm-type="search"
-          focus
+          :focus="searchFocused"
+          @blur="searchFocused = false"
           @confirm="doSearch"
         />
         <text v-if="keyword" class="search-clear" @click="clearKeyword">×</text>
@@ -107,6 +108,11 @@ interface SearchResult {
 }
 
 const keyword = ref('')
+const searchFocused = ref(true)
+
+function focusSearch() {
+  searchFocused.value = true
+}
 const searchedKeyword = ref('')
 const tab = ref<TabValue>('all')
 const searched = ref(false)

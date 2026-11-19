@@ -247,6 +247,14 @@ view {
 
 .tm-money { color: var(--tm-reward-600); font-weight: 850; }
 
+/* H5 内置 modal/toast 默认 z-index 为 999，需高于自定义遮罩层（选校半屏为 1300），否则弹窗会被遮挡 */
+uni-modal,
+uni-toast,
+.uni-modal,
+.uni-sample-toast {
+  z-index: 2000;
+}
+
 @media screen and (min-width: 768px) {
   .tm-page-shell { width: 750rpx; margin: 0 auto; }
 }

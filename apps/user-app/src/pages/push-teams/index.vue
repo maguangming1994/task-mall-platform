@@ -1,8 +1,8 @@
 <template>
   <view class="push-page">
-    <view class="search-row">
-      <input v-model="keyword" class="search-input" placeholder="搜索团队名称或标语" confirm-type="search" @confirm="reload" />
-      <button class="search-btn" @tap="reload">搜索</button>
+    <view class="search-row" @click="focusSearch">
+      <input v-model="keyword" class="search-input" placeholder="搜索团队名称或标语" confirm-type="search" :focus="searchFocused" @blur="searchFocused = false" @confirm="reload" />
+      <button class="search-btn" @tap.stop="reload">搜索</button>
     </view>
     <view class="tabs">
       <view v-for="item in sorts" :key="item.value" :class="['tab', sort === item.value ? 'on' : '']" @tap="changeSort(item.value)">{{ item.label }}</view>
@@ -48,6 +48,11 @@ import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const keyword = ref('')
+const searchFocused = ref(false)
+
+function focusSearch() {
+  searchFocused.value = true
+}
 const sort = ref<'default' | 'commission' | 'members'>('default')
 const teams = ref<PushTeamSummary[]>([])
 const loading = ref(false)

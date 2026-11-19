@@ -10,9 +10,9 @@
       <text class="title">闲置市场</text>
     </view>
 
-    <view class="search-box" @click.stop>
+    <view class="search-box" @click.stop="focusSearch">
       <text class="search-ic">⌕</text>
-      <input v-model="keyword" confirm-type="search" placeholder="搜索闲置物品" @confirm="load" />
+      <input v-model="keyword" confirm-type="search" placeholder="搜索闲置物品" :focus="searchFocused" @blur="searchFocused = false" @confirm="load" />
     </view>
 
     <scroll-view class="cat-scroll" scroll-x :show-scrollbar="false">
@@ -89,6 +89,11 @@ const items = ref<SecondHandItem[]>([])
 const categories = ref<SecondHandCategory[]>([])
 const loading = ref(false)
 const keyword = ref('')
+const searchFocused = ref(false)
+
+function focusSearch() {
+  searchFocused.value = true
+}
 const categoryId = ref('')
 const sort = ref<'latest' | 'price_asc' | 'price_desc'>('latest')
 
