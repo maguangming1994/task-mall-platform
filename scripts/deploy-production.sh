@@ -92,7 +92,10 @@ compose run --rm --no-deps api php artisan db:seed --class=ProductionReviewDemoA
 echo "[6c/14] 资料共享分类（幂等：仅补齐默认分类，不注入演示资料）"
 compose run --rm --no-deps api php artisan db:seed --class=MaterialSeeder --force
 
-echo "[6d/14] 首页装修（幂等：按 marker 判重，版本已含则跳过）"
+echo "[6d/14] 专业目录（幂等：按 code 判重，覆盖 12 个学科门类常见专业）"
+compose run --rm --no-deps api php artisan db:seed --class=MajorSeeder --force
+
+echo "[6e/14] 首页装修（幂等：按 marker 判重，版本已含则跳过）"
 compose run --rm --no-deps api php artisan db:seed --class=HomeShowcaseSeeder --force
 
 echo "[7/14] 启用人工实名认证（幂等：目标状态已满足则跳过）"

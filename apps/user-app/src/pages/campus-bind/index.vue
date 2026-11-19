@@ -46,6 +46,21 @@
         <text class="bind-selected-tag">已选</text>
       </view>
 
+      <scroll-view class="bind-province-bar" scroll-x :show-scrollbar="false">
+        <view class="bind-province-track">
+          <view
+            :class="['bind-province-chip', { active: activeProvince === '' }]"
+            @click="selectProvince('')"
+          >全部</view>
+          <view
+            v-for="province in PROVINCE_OPTIONS"
+            :key="province"
+            :class="['bind-province-chip', { active: activeProvince === province }]"
+            @click="selectProvince(province)"
+          >{{ shortProvinceName(province) }}</view>
+        </view>
+      </scroll-view>
+
       <scroll-view class="bind-campus-scroll" scroll-y>
         <view v-if="campus.loading" class="bind-state">正在加载学校…</view>
         <view v-else-if="campus.error" class="bind-state">
@@ -116,13 +131,7 @@
           <text class="bind-field-label">专业<text class="bind-required">*</text></text>
           <text class="bind-field-count">{{ major.length }}/30</text>
         </view>
-        <input
-          v-model="major"
-          maxlength="30"
-          class="bind-input"
-          placeholder="如 计算机科学与技术"
-          placeholder-class="bind-placeholder"
-        />
+        <MajorSelector v-model="major" />
       </view>
 
       <view class="bind-field">
@@ -159,7 +168,7 @@
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { ApiError } from '@/api/http'
-import { bindAccountCampus, type Campus } from '@/api/campuses'
+import { bindAccountCampus, type Campus, type CampusListParams } from '@/api/campuses'
 import { useAuthStore } from '@/stores/auth'
 import { useCampusStore } from '@/stores/campus'
 import { useCampusProfileStore } from '@/stores/campusProfile'
@@ -167,6 +176,8 @@ import { useModulesStore } from '@/stores/modules'
 import { formatDateTime } from '@/utils/dateTime'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
+import { PROVINCE_OPTIONS, shortProvinceName } from '@/utils/regions'
+import MajorSelector from '@/components/MajorSelector.vue'
 
 const topSafeAreaStyle = createTopSafeAreaStyle()
 
@@ -181,6 +192,7 @@ const stepItems = [
 ]
 const step = ref(1)
 const keyword = ref('')
+const activeProvince = ref('')
 const searchFocused = ref(false)
 
 function focusSearch() {
@@ -195,7 +207,7 @@ const submitting = ref(false)
 
 const currentYear = new Date().getFullYear()
 const yearOptions = computed(() => {
-  const years = Array.from({ length: 6 }, (_, index) => currentYear - index)
+  const years = Array.from({ length: 12 }, (_, index) => currentYear - index)
   return [
     ...years.map((year, index) => ({
       value: year as number | 'other',
@@ -237,22 +249,35 @@ onLoad(async () => {
   await loadCampus()
 })
 
+function campusListParams(): CampusListParams {
+  const params: CampusListParams = { limit: 30 }
+  const query = keyword.value.trim()
+  if (query) params.keyword = query
+  if (activeProvince.value) params.province = activeProvince.value
+  return params
+}
+
 async function loadCampus() {
-  await campus.load({ limit: 30 }).catch(() => {
+  await campus.load(campusListParams()).catch(() => {
     uni.showToast({ title: '学校列表加载失败，请重试', icon: 'none' })
   })
 }
 
 async function searchCampus() {
-  const query = keyword.value.trim()
-  await campus.load(query ? { keyword: query, limit: 30 } : { limit: 30 }).catch(() => {
+  await campus.load(campusListParams()).catch(() => {
     uni.showToast({ title: '搜索失败，请重试', icon: 'none' })
   })
 }
 
 function clearKeyword() {
   keyword.value = ''
-  void searchCampus()
+  void loadCampus()
+}
+
+function selectProvince(province: string) {
+  if (activeProvince.value === province) return
+  activeProvince.value = province
+  void loadCampus()
 }
 
 function pickCampus(item: Campus) {
@@ -419,6 +444,7 @@ function locationText(item: Campus) {
 .bind-selected-name{display:block;overflow:hidden;color:#0B6B43;font-size:26rpx;font-weight:800;text-overflow:ellipsis;white-space:nowrap}
 .bind-selected-note{display:block;margin-top:6rpx;overflow:hidden;color:#4E7F68;font-size:21rpx;text-overflow:ellipsis;white-space:nowrap}
 .bind-selected-tag{flex:none;padding:6rpx 16rpx;border-radius:999rpx;background:#fff;color:var(--green-deep);font-size:20rpx;font-weight:800}
+.bind-province-bar{margin-top:20rpx;white-space:nowrap}.bind-province-track{display:inline-flex;gap:12rpx;padding:2rpx 2rpx 10rpx}.bind-province-chip{display:inline-flex;align-items:center;height:52rpx;padding:0 22rpx;box-sizing:border-box;border:1rpx solid var(--line);border-radius:999rpx;background:#F8FAF8;color:var(--t2);font-size:22rpx;font-weight:600}.bind-province-chip.active{border-color:var(--green);background:var(--green-soft);color:var(--green-deep);font-weight:800}
 .bind-campus-scroll{flex:1;height:46vh;margin-top:20rpx;overflow:hidden}
 .bind-campus-list{padding-bottom:4rpx}
 .bind-campus{display:flex;align-items:center;gap:16rpx;margin-top:12rpx;padding:18rpx 20rpx;border:1rpx solid var(--line);border-radius:22rpx;background:#fff}

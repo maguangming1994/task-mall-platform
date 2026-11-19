@@ -23,5 +23,6 @@ class DatabaseSeeder extends Seeder
         $this->call(SecondHandCategorySeeder::class);
         $this->call(MaterialSeeder::class);
         $this->call(PosterTemplateSeeder::class);
+        $this->call(MajorSeeder::class);
     }
 }

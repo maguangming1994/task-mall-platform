@@ -70,10 +70,10 @@ for mode in routine sync supplement migration-failure; do
   else
     if [ "$result" -ne 0 ]; then cat "$tmp/output"; exit 1; fi
     grep -q -- '--remove-orphans' "$MOCK_LOG"
-    # routine: migrate + Rbac + ReleaseControl + 审核演示账号 + 资料分类 + 首页装修 + 实名开关 + 正式协议 = 8
-    # sync:    再加 campuses:sync-directory + campuses:sync-branding = 10
-    expected=8
-    if [ "$mode" = sync ]; then expected=10; fi
+    # routine: migrate + Rbac + ReleaseControl + 审核演示账号 + 资料分类 + 专业目录 + 首页装修 + 实名开关 + 正式协议 = 9
+    # sync:    再加 campuses:sync-directory + campuses:sync-branding = 11
+    expected=9
+    if [ "$mode" = sync ]; then expected=11; fi
     [ "$(grep -c 'run --rm --no-deps api php artisan' "$MOCK_LOG")" -eq "$expected" ]
     if [ "$mode" = supplement ]; then
       grep -q 'timeout 600 php artisan campuses:sync-branding --supplement --once' "$MOCK_LOG"

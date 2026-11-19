@@ -79,6 +79,21 @@
           <text>›</text>
         </button>
 
+        <scroll-view v-show="loadMode !== 'location'" class="campus-province-bar" scroll-x :show-scrollbar="false">
+          <view class="campus-province-track">
+            <view
+              :class="['campus-province-chip', { active: activeProvince === '' }]"
+              @click="selectProvince('')"
+            >全部</view>
+            <view
+              v-for="province in PROVINCE_OPTIONS"
+              :key="province"
+              :class="['campus-province-chip', { active: activeProvince === province }]"
+              @click="selectProvince(province)"
+            >{{ shortProvinceName(province) }}</view>
+          </view>
+        </scroll-view>
+
         <scroll-view class="campus-list" scroll-y @touchmove.stop>
           <view v-if="campus.loading" class="campus-state">
             <text class="campus-state-title">正在加载学校…</text>
@@ -128,6 +143,7 @@ import { useCampusStore } from '@/stores/campus'
 import { useCampusProfileStore } from '@/stores/campusProfile'
 import { useModulesStore } from '@/stores/modules'
 import { formatDateTime } from '@/utils/dateTime'
+import { PROVINCE_OPTIONS, shortProvinceName } from '@/utils/regions'
 
 const props = defineProps<{ accessToken?: string; accountCampus?: Campus | null }>()
 const emit = defineEmits<{ change: [campus: Campus] }>()
@@ -136,6 +152,7 @@ const campusProfile = useCampusProfileStore()
 const visible = ref(false)
 const searchFocused = ref(false)
 const keyword = ref('')
+const activeProvince = ref('')
 const locating = ref(false)
 const selectingId = ref('')
 const failedEmblems = ref<Record<string, boolean>>({})
@@ -240,7 +257,7 @@ onMounted(async () => {
   campus.syncFromAccount(props.accountCampus)
   void campusProfile.ensure()
   if (!campus.items.length && !campus.loading) {
-    await campus.load().catch(() => {
+    await campus.load(campusListParams()).catch(() => {
       uni.showToast({ title: '学校列表加载失败，请点击重试', icon: 'none' })
     })
   }
@@ -263,7 +280,7 @@ async function openSelector(focusSearch: boolean) {
   await nextTick()
   searchFocused.value = focusSearch
   if (!campus.items.length && !campus.loading && !campus.error) {
-    await campus.load().catch(() => uni.showToast({ title: '学校列表加载失败，请点击重试', icon: 'none' }))
+    await campus.load(campusListParams()).catch(() => uni.showToast({ title: '学校列表加载失败，请点击重试', icon: 'none' }))
   }
 }
 
@@ -286,11 +303,28 @@ onUnmounted(() => {
   // #endif
 })
 
+function campusListParams() {
+  const params: { keyword?: string; province?: string; limit: number } = { limit: 100 }
+  const query = keyword.value.trim()
+  if (query) params.keyword = query
+  if (activeProvince.value) params.province = activeProvince.value
+  return params
+}
+
 async function search() {
   const query = keyword.value.trim()
   loadMode.value = query ? 'search' : 'all'
-  await campus.load(query ? { keyword: query } : {}).catch(() => {
+  await campus.load(campusListParams()).catch(() => {
     uni.showToast({ title: '搜索失败，请点击重试', icon: 'none' })
+  })
+}
+
+function selectProvince(province: string) {
+  if (activeProvince.value === province) return
+  activeProvince.value = province
+  loadMode.value = keyword.value.trim() ? 'search' : 'all'
+  void campus.load(campusListParams()).catch(() => {
+    uni.showToast({ title: '学校列表加载失败，请点击重试', icon: 'none' })
   })
 }
 
@@ -332,6 +366,7 @@ async function locate() {
 
   loadMode.value = 'location'
   keyword.value = ''
+  activeProvince.value = ''
   try {
     const items = await campus.loadNearby({ latitude: position.latitude, longitude: position.longitude })
     showLocationResult(items)
@@ -537,6 +572,7 @@ function locationText(item: Campus) {
 .campus-notice{margin-top:14rpx;padding:16rpx 20rpx;border:1rpx solid #ffe4b8;border-radius:18rpx;background:#fffaf0}.campus-notice-badge{display:inline-flex;height:30rpx;align-items:center;padding:0 10rpx;border-radius:999rpx;background:#ffe1a8;color:#8a581b;font-size:19rpx;font-weight:900}.campus-notice-line{display:block;margin-top:10rpx;color:#7a5a22;font-size:21rpx;line-height:1.55}.campus-notice-blocked{display:block;margin-top:8rpx;color:#b4462f;font-size:21rpx;font-weight:700}
 .campus-search{display:flex;height:82rpx;align-items:center;gap:14rpx;margin-top:24rpx;padding:0 20rpx;border:1rpx solid #d9e4ec;border-radius:20rpx;background:#fff}.campus-search input{min-width:0;flex:1;font-size:15px}.campus-search>text{color:var(--tm-growth-700);font-size:13px;font-weight:800}.campus-search-icon{width:23rpx;height:23rpx;border:4rpx solid #6f8193;border-radius:50%}.campus-search-icon::after{content:'';display:block;width:12rpx;height:4rpx;margin:18rpx 0 0 17rpx;border-radius:4rpx;background:#6f8193;transform:rotate(45deg)}
 .campus-locate{display:flex;height:auto;min-height:100rpx;align-items:center;gap:18rpx;margin:18rpx 0 0;padding:17rpx 20rpx;border:1rpx solid #cde9dd;border-radius:22rpx;background:#ecfaf4;color:var(--tm-ink-900);line-height:1.2;text-align:left}.campus-locate::after{border:0}.campus-locate>view:nth-child(2){min-width:0;flex:1}.campus-locate text{display:block}.campus-locate view>text:first-child{font-size:15px;font-weight:850}.campus-locate .campus-locate-note{margin-top:7rpx;color:#5e766c;font-size:11px;font-weight:400}.campus-locate>text{color:var(--tm-growth-700);font-size:24px}.campus-locate-icon{position:relative;width:52rpx;height:52rpx;flex:none;border:4rpx solid var(--tm-growth-600);border-radius:50%}.campus-locate-icon::before,.campus-locate-icon::after{content:'';position:absolute;background:var(--tm-growth-600)}.campus-locate-icon::before{top:-10rpx;bottom:-10rpx;left:22rpx;width:4rpx}.campus-locate-icon::after{top:22rpx;right:-10rpx;left:-10rpx;height:4rpx}.campus-locate-icon view{position:absolute;z-index:2;inset:14rpx;border-radius:50%;background:var(--tm-growth-600)}
+.campus-province-bar{margin-top:14rpx;white-space:nowrap}.campus-province-track{display:inline-flex;gap:10rpx;padding:2rpx 0 8rpx}.campus-province-chip{display:inline-flex;align-items:center;height:48rpx;padding:0 20rpx;box-sizing:border-box;border:1rpx solid #d9e4ec;border-radius:999rpx;background:#fff;color:#5f6e80;font-size:21rpx;font-weight:600}.campus-province-chip.active{border-color:var(--tm-growth-600);background:#effbf5;color:var(--tm-growth-700);font-weight:800}
 .campus-list{flex:1;min-height:300rpx;margin-top:15rpx;overflow:hidden}.campus-option{display:flex;min-height:92rpx;align-items:center;gap:16rpx;margin-top:11rpx;padding:14rpx 18rpx;border:1rpx solid #e1e8ee;border-radius:20rpx;background:#fff}.campus-option.active{border-color:#6bc7a2;background:#effbf5}.campus-option.pending{opacity:.58;pointer-events:none}.campus-option.locked{opacity:.78}.campus-option-mark{width:54rpx;height:54rpx;border-radius:14rpx;font-size:13px}.campus-option-copy{min-width:0;flex:1}.campus-option-copy text{display:block}.campus-option-copy>text:first-child{font-size:15px;font-weight:850}.campus-option-copy .campus-option-location{overflow:hidden;margin-top:5rpx;color:var(--tm-ink-500);font-size:12px;font-weight:400;text-overflow:ellipsis;white-space:nowrap}.campus-distance{flex:none;color:var(--tm-growth-700);font-size:12px}.campus-check{display:flex;width:38rpx;height:38rpx;align-items:center;justify-content:center;flex:none;border-radius:50%;background:var(--tm-growth-600);color:#fff;font-size:13px;font-weight:900}.campus-state{display:flex;min-height:280rpx;align-items:center;justify-content:center;flex-direction:column;padding:58rpx 20rpx;color:var(--tm-ink-500);text-align:center}.campus-state-title{color:var(--tm-ink-800);font-size:15px;font-weight:850}.campus-state-detail{max-width:560rpx;margin-top:12rpx;color:var(--tm-ink-500);font-size:12px;line-height:1.55}.campus-state-error .campus-state-title{color:#bd3b3b}.campus-state-action{height:62rpx;margin:24rpx 0 0;padding:0 28rpx;border-radius:18rpx;background:var(--tm-growth-600);color:#fff;font-size:13px;font-weight:850;line-height:62rpx}.campus-state-action::after{border:0}
 @media screen and (max-width:360px){.campus-access-bar{gap:7px}.campus-trigger{padding:0 9px}.campus-search-trigger{padding:0 10px}}
 </style>

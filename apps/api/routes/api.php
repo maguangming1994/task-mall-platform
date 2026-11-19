@@ -52,6 +52,7 @@ use App\Modules\Inventory\Http\Controllers\ShippingQuoteController;
 use App\Modules\Legal\Http\Controllers\AdminLegalDocumentController;
 use App\Modules\Legal\Http\Controllers\LegalDocumentController;
 use App\Modules\Legal\Http\Controllers\UserLegalConsentController;
+use App\Modules\Major\Http\Controllers\MajorController;
 use App\Modules\Material\Http\Controllers\AdminMaterialController;
 use App\Modules\Material\Http\Controllers\MaterialController;
 use App\Modules\Material\Http\Controllers\MaterialRequestController;
@@ -126,6 +127,8 @@ Route::get('/client-capabilities', [ClientCapabilitiesController::class, 'show']
 Route::get('/wechat/jssdk-signature', [WechatJssdkController::class, 'show'])->middleware('throttle:60,1');
 Route::get('/campuses', [CampusController::class, 'index'])->middleware('throttle:campus-list');
 Route::post('/campuses/nearby', [CampusController::class, 'nearby'])->middleware('throttle:campus-nearby');
+// 专业目录：绑校/换校流程联想选择，公开接口（未登录也能浏览），兼容自由输入
+Route::get('/majors', [MajorController::class, 'index'])->middleware('throttle:60,1');
 Route::get('/home-content', [HomeContentController::class, 'show']);
 Route::get('/appearance-content', [AppearanceContentController::class, 'show']);
 Route::get('/app-navigation', [AppNavigationController::class, 'show']);
@@ -417,6 +420,7 @@ Route::middleware('auth.access')->group(function () {
         Route::get('/tasks/{task}', [UserPushController::class, 'task']);
         Route::post('/tasks/{task}/positions', [UserPushController::class, 'claim'])->middleware(['campus.bound', 'throttle:20,1']);
         Route::get('/positions', [UserPushController::class, 'positions']);
+        Route::post('/positions/{position}/release', [UserPushController::class, 'release'])->middleware('throttle:20,1');
         Route::post('/positions/{position}/submissions', [UserPushController::class, 'submit'])->middleware('throttle:20,1');
         Route::get('/submissions', [UserPushController::class, 'submissions']);
         Route::get('/earnings', [UserPushController::class, 'earnings']);
