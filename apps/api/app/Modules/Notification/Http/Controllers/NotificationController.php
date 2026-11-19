@@ -16,11 +16,11 @@ use Illuminate\Validation\ValidationException;
 
 class NotificationController extends Controller
 {
-    private const CATEGORIES = ['task', 'asset', 'order', 'after_sale', 'community', 'system', 'second_hand'];
+    private const CATEGORIES = ['task', 'asset', 'order', 'after_sale', 'community', 'system', 'second_hand', 'material'];
 
     public function index(Request $request): JsonResponse
     {
-        $data = $request->validate(['page' => ['nullable', 'integer', 'min:1'], 'page_size' => ['nullable', 'integer', 'min:1', 'max:100'], 'category' => ['nullable', 'in:task,asset,order,after_sale,community,system,second_hand'], 'unread_only' => ['nullable', 'boolean']]);
+        $data = $request->validate(['page' => ['nullable', 'integer', 'min:1'], 'page_size' => ['nullable', 'integer', 'min:1', 'max:100'], 'category' => ['nullable', 'in:task,asset,order,after_sale,community,system,second_hand,material'], 'unread_only' => ['nullable', 'boolean']]);
         $page = (int) ($data['page'] ?? 1);
         $size = (int) ($data['page_size'] ?? 20);
         $userId = $request->user()->id;
@@ -59,7 +59,7 @@ class NotificationController extends Controller
 
     public function readAll(Request $request): JsonResponse
     {
-        $data = $request->validate(['category' => ['nullable', 'in:task,asset,order,after_sale,community,system,second_hand']]);
+        $data = $request->validate(['category' => ['nullable', 'in:task,asset,order,after_sale,community,system,second_hand,material']]);
         $query = Notification::query()->where('user_id', $request->user()->id)->whereNull('read_at');
         if (! empty($data['category'])) {
             $query->where('category', $data['category']);

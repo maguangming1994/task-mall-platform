@@ -27,6 +27,15 @@ export const DEFAULT_COMMUNITY_PUBLISHING_RULES: CommunityPublishingRules = {
   comment: { min_length: 2, max_length: 500 },
 }
 
+/** 发帖审核通过奖励积分的兜底值，与服务端 points.source_reward_amounts.post 默认值保持一致 */
+export const DEFAULT_POST_REWARD_POINTS = 10
+
+export interface CommunityCategoriesResult {
+  items: CommunityCategory[]
+  publishing_rules: CommunityPublishingRules
+  post_reward_points: number
+}
+
 export interface CommunityAttachment {
   file_id: string
   type: 'image' | 'video'
@@ -217,7 +226,7 @@ interface PaginatedPosts {
 }
 
 export function listCommunityCategories() {
-  return apiRequest<{ items: CommunityCategory[]; publishing_rules: CommunityPublishingRules }>({ path: '/community/categories' })
+  return apiRequest<CommunityCategoriesResult>({ path: '/community/categories' })
 }
 
 export function loadCommunityHome() {

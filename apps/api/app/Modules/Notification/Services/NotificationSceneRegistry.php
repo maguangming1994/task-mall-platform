@@ -59,6 +59,12 @@ class NotificationSceneRegistry
             'second_hand_refund_rejected' => $this->scene('second_hand', '退款被拒', '退款申请被拒绝', '“{{item_title}}”退款申请被卖家拒绝：{{review_note}}，可申请平台介入。', ['in_app'], 110),
             'second_hand_refund_arbitrated' => $this->scene('second_hand', '平台仲裁', '平台仲裁结果', '“{{item_title}}”平台仲裁结果：{{review_note}}', ['in_app'], 120, true),
             'second_hand_refund_cancelled' => $this->scene('second_hand', '退款撤销', '买家已撤销退款申请', '“{{item_title}}”订单买家已撤销退款申请，订单继续履约。', ['in_app'], 130),
+
+            'material_report_result' => $this->scene('material', '举报处理结果', '举报处理结果', '你的举报已处理：{{review_note}}', ['in_app'], 10, false, 'pages/material/index'),
+            'material_takedown' => $this->scene('material', '资料已下架', '资料已被下架', '你分享的资料《{{material_title}}》已被下架：{{review_note}}', ['in_app', 'wechat_mini'], 20, true, 'pages/material-post/index?tab=mine'),
+            'material_review_approved' => $this->scene('material', '审核通过', '资料审核通过', '你分享的资料《{{material_title}}》已通过审核并已上架。', ['in_app', 'wechat_mini'], 30, false, 'pages/material-post/index?tab=mine'),
+            'material_review_rejected' => $this->scene('material', '审核未通过', '资料审核未通过', '你分享的资料《{{material_title}}》未通过审核：{{review_note}}', ['in_app', 'wechat_mini'], 40, false, 'pages/material-post/index?tab=mine'),
+            'material_request_replied' => $this->scene('material', '求资料回复', '求资料需求有新回复', '你提交的求资料需求《{{material_title}}》有新回复：{{review_note}}', ['in_app', 'wechat_mini'], 50, false, 'pages/material-request/index?tab=mine'),
         ];
     }
 
@@ -85,12 +91,13 @@ class NotificationSceneRegistry
             'task' => ['task_title', 'status_text', 'task_claim_id', 'task_id', 'deadline', 'review_note', 'reward_summary', 'progress_summary', 'occurred_at'],
             'order' => ['order_no', 'status_text', 'order_id', 'amount', 'refund_amount', 'refunded_points', 'refund_summary', 'tracking_text', 'occurred_at'],
             'second_hand' => ['item_title', 'item_id', 'order_id', 'amount', 'score', 'review_note', 'occurred_at'],
+            'material' => ['material_title', 'material_id', 'report_id', 'review_note', 'occurred_at'],
             default => ['post_title', 'status_text', 'post_id', 'review_note', 'occurred_at'],
         };
 
         return [
             'domain' => $domain,
-            'domain_name' => ['task' => '任务进度', 'order' => '订单状态', 'community' => '帖子发布', 'second_hand' => '闲置交易'][$domain],
+            'domain_name' => ['task' => '任务进度', 'order' => '订单状态', 'community' => '帖子发布', 'second_hand' => '闲置交易', 'material' => '资料共享'][$domain],
             'name' => $name,
             'category' => $domain === 'community' ? 'community' : $domain,
             'default_subject' => $subject,

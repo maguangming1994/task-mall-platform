@@ -231,7 +231,6 @@ const serviceModuleMap: Record<string, ModuleCode> = {
   orders: 'module_mall_trade',
   second_hand: 'module_second_hand',
   second_hand_orders: 'module_second_hand',
-  material: 'module_material',
   chat: 'module_second_hand',
   after_sales: 'module_after_sale',
   referrals: 'module_referrals',
@@ -239,6 +238,8 @@ const serviceModuleMap: Record<string, ModuleCode> = {
 }
 const launchedServiceModuleMap: Record<string, ModuleCode> = {
   identity: 'module_identity_verification',
+  // 资料共享为新增模块：未明确开启时不展示入口（fail-close）
+  material: 'module_material',
 }
 const services = computed(() => baseServices
   .filter((item) => item.id !== 'publisher' || auth.user?.can_publish_tasks === true)

@@ -21,7 +21,7 @@ class LegalConsentFlowTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $this->assertDatabaseCount('legal_document_versions', 2);
+        $this->assertDatabaseCount('legal_document_versions', 3);
         $this->assertSame(0, LegalDocumentVersion::query()->whereNull('public_id')->count());
         $this->assertSame(0, LegalDocumentVersion::query()->whereNull('content_hash')->count());
     }
@@ -34,7 +34,7 @@ class LegalConsentFlowTest extends TestCase
 
         $this->getJson('/api/v1/legal-documents', $this->headers())
             ->assertOk()
-            ->assertJsonCount(2, 'data');
+            ->assertJsonCount(3, 'data');
         $pending = $this->withToken($token)
             ->getJson('/api/v1/me/legal-consents/pending?scope=account')
             ->assertOk()
@@ -51,6 +51,22 @@ class LegalConsentFlowTest extends TestCase
             ->assertOk()
             ->assertJsonCount(0, 'data');
         $this->assertDatabaseCount('user_legal_consents', 2);
+    }
+
+    public function test_material_copyright_document_is_fetchable(): void
+    {
+        $this->seed(LegalDocumentSeeder::class);
+
+        // 按类型查询通过配置校验并返回版权承诺
+        $byType = $this->getJson('/api/v1/legal-documents?document_type=material_copyright', $this->headers())
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+        $this->assertSame('material_copyright', $byType->json('data.0.document_type'));
+
+        // 全量列表包含版权承诺，且 account 范围不含它
+        $all = $this->getJson('/api/v1/legal-documents', $this->headers())->assertOk();
+        $types = array_column($all->json('data'), 'document_type');
+        $this->assertContains('material_copyright', $types);
     }
 
     public function test_phone_binding_is_blocked_until_required_documents_are_accepted(): void

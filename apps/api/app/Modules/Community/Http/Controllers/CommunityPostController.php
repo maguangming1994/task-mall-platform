@@ -96,6 +96,7 @@ class CommunityPostController extends Controller
         return ApiResponse::success([
             'items' => collect(self::CATEGORIES)->map(fn (string $label, string $code) => ['code' => $code, 'label' => $label])->values(),
             'publishing_rules' => $service->publishingRules(),
+            'post_reward_points' => $service->postRewardPoints(),
         ]);
     }
 

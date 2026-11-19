@@ -61,9 +61,14 @@
             </view>
           </view>
 
-          <view class="agree" @click="agreed = !agreed">
-            <view :class="['checkbox', { checked: agreed }]">{{ agreed ? '✓' : '' }}</view>
-            <text class="agree-text">我已阅读并承诺遵守《资料上传版权承诺》及《用户协议》</text>
+          <view class="agree">
+            <view :class="['checkbox', { checked: agreed }]" @click="agreed = !agreed">{{ agreed ? '✓' : '' }}</view>
+            <text class="agree-text">
+              我已阅读并承诺遵守
+              <text class="agree-link" @click.stop="openLegal('material_copyright')">《资料上传版权承诺》</text>
+              及
+              <text class="agree-link" @click.stop="openLegal('user_agreement')">《用户协议》</text>
+            </text>
           </view>
 
           <button class="submit" :disabled="submitting || !canSubmit" @click="submit">
@@ -88,6 +93,11 @@
               <text> · {{ formatTime(item.created_at) }}</text>
             </view>
             <text v-if="item.status === 'rejected' && item.reject_reason" class="mine-reason">驳回原因：{{ item.reject_reason }}</text>
+          </view>
+          <view class="load-more" @click="loadMine(false)">
+            <text v-if="loadingMore">加载中…</text>
+            <text v-else-if="hasMore">加载更多</text>
+            <text v-else>已经到底啦</text>
           </view>
         </view>
         <view v-else class="empty">
@@ -116,9 +126,12 @@ import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
 
+const PAGE_SIZE = 20
+
 const auth = useAuthStore()
 const modules = useModulesStore()
-const moduleEnabled = computed(() => modules.isEnabled('module_material_post'))
+// 新增模块采用 fail-close：服务端未明确开启时不展示入口与内容
+const moduleEnabled = computed(() => modules.isLaunched('module_material_post'))
 
 const tab = ref<'post' | 'mine'>('post')
 const meta = ref<MaterialMeta | null>(null)
@@ -130,6 +143,9 @@ const agreed = ref(false)
 const submitting = ref(false)
 const mineList = ref<MaterialItem[]>([])
 const loadingMine = ref(false)
+const loadingMore = ref(false)
+const minePage = ref(1)
+const hasMore = ref(false)
 
 const parsed = computed(() => parseShareText(shareText.value))
 const bonus = computed(() => meta.value?.bonus_per_approved ?? 10)
@@ -160,16 +176,25 @@ async function loadMeta() {
   }
 }
 
-async function loadMine() {
+async function loadMine(reset = true) {
   if (!auth.isAuthenticated) return
-  loadingMine.value = true
+  if (reset) {
+    minePage.value = 1
+    loadingMine.value = true
+  } else {
+    if (loadingMore.value || !hasMore.value) return
+    loadingMore.value = true
+  }
   try {
-    const res = await listMyMaterials(auth.accessToken || '')
-    mineList.value = res.items
+    const res = await listMyMaterials(auth.accessToken || '', minePage.value, PAGE_SIZE)
+    mineList.value = reset ? res.items : [...mineList.value, ...res.items]
+    hasMore.value = mineList.value.length < res.pagination.total
+    if (res.items.length > 0) minePage.value = res.pagination.page + 1
   } catch {
     uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     loadingMine.value = false
+    loadingMore.value = false
   }
 }
 
@@ -205,7 +230,11 @@ async function submit() {
     await loadMine()
   } catch (error) {
     const err = error as { code?: string }
-    uni.showToast({ title: err.code === 'MATERIAL_PARSE_FAILED' ? '未能识别网盘链接' : '提交失败，请稍后重试', icon: 'none' })
+    const messageMap: Record<string, string> = {
+      MATERIAL_PARSE_FAILED: '未能识别网盘链接',
+      MATERIAL_DUPLICATE_SUBMISSION: '该资料已提交过，请勿重复投喂',
+    }
+    uni.showToast({ title: messageMap[err.code ?? ''] || '提交失败，请稍后重试', icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -213,6 +242,10 @@ async function submit() {
 
 function openDetail(item: MaterialItem) {
   uni.navigateTo({ url: `/pages/material-detail/index?id=${encodeURIComponent(item.id)}` })
+}
+
+function openLegal(type: string) {
+  uni.navigateTo({ url: `/pages/legal/index?key=${encodeURIComponent(type)}` })
 }
 
 function goBack() {
@@ -272,6 +305,7 @@ onLoad(async (query) => {
 .checkbox { flex: none; width: 34rpx; height: 34rpx; margin-top: 2rpx; border-radius: 8rpx; border: 1rpx solid #D1D5DB; color: #fff; font-size: 22rpx; display: flex; align-items: center; justify-content: center; }
 .checkbox.checked { background: #0BBF63; border-color: #0BBF63; }
 .agree-text { font-size: 21rpx; color: #6B7280; line-height: 1.6; }
+.agree-link { color: #08A152; }
 
 .submit { margin-top: 26rpx; height: 88rpx; line-height: 88rpx; border-radius: 44rpx; background: linear-gradient(135deg, #12D978, #08A152); color: #fff; font-size: 27rpx; font-weight: 700; }
 .submit::after { border: 0; }
@@ -289,6 +323,7 @@ onLoad(async (query) => {
 .p-offline { background: #F2F4F3; color: #6B7280; }
 .mine-meta { margin-top: 10rpx; font-size: 20rpx; color: #AEB3BB; }
 .mine-reason { display: block; margin-top: 10rpx; font-size: 21rpx; color: #D92D20; }
+.load-more { padding: 20rpx 0 8rpx; text-align: center; font-size: 22rpx; color: #AEB3BB; }
 
 .empty { display: flex; flex-direction: column; align-items: center; padding: 120rpx 40rpx; }
 .empty-title { font-size: 28rpx; font-weight: 700; color: #191B1F; }

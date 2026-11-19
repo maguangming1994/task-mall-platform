@@ -268,6 +268,7 @@ class UserPushController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        $this->push->expirePositionsFor($user);
         $items = PushPosition::query()
             ->with('task')
             ->where('user_id', $user->id)

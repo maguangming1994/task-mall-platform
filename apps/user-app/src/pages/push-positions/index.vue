@@ -16,13 +16,13 @@
       <view v-for="position in positions" :key="position.id" class="card">
         <view class="card-head">
           <text class="card-title">{{ position.task?.title || '推广任务' }}</text>
-          <text :class="['status', position.status === 'active' ? 'active' : '']">{{ position.status === 'active' ? '进行中' : '已结束' }}</text>
+          <text :class="['status', isExpired(position) ? '' : 'active']">{{ isExpired(position) ? '已过期' : '进行中' }}</text>
         </view>
         <text class="muted">关键词：{{ position.keyword || '未填写' }}</text>
         <text class="muted">领取时间：{{ formatTime(position.claimed_at) }} · 截止 {{ formatTime(position.expires_at) }}</text>
         <view class="card-foot">
           <text class="money">单价 ¥{{ position.task?.reward_amount || '0.00' }}</text>
-          <button v-if="position.status === 'active'" class="primary-mini" @tap="goSubmit(position.id)">去交单</button>
+          <button v-if="!isExpired(position)" class="primary-mini" @tap="goSubmit(position.id)">去交单</button>
         </view>
       </view>
     </template>
@@ -82,6 +82,11 @@ function switchSubmissions() { tab.value = 'submissions'; void load() }
 function goTasks() { uni.navigateTo({ url: '/pages/push-tasks/index' }) }
 function goSubmit(id: string) { uni.navigateTo({ url: `/pages/push-submit/index?id=${encodeURIComponent(id)}` }) }
 function formatTime(value: string | null) { return formatDateTime(value) }
+function isExpired(position: PushPosition) {
+  if (position.status !== 'active') return true
+  const deadline = position.expires_at || position.task?.ends_at || null
+  return deadline !== null && new Date(deadline).getTime() <= Date.now()
+}
 function statusText(status: string) { return ({ pending: '审核中', approved: '已通过', rejected: '已驳回' } as Record<string, string>)[status] || status }
 
 onShow(() => { void load() })

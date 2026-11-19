@@ -97,6 +97,12 @@
       }
     },
     {
+      "path": "pages/material-fetches/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/sh-user/index",
       "style": {
         "navigationStyle": "custom"

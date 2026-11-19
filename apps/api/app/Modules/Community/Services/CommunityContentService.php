@@ -47,6 +47,14 @@ class CommunityContentService
         ];
     }
 
+    /** 发帖审核通过后发放的积分奖励数量（取自 points.source_reward_amounts.post） */
+    public function postRewardPoints(): int
+    {
+        $amounts = $this->value('points.source_reward_amounts');
+
+        return (int) ($amounts['post'] ?? 0);
+    }
+
     public function createPost(User $user, array $data, string $key): CommunityPost
     {
         $this->assertAllowed($user, 'post');

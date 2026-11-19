@@ -17,6 +17,7 @@ use App\Modules\Push\Models\PushTeamMember;
 use App\Modules\Push\Services\PushService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -109,6 +110,7 @@ class AdminPushController extends Controller
                     'joined_at' => now(),
                 ]);
             }
+            $this->push->syncMemberCount($team);
 
             return $team;
         });
@@ -144,11 +146,20 @@ class AdminPushController extends Controller
                     if ($leader === null) {
                         throw ValidationException::withMessages(['leader_user_id' => ['团长用户不存在。']]);
                     }
+                    $occupied = PushTeamMember::query()
+                        ->where('user_id', $leader->id)
+                        ->where('status', 'active')
+                        ->where('team_id', '!=', $team->id)
+                        ->exists();
+                    if ($occupied) {
+                        throw ValidationException::withMessages(['leader_user_id' => ['该用户已在其他团队任职，不能同时担任团长。']]);
+                    }
                 }
+                // 换人或置空时，原团长记录统一下降为普通成员，避免出现多个团长
+                PushTeamMember::query()->where('team_id', $team->id)->where('role', 'leader')->update(['role' => 'member']);
                 $team->leader_user_id = $leader?->id;
                 if ($leader !== null) {
-                    PushTeamMember::query()->where('team_id', $team->id)->where('role', 'leader')->update(['role' => 'member']);
-                    $member = PushTeamMember::query()->updateOrCreate(
+                    PushTeamMember::query()->updateOrCreate(
                         ['team_id' => $team->id, 'user_id' => $leader->id],
                         [
                             'campus_id' => $team->campus_id,
@@ -160,12 +171,10 @@ class AdminPushController extends Controller
                             'left_at' => null,
                         ],
                     );
-                    if ($member->wasRecentlyCreated) {
-                        $team->member_count = (int) $team->member_count + 1;
-                    }
                 }
             }
             $team->fill(collect($data)->except('leader_user_id')->all())->save();
+            $this->push->syncMemberCount($team);
         });
 
         $after = $this->push->presentTeam($team->fresh());
@@ -233,14 +242,19 @@ class AdminPushController extends Controller
         $before = ['level_code' => $member->level_code, 'status' => $member->status];
         DB::transaction(function () use ($member, $data) {
             if (($data['status'] ?? null) === 'left' && $member->status === 'active') {
+                if ($member->role === 'leader') {
+                    throw ValidationException::withMessages(['status' => ['该成员为团队团长，请先更换团长后再移出团队。']]);
+                }
                 $member->left_at = now();
-                PushTeam::query()->whereKey($member->team_id)->decrement('member_count');
             }
             if (($data['status'] ?? null) === 'active' && $member->status === 'left') {
                 $member->left_at = null;
-                PushTeam::query()->whereKey($member->team_id)->increment('member_count');
             }
             $member->fill($data)->save();
+            $team = PushTeam::query()->find($member->team_id);
+            if ($team !== null) {
+                $this->push->syncMemberCount($team);
+            }
         });
         $audit->record($admin, 'push_member.update', 'push_team_member', (string) $member->id, $before, $data);
 
@@ -367,6 +381,11 @@ class AdminPushController extends Controller
         /** @var AdminUser $admin */
         $admin = $request->user();
         $before = $this->push->presentTask($task);
+        $startsAt = array_key_exists('starts_at', $data) ? $data['starts_at'] : $task->starts_at;
+        $endsAt = array_key_exists('ends_at', $data) ? $data['ends_at'] : $task->ends_at;
+        if ($startsAt !== null && $endsAt !== null && Carbon::parse($endsAt)->lt(Carbon::parse($startsAt))) {
+            throw ValidationException::withMessages(['ends_at' => ['结束时间不能早于开始时间。']]);
+        }
         if (array_key_exists('reward_amount', $data)) {
             $data['reward_cents'] = (int) round($data['reward_amount'] * 100);
             unset($data['reward_amount']);

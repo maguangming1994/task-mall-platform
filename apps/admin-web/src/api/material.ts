@@ -86,6 +86,32 @@ export async function reviewManagedMaterial(
   })
 }
 
+export interface MaterialFormInput {
+  title: string
+  description?: string
+  category_id?: string
+  share_text?: string
+  share_url: string
+  extract_code?: string
+  netdisk_type: string
+  file_type: string
+  status: 'pending' | 'approved' | 'rejected' | 'offline'
+}
+
+export async function createManagedMaterial(input: MaterialFormInput) {
+  return adminRequest<{ material: ManagedMaterial }>('/admin/materials', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export async function updateManagedMaterial(id: string, input: MaterialFormInput) {
+  return adminRequest<{ material: ManagedMaterial }>(`/admin/materials/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
 export interface ManagedMaterialRequest {
   id: string
   title: string
@@ -121,11 +147,25 @@ export async function updateMaterialRequest(
 
 export interface ManagedMaterialReport {
   id: string
-  material: { id: string; title: string } | null
+  material: {
+    id: string
+    title: string
+    status: 'pending' | 'approved' | 'rejected' | 'offline'
+    netdisk_type: string
+    netdisk_label: string
+    share_url: string
+    extract_code: string | null
+    fetch_count: number
+    uploader_name: string
+  } | null
+  reporter: { id: string; nickname: string } | null
   reason: string
   detail: string | null
   status: 'pending' | 'handled'
+  decision: 'upheld' | 'dismissed' | 'other' | null
+  handling_note: string | null
   created_at: string | null
+  handled_at: string | null
 }
 
 export async function listMaterialReports(
@@ -139,8 +179,12 @@ export async function listMaterialReports(
   return adminRequest(`/admin/material-reports${suffix ? `?${suffix}` : ''}`)
 }
 
-export async function handleMaterialReport(id: string) {
-  return adminRequest<{ handled: boolean }>(`/admin/material-reports/${encodeURIComponent(id)}/handle`, {
-    method: 'POST',
-  })
+export async function handleMaterialReport(
+  id: string,
+  input: { decision: 'upheld' | 'dismissed' | 'other'; handling_note?: string; takedown?: boolean },
+) {
+  return adminRequest<{ handled: boolean; idempotent?: boolean }>(
+    `/admin/material-reports/${encodeURIComponent(id)}/handle`,
+    { method: 'POST', body: JSON.stringify(input) },
+  )
 }

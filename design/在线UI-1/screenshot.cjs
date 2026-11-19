@@ -86,6 +86,30 @@ const jobs = [
   { file: sub,  screen: 'mt-detail',       name: '59-material-detail' },
   { file: sub,  screen: 'mt-post',         name: '60-material-post' },
   { file: sub,  screen: 'mt-request',      name: '61-material-request' },
+  { file: sub,  screen: 'pt-center',        name: '62-push-center' },
+  { file: sub,  screen: 'pt-teams',         name: '63-push-teams' },
+  { file: sub,  screen: 'pt-teams-empty',   name: '64-push-teams-empty' },
+  { file: sub,  screen: 'pt-team-detail',   name: '65-push-team-detail' },
+  { file: sub,  screen: 'pt-my-team',       name: '66-push-my-team' },
+  { file: sub,  screen: 'pt-team-admin',    name: '67-push-team-admin' },
+  { file: sub,  screen: 'pt-tasks',         name: '68-push-tasks' },
+  { file: sub,  screen: 'pt-task-detail',   name: '69-push-task-detail' },
+  { file: sub,  screen: 'pt-positions',     name: '70-push-positions' },
+  { file: sub,  screen: 'pt-submit',        name: '71-push-submit' },
+  { file: sub,  screen: 'pt-submit-error',  name: '72-push-submit-error' },
+  { file: sub,  screen: 'pt-earnings',      name: '73-push-earnings' },
+  { file: sub,  screen: 'ci-m1',             name: '74-ci-m1' },
+  { file: sub,  screen: 'ci-m1b',            name: '75-ci-m1b' },
+  { file: sub,  screen: 'ci-m1c',            name: '76-ci-m1c' },
+  { file: sub,  screen: 'ci-m2',             name: '77-ci-m2' },
+  { file: sub,  screen: 'ci-m3',             name: '78-ci-m3' },
+  { file: sub,  screen: 'ci-m7',             name: '79-ci-m7' },
+  { file: sub,  screen: 'ci-m8',             name: '80-ci-m8' },
+  { file: sub,  screen: 'ci-m4',             name: '81-ci-m4' },
+  { file: sub,  screen: 'ci-m9',             name: '82-ci-m9' },
+  { file: sub,  screen: 'ci-m5',             name: '83-ci-m5' },
+  { file: sub,  screen: 'ci-m6',             name: '84-ci-m6' },
+  { file: sub,  screen: 'mt-fetches',        name: '85-material-fetches' },
 ];
 
 (async () => {
@@ -94,11 +118,23 @@ const jobs = [
   const only = process.argv[2];
   for (const j of jobs) {
     if (only && j.name !== only) continue;
+    if (!fs.existsSync(j.file)) {
+      console.log('skip (source missing):', j.name);
+      continue;
+    }
     const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
     await page.goto('file:///' + j.file.replace(/\\/g, '/'), { waitUntil: 'load', timeout: 60000 });
     await page.evaluate((sc) => {
       document.body.classList.add('shot');
       document.body.setAttribute('data-screen', sc);
+      document.querySelectorAll('.screen.on').forEach((s) => s.classList.remove('on'));
+      const el = document.querySelector('.screen[data-screen="' + sc + '"]');
+      if (el) {
+        el.classList.add('on');
+        if (getComputedStyle(el).display === 'none') {
+          document.body.removeAttribute('data-screen');
+        }
+      }
     }, j.screen);
     try {
       await page.waitForFunction(() => Array.from(document.images).every(i => i.complete), null, { timeout: 45000 });

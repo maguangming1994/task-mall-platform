@@ -14,6 +14,8 @@ use App\Modules\Push\Models\PushPosition;
 use App\Modules\Push\Models\PushSubmission;
 use App\Modules\Push\Models\PushTask;
 use App\Modules\Push\Models\PushTeam;
+use App\Modules\Push\Models\PushTeamMember;
+use App\Modules\Push\Services\PushService;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -179,6 +181,225 @@ class PushTeamFlowTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'rejected');
         $this->assertDatabaseMissing('wallet_transactions', ['user_id' => $member->id, 'business_type' => 'push_commission']);
+    }
+
+    public function test_duplicate_submission_for_same_position_is_rejected(): void
+    {
+        $campus = $this->campus('push-dup', '东湖校区');
+        $admin = $this->admin('push-dup-ops');
+        $adminToken = $this->adminLogin($admin);
+        $headers = ['X-Campus-Id' => $campus->public_id];
+        $user = $this->user($campus, '推广员周可', '13800139101');
+        $this->pushTeam($campus, $user, '重复交单测试队');
+        $token = $this->tokenFor($user);
+
+        $task = $this->withToken($adminToken)->withHeaders($headers)->postJson('/api/v1/admin/push/tasks', [
+            'title' => '重复交单任务',
+            'reward_amount' => 6,
+            'quota' => 10,
+            'per_user_limit' => 1,
+            'status' => 'published',
+        ])->assertCreated()->json('data');
+
+        $position = $this->withToken($token)
+            ->postJson('/api/v1/push/tasks/'.$task['id'].'/positions', ['keyword' => '重复测试'])
+            ->assertCreated()->json('data');
+
+        $this->withToken($token)
+            ->postJson('/api/v1/push/positions/'.$position['id'].'/submissions', ['images' => ['/proof-a.jpg']])
+            ->assertCreated();
+
+        $this->withToken($token)
+            ->postJson('/api/v1/push/positions/'.$position['id'].'/submissions', ['images' => ['/proof-b.jpg']])
+            ->assertStatus(422);
+
+        $positionId = PushPosition::query()->where('public_id', $position['id'])->value('id');
+        $this->assertSame(1, PushSubmission::query()->where('position_id', $positionId)->count());
+    }
+
+    public function test_expired_position_cannot_submit_and_is_closed(): void
+    {
+        $campus = $this->campus('push-exp', '过期校区');
+        $admin = $this->admin('push-exp-ops');
+        $adminToken = $this->adminLogin($admin);
+        $headers = ['X-Campus-Id' => $campus->public_id];
+        $user = $this->user($campus, '推广员何雨', '13800139102');
+        $team = $this->pushTeam($campus, $user, '过期测试队');
+        $token = $this->tokenFor($user);
+
+        $task = $this->task($campus);
+        $task->forceFill(['claimed_count' => 1])->save();
+        $position = PushPosition::query()->create([
+            'campus_id' => $campus->id,
+            'task_id' => $task->id,
+            'user_id' => $user->id,
+            'team_id' => $team->id,
+            'status' => 'active',
+            'claimed_at' => now(),
+            'expires_at' => now()->subMinute(),
+        ]);
+
+        $this->withToken($token)
+            ->postJson('/api/v1/push/positions/'.$position->public_id.'/submissions', ['images' => ['/proof.jpg']])
+            ->assertStatus(422);
+
+        $position->refresh();
+        $this->assertSame('closed', $position->status);
+        $this->assertNotNull($position->closed_at);
+        $this->assertSame(0, (int) $task->fresh()->claimed_count);
+
+        $otherTask = $this->task($campus);
+        $otherTask->forceFill(['claimed_count' => 2])->save();
+        PushPosition::query()->create([
+            'campus_id' => $campus->id,
+            'task_id' => $otherTask->id,
+            'user_id' => $user->id,
+            'team_id' => $team->id,
+            'status' => 'active',
+            'claimed_at' => now(),
+            'expires_at' => now()->subMinute(),
+        ]);
+
+        $items = $this->withToken($token)->getJson('/api/v1/push/positions')->assertOk()->json('data.items');
+        $this->assertSame('closed', $items[0]['status']);
+        $this->assertSame(1, (int) $otherTask->fresh()->claimed_count);
+    }
+
+    public function test_leader_cannot_be_assigned_to_two_teams(): void
+    {
+        $campus = $this->campus('push-leader-dup', '跨团校区');
+        $admin = $this->admin('push-leader-dup-ops');
+        $adminToken = $this->adminLogin($admin);
+        $headers = ['X-Campus-Id' => $campus->public_id];
+        $leaderA = $this->user($campus, '团长甲', '13800139103');
+        $leaderB = $this->user($campus, '团长乙', '13800139104');
+        $teamA = $this->pushTeam($campus, $leaderA, '甲队');
+        $teamB = $this->pushTeam($campus, $leaderB, '乙队');
+
+        $this->withToken($adminToken)->withHeaders($headers)
+            ->putJson('/api/v1/admin/push/teams/'.$teamB->public_id, ['leader_user_id' => $leaderA->public_id])
+            ->assertStatus(422);
+
+        $this->withToken($adminToken)->withHeaders($headers)
+            ->putJson('/api/v1/admin/push/teams/'.$teamA->public_id, ['leader_user_id' => null])
+            ->assertOk();
+
+        $this->assertNull($teamA->fresh()->leader_user_id);
+        $this->assertDatabaseHas('push_team_members', [
+            'team_id' => $teamA->id,
+            'user_id' => $leaderA->id,
+            'role' => 'member',
+            'status' => 'active',
+        ]);
+        $this->assertSame(1, (int) $teamA->fresh()->member_count);
+    }
+
+    public function test_team_leader_cannot_be_marked_left_without_replacement(): void
+    {
+        $campus = $this->campus('push-leader-left', '悬空校区');
+        $admin = $this->admin('push-leader-left-ops');
+        $adminToken = $this->adminLogin($admin);
+        $headers = ['X-Campus-Id' => $campus->public_id];
+        $leader = $this->user($campus, '团长钱塘', '13800139105');
+        $team = $this->pushTeam($campus, $leader, '悬空测试队');
+        $leaderMember = PushTeamMember::query()
+            ->where('team_id', $team->id)
+            ->where('role', 'leader')
+            ->firstOrFail();
+
+        $this->withToken($adminToken)->withHeaders($headers)
+            ->putJson('/api/v1/admin/push/members/'.$leaderMember->id, ['status' => 'left'])
+            ->assertStatus(422);
+
+        $this->assertSame('active', $leaderMember->fresh()->status);
+        $this->assertSame(1, (int) $team->fresh()->member_count);
+    }
+
+    public function test_member_count_is_recalculated_from_active_members(): void
+    {
+        $campus = $this->campus('push-count', '人数校区');
+        $admin = $this->admin('push-count-ops');
+        $adminToken = $this->adminLogin($admin);
+        $headers = ['X-Campus-Id' => $campus->public_id];
+        $leader = $this->user($campus, '团长孙一', '13800139106');
+        $member = $this->user($campus, '成员李二', '13800139107');
+        $team = $this->pushTeam($campus, $leader, '人数一致性队');
+        $this->assertSame(1, (int) $team->fresh()->member_count);
+
+        $memberRecord = PushTeamMember::query()->create([
+            'campus_id' => $campus->id,
+            'team_id' => $team->id,
+            'user_id' => $member->id,
+            'role' => 'member',
+            'level_code' => 'A1',
+            'status' => 'active',
+            'stats_month' => now()->format('Y-m'),
+            'joined_at' => now(),
+        ]);
+        PushTeam::query()->whereKey($team->id)->update(['member_count' => 99]);
+
+        $this->withToken($adminToken)->withHeaders($headers)
+            ->putJson('/api/v1/admin/push/members/'.$memberRecord->id, ['status' => 'left'])
+            ->assertOk();
+        $this->assertSame(1, (int) $team->fresh()->member_count);
+
+        $this->withToken($adminToken)->withHeaders($headers)
+            ->putJson('/api/v1/admin/push/members/'.$memberRecord->id, ['status' => 'active'])
+            ->assertOk();
+        $this->assertSame(2, (int) $team->fresh()->member_count);
+    }
+
+    public function test_update_task_rejects_end_time_before_start_time(): void
+    {
+        $campus = $this->campus('push-time', '时间校区');
+        $admin = $this->admin('push-time-ops');
+        $adminToken = $this->adminLogin($admin);
+        $headers = ['X-Campus-Id' => $campus->public_id];
+        $task = PushTask::query()->create([
+            'campus_id' => $campus->id,
+            'title' => '时间校验任务',
+            'reward_cents' => 500,
+            'quota' => 10,
+            'per_user_limit' => 1,
+            'starts_at' => now()->addDay(),
+            'ends_at' => now()->addDays(2),
+            'status' => 'published',
+        ]);
+
+        $this->withToken($adminToken)->withHeaders($headers)
+            ->putJson('/api/v1/admin/push/tasks/'.$task->public_id, ['ends_at' => now()->subDay()->toIso8601String()])
+            ->assertStatus(422);
+
+        $this->withToken($adminToken)->withHeaders($headers)
+            ->putJson('/api/v1/admin/push/tasks/'.$task->public_id, ['starts_at' => now()->addDays(3)->toIso8601String()])
+            ->assertStatus(422);
+
+        $this->withToken($adminToken)->withHeaders($headers)
+            ->putJson('/api/v1/admin/push/tasks/'.$task->public_id, ['ends_at' => now()->addDays(5)->toIso8601String()])
+            ->assertOk();
+    }
+
+    private function pushTeam(Campus $campus, User $leader, string $name): PushTeam
+    {
+        $team = PushTeam::query()->create([
+            'campus_id' => $campus->id,
+            'name' => $name,
+            'leader_user_id' => $leader->id,
+            'status' => 'active',
+        ]);
+        PushTeamMember::query()->create([
+            'campus_id' => $campus->id,
+            'team_id' => $team->id,
+            'user_id' => $leader->id,
+            'role' => 'leader',
+            'level_code' => 'A1',
+            'status' => 'active',
+            'stats_month' => now()->format('Y-m'),
+            'joined_at' => now(),
+        ]);
+        app(PushService::class)->syncMemberCount($team);
+
+        return $team;
     }
 
     private function campus(string $code, string $name): Campus

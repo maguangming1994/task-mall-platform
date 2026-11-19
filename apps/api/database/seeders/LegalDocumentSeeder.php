@@ -17,6 +17,7 @@ class LegalDocumentSeeder extends Seeder
         $documents = [
             'user_agreement' => ['开发环境用户协议', '说明用户账号、任务、社区、商城和资产功能的开发测试规则。'],
             'privacy_policy' => ['开发环境隐私政策', '说明手机号、微信身份、设备与业务数据在开发环境中的测试处理方式。'],
+            'material_copyright' => ['开发环境资料上传版权承诺', '说明资料投喂场景下的权利保证、禁止内容与侵权处理规则。'],
         ];
 
         foreach ($documents as $type => [$title, $summary]) {

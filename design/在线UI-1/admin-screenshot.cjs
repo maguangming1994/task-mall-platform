@@ -52,6 +52,19 @@ const jobs = [
   { screen: 'admin-material-audit',    name: 'a27-material-audit' },
   { screen: 'admin-material-category', name: 'a28-material-category' },
   { screen: 'admin-material-request',  name: 'a29-material-request' },
+  { screen: 'admin-pt-review',         name: 'a30-pt-review' },
+  { screen: 'admin-pt-teams',          name: 'a31-pt-teams' },
+  { screen: 'admin-pt-members',        name: 'a32-pt-members' },
+  { screen: 'admin-pt-rules',          name: 'a33-pt-rules' },
+  { screen: 'admin-pt-teams-error',    name: 'a34-pt-teams-error' },
+  { screen: 'admin-pt-task-config',    name: 'a35-pt-task-config' },
+  { screen: 'admin-pt-batches',        name: 'a36-pt-batches' },
+  { screen: 'admin-pt-batches-empty',  name: 'a37-pt-batches-empty' },
+  { screen: 'ci-a1',                   name: 'a38-ci-a1' },
+  { screen: 'ci-a2',                   name: 'a39-ci-a2' },
+  { screen: 'ci-a3',                   name: 'a40-ci-a3' },
+  { screen: 'ci-a4',                   name: 'a41-ci-a4' },
+  { screen: 'admin-poster',            name: 'a42-poster' },
 ];
 
 (async () => {
@@ -65,6 +78,14 @@ const jobs = [
     await page.evaluate((sc) => {
       document.body.classList.add('shot');
       document.body.setAttribute('data-screen', sc);
+      document.querySelectorAll('.screen.on').forEach((s) => s.classList.remove('on'));
+      const el = document.querySelector('.screen[data-screen="' + sc + '"]');
+      if (el) {
+        el.classList.add('on');
+        if (getComputedStyle(el).display === 'none') {
+          document.body.removeAttribute('data-screen');
+        }
+      }
     }, j.screen);
     await page.waitForTimeout(500);
     await page.screenshot({ path: path.join(out, j.name + '.png'), clip: { x: 0, y: 0, width: 1440, height: 900 } });

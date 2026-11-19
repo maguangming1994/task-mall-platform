@@ -2,6 +2,7 @@
 
 namespace App\Modules\Material\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
@@ -10,7 +11,7 @@ class MaterialReport extends Model
 {
     protected $fillable = [
         'public_id', 'material_id', 'user_id', 'reason', 'detail',
-        'status', 'handled_by', 'handled_at',
+        'status', 'decision', 'handling_note', 'handled_by', 'handled_at',
     ];
 
     protected $casts = [
@@ -25,5 +26,10 @@ class MaterialReport extends Model
     public function material(): BelongsTo
     {
         return $this->belongsTo(Material::class, 'material_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

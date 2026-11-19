@@ -9,9 +9,15 @@
       <view class="head">
         <view class="head-back" @click="goBack">‹</view>
         <text class="head-title">资料共享</text>
-        <view class="head-record" @click="openMyRecords">
-          <text class="record-ic">◷</text>
-          <text>我的记录</text>
+        <view class="head-right">
+          <view v-if="moduleEnabled" class="head-record" @click="openMyFetches">
+            <text class="record-ic">↓</text>
+            <text>我的获取</text>
+          </view>
+          <view v-if="postEnabled" class="head-record" @click="openMyRecords">
+            <text class="record-ic">◷</text>
+            <text>我的投喂</text>
+          </view>
         </view>
       </view>
 
@@ -19,7 +25,7 @@
         <view class="hero-main">
           <view class="hero-tag"><text class="hero-tag-dot">✦</text><text>同学互助 · 学习资料共享</text></view>
           <text class="hero-title">{{ campusName }}学习资料</text>
-          <text class="hero-desc">一人分享，万人受益 · 学长学姐带你稳过</text>
+          <text class="hero-desc">一人分享，大家受益 · 学习资料互通有无</text>
         </view>
         <view class="hero-stats">
           <view class="hero-stat">
@@ -51,7 +57,7 @@
       <view class="section-head">
         <text class="section-title">最新投喂</text>
         <text class="section-count">{{ total }} 份资源</text>
-        <view class="section-refresh" @click="loadList">
+        <view class="section-refresh" @click="loadList()">
           <text class="refresh-ic">↻</text>
           <text>刷新</text>
         </view>
@@ -82,7 +88,13 @@
       </view>
       <view v-else class="empty">
         <text class="empty-title">还没有匹配的资料</text>
-        <text class="empty-sub">换个关键词，或发起求资料让学长学姐帮你找</text>
+        <text class="empty-sub">换个关键词，或提交求资料需求，平台会尽快帮你寻找</text>
+      </view>
+
+      <view v-if="items.length" class="load-more" @click="loadList(false)">
+        <text v-if="loadingMore">加载中…</text>
+        <text v-else-if="hasMore">加载更多</text>
+        <text v-else>已经到底啦</text>
       </view>
 
       <view class="fab-bar">
@@ -94,18 +106,22 @@
 </template>
 
 <script setup lang="ts">
-import { onShow } from '@dcloudio/uni-app'
+import { onReachBottom, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { getMaterialMeta, listMaterials, type MaterialCategory, type MaterialItem, type MaterialMeta } from '@/api/material'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
+import { navigateToLogin } from '@/utils/authRedirect'
+
+const PAGE_SIZE = 20
 
 const auth = useAuthStore()
 const modules = useModulesStore()
-const moduleEnabled = computed(() => modules.isEnabled('module_material'))
-const postEnabled = computed(() => modules.isEnabled('module_material_post'))
-const requestEnabled = computed(() => modules.isEnabled('module_material_request'))
+// 新增模块采用 fail-close：服务端未明确开启时不展示入口与内容
+const moduleEnabled = computed(() => modules.isLaunched('module_material'))
+const postEnabled = computed(() => modules.isLaunched('module_material_post'))
+const requestEnabled = computed(() => modules.isLaunched('module_material_request'))
 
 const campusName = computed(() => auth.user?.campus?.name || '本校')
 const categories = ref<MaterialCategory[]>([])
@@ -120,6 +136,9 @@ function focusSearch() {
 }
 const categoryId = ref('')
 const total = ref(0)
+const page = ref(1)
+const hasMore = ref(false)
+const loadingMore = ref(false)
 
 const stats = computed(() => ({ total: meta.value?.stats.total ?? total.value }))
 const quotaText = computed(() => {
@@ -144,19 +163,30 @@ async function loadMeta() {
   }
 }
 
-async function loadList() {
-  loading.value = true
+async function loadList(reset = true) {
+  if (reset) {
+    page.value = 1
+    loading.value = true
+  } else {
+    if (loadingMore.value || !hasMore.value) return
+    loadingMore.value = true
+  }
   try {
     const res = await listMaterials(auth.accessToken || undefined, {
       keyword: keyword.value || undefined,
       category_id: categoryId.value || undefined,
+      page: page.value,
+      page_size: PAGE_SIZE,
     })
-    items.value = res.items
+    items.value = reset ? res.items : [...items.value, ...res.items]
     total.value = res.pagination.total
+    hasMore.value = items.value.length < res.pagination.total
+    if (res.items.length > 0) page.value = res.pagination.page + 1
   } catch {
     uni.showToast({ title: '加载失败，请稍后重试', icon: 'none' })
   } finally {
     loading.value = false
+    loadingMore.value = false
   }
 }
 
@@ -186,6 +216,14 @@ function openMyRecords() {
   uni.navigateTo({ url: '/pages/material-post/index?tab=mine' })
 }
 
+function openMyFetches() {
+  if (!auth.isAuthenticated) {
+    navigateToLogin()
+    return
+  }
+  uni.navigateTo({ url: '/pages/material-fetches/index' })
+}
+
 function goBack() {
   const pages = getCurrentPages()
   if (pages.length > 1) uni.navigateBack()
@@ -198,6 +236,11 @@ onShow(async () => {
   void loadMeta()
   void loadList()
 })
+
+onReachBottom(() => {
+  if (!moduleEnabled.value || loading.value) return
+  void loadList(false)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -206,7 +249,8 @@ onShow(async () => {
 .head { display: flex; align-items: center; gap: 16rpx; padding: calc(var(--status-bar-height) + 16rpx) 24rpx 12rpx; }
 .head-back { width: 60rpx; height: 60rpx; border-radius: 30rpx; background: #fff; color: #191B1F; font-size: 40rpx; line-height: 54rpx; text-align: center; }
 .head-title { font-size: 34rpx; font-weight: 800; color: #191B1F; }
-.head-record { margin-left: auto; display: flex; align-items: center; gap: 6rpx; height: 56rpx; padding: 0 20rpx; border-radius: 28rpx; background: #fff; color: #4B5563; font-size: 22rpx; }
+.head-right { margin-left: auto; display: flex; align-items: center; gap: 12rpx; }
+.head-record { display: flex; align-items: center; gap: 6rpx; height: 56rpx; padding: 0 18rpx; border-radius: 28rpx; background: #fff; color: #4B5563; font-size: 22rpx; }
 .record-ic { color: #08A152; }
 
 .hero { margin: 8rpx 24rpx 20rpx; padding: 28rpx; border-radius: 32rpx; background: linear-gradient(135deg, #0E8F58, #0A6B42); color: #fff; display: flex; gap: 18rpx; }
@@ -263,6 +307,8 @@ onShow(async () => {
 .empty { display: flex; flex-direction: column; align-items: center; padding: 120rpx 48rpx; }
 .empty-title { font-size: 28rpx; font-weight: 700; color: #191B1F; }
 .empty-sub { margin-top: 12rpx; font-size: 23rpx; color: #AEB3BB; text-align: center; line-height: 1.6; }
+
+.load-more { padding: 28rpx 0 8rpx; text-align: center; font-size: 22rpx; color: #AEB3BB; }
 
 .fab-bar { position: fixed; right: 28rpx; bottom: calc(48rpx + env(safe-area-inset-bottom)); z-index: 30; display: flex; gap: 16rpx; }
 .fab-ghost, .fab-solid { height: 86rpx; line-height: 86rpx; padding: 0 32rpx; border-radius: 43rpx; font-size: 26rpx; font-weight: 700; }

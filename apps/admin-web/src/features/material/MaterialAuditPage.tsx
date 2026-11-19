@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button, Descriptions, Form, Input, Modal, Select, Table, Typography, message } from 'antd'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import type { ColumnsType } from 'antd/es/table'
 import {
+  createManagedMaterial,
   listManagedMaterials,
   listMaterialCategories,
   reviewManagedMaterial,
+  updateManagedMaterial,
   type ManagedMaterial,
   type MaterialCategoryRow,
+  type MaterialFormInput,
 } from '../../api/material'
 import { Links, PageHead, Pill, type PillTone } from '../../components/xq'
 
@@ -19,11 +23,36 @@ const statusPills: Record<string, { tone: PillTone; label: string }> = {
   offline: { tone: 'gray', label: '已下架' },
 }
 
+const NETDISK_OPTIONS = [
+  { value: 'baidu', label: '百度网盘' },
+  { value: 'quark', label: '夸克网盘' },
+  { value: 'aliyun', label: '阿里云盘' },
+  { value: 'other', label: '其他资源' },
+]
+
+const FILE_TYPE_OPTIONS = [
+  { value: 'pdf', label: 'PDF' },
+  { value: 'word', label: 'Word' },
+  { value: 'excel', label: 'Excel' },
+  { value: 'ppt', label: 'PPT' },
+  { value: 'video', label: '视频' },
+  { value: 'archive', label: '压缩包' },
+  { value: 'other', label: '其他' },
+]
+
+const FORM_STATUS_OPTIONS = [
+  { value: 'approved', label: '已上架' },
+  { value: 'pending', label: '待审核' },
+  { value: 'offline', label: '已下架' },
+  { value: 'rejected', label: '已驳回' },
+]
+
 export function MaterialAuditPage() {
   const [messageApi, contextHolder] = message.useMessage()
   const [status, setStatus] = useState('pending')
   const [categoryId, setCategoryId] = useState('')
   const [keyword, setKeyword] = useState('')
+  const [debouncedKeyword, flushKeyword] = useDebouncedValue(keyword, 400)
   const [items, setItems] = useState<ManagedMaterial[]>([])
   const [categories, setCategories] = useState<MaterialCategoryRow[]>([])
   const [total, setTotal] = useState(0)
@@ -33,6 +62,10 @@ export function MaterialAuditPage() {
   const [rejectTarget, setRejectTarget] = useState<ManagedMaterial | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [rejectForm] = Form.useForm<{ reason: string }>()
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<ManagedMaterial | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [materialForm] = Form.useForm<MaterialFormInput>()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -40,7 +73,7 @@ export function MaterialAuditPage() {
       const result = await listManagedMaterials({
         status,
         category_id: categoryId || undefined,
-        keyword: keyword.trim() || undefined,
+        keyword: debouncedKeyword.trim() || undefined,
         page,
         page_size: 10,
       })
@@ -51,7 +84,7 @@ export function MaterialAuditPage() {
     } finally {
       setLoading(false)
     }
-  }, [status, categoryId, keyword, page, messageApi])
+  }, [status, categoryId, debouncedKeyword, page, messageApi])
 
   useEffect(() => { void load() }, [load])
 
@@ -59,15 +92,27 @@ export function MaterialAuditPage() {
     listMaterialCategories().then((res) => setCategories(res.items)).catch(() => undefined)
   }, [])
 
-  const review = async (item: ManagedMaterial, decision: 'approve' | 'offline') => {
-    try {
-      await reviewManagedMaterial(item.id, { decision })
-      messageApi.success(decision === 'approve' ? `已通过「${item.title}」。` : `已下架「${item.title}」。`)
-      setDetail(null)
-      await load()
-    } catch {
-      messageApi.error('操作失败，请稍后重试。')
-    }
+  const review = (item: ManagedMaterial, decision: 'approve' | 'offline') => {
+    const isApprove = decision === 'approve'
+    Modal.confirm({
+      title: isApprove ? `通过「${item.title}」的审核？` : `下架「${item.title}」？`,
+      content: isApprove
+        ? '确认通过后该资料将立即上架展示，并向投喂人发放额度奖励。'
+        : '确认下架后该资料将不再对用户展示，且会通知投喂人。',
+      okText: isApprove ? '确认通过' : '确认下架',
+      okButtonProps: { danger: !isApprove },
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await reviewManagedMaterial(item.id, { decision })
+          messageApi.success(isApprove ? `已通过「${item.title}」。` : `已下架「${item.title}」。`)
+          setDetail(null)
+          await load()
+        } catch {
+          messageApi.error('操作失败，请稍后重试。')
+        }
+      },
+    })
   }
 
   const submitReject = async (values: { reason: string }) => {
@@ -82,6 +127,64 @@ export function MaterialAuditPage() {
       messageApi.error('驳回操作失败，请稍后重试。')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const openCreate = () => {
+    setEditing(null)
+    materialForm.resetFields()
+    materialForm.setFieldsValue({
+      title: '',
+      description: '',
+      share_text: '',
+      share_url: '',
+      extract_code: '',
+      netdisk_type: 'other',
+      file_type: 'other',
+      status: 'approved',
+    })
+    setFormOpen(true)
+  }
+
+  const openEdit = (item: ManagedMaterial) => {
+    setEditing(item)
+    materialForm.setFieldsValue({
+      title: item.title,
+      description: item.description ?? '',
+      category_id: item.category?.id,
+      share_text: item.share_text ?? '',
+      share_url: item.share_url,
+      extract_code: item.extract_code ?? '',
+      netdisk_type: item.netdisk_type,
+      file_type: item.file_type,
+      status: item.status,
+    })
+    setFormOpen(true)
+  }
+
+  const submitForm = async (values: MaterialFormInput) => {
+    setSaving(true)
+    try {
+      const payload: MaterialFormInput = {
+        ...values,
+        category_id: values.category_id || undefined,
+        description: values.description || undefined,
+        share_text: values.share_text || undefined,
+        extract_code: values.extract_code || undefined,
+      }
+      if (editing) {
+        await updateManagedMaterial(editing.id, payload)
+        messageApi.success('资料已更新。')
+      } else {
+        await createManagedMaterial(payload)
+        messageApi.success('资料已补录并上架。')
+      }
+      setFormOpen(false)
+      await load()
+    } catch (error) {
+      messageApi.error((error as { message?: string })?.message || '保存失败，请检查链接或稍后重试。')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -111,10 +214,11 @@ export function MaterialAuditPage() {
     { title: '提交时间', width: 170, render: (_, r) => fmtTime(r.created_at) },
     {
       title: '操作',
-      width: 190,
+      width: 250,
       render: (_, r) => (
         <Links items={[
           { label: '查看', onClick: () => setDetail(r) },
+          { label: '编辑', onClick: () => openEdit(r) },
           r.status === 'pending' && { label: '通过', onClick: () => void review(r, 'approve') },
           r.status === 'pending' && { label: '驳回', danger: true, onClick: () => { rejectForm.resetFields(); setRejectTarget(r) } },
           r.status === 'approved' && { label: '下架', danger: true, onClick: () => void review(r, 'offline') },
@@ -126,7 +230,7 @@ export function MaterialAuditPage() {
   return (
     <div className="xq-page">
       {contextHolder}
-      <PageHead title="资料审核" extra={<Button onClick={() => void load()}>刷新</Button>} />
+      <PageHead title="资料审核" extra={<><Button onClick={() => void load()}>刷新</Button><Button type="primary" style={{ marginLeft: 8 }} onClick={openCreate}>新增资料</Button></>} />
 
       <div className="xq-card xq-filter" style={{ marginBottom: 16 }}>
         <Select
@@ -152,7 +256,7 @@ export function MaterialAuditPage() {
           placeholder="资料名称 / 投喂人"
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
-          onSearch={() => setPage(1)}
+          onSearch={() => { flushKeyword(); setPage(1) }}
           style={{ maxWidth: 240 }}
           allowClear
         />
@@ -208,6 +312,52 @@ export function MaterialAuditPage() {
           <Form.Item name="reason" label="驳回原因" rules={[{ required: true, message: '请填写驳回原因' }]}>
             <Input.TextArea rows={3} placeholder="将展示给投喂用户" />
           </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={editing ? '编辑资料' : '补录资料'}
+        open={formOpen}
+        onCancel={() => setFormOpen(false)}
+        onOk={() => materialForm.submit()}
+        confirmLoading={saving}
+        okText="保存"
+        cancelText="取消"
+        width={680}
+        destroyOnClose
+      >
+        <Form form={materialForm} layout="vertical" onFinish={submitForm}>
+          <Form.Item name="title" label="资料名称" rules={[{ required: true, message: '请输入资料名称' }]}>
+            <Input maxLength={60} placeholder="如：高等数学期末真题汇总" />
+          </Form.Item>
+          <div style={{ display: 'flex', gap: 16 }}>
+            <Form.Item name="category_id" label="所属分类" style={{ flex: 1 }}>
+              <Select allowClear placeholder="未分类" options={categories.map((c) => ({ value: c.id, label: c.name }))} />
+            </Form.Item>
+            <Form.Item name="status" label="上架状态" style={{ flex: 1 }}>
+              <Select options={FORM_STATUS_OPTIONS} />
+            </Form.Item>
+          </div>
+          <Form.Item name="description" label="资料说明">
+            <Input.TextArea rows={2} maxLength={500} placeholder="可选，简要介绍资料内容" />
+          </Form.Item>
+          <Form.Item name="share_text" label="网盘分享文案" help="粘贴完整分享文案可自动解析链接、提取码与网盘类型；也可留空并手动填写下方字段。">
+            <Input.TextArea rows={3} maxLength={8000} placeholder="复制网盘 App 里的分享文案粘贴到这里" />
+          </Form.Item>
+          <Form.Item name="share_url" label="分享链接" help="直接填写链接，或粘贴上方分享文案由系统自动解析。">
+            <Input placeholder="https://..." />
+          </Form.Item>
+          <div style={{ display: 'flex', gap: 16 }}>
+            <Form.Item name="extract_code" label="提取码" style={{ flex: 1 }}>
+              <Input maxLength={40} placeholder="可选" />
+            </Form.Item>
+            <Form.Item name="netdisk_type" label="网盘类型" style={{ flex: 1 }}>
+              <Select options={NETDISK_OPTIONS} />
+            </Form.Item>
+            <Form.Item name="file_type" label="文件类型" style={{ flex: 1 }}>
+              <Select options={FILE_TYPE_OPTIONS} />
+            </Form.Item>
+          </div>
         </Form>
       </Modal>
     </div>

@@ -2797,5 +2797,80 @@ body.shot .pt-switch{display:none}
 </div>
 </div>
 
+<!-- ================= 配置中心：海报模板管理 ================= -->
+<div class="screen" data-screen="admin-poster" data-kind="新增" data-title="配置中心 · 海报模板管理">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">📊</span> 工作台</div>
+      <div class="sb-item"><span class="ic">👤</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">📋</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">🛒</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">📦</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">💰</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">💬</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">📚</span> 资料共享</div>
+      <div class="sb-item"><span class="ic">📢</span> 运营与消息</div>
+      <div class="sb-item on"><span class="ic">⚙️</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">🔐</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="bread">首页 / 配置中心 <b>/ 海报模板管理</b></div>
+      <div class="tbr"><div class="icon">🔔</div><div class="user"><span class="av">A</span> 超级管理员</div></div>
+    </div>
+    <div class="content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="page-title" style="margin:0">海报模板管理</div>
+        <div style="display:flex;gap:10px">
+          <button class="btn ghost">恢复默认模板</button>
+          <button class="btn primary">+ 新增模板</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">
+        <div style="border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff">
+          <div style="height:96px;border-radius:10px;background:linear-gradient(135deg,#0E8F58,#0A6B42);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700">邀请好友海报</div>
+          <b style="display:block;margin-top:10px;font-size:13px">邀请好友 · 竖版</b>
+          <span style="font-size:12px;color:#8c8c8c">750 × 1334 · 使用中</span>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff">
+          <div style="height:96px;border-radius:10px;background:linear-gradient(135deg,#F2A93B,#E07B1A);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700">任务分享海报</div>
+          <b style="display:block;margin-top:10px;font-size:13px">任务分享 · 方版</b>
+          <span style="font-size:12px;color:#8c8c8c">1080 × 1080 · 使用中</span>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff">
+          <div style="height:96px;border-radius:10px;background:linear-gradient(135deg,#3B7BE0,#2456A8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700">地推团队招募</div>
+          <b style="display:block;margin-top:10px;font-size:13px">地推招募 · 竖版</b>
+          <span style="font-size:12px;color:#8c8c8c">750 × 1334 · 使用中</span>
+        </div>
+        <div style="border:1px dashed #D5DBD8;border-radius:12px;padding:14px;background:#FAFBFA;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:172px;color:#8c8c8c">
+          <span style="font-size:26px;line-height:1">+</span>
+          <span style="font-size:12px;margin-top:8px">新增模板</span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <tr><th>模板名称</th><th>适用场景</th><th>尺寸</th><th>状态</th><th>更新时间</th><th>操作</th></tr>
+          <tr><td><b>邀请好友 · 竖版</b><br><span style="color:#8c8c8c">referral-invite-v3</span></td><td>邀请推荐</td><td>750 × 1334</td><td><span class="tag green">使用中</span></td><td>2026-11-18 10:24</td><td class="act"><a>预览</a><a>编辑</a><a class="danger">停用</a></td></tr>
+          <tr><td><b>任务分享 · 方版</b><br><span style="color:#8c8c8c">task-share-v2</span></td><td>任务分享</td><td>1080 × 1080</td><td><span class="tag green">使用中</span></td><td>2026-11-17 16:08</td><td class="act"><a>预览</a><a>编辑</a><a class="danger">停用</a></td></tr>
+          <tr><td><b>地推招募 · 竖版</b><br><span style="color:#8c8c8c">push-recruit-v1</span></td><td>地推招募</td><td>750 × 1334</td><td><span class="tag green">使用中</span></td><td>2026-11-16 09:35</td><td class="act"><a>预览</a><a>编辑</a><a class="danger">停用</a></td></tr>
+          <tr><td><b>闲置成交 · 方版</b><br><span style="color:#8c8c8c">second-hand-deal-v1</span></td><td>闲置分享</td><td>1080 × 1080</td><td><span class="tag gray">已停用</span></td><td>2026-11-12 14:50</td><td class="act"><a>预览</a><a>编辑</a><a>启用</a></td></tr>
+          <tr><td><b>资料共享 · 竖版</b><br><span style="color:#8c8c8c">material-share-v1</span></td><td>资料分享</td><td>750 × 1334</td><td><span class="tag green">使用中</span></td><td>2026-11-10 11:02</td><td class="act"><a>预览</a><a>编辑</a><a class="danger">停用</a></td></tr>
+        </table>
+        <div class="pager">共 5 个模板 <span class="pbtn on">1</span></div>
+      </div>
+      <div style="margin-top:14px;background:#FAFBFA;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:12px;color:#767C85">
+        每个场景同时只允许一个模板处于「使用中」；停用后用户端回退到默认模板，已生成的历史海报不受影响。
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
 </body>
 </html>

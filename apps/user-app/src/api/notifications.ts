@@ -1,7 +1,7 @@
 import { apiRequest } from '@/api/http'
 import { buildQueryString } from '@/utils/query'
 
-export type NotificationCategory = 'task' | 'asset' | 'order' | 'after_sale' | 'community' | 'system'
+export type NotificationCategory = 'task' | 'asset' | 'order' | 'after_sale' | 'community' | 'system' | 'material'
 
 export interface AppNotification {
   id: string

@@ -28,7 +28,7 @@ export interface AdminGroupDef {
   pages: AdminPageDef[]
 }
 
-const lazyOf = (loader: () => Promise<Record<string, ComponentType>>, name: string) =>
+const lazyOf = <K extends string>(loader: () => Promise<Record<K, ComponentType>>, name: K) =>
   lazy(() => loader().then((m) => ({ default: m[name] })))
 
 const DashboardPage = lazyOf(() => import('../features/dashboard/DashboardPage'), 'DashboardPage')

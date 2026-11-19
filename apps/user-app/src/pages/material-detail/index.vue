@@ -61,9 +61,9 @@
           <view class="exhausted-btn">今日额度已用完</view>
           <view class="reward-card">
             <text class="reward-title">✦ 分享投喂资料，审核通过立赠 {{ bonus }} 次长期额度</text>
-            <view class="reward-actions">
-              <text class="reward-chip" @click="openPost">去投喂资料</text>
-              <text class="reward-chip" @click="openRequest">领取求资料需求</text>
+            <view v-if="postEnabled || requestEnabled" class="reward-actions">
+              <text v-if="postEnabled" class="reward-chip" @click="openPost">去投喂资料</text>
+              <text v-if="requestEnabled" class="reward-chip" @click="openRequest">提交求资料需求</text>
             </view>
           </view>
         </view>
@@ -99,7 +99,10 @@ import { useModulesStore } from '@/stores/modules'
 
 const auth = useAuthStore()
 const modules = useModulesStore()
-const moduleEnabled = computed(() => modules.isEnabled('module_material'))
+// 新增模块采用 fail-close：服务端未明确开启时不展示入口与内容
+const moduleEnabled = computed(() => modules.isLaunched('module_material'))
+const postEnabled = computed(() => modules.isLaunched('module_material_post'))
+const requestEnabled = computed(() => modules.isLaunched('module_material_request'))
 
 const materialId = ref('')
 const material = ref<MaterialItem | null>(null)

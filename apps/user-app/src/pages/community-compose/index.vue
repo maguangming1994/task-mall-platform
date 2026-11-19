@@ -85,7 +85,7 @@
 
       <view class="reward-card">
         <view class="reward-ic">奖</view>
-        <text class="reward-copy">带话题发布并通过审核后，可获得 <text class="reward-strong">+2 积分</text> 创作奖励</text>
+        <text class="reward-copy">带话题发布并通过审核后，可获得 <text class="reward-strong">{{ rewardText }}</text> 创作奖励</text>
       </view>
 
       <view class="guidance">
@@ -124,6 +124,7 @@ import {
   createCommunityRequestKey,
   createCommunityPost,
   DEFAULT_COMMUNITY_PUBLISHING_RULES,
+  DEFAULT_POST_REWARD_POINTS,
   listCommunityCategories,
   listMyCommunityPosts,
   updateCommunityPost,
@@ -159,6 +160,8 @@ const locationName = ref('')
 const locationEditing = ref(false)
 const categories = ref<CommunityCategory[]>(fallbackCategories)
 const publishingRules = ref<CommunityPublishingRules>(DEFAULT_COMMUNITY_PUBLISHING_RULES)
+const postRewardPoints = ref(DEFAULT_POST_REWARD_POINTS)
+const rewardText = computed(() => (postRewardPoints.value > 0 ? `+${postRewardPoints.value} 积分` : '平台奖励'))
 const images = ref<EditableImage[]>([])
 const reviewNote = ref('')
 const previewing = ref(false)
@@ -182,6 +185,7 @@ onLoad(async (options?: Record<string, string | undefined>) => {
     const result = await listCommunityCategories()
     categories.value = result.items
     publishingRules.value = result.publishing_rules || DEFAULT_COMMUNITY_PUBLISHING_RULES
+    postRewardPoints.value = result.post_reward_points ?? DEFAULT_POST_REWARD_POINTS
   } catch {
     categories.value = fallbackCategories
     publishingRules.value = DEFAULT_COMMUNITY_PUBLISHING_RULES

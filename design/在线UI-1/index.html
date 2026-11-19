@@ -58,7 +58,7 @@ a{text-decoration:none;color:inherit}
 .fnode.noimg:hover{border-color:#D8DCE0;transform:none;box-shadow:none}
 .fnode.noimg b{color:var(--t2)}
 .fnode .wait{display:inline-block;font-size:9px;font-weight:700;color:var(--orange-deep);background:#FFF1E6;border-radius:6px;padding:1px 6px}
-/* 视觉翻新复核标记：红=代码遗漏未翻新，橙=半翻新（2026-10-05 首轮标注，当日 13 页已全部翻新清零；类保留供后续复核复用） */
+/* 视觉翻新复核标记：红=代码遗漏未翻新，橙=半翻新（2026-10-05 首轮标注并清零；2026-11-19 复核仍为 0） */
 .fnode.half{border-color:#FFD9A8;background:#FFFBF5}
 .fnode.half .n{color:var(--orange-deep)}
 .fnode.miss{border-color:#F5B0AD;background:#FFF6F5}
@@ -136,13 +136,13 @@ a{text-decoration:none;color:inherit}
 
 <header class="hero">
   <div class="wrap">
-    <span class="badge">🎨 校圈 v13 绿色商业风 · 统一浏览入口</span>
+    <span class="badge">🎨 校圈 v13 绿色商业风 · 2026-11-19 更新</span>
     <h1>校园任务商城 · UI 全览（小程序 + 管理端）</h1>
-    <p>校园互助任务 + 积分商城 + 校园社区 + 校园闲置 + 资料共享 + IM 私信 + 地推模块 + 校区强隔离，共 <b>110</b> 张设计图、<b>30</b> 条核心业务流程。页面稿按原有两端结构呈现：<b>C 端 79 屏</b>（sub-screens.html）、<b>后台 41 屏</b>（admin-screens.html），新流程与新页面均按业务主线就地排入。</p>
+    <p>校园互助任务 + 积分商城 + 校园社区 + 校园闲置 + 资料共享 + IM 私信 + 地推模块 + 校区强隔离，共 <b>127</b> 张设计图、<b>30</b> 条核心业务流程。页面稿按原有两端结构呈现：<b>C 端 85 屏</b>（sub-screens.html）、<b>后台 42 屏</b>（admin-screens.html），新流程与新页面均按业务主线就地排入。</p>
     <div class="stats">
-      <div class="stat"><b>110</b><span>设计图总数</span></div>
-      <div class="stat"><b>79</b><span>C 端页面</span></div>
-      <div class="stat"><b>41</b><span>后台页面</span></div>
+      <div class="stat"><b>127</b><span>设计图总数</span></div>
+      <div class="stat"><b>85</b><span>C 端页面</span></div>
+      <div class="stat"><b>42</b><span>后台页面</span></div>
       <div class="stat"><b>30</b><span>核心流程</span></div>
     </div>
   </div>
@@ -151,7 +151,7 @@ a{text-decoration:none;color:inherit}
 <div class="wrap">
 
   <!-- ========== 核心流程 ========== -->
-  <div class="sec-h" id="flows-main"><i></i><h2>核心业务流程（30 条）</h2><span class="sub">点击流程节点可直达对应页面图 · <b style="color:#08A152">2026-10-05 复核：标记页面已全部翻新完成（红/橙标记已清零）</b></span></div>
+  <div class="sec-h" id="flows-main"><i></i><h2>核心业务流程（30 条）</h2><span class="sub">点击流程节点可直达对应页面图 · <b style="color:#08A152">2026-11-19 全量复核：127 屏设计图全部就绪，红/橙标记保持清零</b></span></div>
 
   <div class="flow">
     <div class="flow-head"><span class="no">1</span><h3>接单赚钱流程</h3><span class="tagline">接任务 → 完成服务 → 赚积分</span></div>
@@ -618,7 +618,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <!-- ========== 三方核对 ========== -->
-  <div class="sec-h" id="audit"><i></i><h2>设计 / 小程序 / 后端 三方核对</h2><span class="sub">2026-10-04 · 功能链路核对（视觉翻新状态见下方 10-05 复核区块）</span></div>
+  <div class="sec-h" id="audit"><i></i><h2>设计 / 小程序 / 后端 三方核对</h2><span class="sub">2026-11-19 · 功能链路核对（含地推、资料共享、校区隔离增量）</span></div>
 
   <div class="audit">
     <table>
@@ -638,12 +638,54 @@ a{text-decoration:none;color:inherit}
       <tr><td><b>购物车 / 帮助与反馈 / 发布任务详情</b></td><td><span class="pill ok">✓ 50-52 已出图</span></td><td><span class="pill ok">✓ 已实现</span></td><td><span class="pill ok">✓ 就绪</span></td><td>闭环完整</td></tr>
       <tr><td><b>IM 实时通信</b></td><td><span class="pill ok">✓ 已出图</span></td><td><span class="pill ok">✓ WebSocket 已接入</span></td><td><span class="pill ok">✓ Reverb 广播</span></td><td>断线重连增强为 P2 优化项</td></tr>
       <tr><td><b>微信 AppID</b></td><td><span class="pill na">—</span></td><td><span class="pill ok">✓ wx142866c45e952923</span></td><td><span class="pill na">—</span></td><td>已填写，可真机预览</td></tr>
-      <tr><td><b>PC 管理后台 26 屏</b>（工作台/审核/商城/财务/运营/配置/权限）</td><td><span class="pill ok">✓ a01-a26 已出图</span></td><td><span class="pill ok">✓ admin-web 已实现对应模块</span></td><td><span class="pill ok">✓ admin API 就绪</span></td><td>管理端设计闭环，可作为前端开发基准</td></tr>
+      <tr><td><b>地推模块</b> 62-73 + a30-a37</td><td><span class="pill ok">✓ 20 屏已出图</span></td><td><span class="pill ok">✓ 中心/团队/任务/推广位/交单/收益</span></td><td><span class="pill ok">✓ Push 模块与结算</span></td><td><span class="pill ok">已闭环</span> 团队等级、交单审核、结算批次全链路；2026-11-19 交互加固：重复交单、过期收口、跨团团长、团长悬空、人数一致性、任务时间校验</td></tr>
+      <tr><td><b>校区强隔离</b> 74-84 + a38-a41</td><td><span class="pill ok">✓ 15 屏已出图</span></td><td><span class="pill ok">✓ 选校门禁/换校/平台任务</span></td><td><span class="pill ok">✓ 校区作用域与回填</span></td><td><span class="pill ok">已闭环</span> 未绑校写操作拦截、历史归属、严格空态</td></tr>
+      <tr><td><b>资料获取记录</b> 85-material-fetches</td><td><span class="pill ok">✓ 已出图</span></td><td><span class="pill ok">✓ 获取记录/额度/失效</span></td><td><span class="pill ok">✓ material-fetches</span></td><td><span class="pill ok">已闭环</span> 每日额度与 30 天记录保留</td></tr>
+      <tr><td><b>海报模板管理</b> a42-poster</td><td><span class="pill ok">✓ 已出图</span></td><td><span class="pill ok">✓ 模板预览与场景启用</span></td><td><span class="pill ok">✓ 模板配置 API</span></td><td><span class="pill ok">已闭环</span> 单场景唯一启用 + 停用回退默认</td></tr>
+      <tr><td><b>PC 管理后台 42 屏</b>（工作台/审核/商城/财务/运营/配置/权限/地推/校区/海报）</td><td><span class="pill ok">✓ a01-a42 已出图</span></td><td><span class="pill ok">✓ admin-web 已实现对应模块</span></td><td><span class="pill ok">✓ admin API 就绪</span></td><td>管理端设计闭环，可作为前端开发基准</td></tr>
     </table>
   </div>
 
-  <!-- ========== 2026-10-05 视觉风格翻新复核 ========== -->
-  <div class="sec-h"><i></i><h2>视觉风格翻新复核（2026-10-05）</h2><span class="sub">设计稿均已就绪 · <b style="color:#08A152">13 页（10 页未翻新 + 3 页半翻新）代码层已全部翻新完成</b> · 旧蓝/青蓝/微信绿色值已全量清除</span></div>
+  <!-- ========== 2026-11-19 当前整体状态 ========== -->
+  <div class="sec-h"><i></i><h2>当前整体状态（2026-11-19）</h2><span class="sub">生产实测 + 仓库路由表复核 · 以下为当前结论，10-05 区块保留为历史记录</span></div>
+
+  <div class="audit">
+    <table style="min-width:1060px">
+      <tr><th>核对项</th><th>当前结果</th><th>说明</th></tr>
+      <tr><td><b>设计图总数</b></td><td><span class="pill ok">✓ 127 屏全部出图</span></td><td>C 端 85 屏 + 管理端 42 屏，页面条目与 images 目录一一对应，无缺图、无重复</td></tr>
+      <tr><td><b>新增模块</b></td><td><span class="pill ok">✓ 37 屏已并入</span></td><td>地推 20 屏、校区强隔离 15 屏、资料获取记录 1 屏、海报模板管理 1 屏</td></tr>
+      <tr><td><b>生产版本</b></td><td><span class="pill ok">✓ 94eaea5</span></td><td>健康检查 ready，数据库/缓存/存储/迁移四项通过</td></tr>
+      <tr><td><b>端能力开关</b></td><td><span class="pill ok">✓ 按端独立生效</span></td><td>H5 已全量开放（提现除外）；小程序保持原有状态；校区显式关闭仍最高优先</td></tr>
+      <tr><td><b>核心交易链路</b></td><td><span class="pill ok">✓ 闭环</span></td><td>任务、商城、闲置、售后、钱包、结算全链路可用</td></tr>
+      <tr><td><b>已知待办</b></td><td><span class="pill warn">△ 4 项</span></td><td>① 首页金刚区「地推中心 / 资料共享」入口待生产配置；② 闲置邮寄为包邮简化版，缺运费与发货履约；③ 微信登录/支付/分享需真机再验收；④ 地推 P3 待业务确认：结算汇总口径、草稿批次可直接打款、改价后重算</td></tr>
+    </table>
+    <p style="margin:14px 2px 0;font-size:12.5px;color:var(--t2);line-height:1.7">
+      <b style="color:var(--t1)">结论：</b>设计与实现的主体框架已稳定，新增的地推、资料共享与校区隔离均已出图并接入页面稿；地推模块边界交互已加固并通过自动化回归。当前剩余事项集中在首页装修配置、交易履约细节与地推 P3 结算口径，不影响核心链路测试。
+    </p>
+  </div>
+
+  <!-- ========== 2026-11-19 地推模块交互加固 ========== -->
+  <div class="sec-h"><i></i><h2>地推模块交互加固（2026-11-19）</h2><span class="sub">按 P0 → P1 → P2 修复并补齐自动化测试 · P3 保留为待评估项</span></div>
+
+  <div class="audit">
+    <table style="min-width:1060px">
+      <tr><th>级别</th><th>问题</th><th>修复结论</th><th>实现要点</th></tr>
+      <tr><td><span class="pill warn">P0</span></td><td><b>同一推广位可重复交单</b></td><td><span class="pill ok">✓ 已修复</span></td><td>交单事务内锁定推广位，已存在 pending / approved 提交时直接拒绝</td></tr>
+      <tr><td><span class="pill warn">P1</span></td><td><b>过期推广位仍可交单</b></td><td><span class="pill ok">✓ 已修复</span></td><td>交单前校验推广位与任务截止时间，过期即置 closed 并回退已领数量；推广位列表访问时自动收口</td></tr>
+      <tr><td><span class="pill warn">P1</span></td><td><b>可把其他团队成员设为团长</b></td><td><span class="pill ok">✓ 已修复</span></td><td>后台更换团长时校验该用户在其他团队是否 active，冲突则拦截</td></tr>
+      <tr><td><span class="pill na">P2</span></td><td><b>团长记录被置为退出导致悬空</b></td><td><span class="pill ok">✓ 已修复</span></td><td>团长成员不允许直接标记 left；换团长 / 清空团长时原记录降为普通成员</td></tr>
+      <tr><td><span class="pill na">P2</span></td><td><b>团队人数增量累加漂移</b></td><td><span class="pill ok">✓ 已修复</span></td><td>创建团队、换团长、成员状态变更、入团审核、退团后按 active 成员实时重算</td></tr>
+      <tr><td><span class="pill na">P2</span></td><td><b>任务结束时间可早于开始时间</b></td><td><span class="pill ok">✓ 已修复</span></td><td>更新任务时合并本次入参与库内现有值，校验时间区间</td></tr>
+      <tr><td><span class="pill na">C 端</span></td><td><b>过期推广位仍展示「去交单」</b></td><td><span class="pill ok">✓ 已修复</span></td><td>推广位页与任务详情页统一显示「已过期」，并隐藏交单 / 领取入口</td></tr>
+      <tr><td><span class="pill na">验证</span></td><td><b>自动化回归</b></td><td><span class="pill ok">✓ 全部通过</span></td><td>PushTeamFlowTest 10 条用例 / 80 断言通过 · Pint 通过 · user-app vue-tsc 通过</td></tr>
+    </table>
+    <p style="margin:14px 2px 0;font-size:12.5px;color:var(--t2);line-height:1.7">
+      <b style="color:var(--t1)">结论：</b>地推「领位 → 交单 → 审核 → 结算」主链路保持闭环，本轮补强了重复交单、过期收口、团长唯一性与团队人数一致性等边界；P3 的结算汇总口径、草稿批次直接打款、改价后重算尚未处理，待业务确认后再排期。
+    </p>
+  </div>
+
+  <!-- ========== 2026-10-05 视觉风格翻新复核（历史） ========== -->
+  <div class="sec-h"><i></i><h2>视觉风格翻新复核（2026-10-05 历史记录）</h2><span class="sub">设计稿均已就绪 · <b style="color:#08A152">13 页（10 页未翻新 + 3 页半翻新）代码层已全部翻新完成</b> · 旧蓝/青蓝/微信绿色值已全量清除</span></div>
 
   <div class="audit">
     <table style="min-width:1060px">
@@ -668,7 +710,7 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <!-- ========== 页面画廊 ========== -->
-  <div class="sec-h" id="gal"><i></i><h2>全部页面图（110 屏）</h2><span class="sub">小程序 390 × 844 · 管理端 1440 × 900 · 点击放大 · ← → 键翻页 · 页面稿：<a href="sub-screens.html">C 端 79 屏</a> · <a href="admin-screens.html">后台 41 屏</a></span></div>
+  <div class="sec-h" id="gal"><i></i><h2>全部页面图（127 屏）</h2><span class="sub">小程序 390 × 844 · 管理端 1440 × 900 · 点击放大 · ← → 键翻页 · 页面稿：<a href="sub-screens.html">C 端 85 屏</a> · <a href="admin-screens.html">后台 42 屏</a></span></div>
 
   <div class="group">
     <div class="group-title"><h3>一级 Tab 页面</h3><span>5 屏 · 底部凸起商城按钮</span></div>
@@ -735,10 +777,40 @@ a{text-decoration:none;color:inherit}
     <div class="grid grid-pc" id="g13"></div>
   </div>
 
+  <div class="group">
+    <div class="group-title"><h3>地推模块（C 端）</h3><span>12 屏 · 地推中心/团队广场/团队详情/我的团队/团队管理/推广任务/任务详情/推广位/交单/异常态/收益</span></div>
+    <div class="grid" id="g14"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>校区强隔离（C 端）</h3><span>11 屏 · 选校门禁/年级专业/老用户兜底/匿名浏览/平台任务标识/严格空态/写操作拦截/历史归属/换校与阻断</span></div>
+    <div class="grid" id="g15"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>资料共享 · 获取记录</h3><span>1 屏 · 获取记录/每日额度/失效状态</span></div>
+    <div class="grid" id="g16"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>地推运营 · 管理端</h3><span>8 屏 · 交单审核/推广团队/团队成员/佣金规则/团队异常态/任务配置/结算批次/批次空态</span></div>
+    <div class="grid grid-pc" id="g17"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>校区强隔离 · 管理端</h3><span>4 屏 · 学校库开关/用户强制改校/平台投放任务/回填报告</span></div>
+    <div class="grid grid-pc" id="g18"></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title"><h3>配置中心 · 海报模板</h3><span>1 屏 · 模板预览/场景启用/停用兜底</span></div>
+    <div class="grid grid-pc" id="g19"></div>
+  </div>
+
   <p class="footer">
     校圈 · 校园任务商城 · UI v13 绿色商业风全套设计稿（小程序 + 管理端）<br>
     小程序图 390 × 844（iPhone 14 逻辑分辨率）· 管理端图 1440 × 900 · 唯一设计基准目录：design/在线UI-1<br>
-    统一入口：30 条流程 + 110 屏 · 页面源 sub-screens.html（C 端 79 屏）/ admin-screens.html（后台 41 屏）· 地推 20 屏与校区隔离 15 屏已就地并入两端页面稿，不再单列
+    统一入口：30 条流程 + 127 屏 · 页面源 sub-screens.html（C 端 85 屏）/ admin-screens.html（后台 42 屏）· 地推 20 屏与校区隔离 15 屏已就地并入两端页面稿
   </p>
 </div>
 
@@ -844,9 +916,46 @@ var PAGES = [
   {f:'61-material-request',n:'求资料 · 提交需求'},
   {f:'a27-material-audit',n:'资料审核',pc:1},
   {f:'a28-material-category',n:'资料分类',pc:1},
-  {f:'a29-material-request',n:'求资料与举报',pc:1}
+  {f:'a29-material-request',n:'求资料与举报',pc:1},
+  {f:'62-push-center',n:'地推中心'},
+  {f:'63-push-teams',n:'团队广场'},
+  {f:'64-push-teams-empty',n:'团队广场 · 空态'},
+  {f:'65-push-team-detail',n:'团队详情'},
+  {f:'66-push-my-team',n:'我的团队'},
+  {f:'67-push-team-admin',n:'团队管理'},
+  {f:'68-push-tasks',n:'推广任务'},
+  {f:'69-push-task-detail',n:'推广任务详情'},
+  {f:'70-push-positions',n:'我的推广位'},
+  {f:'71-push-submit',n:'提交推广结果'},
+  {f:'72-push-submit-error',n:'提交推广结果 · 异常态'},
+  {f:'73-push-earnings',n:'地推收益'},
+  {f:'74-ci-m1',n:'校区隔离 · 选校门禁'},
+  {f:'75-ci-m1b',n:'校区隔离 · 选择年级'},
+  {f:'76-ci-m1c',n:'校区隔离 · 填写专业'},
+  {f:'77-ci-m2',n:'校区隔离 · 老用户兜底确认'},
+  {f:'78-ci-m3',n:'校区隔离 · 匿名浏览'},
+  {f:'79-ci-m7',n:'校区隔离 · 平台投放任务标识'},
+  {f:'80-ci-m8',n:'校区隔离 · 严格校区空态'},
+  {f:'81-ci-m4',n:'校区隔离 · 未绑校写操作拦截'},
+  {f:'82-ci-m9',n:'校区隔离 · 我的发布历史归属'},
+  {f:'83-ci-m5',n:'校区隔离 · 换校页'},
+  {f:'84-ci-m6',n:'校区隔离 · 换校阻断'},
+  {f:'85-material-fetches',n:'资料共享 · 我的获取记录'},
+  {f:'a30-pt-review',n:'地推 · 交单审核',pc:1},
+  {f:'a31-pt-teams',n:'地推 · 推广团队',pc:1},
+  {f:'a32-pt-members',n:'地推 · 团队成员',pc:1},
+  {f:'a33-pt-rules',n:'地推 · 佣金与规则',pc:1},
+  {f:'a34-pt-teams-error',n:'地推 · 团队异常态',pc:1},
+  {f:'a35-pt-task-config',n:'地推 · 推广任务配置',pc:1},
+  {f:'a36-pt-batches',n:'地推 · 结算批次',pc:1},
+  {f:'a37-pt-batches-empty',n:'地推 · 结算批次空态',pc:1},
+  {f:'a38-ci-a1',n:'校区隔离 · 学校库开关',pc:1},
+  {f:'a39-ci-a2',n:'校区隔离 · 用户强制改校',pc:1},
+  {f:'a40-ci-a3',n:'校区隔离 · 平台投放任务',pc:1},
+  {f:'a41-ci-a4',n:'校区隔离 · 回填报告',pc:1},
+  {f:'a42-poster',n:'配置中心 · 海报模板管理',pc:1}
 ];
-var GROUPS = {g1:[0,1,2,3,4], g2:[5,6,7,8,51], g3:[9,10,11,80], g4:[12,13], g5:[14,15,16,17,18,19,33,34,35,36,52,53,81], g6:[20,21,22,23,24,27,28,29,30,31,32,37], g7:[25,26], g8:[80,38,39,40,49], g9:[41,42,43], g10:[82,44,45,46,47,48,50], g11:[54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79], g12:[83,84,85,86], g13:[87,88,89]};
+var GROUPS = {g1:[0,1,2,3,4], g2:[5,6,7,8,51], g3:[9,10,11,80], g4:[12,13], g5:[14,15,16,17,18,19,33,34,35,36,52,53,81], g6:[20,21,22,23,24,27,28,29,30,31,32,37], g7:[25,26], g8:[80,38,39,40,49], g9:[41,42,43], g10:[82,44,45,46,47,48,50], g11:[54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79], g12:[83,84,85,86], g13:[87,88,89], g14:[90,91,92,93,94,95,96,97,98,99,100,101], g15:[102,103,104,105,106,107,108,109,110,111,112], g16:[113], g17:[114,115,116,117,118,119,120,121], g18:[122,123,124,125], g19:[126]};
 
 function card(i){
   var p = PAGES[i];

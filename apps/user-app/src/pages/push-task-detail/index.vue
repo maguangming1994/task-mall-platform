@@ -26,7 +26,7 @@
         <view v-if="!detail.my_positions.length" class="muted">还没有领取推广位</view>
         <view v-for="position in detail.my_positions" :key="position.id" class="position-row" @tap="openPosition(position.id)">
           <view class="pos-main">
-            <text class="pos-status">{{ position.status === 'active' ? '进行中' : '已结束' }}</text>
+            <text class="pos-status">{{ positionStatus(position) }}</text>
             <text class="muted">{{ position.keyword || '未填写推广关键词' }} · {{ formatDate(position.claimed_at) }} 领取</text>
           </view>
           <text class="arrow">›</text>
@@ -54,13 +54,21 @@ const taskId = ref('')
 const detail = ref<{ task: PushTask; is_member: boolean; my_positions: PushPosition[] } | null>(null)
 const loading = ref(false)
 
-const activePosition = computed(() => detail.value?.my_positions.find((item) => item.status === 'active'))
+const activePosition = computed(() => detail.value?.my_positions.find((item) => !isPositionExpired(item)))
 const canClaim = computed(() => {
   if (!detail.value) return false
   if (detail.value.task.status !== 'published') return false
+  if (detail.value.task.ends_at !== null && new Date(detail.value.task.ends_at).getTime() <= Date.now()) return false
   if (detail.value.task.remaining !== null && detail.value.task.remaining <= 0) return false
   return detail.value.my_positions.length < detail.value.task.per_user_limit
 })
+
+function isPositionExpired(position: PushPosition) {
+  if (position.status !== 'active') return true
+  const deadline = position.expires_at || detail.value?.task.ends_at || null
+  return deadline !== null && new Date(deadline).getTime() <= Date.now()
+}
+function positionStatus(position: PushPosition) { return isPositionExpired(position) ? '已过期' : '进行中' }
 
 async function load() {
   if (!auth.accessToken) {

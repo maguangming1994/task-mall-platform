@@ -343,7 +343,7 @@ class PushService
         DB::transaction(function () use ($membership, $team) {
             $membership->forceFill(['status' => 'left', 'left_at' => now()])->save();
             if ($team !== null) {
-                $team->forceFill(['member_count' => max(0, (int) $team->member_count - 1)])->save();
+                $this->syncMemberCount($team);
             }
         });
     }
@@ -429,7 +429,7 @@ class PushService
                         'left_at' => null,
                     ],
                 );
-                $team->increment('member_count');
+                $this->syncMemberCount($team);
             }
 
             $locked->forceFill([
@@ -492,9 +492,6 @@ class PushService
         if ((int) $position->user_id !== (int) $user->id) {
             throw ValidationException::withMessages(['position' => ['推广位不属于当前用户。']]);
         }
-        if ($position->status !== 'active') {
-            throw ValidationException::withMessages(['position' => ['推广位已失效。']]);
-        }
         $membership = $this->activeMembership($user);
         if ($membership === null || (int) $membership->team_id !== (int) $position->team_id) {
             throw ValidationException::withMessages(['team' => ['当前团队状态异常，无法交单。']]);
@@ -503,25 +500,113 @@ class PushService
         if ($images === []) {
             throw ValidationException::withMessages(['images' => ['请至少上传一张交单凭证。']]);
         }
-        $position->loadMissing('task');
-        $task = $position->task;
-        if ($task === null || $task->status !== 'published') {
-            throw ValidationException::withMessages(['task' => ['推广任务已关闭。']]);
+
+        /** @var array{error?: array<string, array<int, string>>, submission?: PushSubmission} $result */
+        $result = DB::transaction(function () use ($user, $position, $data, $images, $membership) {
+            $locked = PushPosition::query()->lockForUpdate()->findOrFail($position->id);
+            if ($locked->status !== 'active') {
+                return ['error' => ['position' => ['推广位已失效。']]];
+            }
+            $task = PushTask::query()->lockForUpdate()->find($locked->task_id);
+            if ($task === null) {
+                return ['error' => ['task' => ['推广任务已关闭。']]];
+            }
+            if ($this->positionExpired($locked, $task)) {
+                $this->closePosition($locked, $task);
+
+                return ['error' => ['position' => ['推广位已过期，无法继续交单。']]];
+            }
+            if ($task->status !== 'published') {
+                return ['error' => ['task' => ['推广任务已关闭。']]];
+            }
+            $duplicated = PushSubmission::query()
+                ->where('position_id', $locked->id)
+                ->whereIn('status', ['pending', 'approved'])
+                ->exists();
+            if ($duplicated) {
+                return ['error' => ['position' => ['该推广位已提交过交单，请勿重复提交。']]];
+            }
+
+            $submission = PushSubmission::query()->create([
+                'campus_id' => $locked->campus_id,
+                'task_id' => $task->id,
+                'position_id' => $locked->id,
+                'user_id' => $user->id,
+                'team_id' => $locked->team_id,
+                'level_code' => $membership->level_code,
+                'images' => $images,
+                'remark' => $data['remark'] ?? null,
+                'contact_name' => $data['contact_name'] ?? null,
+                'contact_phone' => $data['contact_phone'] ?? null,
+                'status' => 'pending',
+            ]);
+
+            return ['submission' => $submission];
+        });
+
+        if (isset($result['error'])) {
+            throw ValidationException::withMessages($result['error']);
         }
 
-        return PushSubmission::query()->create([
-            'campus_id' => $position->campus_id,
-            'task_id' => $task->id,
-            'position_id' => $position->id,
-            'user_id' => $user->id,
-            'team_id' => $position->team_id,
-            'level_code' => $membership->level_code,
-            'images' => $images,
-            'remark' => $data['remark'] ?? null,
-            'contact_name' => $data['contact_name'] ?? null,
-            'contact_phone' => $data['contact_phone'] ?? null,
-            'status' => 'pending',
-        ])->load(['task', 'position']);
+        return $result['submission']->load(['task', 'position']);
+    }
+
+    /**
+     * 将用户已过期（推广位或任务到期）的推广位收口为 closed，并回退任务已领数量。
+     */
+    public function expirePositionsFor(User $user): void
+    {
+        $positions = PushPosition::query()
+            ->with('task')
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->get();
+
+        foreach ($positions as $position) {
+            if (! $this->positionExpired($position, $position->task)) {
+                continue;
+            }
+            DB::transaction(function () use ($position) {
+                $locked = PushPosition::query()->lockForUpdate()->find($position->id);
+                if ($locked === null || $locked->status !== 'active') {
+                    return;
+                }
+                $task = PushTask::query()->lockForUpdate()->find($locked->task_id);
+                $this->closePosition($locked, $task);
+            });
+        }
+    }
+
+    private function positionExpired(PushPosition $position, ?PushTask $task): bool
+    {
+        $now = now();
+        if ($position->expires_at !== null && $position->expires_at->lt($now)) {
+            return true;
+        }
+
+        return $task !== null && $task->ends_at !== null && $task->ends_at->lt($now);
+    }
+
+    private function closePosition(PushPosition $position, ?PushTask $task): void
+    {
+        if ($position->status === 'active') {
+            $position->forceFill(['status' => 'closed', 'closed_at' => now()])->save();
+        }
+        if ($task !== null && (int) $task->claimed_count > 0) {
+            $task->forceFill(['claimed_count' => max(0, (int) $task->claimed_count - 1)])->save();
+        }
+    }
+
+    /**
+     * 按 active 成员实时重算团队人数，避免增量累加导致漂移。
+     */
+    public function syncMemberCount(PushTeam $team): void
+    {
+        $count = PushTeamMember::query()
+            ->where('team_id', $team->id)
+            ->where('status', 'active')
+            ->count();
+        $team->forceFill(['member_count' => $count])->save();
     }
 
     public function reviewSubmission(AdminUser $admin, PushSubmission $submission, bool $approve, ?string $reason): PushSubmission

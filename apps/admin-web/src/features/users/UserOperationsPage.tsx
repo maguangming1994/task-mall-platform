@@ -1,6 +1,7 @@
 import { Alert, Button, Card, Descriptions, Form, Input, Modal, Segmented, Select, Space, Statistic, Table, Tabs, Tag, Tooltip, Typography, message } from 'antd'
 import { AuditOutlined, CheckCircleOutlined, GiftOutlined, ReloadOutlined, SafetyCertificateOutlined, TeamOutlined, UserAddOutlined, WalletOutlined } from '@ant-design/icons'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import {
   ApiError,
   getUserCenterOverview,
@@ -38,6 +39,7 @@ export function UserOperationsPage() {
   const [referralView, setReferralView] = useState<'relationships' | 'teams'>('relationships')
   const [verifications, setVerifications] = useState<ManagedAccountVerification[]>([])
   const [keyword, setKeyword] = useState('')
+  const [debouncedKeyword] = useDebouncedValue(keyword, 400)
   const [userStatus, setUserStatus] = useState('')
   const [verification, setVerification] = useState('')
   const [referralFilter, setReferralFilter] = useState('')
@@ -50,13 +52,14 @@ export function UserOperationsPage() {
   const [messageApi, contextHolder] = message.useMessage()
   const canManagePublishingPermission = admin?.permissions.includes('rbac.manage') ?? false
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (overrideKeyword?: string) => {
+    const effectiveKeyword = overrideKeyword ?? debouncedKeyword
     setLoading(true)
     setLoadError(null)
     try {
       const [summary, userData, referralData, verificationData] = await Promise.all([
         getUserCenterOverview(),
-        listManagedEndUsers({ keyword, status: userStatus, verification, referral: referralFilter }),
+        listManagedEndUsers({ keyword: effectiveKeyword, status: userStatus, verification, referral: referralFilter }),
         listManagedReferrals(),
         listManagedAccountVerifications(),
       ])
@@ -66,7 +69,7 @@ export function UserOperationsPage() {
       setLoadError(errorMessage)
       messageApi.error(errorMessage)
     } finally { setLoading(false) }
-  }, [keyword, messageApi, referralFilter, userStatus, verification])
+  }, [debouncedKeyword, messageApi, referralFilter, userStatus, verification])
 
   useEffect(() => { void load() }, [load])
 
@@ -152,11 +155,11 @@ export function UserOperationsPage() {
   const userTab = <>
     {loadError && <Alert showIcon type="error" title="用户数据暂时无法刷新" description={loadError} action={<Button size="small" onClick={() => void load()} loading={loading}>重试</Button>} />}
     <Card bordered={false} className="user-center-card"><Space wrap>
-      <Input.Search allowClear value={keyword} onChange={(event) => setKeyword(event.target.value)} onSearch={() => void load()} placeholder="用户ID / 精确手机号 / 昵称" style={{ width: 280 }} />
+      <Input.Search allowClear value={keyword} onChange={(event) => setKeyword(event.target.value)} onSearch={() => void load(keyword)} placeholder="用户ID / 精确手机号 / 昵称" style={{ width: 280 }} />
       <Select allowClear placeholder="用户状态" value={userStatus || undefined} onChange={(value) => setUserStatus(value ?? '')} style={{ width: 140 }} options={[{ value: 'active', label: '正常' }, { value: 'disabled', label: '已停用' }, { value: 'cancelled', label: '已注销' }]} />
       <Select allowClear placeholder="账户验证" value={verification || undefined} onChange={(value) => setVerification(value ?? '')} style={{ width: 160 }} options={[{ value: 'verified', label: '已验证' }, { value: 'partial', label: '部分完成' }, { value: 'unverified', label: '未验证' }]} />
       <Select allowClear placeholder="邀请关系" value={referralFilter || undefined} onChange={(value) => setReferralFilter(value ?? '')} style={{ width: 140 }} options={[{ value: 'inviter', label: '邀请人' }, { value: 'referred', label: '受邀用户' }, { value: 'none', label: '未绑定邀请' }]} />
-      <Button type="primary" onClick={() => void load()} loading={loading}>搜索</Button>
+      <Button type="primary" onClick={() => void load(keyword)} loading={loading}>搜索</Button>
       <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>刷新</Button>
       <Tooltip title="批量导出默认关闭；如后续开放，必须增加敏感资料权限、二次验证、水印和导出审计。"><Button disabled>导出用户</Button></Tooltip>
     </Space></Card>

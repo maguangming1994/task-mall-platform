@@ -7,7 +7,7 @@
         <text class="head-title">提交需求</text>
       </view>
 
-      <text class="intro">没找到想要的资料？告诉我们你需要什么，学长学姐帮你找。</text>
+      <text class="intro">没找到想要的资料？告诉我们具体需求，平台会尽快帮你寻找。</text>
 
       <view class="tabs">
         <view :class="['tab', { active: tab === 'form' }]" @click="tab = 'form'">填写需求</view>
@@ -60,6 +60,11 @@
               <text v-if="item.admin_note" class="mine-note">管理员回复：{{ item.admin_note }}</text>
             </view>
           </view>
+          <view class="load-more" @click="loadMine(false)">
+            <text v-if="loadingMore">加载中…</text>
+            <text v-else-if="hasMore">加载更多</text>
+            <text v-else>已经到底啦</text>
+          </view>
         </view>
         <view v-else class="empty">
           <text class="empty-title">还没有提交过需求</text>
@@ -83,9 +88,12 @@ import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
 
+const PAGE_SIZE = 20
+
 const auth = useAuthStore()
 const modules = useModulesStore()
-const moduleEnabled = computed(() => modules.isEnabled('module_material_request'))
+// 新增模块采用 fail-close：服务端未明确开启时不展示入口与内容
+const moduleEnabled = computed(() => modules.isLaunched('module_material_request'))
 
 const tab = ref<'form' | 'mine'>('form')
 const title = ref('')
@@ -93,6 +101,9 @@ const requirement = ref('')
 const submitting = ref(false)
 const mineList = ref<MaterialRequestItem[]>([])
 const loadingMine = ref(false)
+const loadingMore = ref(false)
+const minePage = ref(1)
+const hasMore = ref(false)
 
 const canSubmit = computed(() => title.value.trim().length >= 2 && requirement.value.trim().length >= 5)
 
@@ -107,16 +118,25 @@ function formatTime(value: string) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-async function loadMine() {
+async function loadMine(reset = true) {
   if (!auth.isAuthenticated) return
-  loadingMine.value = true
+  if (reset) {
+    minePage.value = 1
+    loadingMine.value = true
+  } else {
+    if (loadingMore.value || !hasMore.value) return
+    loadingMore.value = true
+  }
   try {
-    const res = await listMyMaterialRequests(auth.accessToken || '')
-    mineList.value = res.items
+    const res = await listMyMaterialRequests(auth.accessToken || '', minePage.value, PAGE_SIZE)
+    mineList.value = reset ? res.items : [...mineList.value, ...res.items]
+    hasMore.value = mineList.value.length < res.pagination.total
+    if (res.items.length > 0) minePage.value = res.pagination.page + 1
   } catch {
     uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     loadingMine.value = false
+    loadingMore.value = false
   }
 }
 
@@ -220,6 +240,7 @@ onLoad(async (query) => {
 .mine-req { display: block; margin-top: 10rpx; font-size: 22rpx; color: #6B7280; line-height: 1.6; }
 .mine-meta { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 12rpx; font-size: 20rpx; color: #AEB3BB; }
 .mine-note { width: 100%; color: #08A152; }
+.load-more { padding: 20rpx 0 8rpx; text-align: center; font-size: 22rpx; color: #AEB3BB; }
 
 .empty { display: flex; flex-direction: column; align-items: center; padding: 120rpx 40rpx; }
 .empty-title { font-size: 28rpx; font-weight: 700; color: #191B1F; }

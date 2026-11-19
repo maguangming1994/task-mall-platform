@@ -12,6 +12,7 @@ return [
         'mall_after_sale',
         'community_rules',
         'cancellation_rules',
+        'material_copyright',
     ],
     'scopes' => [
         'account' => ['user_agreement', 'privacy_policy', 'identity_service'],

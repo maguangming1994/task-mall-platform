@@ -138,12 +138,28 @@ class MaterialController extends Controller
             return ApiResponse::error('MATERIAL_PARSE_FAILED', '未能识别到网盘链接，请粘贴完整分享文案。', 422);
         }
 
+        $user = $request->user();
+
+        // 同一用户重复投喂同一网盘链接会重复获得审核奖励，这里直接拦截；
+        // 被驳回后允许重新提交，故只对审核中/已通过的去重。
+        $duplicate = Material::query()
+            ->where('uploader_user_id', $user->id)
+            ->where('share_url', $parsed['share_url'])
+            ->whereIn('status', ['pending', 'approved'])
+            ->exists();
+
+        if ($duplicate) {
+            return ApiResponse::error('MATERIAL_DUPLICATE_SUBMISSION', '你已提交过该网盘资料，请勿重复投喂。', 422);
+        }
+
         $categoryId = null;
         if (! empty($data['category_id'])) {
             $categoryId = MaterialCategory::query()->where('public_id', $data['category_id'])->value('id');
+            if ($categoryId === null) {
+                return ApiResponse::error('MATERIAL_CATEGORY_NOT_FOUND', '所选分类不存在。', 422);
+            }
         }
 
-        $user = $request->user();
         $material = Material::query()->create([
             'campus_id' => $user->campus_id,
             'category_id' => $categoryId,
@@ -186,6 +202,38 @@ class MaterialController extends Controller
             'items' => $items->map(fn (Material $m) => array_merge($this->present($m, true), [
                 'reject_reason' => $m->reject_reason,
             ])),
+            'pagination' => ['page' => $page, 'page_size' => $size, 'total' => $total],
+        ]);
+    }
+
+    /** 我的获取记录：已获取的网盘资料（含链接与提取码，便于随时回看） */
+    public function myFetches(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'page' => ['nullable', 'integer', 'min:1'],
+            'page_size' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ]);
+        $page = $data['page'] ?? 1;
+        $size = $data['page_size'] ?? 20;
+
+        $query = MaterialFetch::query()
+            ->where('user_id', $request->user()->id)
+            ->with('material.category')
+            ->latest('id');
+        $total = $query->count();
+        $fetches = $query->forPage($page, $size)->get();
+
+        $items = $fetches
+            ->filter(fn (MaterialFetch $f) => $f->material !== null)
+            ->map(fn (MaterialFetch $f) => [
+                'id' => $f->material->public_id,
+                'fetched_at' => $f->created_at?->toIso8601String(),
+                'material' => $this->present($f->material, true),
+            ])
+            ->values();
+
+        return ApiResponse::success([
+            'items' => $items,
             'pagination' => ['page' => $page, 'page_size' => $size, 'total' => $total],
         ]);
     }

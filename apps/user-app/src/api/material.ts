@@ -114,6 +114,19 @@ export function listMyMaterials(accessToken: string, page = 1, pageSize = 20) {
   })
 }
 
+export interface MaterialFetchedItem {
+  id: string
+  fetched_at: string
+  material: MaterialItem
+}
+
+export function listMyMaterialFetches(accessToken: string, page = 1, pageSize = 20) {
+  return apiRequest<{ items: MaterialFetchedItem[]; pagination: { page: number; page_size: number; total: number } }>({
+    path: `/my-material-fetches?${toQueryString({ page, page_size: pageSize })}`,
+    accessToken,
+  })
+}
+
 export interface MaterialRequestItem {
   id: string
   title: string

@@ -14,4 +14,9 @@ class MaterialFetch extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    public function material(): BelongsTo
+    {
+        return $this->belongsTo(Material::class, 'material_id');
+    }
 }

@@ -54,7 +54,8 @@ class CommunityPostApiFlowTest extends TestCase
             ->assertJsonPath('data.publishing_rules.post.content.min_length', 20)
             ->assertJsonPath('data.publishing_rules.post.content.max_length', 5000)
             ->assertJsonPath('data.publishing_rules.comment.min_length', 2)
-            ->assertJsonPath('data.publishing_rules.comment.max_length', 500);
+            ->assertJsonPath('data.publishing_rules.comment.max_length', 500)
+            ->assertJsonPath('data.post_reward_points', 10);
         $this->getJson('/api/v1/community/posts?category=guide&page=1&page_size=1')
             ->assertOk()
             ->assertJsonPath('data.pagination.total', 1)
@@ -88,6 +89,25 @@ class CommunityPostApiFlowTest extends TestCase
             ->assertJsonPath('data.publishing_rules.post.content.max_length', 6000)
             ->assertJsonPath('data.publishing_rules.comment.min_length', 1)
             ->assertJsonPath('data.publishing_rules.comment.max_length', 800);
+    }
+
+    public function test_categories_post_reward_points_follow_the_latest_published_settings(): void
+    {
+        $definition = SystemSettingDefinition::query()->where('setting_key', 'points.source_reward_amounts')->firstOrFail();
+        SystemSettingVersion::query()->create([
+            'setting_definition_id' => $definition->id,
+            'version' => 1,
+            'value' => ['sign_in' => 5, 'post' => 8, 'comment' => 2, 'profile' => 100, 'referral' => 500],
+            'source' => 'publish',
+            'reason' => '验证发帖奖励文案读取真实配置。',
+            'published_at' => now(),
+        ]);
+        Cache::forget('system-setting:active:points.source_reward_amounts');
+        Cache::forget('system-setting:last-good:points.source_reward_amounts');
+
+        $this->getJson('/api/v1/community/categories')
+            ->assertOk()
+            ->assertJsonPath('data.post_reward_points', 8);
     }
 
     public function test_emoji_post_and_comment_complete_the_authenticated_http_flow(): void

@@ -174,6 +174,7 @@ const categories: Array<{ value: CategoryFilter; label: string }> = [
   { value: 'after_sale', label: '售后' },
   { value: 'asset', label: '资产' },
   { value: 'community', label: '社区' },
+  { value: 'material', label: '资料' },
   { value: 'system', label: '系统' },
 ]
 
@@ -189,14 +190,18 @@ const communityShortcuts = computed(() => communityFilterMeta.map((item) => ({
 })))
 /** 社区模块关闭时（如审核期），互动消息入口/分类/内容整体隐藏 */
 const communityEnabled = computed(() => modules.isEnabled('module_community'))
-const visibleCategories = computed(() => categories.filter((item) => item.value !== 'community' || communityEnabled.value))
+const materialEnabled = computed(() => modules.isLaunched('module_material'))
+const visibleCategories = computed(() => categories.filter((item) => (item.value !== 'community' || communityEnabled.value) && (item.value !== 'material' || materialEnabled.value)))
 const visibleItems = computed(() => {
   const source = communityEnabled.value
     ? items.value
     : items.value.filter((notification) => notification.category !== 'community')
-  return activeCategory.value !== 'community' || communityFilter.value === 'all'
+  const filtered = materialEnabled.value
     ? source
-    : source.filter((notification) => communitySceneGroup(notification.scene_code) === communityFilter.value)
+    : source.filter((notification) => notification.category !== 'material')
+  return activeCategory.value !== 'community' || communityFilter.value === 'all'
+    ? filtered
+    : filtered.filter((notification) => communitySceneGroup(notification.scene_code) === communityFilter.value)
 })
 const listTitle = computed(() => {
   if (activeCategory.value !== 'community') return activeCategory.value ? categoryText(activeCategory.value) : '全部消息'
@@ -214,6 +219,7 @@ async function initialize() {
   if (!auth.isAuthenticated) { navigateToLogin(); return }
   await modules.ensureReady()
   if (!communityEnabled.value && activeCategory.value === 'community') activeCategory.value = ''
+  if (!materialEnabled.value && activeCategory.value === 'material') activeCategory.value = ''
   await Promise.all([loadNotifications(true), loadPreference(), loadWechatSubscriptions()])
 }
 
@@ -481,8 +487,8 @@ async function persistPreference(rollback: () => void) {
 }
 
 function unreadFor(category: CategoryFilter) { return category ? Number(categoryUnreadCounts.value[category] || 0) : unreadTotal.value }
-function categoryText(value: string) { return ({ task: '任务', asset: '资产', order: '订单', after_sale: '售后', community: '社区', system: '系统' } as Record<string, string>)[value] || '系统' }
-function categoryMark(value: string) { return ({ task: '任', asset: '资', order: '单', after_sale: '售', community: '聊', system: '系' } as Record<string, string>)[value] || '信' }
+function categoryText(value: string) { return ({ task: '任务', asset: '资产', order: '订单', after_sale: '售后', community: '社区', material: '资料', system: '系统' } as Record<string, string>)[value] || '系统' }
+function categoryMark(value: string) { return ({ task: '任', asset: '资', order: '单', after_sale: '售', community: '聊', material: '料', system: '系' } as Record<string, string>)[value] || '信' }
 function uniqueNotifications(values: AppNotification[]) { return Array.from(new Map(values.map((item) => [item.id, item])).values()) }
 
 function communitySceneGroup(sceneCode: string): Exclude<CommunityFilter, 'all'> {
@@ -518,6 +524,11 @@ function notificationTarget(item: AppNotification): string {
     const activityId = firstString(data, ['activity_id', 'activity_public_id'])
     if (activityId) return `/pages/community-activity-detail/index?id=${encodeURIComponent(activityId)}`
     return '/pages/community/index'
+  }
+  if (item.category === 'material') {
+    if (item.scene_code === 'material_request_replied') return '/pages/material-request/index?tab=mine'
+    if (item.scene_code === 'material_report_result') return '/pages/material/index'
+    return '/pages/material-post/index?tab=mine'
   }
   return ''
 }
@@ -591,6 +602,7 @@ function goBack() {
 .tone-after_sale{background:#FFF0EF;color:#CE4D55}
 .tone-community{background:#E8F8F3;color:#16866C}
 .tone-system{background:#EEF1F2;color:#53656B}
+.tone-material{background:#EEF6FF;color:#2563EB}
 .state-card{margin-top:20rpx;padding:64rpx 30rpx;text-align:center;border-radius:24rpx;background:#fff}
 .state-icon{width:82rpx;height:82rpx;margin:0 auto;border-radius:25rpx;background:var(--green-soft);color:var(--green-deep);font-size:40rpx;display:flex;align-items:center;justify-content:center}
 .state-title{display:block;margin-top:18rpx;font-size:30rpx;font-weight:700}
