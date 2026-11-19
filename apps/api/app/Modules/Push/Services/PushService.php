@@ -136,7 +136,7 @@ class PushService
         ];
     }
 
-    public function presentPosition(PushPosition $position): array
+    public function presentPosition(PushPosition $position, ?PushSubmission $latestSubmission = null): array
     {
         $position->loadMissing('task');
 
@@ -146,6 +146,12 @@ class PushService
             'status' => $position->status,
             'claimed_at' => $position->claimed_at?->toIso8601String(),
             'expires_at' => $position->expires_at?->toIso8601String(),
+            'latest_submission' => $latestSubmission === null ? null : [
+                'id' => $latestSubmission->public_id,
+                'status' => $latestSubmission->status,
+                'reject_reason' => $latestSubmission->reject_reason,
+                'created_at' => $latestSubmission->created_at?->toIso8601String(),
+            ],
             'task' => $position->task === null ? null : $this->presentTask($position->task),
         ];
     }
@@ -340,10 +346,20 @@ class PushService
         if ($team !== null && (int) $team->leader_user_id === (int) $user->id) {
             throw ValidationException::withMessages(['team' => ['团长不能直接退出团队，请联系运营处理。']]);
         }
-        DB::transaction(function () use ($membership, $team) {
+        DB::transaction(function () use ($membership, $team, $user) {
             $membership->forceFill(['status' => 'left', 'left_at' => now()])->save();
             if ($team !== null) {
                 $this->syncMemberCount($team);
+            }
+            // 退团后收口在途推广位，避免其继续占用任务名额
+            $positions = PushPosition::query()
+                ->where('user_id', $user->id)
+                ->where('status', 'active')
+                ->lockForUpdate()
+                ->get();
+            foreach ($positions as $position) {
+                $task = PushTask::query()->lockForUpdate()->find($position->task_id);
+                $this->closePosition($position, $task);
             }
         });
     }
@@ -406,6 +422,9 @@ class PushService
             if ($leader !== null && (int) $team->leader_user_id !== (int) $leader->id) {
                 throw ValidationException::withMessages(['application' => ['只有团长可以审核入团申请。']]);
             }
+            if ($approve && ! in_array($team->status, ['recruiting', 'active'], true)) {
+                throw ValidationException::withMessages(['team' => ['团队已暂停或关闭，无法通过入团申请。']]);
+            }
 
             if ($approve) {
                 $existing = PushTeamMember::query()->where('user_id', $locked->user_id)->where('status', 'active')->lockForUpdate()->first();
@@ -460,13 +479,20 @@ class PushService
         if ($membership === null) {
             throw ValidationException::withMessages(['team' => ['加入地推团队后才能领取推广位。']]);
         }
+        if (! in_array($membership->team?->status, ['recruiting', 'active'], true)) {
+            throw ValidationException::withMessages(['team' => ['当前团队已暂停或关闭，无法领取推广位。']]);
+        }
 
         return DB::transaction(function () use ($user, $task, $keyword, $membership) {
             $lockedTask = PushTask::query()->lockForUpdate()->findOrFail($task->id);
             if ($lockedTask->quota > 0 && (int) $lockedTask->claimed_count >= (int) $lockedTask->quota) {
                 throw ValidationException::withMessages(['task' => ['推广位已领完。']]);
             }
-            $used = PushPosition::query()->where('task_id', $lockedTask->id)->where('user_id', $user->id)->count();
+            $used = PushPosition::query()
+                ->where('task_id', $lockedTask->id)
+                ->where('user_id', $user->id)
+                ->where('status', 'active')
+                ->count();
             if ($used >= max(1, (int) $lockedTask->per_user_limit)) {
                 throw ValidationException::withMessages(['task' => ['该任务的可领推广位已达上限。']]);
             }
@@ -495,6 +521,9 @@ class PushService
         $membership = $this->activeMembership($user);
         if ($membership === null || (int) $membership->team_id !== (int) $position->team_id) {
             throw ValidationException::withMessages(['team' => ['当前团队状态异常，无法交单。']]);
+        }
+        if (! in_array($membership->team?->status, ['recruiting', 'active'], true)) {
+            throw ValidationException::withMessages(['team' => ['当前团队已暂停或关闭，无法交单。']]);
         }
         $images = array_values(array_filter((array) ($data['images'] ?? []), fn ($url) => is_string($url) && $url !== ''));
         if ($images === []) {
@@ -577,6 +606,49 @@ class PushService
         }
     }
 
+    /**
+     * 任务关闭时收口其全部在途推广位，回退任务已领数量。
+     */
+    public function closeTaskPositions(PushTask $task): void
+    {
+        $positions = PushPosition::query()
+            ->where('task_id', $task->id)
+            ->where('status', 'active')
+            ->lockForUpdate()
+            ->get();
+        $lockedTask = PushTask::query()->lockForUpdate()->find($task->id);
+        foreach ($positions as $position) {
+            $this->closePosition($position, $lockedTask);
+        }
+    }
+
+    /**
+     * 用户主动放弃推广位：回退任务名额，释放个人限领次数。
+     */
+    public function releasePosition(User $user, PushPosition $position): PushPosition
+    {
+        return DB::transaction(function () use ($user, $position) {
+            $locked = PushPosition::query()->lockForUpdate()->findOrFail($position->id);
+            if ((int) $locked->user_id !== (int) $user->id) {
+                throw ValidationException::withMessages(['position' => ['该推广位不属于当前用户。']]);
+            }
+            if ($locked->status !== 'active') {
+                throw ValidationException::withMessages(['position' => ['该推广位已失效，无需放弃。']]);
+            }
+            $submitted = PushSubmission::query()
+                ->where('position_id', $locked->id)
+                ->whereIn('status', ['pending', 'approved'])
+                ->exists();
+            if ($submitted) {
+                throw ValidationException::withMessages(['position' => ['推广位已提交交单，无法放弃。']]);
+            }
+            $task = PushTask::query()->lockForUpdate()->find($locked->task_id);
+            $this->closePosition($locked, $task);
+
+            return $locked->fresh();
+        });
+    }
+
     private function positionExpired(PushPosition $position, ?PushTask $task): bool
     {
         $now = now();
@@ -595,6 +667,35 @@ class PushService
         if ($task !== null && (int) $task->claimed_count > 0) {
             $task->forceFill(['claimed_count' => max(0, (int) $task->claimed_count - 1)])->save();
         }
+    }
+
+    /**
+     * 团队暂停/关闭时收口其全部在途推广位，回退任务已领数量。
+     */
+    public function closeTeamPositions(PushTeam $team): void
+    {
+        $positions = PushPosition::query()
+            ->where('team_id', $team->id)
+            ->where('status', 'active')
+            ->lockForUpdate()
+            ->get();
+        foreach ($positions as $position) {
+            $task = PushTask::query()->lockForUpdate()->find($position->task_id);
+            $this->closePosition($position, $task);
+        }
+    }
+
+    /**
+     * 团队关闭时清退全部在册成员，并解除团长关联系，便于重新组队。
+     */
+    public function dissolveTeamMembers(PushTeam $team): void
+    {
+        PushTeamMember::query()
+            ->where('team_id', $team->id)
+            ->where('status', 'active')
+            ->update(['status' => 'left', 'left_at' => now()]);
+        $team->forceFill(['leader_user_id' => null])->save();
+        $this->syncMemberCount($team);
     }
 
     /**
@@ -697,6 +798,15 @@ class PushService
 
                 if ((int) $submission->team_bonus_cents > 0 && $submission->team_id !== null) {
                     $leaderId = PushTeam::query()->whereKey($submission->team_id)->value('leader_user_id');
+                    if ($leaderId === null) {
+                        // 团队关闭会解除团长关联，团队加成仍按历史团长归属
+                        $leaderId = PushTeamMember::query()
+                            ->where('team_id', $submission->team_id)
+                            ->where('role', 'leader')
+                            ->orderByDesc('joined_at')
+                            ->orderByDesc('id')
+                            ->value('user_id');
+                    }
                     if ($leaderId !== null) {
                         $bonusKey = (int) $leaderId;
                         if (! isset($items[$bonusKey])) {
@@ -748,8 +858,8 @@ class PushService
     {
         return DB::transaction(function () use ($admin, $settlement) {
             $locked = PushSettlement::query()->lockForUpdate()->findOrFail($settlement->id);
-            if (! in_array($locked->status, ['pending', 'draft'], true)) {
-                throw ValidationException::withMessages(['settlement' => ['该批次已打款。']]);
+            if (! in_array($locked->status, ['pending'], true)) {
+                throw ValidationException::withMessages(['settlement' => ['请先确认批次，再执行打款。']]);
             }
             $items = PushSettlementItem::query()->where('settlement_id', $locked->id)->where('status', 'pending')->lockForUpdate()->get();
             foreach ($items as $item) {

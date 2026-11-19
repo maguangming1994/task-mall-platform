@@ -16,13 +16,18 @@
         <text class="tag">{{ data.team?.member_count }} 人</text>
       </view>
 
+      <view v-if="data.team && !teamOperational" class="notice">
+        <text class="notice-title">团队{{ teamStatusText }}</text>
+        <text class="notice-desc">当前无法领取推广位或交单，如有疑问请联系运营。</text>
+      </view>
+
       <view class="quick-grid">
         <view class="quick" @tap="go('/pages/push-tasks/index')"><text class="q-ic">推</text><text>推广任务</text></view>
         <view class="quick" @tap="go('/pages/push-positions/index')"><text class="q-ic">位</text><text>我的推广位</text></view>
         <view class="quick" @tap="go('/pages/push-earnings/index')"><text class="q-ic">收</text><text>收益明细</text></view>
       </view>
 
-      <view v-if="data.is_leader" class="card">
+      <view v-if="data.is_leader && teamOperational" class="card">
         <view class="card-head">
           <text class="card-title">待审入团申请</text>
           <text class="count">{{ data.applications.length }} 条</text>
@@ -62,13 +67,20 @@
 
 <script setup lang="ts">
 import { onShow } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { getPushMyTeam, leavePushTeam, reviewPushApplication, type PushMyTeam } from '@/api/push'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const data = ref<PushMyTeam | null>(null)
 const loading = ref(false)
+const teamOperational = computed(() => ['recruiting', 'active'].includes(data.value?.team?.status || ''))
+const teamStatusText = computed(() => ({
+  recruiting: '招募中',
+  active: '运营中',
+  suspended: '已暂停',
+  closed: '已关闭',
+} as Record<string, string>)[data.value?.team?.status || ''] || '')
 
 async function load() {
   if (!auth.accessToken) {
@@ -139,6 +151,9 @@ onShow(() => { void load() })
 .hero .muted { color: rgba(255, 255, 255, .82); }
 .tag { font-size: 11px; background: rgba(255, 255, 255, .2); border-radius: 999px; padding: 3px 10px; }
 .quick-grid { display: flex; gap: 8px; }
+.notice { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 10px 12px; }
+.notice-title { display: block; font-size: 13px; font-weight: 700; color: #b45309; }
+.notice-desc { display: block; font-size: 11px; color: #b45309; margin-top: 3px; }
 .quick { flex: 1; background: #fff; border-radius: 14px; padding: 12px 0; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; color: #191b1f; }
 .q-ic { width: 30px; height: 30px; border-radius: 10px; background: #e7f9ef; color: #08a152; display: flex; align-items: center; justify-content: center; font-weight: 800; }
 .card { background: #fff; border-radius: 16px; padding: 14px; }

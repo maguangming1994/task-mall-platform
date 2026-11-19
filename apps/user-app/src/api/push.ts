@@ -52,6 +52,12 @@ export interface PushPosition {
   status: string
   claimed_at: string | null
   expires_at: string | null
+  latest_submission: {
+    id: string
+    status: string
+    reject_reason: string | null
+    created_at: string | null
+  } | null
   task: PushTask | null
 }
 
@@ -195,6 +201,10 @@ export function claimPushPosition(token: string, taskId: string, keyword?: strin
 
 export function listPushPositions(token: string): Promise<{ items: PushPosition[] }> {
   return apiRequest<{ items: PushPosition[] }>({ path: '/push/positions', accessToken: token })
+}
+
+export function releasePushPosition(token: string, positionId: string): Promise<PushPosition> {
+  return apiRequest<PushPosition>({ path: `/push/positions/${encodeURIComponent(positionId)}/release`, method: 'POST', accessToken: token })
 }
 
 export function submitPushPosition(token: string, positionId: string, input: { images: string[]; remark?: string; contact_name?: string; contact_phone?: string }): Promise<PushSubmission> {

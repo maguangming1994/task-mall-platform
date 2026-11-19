@@ -7,6 +7,18 @@
       <button class="ghost-btn" @tap="back">返回推广位</button>
     </view>
 
+    <view v-else-if="position.latest_submission && position.latest_submission.status !== 'rejected'" class="error-card">
+      <text class="err-title">{{ position.latest_submission.status === 'approved' ? '该推广位已审核通过' : '该推广位已提交，等待审核' }}</text>
+      <text class="err-desc">同一推广位不能重复交单，请返回「我的推广位」查看进度。</text>
+      <button class="ghost-btn" @tap="back">返回推广位</button>
+    </view>
+
+    <view v-else-if="isPositionInvalid(position)" class="error-card">
+      <text class="err-title">推广位已失效</text>
+      <text class="err-desc">该推广位已过期或任务已关闭，请返回领取新的推广位。</text>
+      <button class="ghost-btn" @tap="back">返回推广位</button>
+    </view>
+
     <view v-else class="wrap">
       <view class="card">
         <view class="card-head">
@@ -78,6 +90,13 @@ async function load() {
   } finally {
     loading.value = false
   }
+}
+
+function isPositionInvalid(item: PushPosition) {
+  if (item.status !== 'active') return true
+  if (item.task !== null && item.task.status !== 'published') return true
+  const deadline = item.expires_at || item.task?.ends_at || null
+  return deadline !== null && new Date(deadline).getTime() <= Date.now()
 }
 
 async function pickImage() {

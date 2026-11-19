@@ -25,11 +25,12 @@
       </view>
       <view class="task-foot">
         <view class="chips">
+          <text v-if="isNotStarted(task)" class="chip">未开始</text>
           <text class="chip">剩余 {{ task.remaining === null ? '不限' : task.remaining }}</text>
           <text class="chip">每人限领 {{ task.per_user_limit }} 次</text>
           <text v-if="task.ends_at" class="chip">{{ formatDate(task.ends_at) }} 截止</text>
         </view>
-        <text class="go">去领取 ›</text>
+        <text class="go">{{ taskStateText(task) }}</text>
       </view>
     </view>
   </view>
@@ -70,6 +71,13 @@ async function load(reset = false) {
 }
 
 function openTask(id: string) { uni.navigateTo({ url: `/pages/push-task-detail/index?id=${encodeURIComponent(id)}` }) }
+function isNotStarted(task: PushTask) { return task.starts_at !== null && new Date(task.starts_at).getTime() > Date.now() }
+function taskStateText(task: PushTask) {
+  if (task.ends_at !== null && new Date(task.ends_at).getTime() <= Date.now()) return '已结束'
+  if (task.remaining !== null && task.remaining <= 0) return '名额已领完'
+  if (isNotStarted(task)) return '未开始'
+  return '去领取 ›'
+}
 function formatDate(value: string) { return formatBeijingDate(value) }
 
 onShow(() => { void load(true) })

@@ -22,6 +22,7 @@
 
       <view class="card">
         <text class="card-title">团队规则</text>
+        <view class="rule-row"><text>团队状态</text><text class="value">{{ teamStatusText }}</text></view>
         <view class="rule-row"><text>团队加成</text><text class="value">{{ (detail.team.team_bonus_rate * 100).toFixed(1) }}%（平台承担）</text></view>
         <view class="rule-row"><text>结算周期</text><text class="value">{{ detail.team.settlement_cycle === 'weekly' ? '周结' : '月结' }}</text></view>
         <view class="rule-row"><text>入团审核</text><text class="value">{{ detail.team.review_hours }} 小时内</text></view>
@@ -53,12 +54,13 @@
           <text class="dot">{{ detail.conditions.no_other_team ? '✓' : '!' }}</text>
           <text>未加入其他地推团队</text>
         </view>
+        <text v-if="conditionsHint" class="hint">{{ conditionsHint }}</text>
       </view>
 
       <view class="bottom-bar">
         <button v-if="detail.is_member" class="primary-btn" @tap="goMyTeam">进入我的团队</button>
         <button v-else-if="detail.pending_application" class="ghost-btn" disabled>已申请，等待审核</button>
-        <button v-else class="primary-btn" :disabled="!detail.conditions.can_apply" @tap="apply">申请入团</button>
+        <button v-else class="primary-btn" :disabled="!canApply" @tap="apply">{{ canApply ? '申请入团' : '暂不可申请' }}</button>
       </view>
     </view>
   </view>
@@ -66,7 +68,7 @@
 
 <script setup lang="ts">
 import { onLoad } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { applyPushTeam, getPushTeam, type PushTeamDetail } from '@/api/push'
 import { useAuthStore } from '@/stores/auth'
 
@@ -74,6 +76,25 @@ const auth = useAuthStore()
 const teamId = ref('')
 const detail = ref<PushTeamDetail | null>(null)
 const loading = ref(false)
+const teamStatusText = computed(() => ({
+  recruiting: '招募中',
+  active: '运营中',
+  suspended: '已暂停',
+  closed: '已关闭',
+} as Record<string, string>)[detail.value?.team.status || ''] || detail.value?.team.status || '—')
+const canApply = computed(() => Boolean(
+  detail.value && detail.value.team.status === 'recruiting' && detail.value.conditions.can_apply,
+))
+const conditionsHint = computed(() => {
+  const conditions = detail.value?.conditions
+  if (!conditions || conditions.can_apply) return ''
+  if (conditions.pending_application) return '已提交申请，请等待审核'
+  const missing: string[] = []
+  if (!conditions.identity_verified) missing.push('完成实名认证')
+  if (!conditions.campus_matched) missing.push('切换到团队所在校区')
+  if (!conditions.no_other_team) missing.push('退出当前团队')
+  return missing.length ? `还需：${missing.join('、')}` : ''
+})
 
 async function load() {
   if (!auth.accessToken) {
@@ -147,6 +168,7 @@ onLoad((options) => {
 .dot { color: #fff; }
 .check-row.ok .dot { background: #08a152; }
 .check-row.no .dot { background: #dc2626; }
+.hint { display: block; margin-top: 6px; font-size: 11px; color: #b45309; }
 .bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid #edefef; }
 .primary-btn { width: 100%; height: 44px; line-height: 44px; border-radius: 22px; background: linear-gradient(135deg, #12d978, #08a152); color: #fff; font-size: 15px; font-weight: 700; }
 .primary-btn[disabled] { background: #c9cfcb; color: #fff; }

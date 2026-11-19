@@ -24,19 +24,23 @@
       <view class="card">
         <text class="card-title">我的推广位</text>
         <view v-if="!detail.my_positions.length" class="muted">还没有领取推广位</view>
-        <view v-for="position in detail.my_positions" :key="position.id" class="position-row" @tap="openPosition(position.id)">
+        <view v-for="position in detail.my_positions" :key="position.id" class="position-row" @tap="openPositionRow(position)">
           <view class="pos-main">
             <text class="pos-status">{{ positionStatus(position) }}</text>
             <text class="muted">{{ position.keyword || '未填写推广关键词' }} · {{ formatDate(position.claimed_at) }} 领取</text>
           </view>
-          <text class="arrow">›</text>
+          <text v-if="!isPositionExpired(position)" class="arrow">›</text>
         </view>
       </view>
 
       <view class="bottom-bar">
         <button v-if="!detail.is_member" class="primary-btn" @tap="goJoin">先加入团队</button>
-        <button v-else-if="activePosition" class="primary-btn" @tap="openPosition(activePosition.id)">去交单</button>
-        <button v-else class="primary-btn" :disabled="!canClaim" @tap="claim">{{ canClaim ? '领取推广位' : '暂不可领取' }}</button>
+        <button v-else-if="activePosition?.latest_submission?.status === 'pending'" class="primary-btn" disabled>待审核</button>
+        <button v-else-if="activePosition?.latest_submission?.status === 'approved'" class="primary-btn" disabled>已通过</button>
+        <button v-else-if="activePosition" class="primary-btn" @tap="openPosition(activePosition.id)">
+          {{ activePosition.latest_submission?.status === 'rejected' ? '重新交单' : '去交单' }}
+        </button>
+        <button v-else class="primary-btn" :disabled="!canClaim" @tap="claim">{{ claimLabel }}</button>
       </view>
     </view>
   </view>
@@ -58,9 +62,24 @@ const activePosition = computed(() => detail.value?.my_positions.find((item) => 
 const canClaim = computed(() => {
   if (!detail.value) return false
   if (detail.value.task.status !== 'published') return false
+  if (detail.value.task.starts_at !== null && new Date(detail.value.task.starts_at).getTime() > Date.now()) return false
   if (detail.value.task.ends_at !== null && new Date(detail.value.task.ends_at).getTime() <= Date.now()) return false
   if (detail.value.task.remaining !== null && detail.value.task.remaining <= 0) return false
-  return detail.value.my_positions.length < detail.value.task.per_user_limit
+  const activeCount = detail.value.my_positions.filter((item) => !isPositionExpired(item)).length
+  return activeCount < detail.value.task.per_user_limit
+})
+const claimLabel = computed(() => {
+  const current = detail.value
+  if (!current) return '暂不可领取'
+  if (current.task.status !== 'published') return '任务已关闭'
+  if (current.task.starts_at !== null && new Date(current.task.starts_at).getTime() > Date.now()) {
+    return `${formatDate(current.task.starts_at)} 开始`
+  }
+  if (current.task.ends_at !== null && new Date(current.task.ends_at).getTime() <= Date.now()) return '任务已结束'
+  if (current.task.remaining !== null && current.task.remaining <= 0) return '名额已领完'
+  const activeCount = current.my_positions.filter((item) => !isPositionExpired(item)).length
+  if (activeCount >= current.task.per_user_limit) return '已达限领次数'
+  return '领取推广位'
 })
 
 function isPositionExpired(position: PushPosition) {
@@ -102,6 +121,10 @@ async function claim() {
 
 function openPosition(id: string) {
   uni.navigateTo({ url: `/pages/push-positions/index?highlight=${encodeURIComponent(id)}` })
+}
+function openPositionRow(position: PushPosition) {
+  if (isPositionExpired(position)) return
+  openPosition(position.id)
 }
 function goJoin() { uni.navigateTo({ url: '/pages/push-my-team/index' }) }
 function formatDate(value: string | null) { return formatBeijingDate(value) }

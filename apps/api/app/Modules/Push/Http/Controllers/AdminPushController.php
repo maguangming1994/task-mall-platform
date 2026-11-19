@@ -137,8 +137,18 @@ class AdminPushController extends Controller
         /** @var AdminUser $admin */
         $admin = $request->user();
         $before = $this->push->presentTeam($team);
+        if (array_key_exists('member_limit', $data)) {
+            $activeMembers = PushTeamMember::query()
+                ->where('team_id', $team->id)
+                ->where('status', 'active')
+                ->count();
+            if ((int) $data['member_limit'] < $activeMembers) {
+                throw ValidationException::withMessages(['member_limit' => ['成员上限不能低于当前在册人数。']]);
+            }
+        }
 
         DB::transaction(function () use ($team, $data) {
+            $previousStatus = $team->status;
             if (array_key_exists('leader_user_id', $data)) {
                 $leader = null;
                 if (! empty($data['leader_user_id'])) {
@@ -174,6 +184,36 @@ class AdminPushController extends Controller
                 }
             }
             $team->fill(collect($data)->except('leader_user_id')->all())->save();
+            if ($team->status !== $previousStatus) {
+                // 暂停/关闭团队时收口在途推广位，关闭团队同时清退成员
+                if (in_array($team->status, ['suspended', 'closed'], true)) {
+                    $this->push->closeTeamPositions($team);
+                    PushTeamApplication::query()
+                        ->where('team_id', $team->id)
+                        ->where('type', 'join')
+                        ->where('status', 'pending')
+                        ->update([
+                            'status' => 'rejected',
+                            'review_note' => $team->status === 'closed' ? '团队已关闭，申请自动关闭' : '团队已暂停，申请自动关闭',
+                            'reviewed_at' => now(),
+                        ]);
+                }
+                if ($team->status === 'closed') {
+                    $this->push->dissolveTeamMembers($team);
+                }
+                if ($previousStatus === 'closed' && in_array($team->status, ['recruiting', 'active'], true)) {
+                    $hasLeader = $team->leader_user_id !== null
+                        && PushTeamMember::query()
+                            ->where('team_id', $team->id)
+                            ->where('user_id', $team->leader_user_id)
+                            ->where('role', 'leader')
+                            ->where('status', 'active')
+                            ->exists();
+                    if (! $hasLeader) {
+                        throw ValidationException::withMessages(['leader_user_id' => ['团队已关闭过，请先指定团长后再重新开放。']]);
+                    }
+                }
+            }
             $this->push->syncMemberCount($team);
         });
 
@@ -241,6 +281,7 @@ class AdminPushController extends Controller
         $admin = $request->user();
         $before = ['level_code' => $member->level_code, 'status' => $member->status];
         DB::transaction(function () use ($member, $data) {
+            $team = PushTeam::query()->lockForUpdate()->find($member->team_id);
             if (($data['status'] ?? null) === 'left' && $member->status === 'active') {
                 if ($member->role === 'leader') {
                     throw ValidationException::withMessages(['status' => ['该成员为团队团长，请先更换团长后再移出团队。']]);
@@ -248,10 +289,21 @@ class AdminPushController extends Controller
                 $member->left_at = now();
             }
             if (($data['status'] ?? null) === 'active' && $member->status === 'left') {
+                if ($team !== null) {
+                    if (! in_array($team->status, ['recruiting', 'active'], true)) {
+                        throw ValidationException::withMessages(['status' => ['团队已暂停或关闭，无法恢复该成员。']]);
+                    }
+                    $activeCount = PushTeamMember::query()
+                        ->where('team_id', $team->id)
+                        ->where('status', 'active')
+                        ->count();
+                    if ($activeCount >= (int) $team->member_limit) {
+                        throw ValidationException::withMessages(['status' => ['团队人数已满，无法恢复该成员。']]);
+                    }
+                }
                 $member->left_at = null;
             }
             $member->fill($data)->save();
-            $team = PushTeam::query()->find($member->team_id);
             if ($team !== null) {
                 $this->push->syncMemberCount($team);
             }
@@ -386,11 +438,19 @@ class AdminPushController extends Controller
         if ($startsAt !== null && $endsAt !== null && Carbon::parse($endsAt)->lt(Carbon::parse($startsAt))) {
             throw ValidationException::withMessages(['ends_at' => ['结束时间不能早于开始时间。']]);
         }
+        if (array_key_exists('quota', $data) && (int) $data['quota'] > 0 && (int) $data['quota'] < (int) $task->claimed_count) {
+            throw ValidationException::withMessages(['quota' => ['名额不能低于已领取数量。']]);
+        }
         if (array_key_exists('reward_amount', $data)) {
             $data['reward_cents'] = (int) round($data['reward_amount'] * 100);
             unset($data['reward_amount']);
         }
+        $wasClosed = $task->status === 'closed';
         $task->fill($data)->save();
+        if (! $wasClosed && $task->status === 'closed') {
+            // 关闭任务时同步收口在途推广位并回退已领数量
+            DB::transaction(fn () => $this->push->closeTaskPositions($task));
+        }
         $after = $this->push->presentTask($task->fresh());
         $audit->record($admin, 'push_task.update', 'push_task', $task->public_id, $before, $after);
 

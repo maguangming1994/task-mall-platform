@@ -241,16 +241,24 @@ class UserPushController extends Controller
         /** @var User $user */
         $user = $request->user();
         $membership = $this->push->activeMembership($user);
+        $positions = PushPosition::query()
+            ->where('task_id', $task->id)
+            ->where('user_id', $user->id)
+            ->latest('id')
+            ->get();
+        $latestSubmissions = PushSubmission::query()
+            ->whereIn('position_id', $positions->pluck('id'))
+            ->latest('id')
+            ->get()
+            ->unique('position_id')
+            ->keyBy('position_id');
 
         return ApiResponse::success([
             'task' => $this->push->presentTask($task),
             'is_member' => $membership !== null,
-            'my_positions' => PushPosition::query()
-                ->where('task_id', $task->id)
-                ->where('user_id', $user->id)
-                ->latest('id')
-                ->get()
-                ->map(fn (PushPosition $position) => $this->push->presentPosition($position))->values(),
+            'my_positions' => $positions
+                ->map(fn (PushPosition $position) => $this->push->presentPosition($position, $latestSubmissions->get($position->id)))
+                ->values(),
         ]);
     }
 
@@ -269,15 +277,32 @@ class UserPushController extends Controller
         /** @var User $user */
         $user = $request->user();
         $this->push->expirePositionsFor($user);
-        $items = PushPosition::query()
+        $positions = PushPosition::query()
             ->with('task')
             ->where('user_id', $user->id)
             ->latest('id')
             ->limit(100)
+            ->get();
+        $latestSubmissions = PushSubmission::query()
+            ->whereIn('position_id', $positions->pluck('id'))
+            ->latest('id')
             ->get()
-            ->map(fn (PushPosition $position) => $this->push->presentPosition($position))->values();
+            ->unique('position_id')
+            ->keyBy('position_id');
+        $items = $positions
+            ->map(fn (PushPosition $position) => $this->push->presentPosition($position, $latestSubmissions->get($position->id)))
+            ->values();
 
         return ApiResponse::success(['items' => $items]);
+    }
+
+    public function release(Request $request, PushPosition $position): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $released = $this->push->releasePosition($user, $position);
+
+        return ApiResponse::success($this->push->presentPosition($released));
     }
 
     public function submit(Request $request, PushPosition $position): JsonResponse

@@ -20,9 +20,17 @@
         </view>
         <text class="muted">关键词：{{ position.keyword || '未填写' }}</text>
         <text class="muted">领取时间：{{ formatTime(position.claimed_at) }} · 截止 {{ formatTime(position.expires_at) }}</text>
+        <text v-if="position.latest_submission?.status === 'pending'" class="muted">交单状态：待审核</text>
+        <text v-else-if="position.latest_submission?.status === 'approved'" class="muted">交单状态：已通过</text>
+        <text v-else-if="position.latest_submission?.status === 'rejected'" class="reject">上次未通过：{{ position.latest_submission.reject_reason || '凭证不符合要求' }}</text>
         <view class="card-foot">
           <text class="money">单价 ¥{{ position.task?.reward_amount || '0.00' }}</text>
-          <button v-if="!isExpired(position)" class="primary-mini" @tap="goSubmit(position.id)">去交单</button>
+          <view class="foot-actions">
+            <button v-if="!isExpired(position) && !isSubmitted(position)" class="ghost-mini" @tap="releasePosition(position)">放弃</button>
+            <button v-if="!isExpired(position) && !isSubmitted(position)" class="primary-mini" @tap="goSubmit(position.id)">
+              {{ position.latest_submission?.status === 'rejected' ? '重新交单' : '去交单' }}
+            </button>
+          </view>
         </view>
       </view>
     </template>
@@ -48,7 +56,7 @@
 <script setup lang="ts">
 import { onShow } from '@dcloudio/uni-app'
 import { ref } from 'vue'
-import { listPushPositions, listPushSubmissions, type PushPosition, type PushSubmission } from '@/api/push'
+import { listPushPositions, listPushSubmissions, releasePushPosition, type PushPosition, type PushSubmission } from '@/api/push'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateTime } from '@/utils/dateTime'
 
@@ -81,11 +89,31 @@ async function load() {
 function switchSubmissions() { tab.value = 'submissions'; void load() }
 function goTasks() { uni.navigateTo({ url: '/pages/push-tasks/index' }) }
 function goSubmit(id: string) { uni.navigateTo({ url: `/pages/push-submit/index?id=${encodeURIComponent(id)}` }) }
+function releasePosition(position: PushPosition) {
+  uni.showModal({
+    title: '放弃推广位',
+    content: '放弃后该推广位名额会退回，需重新领取。',
+    success: async (result) => {
+      if (!result.confirm) return
+      try {
+        await releasePushPosition(auth.accessToken!, position.id)
+        uni.showToast({ title: '已放弃', icon: 'none' })
+        await load()
+      } catch (error) {
+        uni.showToast({ title: error instanceof Error ? error.message : '操作失败', icon: 'none' })
+      }
+    },
+  })
+}
 function formatTime(value: string | null) { return formatDateTime(value) }
 function isExpired(position: PushPosition) {
   if (position.status !== 'active') return true
+  if (position.task !== null && position.task.status !== 'published') return true
   const deadline = position.expires_at || position.task?.ends_at || null
   return deadline !== null && new Date(deadline).getTime() <= Date.now()
+}
+function isSubmitted(position: PushPosition) {
+  return position.latest_submission?.status === 'pending' || position.latest_submission?.status === 'approved'
 }
 function statusText(status: string) { return ({ pending: '审核中', approved: '已通过', rejected: '已驳回' } as Record<string, string>)[status] || status }
 
@@ -111,6 +139,8 @@ onShow(() => { void load() })
 .muted { display: block; color: #767c85; font-size: 12px; margin-top: 6px; }
 .reject { display: block; color: #b91c1c; font-size: 12px; margin-top: 6px; }
 .card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid #f2f4f3; }
+.foot-actions { display: flex; gap: 8px; }
+.ghost-mini { height: 30px; line-height: 30px; padding: 0 14px; border-radius: 15px; background: #f4f6f4; color: #767c85; font-size: 12px; font-weight: 700; }
 .money { font-size: 12px; color: #f2620a; font-weight: 700; }
 .primary-mini { height: 30px; line-height: 30px; padding: 0 16px; border-radius: 15px; background: linear-gradient(135deg, #12d978, #08a152); color: #fff; font-size: 12px; font-weight: 700; }
 </style>
