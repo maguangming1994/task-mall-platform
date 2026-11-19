@@ -104,7 +104,7 @@ function backgroundConfigPanel({ value, onChange }: { value: Record<string, unkn
   </Space>
 }
 
-function dateRulePanel({ value, onChange }: { value: PosterDateRule | null; onChange: (next: PosterDateRule | null) => void }) {
+function DateRulePanel({ value, onChange }: { value: PosterDateRule | null; onChange: (next: PosterDateRule | null) => void }) {
   const [mode, setMode] = useState<'none' | 'range' | 'monthday' | 'weekday'>('none')
 
   useEffect(() => {
@@ -564,10 +564,10 @@ export function PosterTemplatePage() {
                 label: '日期规则',
                 children: <Form.Item name="date_rule" label="日期规则（后端按当前日期匹配最高优先级的模板）">
                   <Form.Item noStyle shouldUpdate>
-                    {({ getFieldValue }) => dateRulePanel({
-                      value: getFieldValue('date_rule'),
-                      onChange: (next) => form.setFieldValue('date_rule', next),
-                    })}
+                    {({ getFieldValue }) => <DateRulePanel
+                      value={getFieldValue('date_rule')}
+                      onChange={(next) => form.setFieldValue('date_rule', next)}
+                    />}
                   </Form.Item>
                 </Form.Item>,
               },
