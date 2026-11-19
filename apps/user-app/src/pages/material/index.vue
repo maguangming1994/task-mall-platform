@@ -213,6 +213,10 @@ function openPost() {
 }
 
 function openMyRecords() {
+  if (!auth.isAuthenticated) {
+    navigateToLogin()
+    return
+  }
   uni.navigateTo({ url: '/pages/material-post/index?tab=mine' })
 }
 

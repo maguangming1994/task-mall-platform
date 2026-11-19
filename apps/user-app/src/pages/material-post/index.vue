@@ -125,6 +125,7 @@ import {
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
+import { navigateToLogin } from '@/utils/authRedirect'
 
 const PAGE_SIZE = 20
 
@@ -199,6 +200,10 @@ async function loadMine(reset = true) {
 }
 
 function switchMine() {
+  if (!auth.isAuthenticated) {
+    navigateToLogin()
+    return
+  }
   tab.value = 'mine'
   void loadMine()
 }
@@ -258,6 +263,10 @@ onLoad(async (query) => {
   await modules.ensureReady()
   if (!moduleEnabled.value) return
   if (String((query as Record<string, string>)?.tab || '') === 'mine') {
+    if (!auth.isAuthenticated) {
+      navigateToLogin()
+      return
+    }
     tab.value = 'mine'
     void loadMine()
   }
