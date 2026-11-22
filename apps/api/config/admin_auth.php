@@ -12,6 +12,7 @@ return [
     'remember_idle_ttl_seconds' => (int) env('ADMIN_AUTH_REMEMBER_IDLE_TTL_SECONDS', 2592000),
     'remember_cookie_name' => env('ADMIN_AUTH_REMEMBER_COOKIE_NAME', 'task_mall_admin_refresh'),
     'max_active_sessions' => (int) env('ADMIN_AUTH_MAX_ACTIVE_SESSIONS', 3),
+    'wechat_binding_ttl_days' => (int) env('ADMIN_AUTH_WECHAT_BINDING_TTL_DAYS', 180),
     'failure_threshold' => (int) env('ADMIN_AUTH_FAILURE_THRESHOLD', 5),
     'failure_window_seconds' => (int) env('ADMIN_AUTH_FAILURE_WINDOW_SECONDS', 900),
     'lock_seconds' => (int) env('ADMIN_AUTH_LOCK_SECONDS', 900),

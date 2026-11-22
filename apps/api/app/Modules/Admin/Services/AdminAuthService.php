@@ -73,6 +73,27 @@ class AdminAuthService
     }
 
     /** @return array<string, mixed> */
+    public function loginWithTrustedIdentity(AdminUser $admin, ?string $ip, ?string $userAgent): array
+    {
+        // 免密只替代「账号密码」这一步；开启二次验证的账号仍需动态码
+        if ($admin->requires_mfa) {
+            return $this->mfa->startChallenge($admin);
+        }
+
+        $result = DB::transaction(function () use ($admin, $ip, $userAgent): array {
+            $this->enforceSessionLimit($admin);
+            $result = $this->createSession($admin, $ip, $userAgent, true, 'wechat');
+            $admin->update(['last_login_at' => now(), 'last_verified_at' => now()]);
+
+            return $result;
+        });
+
+        $this->audit->record($admin, 'admin.auth.wechat_login', 'admin_user', $admin->public_id);
+
+        return $result;
+    }
+
+    /** @return array<string, mixed> */
     public function refresh(string $refreshToken, ?string $ip, ?string $userAgent): array
     {
         return DB::transaction(function () use ($refreshToken, $ip, $userAgent): array {
@@ -230,7 +251,7 @@ class AdminAuthService
     }
 
     /** @return array<string, mixed> */
-    private function createSession(AdminUser $admin, ?string $ip, ?string $userAgent, bool $remember = false): array
+    private function createSession(AdminUser $admin, ?string $ip, ?string $userAgent, bool $remember = false, string $loginMethod = 'password'): array
     {
         $refreshToken = $this->randomToken();
         $ttlDays = $remember
@@ -244,6 +265,7 @@ class AdminAuthService
             'last_active_at' => now(),
             'verified_at' => now(),
             'remembered' => $remember,
+            'login_method' => $loginMethod,
             'idle_expires_at' => $this->idleExpiry($expiresAt, $remember),
             'expires_at' => $expiresAt,
             'ip_hash' => $this->fingerprint($ip),

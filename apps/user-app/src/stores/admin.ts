@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
-import { adminLogin, adminLogout, fetchAdminMe, type AdminProfile } from '@/api/admin/auth'
+import {
+  adminLogin, adminLogout, adminVerifyMfa, fetchAdminMe,
+  type AdminLoginResult, type AdminMfaChallenge, type AdminProfile,
+} from '@/api/admin/auth'
 import { clearAdminSession, loadAdminSession } from '@/api/admin/http'
+import { loginByWechat } from '@/api/admin/wechat'
 
 interface StoredAdminState {
   accessToken: string
@@ -14,6 +18,10 @@ const storageKey = 'task_mall_admin_session'
 function loadStored(): StoredAdminState | null {
   const stored = uni.getStorageSync(storageKey)
   return stored && typeof stored === 'object' ? stored as StoredAdminState : null
+}
+
+function isMfaChallenge(result: AdminLoginResult | AdminMfaChallenge): result is AdminMfaChallenge {
+  return 'mfa_required' in result && result.mfa_required === true
 }
 
 /**
@@ -48,9 +56,23 @@ export const useAdminStore = defineStore('admin', {
     canReviewAfterSale(): boolean {
       return this.permissions.includes('after_sale.review')
     },
+    canManageMaterial(): boolean {
+      return this.permissions.includes('material.manage')
+    },
+    canViewPush(): boolean {
+      return this.permissions.includes('push.view')
+    },
+    canReviewPush(): boolean {
+      return this.permissions.includes('push.view') && this.permissions.includes('push.review')
+    },
+    canResolveIdentityConflict(): boolean {
+      return this.permissions.includes('identity.resolve')
+    },
     /** 工作台是否有任一审核入口可看 */
     hasAnyReviewAccess(): boolean {
-      return this.canReviewCommunity || this.canReviewTask || this.canReviewIdentity || this.canReviewAfterSale
+      return this.canReviewCommunity || this.canReviewTask || this.canReviewIdentity
+        || this.canReviewAfterSale || this.canManageMaterial || this.canReviewPush
+        || this.canResolveIdentityConflict
     },
   },
   actions: {
@@ -58,15 +80,40 @@ export const useAdminStore = defineStore('admin', {
       this.submitting = true
       try {
         const result = await adminLogin(account.trim(), password)
-        this.accessToken = result.access_token
-        this.refreshToken = result.refresh_token
-        this.expiresAt = Date.now() + result.expires_in * 1000
-        this.profile = result.admin
-        this.persist()
-        return result.admin
+        if (!isMfaChallenge(result)) this.applySession(result)
+        return result
       } finally {
         this.submitting = false
       }
+    },
+    /** 二次验证：用登录返回的挑战换取正式会话 */
+    async verifyMfa(challenge: AdminMfaChallenge, code: string) {
+      this.submitting = true
+      try {
+        const result = await adminVerifyMfa(challenge, code.trim())
+        this.applySession(result)
+        return result
+      } finally {
+        this.submitting = false
+      }
+    },
+    /** 公众号免密登录：微信授权 code 匹配已绑定账号 */
+    async loginWithWechat(code: string) {
+      this.submitting = true
+      try {
+        const result = await loginByWechat(code)
+        if (!isMfaChallenge(result)) this.applySession(result)
+        return result
+      } finally {
+        this.submitting = false
+      }
+    },
+    applySession(result: AdminLoginResult) {
+      this.accessToken = result.access_token
+      this.refreshToken = result.refresh_token
+      this.expiresAt = Date.now() + result.expires_in * 1000
+      this.profile = result.admin
+      this.persist()
     },
     async fetchMe() {
       if (!this.accessToken) return

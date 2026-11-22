@@ -11,6 +11,7 @@ use App\Modules\Admin\Http\Controllers\AdminCurrentUserController;
 use App\Modules\Admin\Http\Controllers\AdminMfaController;
 use App\Modules\Admin\Http\Controllers\AdminRoleController;
 use App\Modules\Admin\Http\Controllers\AdminUserManagementController;
+use App\Modules\Admin\Http\Controllers\AdminWechatAuthController;
 use App\Modules\Admin\Http\Controllers\IdentityConflictController;
 use App\Modules\Admin\Http\Controllers\ReviewWorkbenchController;
 use App\Modules\Assets\Http\Controllers\AdminAssetAdjustmentController;
@@ -437,12 +438,20 @@ Route::prefix('admin')->group(function () {
         Route::post('/login', [AdminAuthController::class, 'login'])->middleware('throttle:20,1');
         Route::post('/refresh', [AdminAuthController::class, 'refresh'])->middleware('throttle:30,1');
         Route::post('/mfa/verify', [AdminAuthController::class, 'verifyMfa'])->middleware('throttle:10,1');
+        // 公众号 H5 免密登录：微信 code 匹配已绑定的管理员
+        Route::post('/wechat/login', [AdminWechatAuthController::class, 'login'])->middleware('throttle:10,1');
     });
 
     Route::middleware(['auth.admin', 'admin.campus'])->group(function () {
         Route::post('/auth/logout', [AdminAuthController::class, 'logout']);
         Route::post('/auth/verify', [AdminAuthController::class, 'verifyRecent'])->middleware('throttle:10,1');
         Route::put('/auth/password', [AdminAuthController::class, 'changePassword'])->middleware('throttle:5,1');
+        // 微信绑定状态与绑定/解绑（账号安全操作，要求近期验证）
+        Route::get('/auth/wechat/binding', [AdminWechatAuthController::class, 'show'])->middleware('throttle:30,1');
+        Route::post('/auth/wechat/bind', [AdminWechatAuthController::class, 'bind'])
+            ->middleware(['admin.recent_verification', 'throttle:5,1']);
+        Route::delete('/auth/wechat/binding', [AdminWechatAuthController::class, 'unbind'])
+            ->middleware(['admin.recent_verification', 'throttle:5,1']);
         Route::get('/me', [AdminCurrentUserController::class, 'show']);
         Route::get('/navigation', [AdminCurrentUserController::class, 'navigation']);
         Route::get('/campuses', [AdminCampusController::class, 'index'])->middleware('admin.permission:campus.manage');

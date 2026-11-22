@@ -22,11 +22,43 @@ export interface AdminLoginResult {
   navigation: Array<Record<string, unknown>>
 }
 
+/** 开启了二次验证的账号，登录返回挑战，需再提交动态码 */
+export interface AdminMfaChallenge {
+  mfa_required: true
+  challenge_id: string
+  challenge_token: string
+  expires_at: string
+}
+
+export type AdminLoginOutcome = AdminLoginResult | AdminMfaChallenge
+
 export function adminLogin(account: string, password: string, remember = true) {
-  return adminRequest<AdminLoginResult>({
+  return adminRequest<AdminLoginOutcome>({
     path: '/admin/auth/login',
     method: 'POST',
     data: { account, password, remember },
+  })
+}
+
+export function adminVerifyMfa(challenge: AdminMfaChallenge, code: string, remember = true) {
+  return adminRequest<AdminLoginResult>({
+    path: '/admin/auth/mfa/verify',
+    method: 'POST',
+    data: {
+      challenge_id: challenge.challenge_id,
+      challenge_token: challenge.challenge_token,
+      code,
+      remember,
+    },
+  })
+}
+
+/** 高风险操作前的近期身份校验，成功后 15 分钟内有效 */
+export function verifyRecentAdmin(password: string, mfaCode?: string) {
+  return adminRequest<{ verified_at: string }>({
+    path: '/admin/auth/verify',
+    method: 'POST',
+    data: mfaCode ? { password, mfa_code: mfaCode } : { password },
   })
 }
 

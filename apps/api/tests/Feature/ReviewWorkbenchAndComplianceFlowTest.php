@@ -345,6 +345,32 @@ class ReviewWorkbenchAndComplianceFlowTest extends TestCase
         return [$user, $token];
     }
 
+    public function test_workbench_summary_covers_identity_material_and_after_sale_permissions(): void
+    {
+        [, $superToken] = $this->loginAdmin('rw-super-admin', 'super_admin');
+        $this->withToken($superToken)->getJson('/api/v1/admin/review-workbench/summary')
+            ->assertOk()
+            ->assertJsonPath('data.permissions.identity', true)
+            ->assertJsonPath('data.permissions.material', true)
+            ->assertJsonPath('data.permissions.after_sale', true)
+            ->assertJsonPath('data.identity_verifications_pending', 0)
+            ->assertJsonPath('data.materials_pending', 0)
+            ->assertJsonPath('data.material_reports_pending', 0)
+            ->assertJsonPath('data.refunds_pending', 0)
+            ->assertJsonPath('data.second_hand_refunds_pending', 0);
+
+        // 无对应权限时既不下发统计键，权限位也应为 false
+        [, $communityToken] = $this->loginAdmin('rw-community-only', 'community_reviewer');
+        $this->withToken($communityToken)->getJson('/api/v1/admin/review-workbench/summary')
+            ->assertOk()
+            ->assertJsonPath('data.permissions.identity', false)
+            ->assertJsonPath('data.permissions.material', false)
+            ->assertJsonPath('data.permissions.after_sale', false)
+            ->assertJsonMissingPath('data.identity_verifications_pending')
+            ->assertJsonMissingPath('data.materials_pending')
+            ->assertJsonMissingPath('data.refunds_pending');
+    }
+
     /** @return array{AdminUser, string} */
     private function loginAdmin(string $account, string $role): array
     {

@@ -16,6 +16,7 @@ class AdminSession extends Model
         'last_active_at',
         'verified_at',
         'remembered',
+        'login_method',
         'idle_expires_at',
         'expires_at',
         'revoked_at',

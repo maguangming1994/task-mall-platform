@@ -8,9 +8,17 @@ export interface ReviewSummary {
   community_comments_pending?: number
   community_reports_pending?: number
   task_submissions_pending?: number
+  identity_verifications_pending?: number
+  materials_pending?: number
+  material_reports_pending?: number
+  refunds_pending?: number
+  second_hand_refunds_pending?: number
   permissions: {
     community: boolean
     task: boolean
+    identity?: boolean
+    material?: boolean
+    after_sale?: boolean
   }
 }
 

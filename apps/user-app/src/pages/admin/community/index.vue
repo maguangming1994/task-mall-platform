@@ -4,6 +4,7 @@
       <view :class="['tab', tab === 'posts' && 'active']" @click="switchTab('posts')">待审帖子</view>
       <view :class="['tab', tab === 'comments' && 'active']" @click="switchTab('comments')">待审评论</view>
       <view :class="['tab', tab === 'reports' && 'active']" @click="switchTab('reports')">待处理举报</view>
+      <view :class="['tab', tab === 'appeals' && 'active']" @click="switchTab('appeals')">申诉复核</view>
     </view>
 
     <!-- 帖子 -->
@@ -62,6 +63,23 @@
       </view>
     </view>
 
+    <!-- 申诉复核 -->
+    <view v-if="tab === 'appeals'">
+      <view v-if="appeals.length === 0 && !loading" class="empty"><text class="empty-mark">✓</text><text class="empty-text">暂无待复核申诉</text><text class="empty-btn" @click="reload">刷新</text></view>
+      <view v-for="appeal in appeals" :key="appeal.id" class="card">
+        <view class="card-head">
+          <text class="report-type type-post">内容申诉</text>
+          <text class="time">{{ formatRelativeTime(appeal.created_at || '') }}</text>
+        </view>
+        <text class="report-reason">申诉理由：{{ appeal.reason }}</text>
+        <text class="post-meta">处置记录 ID：{{ appeal.action_id }}</text>
+        <view class="actions">
+          <button class="act warn" :disabled="submitting" @click="handleAppeal(appeal, 'reject')">维持原处置</button>
+          <button class="act reject" :disabled="submitting" @click="handleAppeal(appeal, 'approve')">恢复内容</button>
+        </view>
+      </view>
+    </view>
+
     <text v-if="loading" class="loading-tip">加载中…</text>
   </view>
 </template>
@@ -81,18 +99,22 @@ import {
   type CommunityCommentItem,
   type CommunityReportItem,
 } from '@/api/admin/review'
+import {
+  listCommunityAppeals, reviewCommunityAppeal, type AdminContentAppeal,
+} from '@/api/admin/community'
 import { useAdminStore } from '@/stores/admin'
 import { COMMUNITY_REJECT_REASONS, chooseRejectReason } from '../use-reject'
 import { formatRelativeTime } from '../format'
 
 const admin = useAdminStore()
-const tab = ref<'posts' | 'comments' | 'reports'>('posts')
+const tab = ref<'posts' | 'comments' | 'reports' | 'appeals'>('posts')
 const loading = ref(false)
 // 提交中的操作锁，非空期间禁用全部审核/处置按钮，防止移动端连点造成重复提交
 const submitting = ref(false)
 const posts = ref<CommunityPostItem[]>([])
 const comments = ref<CommunityCommentItem[]>([])
 const reports = ref<CommunityReportItem[]>([])
+const appeals = ref<AdminContentAppeal[]>([])
 
 // 预设文案 → 后端 reason_code
 const reasonCodeMap: Record<string, string> = {
@@ -136,6 +158,7 @@ async function reload() {
     if (tab.value === 'posts') posts.value = (await fetchCommunityPosts()).items
     if (tab.value === 'comments') comments.value = (await fetchCommunityComments()).items
     if (tab.value === 'reports') reports.value = (await fetchCommunityReports()).items
+    if (tab.value === 'appeals') appeals.value = (await listCommunityAppeals()).items
   } catch (error) {
     handleAuthError(error)
   } finally {
@@ -240,6 +263,30 @@ async function handleReport(report: CommunityReportItem, decision: 'warning' | '
     uni.showToast({ title: '处置完成', icon: 'success' })
     // 处置后刷新举报列表（后端可能已联动关闭举报）
     reports.value = reports.value.filter(item => item.id !== report.id)
+  } catch (error) {
+    handleReviewError(error)
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function handleAppeal(appeal: AdminContentAppeal, decision: 'approve' | 'reject') {
+  if (submitting.value) return
+  const confirmed = await uni.showModal({
+    title: decision === 'approve' ? '恢复被处置内容？' : '维持原处置？',
+    content: decision === 'approve'
+      ? '复核通过后将恢复内容、奖励与限制，请确认证据充分。'
+      : '复核驳回后维持原处置结果。',
+    confirmText: decision === 'approve' ? '确认恢复' : '确认维持',
+    confirmColor: decision === 'approve' ? '#08A152' : '#E54D42',
+  }).catch(() => null)
+  if (!confirmed?.confirm) return
+
+  submitting.value = true
+  try {
+    await reviewCommunityAppeal(appeal.id, decision)
+    uni.showToast({ title: '复核完成', icon: 'success' })
+    appeals.value = appeals.value.filter(item => item.id !== appeal.id)
   } catch (error) {
     handleReviewError(error)
   } finally {

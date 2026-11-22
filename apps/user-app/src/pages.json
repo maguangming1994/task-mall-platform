@@ -55,6 +55,84 @@
 			}
 		},
 		{
+			"path": "pages/admin/verify/index",
+			"style": {
+				"navigationBarTitleText": "身份验证"
+			}
+		},
+		{
+			"path": "pages/admin/identity/index",
+			"style": {
+				"navigationBarTitleText": "实名认证审核"
+			}
+		},
+		{
+			"path": "pages/admin/identity-detail/index",
+			"style": {
+				"navigationBarTitleText": "实名认证详情"
+			}
+		},
+		{
+			"path": "pages/admin/materials/index",
+			"style": {
+				"navigationBarTitleText": "资料共享审核"
+			}
+		},
+		{
+			"path": "pages/admin/material-detail/index",
+			"style": {
+				"navigationBarTitleText": "资料详情"
+			}
+		},
+		{
+			"path": "pages/admin/refunds/index",
+			"style": {
+				"navigationBarTitleText": "售后与退款"
+			}
+		},
+		{
+			"path": "pages/admin/refund-detail/index",
+			"style": {
+				"navigationBarTitleText": "售后详情"
+			}
+		},
+		{
+			"path": "pages/admin/task-cases/index",
+			"style": {
+				"navigationBarTitleText": "申诉与风险处置"
+			}
+		},
+		{
+			"path": "pages/admin/activities/index",
+			"style": {
+				"navigationBarTitleText": "组团活动审核"
+			}
+		},
+		{
+			"path": "pages/admin/activity-detail/index",
+			"style": {
+				"navigationBarTitleText": "活动详情"
+			}
+		},
+		{
+			"path": "pages/admin/push-reviews/index",
+			"style": {
+				"navigationBarTitleText": "地推申请与交单"
+			}
+		},
+		{
+			"path": "pages/admin/push-submission-detail/index",
+			"style": {
+				"navigationBarTitleText": "交单详情"
+			}
+		},
+		{
+			"path": "pages/admin/identity-conflicts/index",
+			"style": {
+				"navigationBarTitleText": "身份冲突处理"
+			}
+		},
+		{
 			"path": "pages/legal-consent/index",
 			"style": {
 				"navigationBarTitleText": "协议确认"

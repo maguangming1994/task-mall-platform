@@ -8,7 +8,12 @@ use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Community\Models\CommunityComment;
 use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Community\Models\ContentReport;
+use App\Modules\Identity\Models\UserIdentityVerification;
+use App\Modules\Material\Models\Material;
+use App\Modules\Material\Models\MaterialReport;
+use App\Modules\Refund\Models\Refund;
 use App\Modules\SecondHand\Models\SecondHandItem;
+use App\Modules\SecondHand\Models\SecondHandRefund;
 use App\Modules\Task\Models\TaskSubmission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +32,9 @@ class ReviewWorkbenchController extends Controller
         $admin = $request->user();
         $canCommunity = $admin->hasPermission('community.review');
         $canTask = $admin->hasPermission('task.review');
+        $canIdentity = $admin->hasPermission('identity.review');
+        $canMaterial = $admin->hasPermission('material.manage');
+        $canAfterSale = $admin->hasPermission('after_sale.review');
 
         $summary = [];
 
@@ -62,9 +70,32 @@ class ReviewWorkbenchController extends Controller
                 ->count();
         }
 
+        if ($canIdentity) {
+            // 与 AdminIdentityVerificationController::index 的 pending 默认口径一致
+            $summary['identity_verifications_pending'] = UserIdentityVerification::query()
+                ->where('status', 'pending')
+                ->count();
+        }
+
+        if ($canMaterial) {
+            $summary['materials_pending'] = Material::query()->where('status', 'pending')->count();
+            $summary['material_reports_pending'] = MaterialReport::query()->where('status', 'pending')->count();
+        }
+
+        if ($canAfterSale) {
+            // 商城退款待处理；闲置退款需仲裁（卖家拒绝或仲裁中）
+            $summary['refunds_pending'] = Refund::query()->where('status', 'submitted')->count();
+            $summary['second_hand_refunds_pending'] = SecondHandRefund::query()
+                ->whereIn('status', ['seller_rejected', 'arbitrating'])
+                ->count();
+        }
+
         $summary['permissions'] = [
             'community' => $canCommunity,
             'task' => $canTask,
+            'identity' => $canIdentity,
+            'material' => $canMaterial,
+            'after_sale' => $canAfterSale,
         ];
 
         return ApiResponse::success($summary);
