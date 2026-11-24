@@ -126,8 +126,9 @@ jobs:
     environment: production
     permissions:
       contents: read
-    # 国内推送 TCR 正常为分钟级；180 分钟仅作极端兜底。
-    timeout-minutes: 180
+    # 跨境推送 TCR 单标签实测可达 100+ 分钟；api/web 串行构建推送需覆盖两张图 + 一次重试。
+    # GitHub 托管 runner 作业上限为 360 分钟。
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Restore checksum-pinned school emblems
@@ -174,7 +175,7 @@ jobs:
           }
           export -f push_image
           for attempt in 1 2; do
-            if timeout 5400 bash -c push_image; then
+            if timeout 9000 bash -c push_image; then
               exit 0
             fi
             if [ "$attempt" -eq 2 ]; then
@@ -222,7 +223,7 @@ jobs:
           }
           export -f push_image
           for attempt in 1 2; do
-            if timeout 5400 bash -c push_image; then
+            if timeout 9000 bash -c push_image; then
               exit 0
             fi
             if [ "$attempt" -eq 2 ]; then
