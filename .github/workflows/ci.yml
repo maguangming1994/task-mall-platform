@@ -189,6 +189,10 @@ jobs:
           IMAGE_PREFIX: ccr.ccs.tencentyun.com/task-mall-platform/task-mall
           VITE_H5_PUBLIC_URL: ${{ vars.VITE_H5_PUBLIC_URL || 'https://rwsc.jxgxnxs.cn' }}
           VITE_WECHAT_OA_APP_ID: ${{ vars.VITE_WECHAT_OA_APP_ID }}
+          VITE_REVERB_APP_KEY: ${{ vars.VITE_REVERB_APP_KEY }}
+          VITE_REVERB_HOST: ${{ vars.VITE_REVERB_HOST }}
+          VITE_REVERB_PORT: ${{ vars.VITE_REVERB_PORT }}
+          VITE_REVERB_SCHEME: ${{ vars.VITE_REVERB_SCHEME }}
         run: |
           image="${IMAGE_PREFIX,,}-web"
           export image
@@ -202,6 +206,10 @@ jobs:
               --build-arg VITE_API_BASE_URL=/api/v1 \
               --build-arg "VITE_H5_PUBLIC_URL=$VITE_H5_PUBLIC_URL" \
               --build-arg "VITE_WECHAT_OA_APP_ID=$VITE_WECHAT_OA_APP_ID" \
+              --build-arg "VITE_REVERB_APP_KEY=$VITE_REVERB_APP_KEY" \
+              --build-arg "VITE_REVERB_HOST=$VITE_REVERB_HOST" \
+              --build-arg "VITE_REVERB_PORT=$VITE_REVERB_PORT" \
+              --build-arg "VITE_REVERB_SCHEME=$VITE_REVERB_SCHEME" \
               --build-arg "RELEASE_VERSION=$GITHUB_SHA" \
               --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
               --label "org.opencontainers.image.revision=$GITHUB_SHA" \

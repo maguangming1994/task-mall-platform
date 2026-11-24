@@ -54,6 +54,9 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // 用户端 H5 访问地址，用于转发内容中帖子链接的回退地址
+    'user_h5_url' => env('USER_H5_URL', 'http://localhost:5173'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

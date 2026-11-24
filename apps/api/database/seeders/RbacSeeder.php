@@ -28,6 +28,9 @@ class RbacSeeder extends Seeder
             ['code' => 'push.task_manage', 'name' => '配置地推推广任务', 'group' => 'push'],
             ['code' => 'push.review', 'name' => '审核地推申请与交单', 'group' => 'push'],
             ['code' => 'push.settle', 'name' => '管理地推结算批次', 'group' => 'push'],
+            ['code' => 'robot.view', 'name' => '查看 XP 机器人', 'group' => 'robot'],
+            ['code' => 'robot.settings_manage', 'name' => '配置 XP 机器人', 'group' => 'robot'],
+            ['code' => 'robot.message_send', 'name' => '发送 XP 群消息', 'group' => 'robot'],
             ['code' => 'community.review', 'name' => '审核社区内容', 'group' => 'community'],
             ['code' => 'material.manage', 'name' => '管理资料共享', 'group' => 'material'],
             ['code' => 'product.manage', 'name' => '管理商品与优惠券', 'group' => 'mall'],
@@ -52,7 +55,7 @@ class RbacSeeder extends Seeder
         $rolePermissions = [
             'super_admin' => array_column($permissions, 'code'),
             'platform_admin' => ['user.view_masked', 'identity.review', 'privacy.manage', 'legal.manage', 'task.view', 'task.manage', 'task.frontend_publish', 'push.view', 'push.review', 'audit.view_own'],
-            'operations_admin' => ['user.view_masked', 'task.view', 'task.manage', 'product.manage', 'operations.manage', 'material.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.rule_manage', 'push.task_manage', 'push.review', 'audit.view_own'],
+            'operations_admin' => ['user.view_masked', 'task.view', 'task.manage', 'product.manage', 'operations.manage', 'material.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.rule_manage', 'push.task_manage', 'push.review', 'robot.view', 'robot.settings_manage', 'audit.view_own'],
             'campus_agent' => ['user.view_masked', 'identity.review', 'task.view', 'task.manage', 'task.review', 'community.review', 'material.manage', 'product.manage', 'campus.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.task_manage', 'push.review', 'audit.view_own'],
             'task_reviewer' => ['user.view_masked', 'task.view', 'task.review', 'after_sale.review', 'push.view', 'push.review', 'audit.view_own'],
             'community_reviewer' => ['user.view_masked', 'community.review', 'audit.view_own'],

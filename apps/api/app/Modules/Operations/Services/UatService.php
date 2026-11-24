@@ -64,7 +64,7 @@ class UatService
 
     private function commandCoverage(): array
     {
-        $required = ['schedule:run', 'notifications:deliver', 'payments:sync-pending', 'after-sales:close-expired', 'privacy:replay-deletions', 'system:consistency-audit'];
+        $required = ['schedule:run', 'notifications:deliver', 'payments:sync-pending', 'after-sales:close-expired', 'privacy:replay-deletions', 'system:consistency-audit', 'robot:dispatch-scheduled'];
         $available = array_keys(Artisan::all());
 
         return ['required' => $required, 'missing' => array_values(array_diff($required, $available))];

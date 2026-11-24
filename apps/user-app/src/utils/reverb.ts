@@ -200,15 +200,26 @@ export function getReverbClient(getAccessToken: () => string | null): ReverbChat
 
   const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://rwsc.jxgxnxs.cn/api/v1'
   const origin = apiBase.match(/^(https?):\/\/([^/:]+)/i)
-  const isHttps = origin?.[1]?.toLowerCase() === 'https'
-  const host = origin?.[2] ?? '127.0.0.1'
-  const port = Number(import.meta.env.VITE_REVERB_PORT || (isHttps ? 443 : 8080))
+  let host = import.meta.env.VITE_REVERB_HOST || origin?.[2] || ''
+  // #ifdef H5
+  // 生产 H5 的 API 基址是相对路径 /api/v1，此时回落到当前页面域名。
+  if (!host && typeof window !== 'undefined') host = window.location.hostname
+  // #endif
+  if (!host) host = '127.0.0.1'
+  const scheme = import.meta.env.VITE_REVERB_SCHEME
+    || ((origin?.[1]?.toLowerCase() === 'https'
+      // #ifdef H5
+      || (typeof window !== 'undefined' && window.location.protocol === 'https:')
+      // #endif
+    ) ? 'wss' : 'ws')
+  const isSecure = scheme === 'wss'
+  const port = Number(import.meta.env.VITE_REVERB_PORT || (isSecure ? 443 : 8080))
 
   shared = new ReverbChatClient({
     appKey: import.meta.env.VITE_REVERB_APP_KEY || 'local-key',
     wsHost: host,
     wsPort: port,
-    scheme: isHttps ? 'wss' : 'ws',
+    scheme,
     getAccessToken,
   })
   return shared

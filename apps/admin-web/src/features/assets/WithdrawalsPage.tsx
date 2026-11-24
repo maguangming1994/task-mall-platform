@@ -48,6 +48,8 @@ export function WithdrawalsPage() {
   const [loading, setLoading] = useState(false)
   const [detail, setDetail] = useState<WalletWithdrawal | null>(null)
   const [reviewTarget, setReviewTarget] = useState<{ item: WalletWithdrawal; decision: 'approve' | 'reject' } | null>(null)
+  // 关闭动画期间 reviewTarget 已置空，保留最近一次决策，避免标题与备注文案闪成“驳回”。
+  const [reviewDecision, setReviewDecision] = useState<'approve' | 'reject'>('approve')
   const [manualTarget, setManualTarget] = useState<WalletWithdrawal | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [reviewForm] = Form.useForm<ReviewFormValue>()
@@ -143,8 +145,8 @@ export function WithdrawalsPage() {
       render: (_, r) => (
         <Links items={[
           { label: '查看', onClick: () => setDetail(r) },
-          (r.status === 'reviewing' || r.status === 'submitted') && { label: '通过', onClick: () => { reviewForm.resetFields(); setReviewTarget({ item: r, decision: 'approve' }) } },
-          (r.status === 'reviewing' || r.status === 'submitted') && { label: '驳回', danger: true, onClick: () => { reviewForm.resetFields(); setReviewTarget({ item: r, decision: 'reject' }) } },
+          (r.status === 'reviewing' || r.status === 'submitted') && { label: '通过', onClick: () => { reviewForm.resetFields(); setReviewDecision('approve'); setReviewTarget({ item: r, decision: 'approve' }) } },
+          (r.status === 'reviewing' || r.status === 'submitted') && { label: '驳回', danger: true, onClick: () => { reviewForm.resetFields(); setReviewDecision('reject'); setReviewTarget({ item: r, decision: 'reject' }) } },
           r.status === 'processing' && r.channel === 'bank_card' && { label: '登记打款', onClick: () => { manualForm.resetFields(); manualForm.setFieldsValue({ decision: 'paid' }); setManualTarget(r) } },
         ]} />
       ),
@@ -217,7 +219,7 @@ export function WithdrawalsPage() {
       </Modal>
 
       <Modal
-        title={reviewTarget?.decision === 'approve' ? '通过提现申请' : '驳回提现申请'}
+        title={reviewDecision === 'approve' ? '通过提现申请' : '驳回提现申请'}
         open={!!reviewTarget}
         onCancel={() => setReviewTarget(null)}
         onOk={() => reviewForm.submit()}
@@ -229,8 +231,8 @@ export function WithdrawalsPage() {
           提现单号：{reviewTarget?.item.withdrawal_no}，到账金额 {yuan(reviewTarget?.item.received_amount)}
         </p>
         <Form form={reviewForm} layout="vertical" onFinish={submitReview}>
-          <Form.Item name="note" label="审核备注" rules={reviewTarget?.decision === 'reject' ? [{ required: true, message: '驳回时请填写原因' }] : []}>
-            <Input.TextArea rows={3} placeholder={reviewTarget?.decision === 'approve' ? '审核通过（可不填）' : '请填写驳回原因'} />
+          <Form.Item name="note" label="审核备注" rules={reviewDecision === 'reject' ? [{ required: true, message: '驳回时请填写原因' }] : []}>
+            <Input.TextArea rows={3} placeholder={reviewDecision === 'approve' ? '审核通过（可不填）' : '请填写驳回原因'} />
           </Form.Item>
         </Form>
       </Modal>

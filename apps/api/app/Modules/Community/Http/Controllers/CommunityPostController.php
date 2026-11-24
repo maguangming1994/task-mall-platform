@@ -14,6 +14,8 @@ use App\Modules\Community\Models\CommunityPostVersion;
 use App\Modules\Community\Models\UserFollow;
 use App\Modules\Community\Services\CommunityContentService;
 use App\Modules\Identity\Models\UserIdentityVerification;
+use App\Modules\Robot\Models\RobotPostForwardLog;
+use App\Modules\Robot\Services\RobotForwardDispatchService;
 use App\Modules\Upload\Models\UploadedFile;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -22,17 +24,11 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CommunityPostController extends Controller
 {
-    private const CATEGORIES = [
-        'experience' => '经验分享',
-        'guide' => '实用攻略',
-        'question' => '互助问答',
-        'showcase' => '成果展示',
-    ];
-
     private const FEEDS = ['discover', 'following', 'nearby', 'featured'];
 
     public function index(Request $request): JsonResponse
@@ -40,7 +36,7 @@ class CommunityPostController extends Controller
         $data = $request->validate([
             'page' => ['nullable', 'integer', 'min:1'],
             'page_size' => ['nullable', 'integer', 'min:1', 'max:50'],
-            'category' => ['nullable', Rule::in(array_keys(self::CATEGORIES))],
+            'category' => ['nullable', Rule::in(array_keys(CommunityPost::CATEGORIES))],
             'feed' => ['nullable', Rule::in(self::FEEDS)],
         ]);
         $page = $data['page'] ?? 1;
@@ -94,7 +90,7 @@ class CommunityPostController extends Controller
     public function categories(CommunityContentService $service): JsonResponse
     {
         return ApiResponse::success([
-            'items' => collect(self::CATEGORIES)->map(fn (string $label, string $code) => ['code' => $code, 'label' => $label])->values(),
+            'items' => collect(CommunityPost::CATEGORIES)->map(fn (string $label, string $code) => ['code' => $code, 'label' => $label])->values(),
             'publishing_rules' => $service->publishingRules(),
             'post_reward_points' => $service->postRewardPoints(),
         ]);
@@ -160,47 +156,261 @@ class CommunityPostController extends Controller
 
     public function adminIndex(Request $request): JsonResponse
     {
-        // 待审核帖子列表：预载作者资料（含实名状态），供移动端/后台展示「已实名」标识
-        $posts = CommunityPost::query()
-            ->whereHas('versions', fn ($query) => $query->where('review_status', 'pending')->whereColumn('community_post_versions.version_no', 'community_posts.current_version_no'))
-            ->latest()->limit(100)->get();
+        $data = $request->validate([
+            'page' => ['nullable', 'integer', 'min:1'],
+            'page_size' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'id' => ['nullable', 'string', 'max:26'],
+            'keyword' => ['nullable', 'string', 'max:120'],
+            'category_code' => ['nullable', Rule::in(array_keys(CommunityPost::CATEGORIES))],
+            'audit_status' => ['nullable', Rule::in(['pending_review', 'published', 'rejected', 'hidden', 'deleted'])],
+        ]);
+        $page = (int) ($data['page'] ?? 1);
+        $size = (int) ($data['page_size'] ?? 20);
+        $base = CommunityPost::withTrashed();
+        $query = clone $base;
+        if (! empty($data['id'])) {
+            $query->where('public_id', 'like', '%'.$data['id'].'%');
+        }
+        if (! empty($data['keyword'])) {
+            $keyword = '%'.$data['keyword'].'%';
+            $query->where(function ($query) use ($keyword): void {
+                $query->whereHas('versions', fn ($version) => $version
+                    ->whereColumn('community_post_versions.version_no', 'community_posts.current_version_no')
+                    ->where(fn ($text) => $text->where('title', 'like', $keyword)->orWhere('content', 'like', $keyword)))
+                    ->orWhereExists(function ($users) use ($keyword): void {
+                        $users->selectRaw('1')->from('users')
+                            ->whereColumn('users.id', 'community_posts.user_id')
+                            ->where('nickname', 'like', $keyword);
+                    });
+            });
+        }
+        if (! empty($data['category_code'])) {
+            $query->whereHas('versions', fn ($version) => $version
+                ->whereColumn('community_post_versions.version_no', 'community_posts.current_version_no')
+                ->where('category_code', $data['category_code']));
+        }
+        if (! empty($data['audit_status'])) {
+            $this->applyAdminStatus($query, $data['audit_status']);
+        }
+        $total = $query->count();
+        $posts = $query->latest('id')->forPage($page, $size)->get();
         $meta = $this->viewerMeta($request, $posts);
+        $forwards = $this->forwardSummaries($posts);
+        $stats = ['total' => (clone $base)->count()];
+        foreach (['pending_review', 'published', 'rejected', 'hidden', 'deleted'] as $status) {
+            $statusQuery = clone $base;
+            $this->applyAdminStatus($statusQuery, $status);
+            $stats[$status] = $statusQuery->count();
+        }
 
-        return ApiResponse::success(['items' => $posts->map(fn (CommunityPost $post) => $this->data($post, true, false, $meta))]);
+        return ApiResponse::success([
+            'items' => $posts->map(function (CommunityPost $post) use ($meta, $forwards): array {
+                $item = $this->data($post, true, false, $meta);
+                $item['forward'] = $forwards[(int) $post->id] ?? ['status' => 'none', 'groups' => []];
+
+                return $item;
+            })->values(),
+            'pagination' => ['page' => $page, 'page_size' => $size, 'total' => $total, 'last_page' => max(1, (int) ceil($total / $size))],
+            'stats' => $stats,
+        ]);
+    }
+
+    /** 汇总当前页帖子在各转发群的最新结果：none / success / failed。 */
+    private function forwardSummaries($posts): array
+    {
+        $ids = $posts->pluck('id')->map(fn (mixed $id): int => (int) $id)->values()->all();
+        if ($ids === []) {
+            return [];
+        }
+
+        $summaries = [];
+        foreach ($ids as $id) {
+            $summaries[$id] = ['status' => 'none', 'groups' => []];
+        }
+
+        $logs = RobotPostForwardLog::query()
+            ->whereIn('post_id', $ids)
+            ->orderByDesc('forwarded_at')
+            ->orderByDesc('id')
+            ->get(['post_id', 'group_id', 'group_name', 'status', 'error_message', 'manual', 'forwarded_at']);
+
+        foreach ($logs as $log) {
+            $postId = (int) $log->post_id;
+            $groups = $summaries[$postId]['groups'];
+            if (array_key_exists($log->group_id, $groups)) {
+                continue;
+            }
+            $groups[$log->group_id] = [
+                'group_id' => $log->group_id,
+                'group_name' => $log->group_name,
+                'status' => $log->status,
+                'error_message' => $log->error_message,
+                'manual' => (bool) $log->manual,
+                'forwarded_at' => $log->forwarded_at?->toIso8601String(),
+            ];
+            $summaries[$postId]['groups'] = $groups;
+        }
+
+        foreach ($summaries as $id => $summary) {
+            if ($summary['groups'] === []) {
+                continue;
+            }
+            $summaries[$id]['groups'] = array_values($summary['groups']);
+            $summaries[$id]['status'] = collect($summary['groups'])
+                ->every(fn (array $group): bool => $group['status'] === 'success') ? 'success' : 'failed';
+        }
+
+        return $summaries;
+    }
+
+    public function forward(Request $request, CommunityPost $post, RobotForwardDispatchService $dispatch, AuditLogger $audit): JsonResponse
+    {
+        /** @var AdminUser $admin */
+        $admin = $request->user();
+        $result = $dispatch->forwardPost($admin, $post);
+        $audit->record(
+            $admin,
+            'community.post.forward',
+            'community_post',
+            $post->public_id,
+            null,
+            $result,
+            '后台手动重发帖子到转发群。',
+        );
+
+        return ApiResponse::success($result);
     }
 
     public function review(Request $request, CommunityPost $post, CommunityContentService $service, AuditLogger $audit): JsonResponse
     {
-        $data = $request->validate(['decision' => ['required', 'in:approve,reject'], 'reason_code' => ['nullable', 'required_if:decision,reject', 'string', 'max:64', 'in:spam,sexual,fraud,abuse,infringement,illegal,other'], 'note' => ['required', 'string', 'max:500']]); /** @var AdminUser $admin */
+        $data = $this->reviewInput($request);
+        /** @var AdminUser $admin */
         $admin = $request->user();
+        $result = $this->performReview($admin, $post, $data, $service, $audit);
+        if (! $result['success']) {
+            return ApiResponse::error($result['code'], $result['message'], $result['status']);
+        }
 
-        // 路由模型绑定可能早于校园 scope 中间件执行，此处借已生效的全局 scope 复核可见性，跨校访问维持 404
-        abort_unless(CommunityPost::query()->whereKey($post->id)->exists(), 404);
+        return ApiResponse::success($result['item']);
+    }
 
-        // 终态保护：当前版本不在待审核状态时拒绝重复审核
+    public function batchReview(Request $request, CommunityContentService $service, AuditLogger $audit): JsonResponse
+    {
+        $data = $this->reviewInput($request, true);
+        /** @var AdminUser $admin */
+        $admin = $request->user();
+        $items = [];
+        foreach (array_unique($data['ids']) as $id) {
+            $post = CommunityPost::query()->where('public_id', $id)->first();
+            $result = $post === null
+                ? ['success' => false, 'code' => 'NOT_FOUND', 'message' => '帖子不存在或无权操作。', 'status' => 404]
+                : $this->performReview($admin, $post, $data, $service, $audit);
+            $items[] = [
+                'id' => $id,
+                'success' => $result['success'],
+                'code' => $result['code'] ?? null,
+                'message' => $result['message'] ?? '审核完成。',
+                'item' => $result['item'] ?? null,
+            ];
+        }
+
+        return ApiResponse::success(['items' => $items]);
+    }
+
+    public function authors(Request $request): JsonResponse
+    {
+        $data = $request->validate(['keyword' => ['nullable', 'string', 'max:64']]);
+        $keyword = trim((string) ($data['keyword'] ?? ''));
+        $users = User::query()
+            ->where('status', 'active')
+            ->when($keyword !== '', fn ($query) => $query->where(fn ($sub) => $sub
+                ->where('nickname', 'like', '%'.$keyword.'%')
+                ->orWhere('public_id', $keyword)))
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get(['id', 'public_id', 'nickname']);
+
+        return ApiResponse::success(['items' => $users->map(fn (User $user) => [
+            'id' => $user->public_id,
+            'nickname' => $user->nickname ?: '社区用户',
+        ])->values()]);
+    }
+
+    public function adminStore(Request $request, CommunityContentService $service, AuditLogger $audit): JsonResponse
+    {
+        $data = $request->validate([
+            'author_id' => ['required', 'string', 'size:26'],
+            'title' => ['required', 'string', 'max:200'],
+            'content' => ['required', 'string', 'max:20000'],
+            'category_code' => ['nullable', Rule::in(array_keys(CommunityPost::CATEGORIES))],
+            'location_name' => ['nullable', 'string', 'max:100'],
+            'admin_note' => ['nullable', 'string', 'max:500'],
+        ]);
+        $author = User::query()->where('public_id', $data['author_id'])->first();
+        if ($author === null || $author->status !== 'active') {
+            return ApiResponse::error('AUTHOR_NOT_FOUND', '作者不存在、不在当前校区或账号不可用。', 404);
+        }
+        /** @var AdminUser $admin */
+        $admin = $request->user();
+        $data['idempotency_key'] = (string) $request->header('Idempotency-Key');
+        try {
+            $post = $service->createPostAsAdmin($admin, $author, $data);
+        } catch (ValidationException $exception) {
+            return ApiResponse::error('POST_CREATE_REJECTED', (string) collect($exception->errors())->flatten()->first(), 422);
+        }
+        $after = $this->data($post);
+        $audit->record(
+            $admin,
+            'community.post.admin_create',
+            'community_post',
+            $post->public_id,
+            null,
+            $after,
+            trim((string) ($data['admin_note'] ?? '')) ?: '后台运营代发帖子。',
+        );
+
+        return ApiResponse::success($after, 201);
+    }
+
+    /** @return array<string,mixed> */
+    private function reviewInput(Request $request, bool $batch = false): array
+    {
+        return $request->validate([
+            'ids' => [$batch ? 'required' : 'exclude', 'array', 'min:1', 'max:50'],
+            'ids.*' => ['string', 'size:26', 'distinct'],
+            'decision' => ['required', 'in:approve,reject'],
+            'reason_code' => ['nullable', 'required_if:decision,reject', 'string', 'max:64', 'in:spam,sexual,fraud,abuse,infringement,illegal,other'],
+            'note' => ['required', 'string', 'max:500'],
+        ]);
+    }
+
+    /** @return array<string,mixed> */
+    private function performReview(AdminUser $admin, CommunityPost $post, array $data, CommunityContentService $service, AuditLogger $audit): array
+    {
+        // 路由模型绑定可能早于校园 scope 中间件执行，跨校访问维持 404 语义。
+        if (! CommunityPost::query()->whereKey($post->id)->exists()) {
+            return ['success' => false, 'code' => 'NOT_FOUND', 'message' => '帖子不存在或无权操作。', 'status' => 404];
+        }
         $pendingVersionExists = CommunityPostVersion::query()
             ->where('community_post_id', $post->id)
             ->where('version_no', $post->current_version_no)
             ->where('review_status', 'pending')
             ->exists();
         if (! $pendingVersionExists) {
-            return ApiResponse::error(
-                'REVIEW_ALREADY_FINISHED',
-                '该帖子当前版本已经完成审核，不能重复操作。',
-                409,
-            );
+            return ['success' => false, 'code' => 'REVIEW_ALREADY_FINISHED', 'message' => '该帖子当前版本已经完成审核，不能重复操作。', 'status' => 409];
+        }
+
+        if ($data['decision'] === 'approve' && in_array($post->status, ['hidden', 'deleted'], true)) {
+            return ['success' => false, 'code' => 'REVIEW_STATE_CONFLICT', 'message' => '帖子已隐藏或删除，不能审核发布。', 'status' => 409];
         }
 
         $before = $this->data($post, true);
         try {
             $reviewed = $service->reviewPost($admin, $post, $data);
+        } catch (ValidationException $exception) {
+            return ['success' => false, 'code' => 'REVIEW_STATE_CONFLICT', 'message' => (string) collect($exception->errors())->flatten()->first(), 'status' => 409];
         } catch (ModelNotFoundException) {
-            // 并发竞态：其他审核员已完成该版本审核，统一返回 409 终态码（否则服务层抛 404）
-            return ApiResponse::error(
-                'REVIEW_ALREADY_FINISHED',
-                '该帖子当前版本已经完成审核，不能重复操作。',
-                409,
-            );
+            return ['success' => false, 'code' => 'REVIEW_ALREADY_FINISHED', 'message' => '该帖子当前版本已经完成审核，不能重复操作。', 'status' => 409];
         }
         $after = $this->data($reviewed, true);
         $audit->record(
@@ -213,7 +423,30 @@ class CommunityPostController extends Controller
             $data['note'].(! empty($data['reason_code']) ? '（原因码：'.$data['reason_code'].'）' : ''),
         );
 
-        return ApiResponse::success($after);
+        return ['success' => true, 'item' => $after];
+    }
+
+    private function applyAdminStatus($query, string $status): void
+    {
+        if ($status === 'deleted') {
+            $query->where(fn ($query) => $query->whereNotNull('deleted_at')->orWhere('status', 'deleted'));
+
+            return;
+        }
+        $query->whereNull('deleted_at')->where('status', '<>', 'deleted');
+        if ($status === 'hidden') {
+            $query->where('status', 'hidden');
+
+            return;
+        }
+        $query->where('status', '<>', 'hidden');
+        $reviewStatus = ['pending_review' => 'pending', 'rejected' => 'rejected', 'published' => 'approved'][$status];
+        $query->whereHas('versions', fn ($version) => $version
+            ->whereColumn('community_post_versions.version_no', 'community_posts.current_version_no')
+            ->where('review_status', $reviewStatus));
+        if ($status === 'published') {
+            $query->where('status', 'published');
+        }
     }
 
     private function input(Request $request): array
@@ -221,7 +454,7 @@ class CommunityPostController extends Controller
         return $request->validate([
             'title' => ['required', 'string', 'max:120'],
             'content' => ['required', 'string', 'max:20000'],
-            'category_code' => ['nullable', Rule::in(array_keys(self::CATEGORIES))],
+            'category_code' => ['nullable', Rule::in(array_keys(CommunityPost::CATEGORIES))],
             'location_name' => ['nullable', 'string', 'max:80'],
             'image_file_ids' => ['nullable', 'array', 'max:9'],
             'image_file_ids.*' => ['string', 'size:26'],
@@ -309,8 +542,18 @@ class CommunityPostController extends Controller
             'review_status' => $latestVersion->review_status,
             'review_reason_code' => $latestVersion->review_reason_code,
             'review_note' => $latestVersion->review_note,
+            'reviewed_at' => $latestVersion->reviewed_at,
             'attachments' => $this->attachments($post, (int) $latestVersion->version_no),
         ] : null;
+        $auditStatus = $post->trashed() || $post->status === 'deleted'
+            ? 'deleted'
+            : ($post->status === 'hidden'
+                ? 'hidden'
+                : match ($latestVersion?->review_status ?? $post->status) {
+                    'pending', 'pending_review' => 'pending_review',
+                    'rejected' => 'rejected',
+                    default => 'published',
+                });
 
         return [
             'id' => $post->public_id,
@@ -318,9 +561,10 @@ class CommunityPostController extends Controller
             'title' => $post->title,
             'content' => $post->content,
             'category_code' => $post->category_code,
-            'category_label' => self::CATEGORIES[$post->category_code] ?? '经验分享',
+            'category_label' => CommunityPost::CATEGORIES[$post->category_code] ?? '经验分享',
             'location_name' => $post->location_name,
             'status' => $post->trashed() ? 'deleted' : $post->status,
+            'audit_status' => $auditStatus,
             'current_version_no' => $post->current_version_no,
             'published_version_no' => $post->published_version_no,
             'comment_count' => $post->comment_count,
@@ -331,6 +575,9 @@ class CommunityPostController extends Controller
             'reward_granted' => $post->reward_granted,
             'attachments' => $this->attachments($post, $post->published_version_no),
             'latest_version' => $latestVersionData,
+            'review_reason_code' => $latestVersion?->review_reason_code ?? $post->review_reason_code,
+            'review_note' => $latestVersion?->review_note ?? $post->review_note,
+            'reviewed_at' => $latestVersion?->reviewed_at,
             'can_edit' => $includeOwnerActions && ! $post->trashed() && $post->status !== 'hidden' && $latestVersion?->review_status !== 'pending',
             'can_delete' => $includeOwnerActions && ! $post->trashed(),
             'published_at' => $post->published_at?->toIso8601String(),

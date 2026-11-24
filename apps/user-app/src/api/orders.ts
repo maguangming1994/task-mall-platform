@@ -170,8 +170,34 @@ export function createOrders(token: string, input: CheckoutInput, idempotencyKey
   return apiRequest<OrderBatch>({ path: '/orders', method: 'POST', accessToken: token, data: input as unknown as Record<string, unknown>, headers: { 'Idempotency-Key': idempotencyKey } })
 }
 
-export function listOrders(token: string) {
-  return apiRequest<{ items: Order[]; pagination: { page: number; page_size: number; total: number } }>({ path: '/orders', accessToken: token })
+export interface OrderPagination {
+  page: number
+  page_size: number
+  total: number
+  last_page: number
+}
+
+export function listOrders(token: string, params: { page?: number; pageSize?: number; status?: string } = {}) {
+  const query: string[] = []
+  if (params.page) query.push(`page=${params.page}`)
+  if (params.pageSize) query.push(`page_size=${params.pageSize}`)
+  if (params.status) query.push(`status=${encodeURIComponent(params.status)}`)
+  const suffix = query.length ? `?${query.join('&')}` : ''
+  return apiRequest<{ items: Order[]; pagination: OrderPagination }>({ path: `/orders${suffix}`, accessToken: token })
+}
+
+/** 按分页逐页拉取全部订单，保持既有页面（状态筛选、售后可选订单）的完整数据。 */
+export async function listAllOrders(token: string, status?: string): Promise<Order[]> {
+  const items: Order[] = []
+  let page = 1
+  let lastPage = 1
+  do {
+    const result = await listOrders(token, { page, pageSize: 100, status })
+    items.push(...result.items)
+    lastPage = Math.max(result.pagination.last_page, 1)
+    page += 1
+  } while (page <= lastPage)
+  return items
 }
 
 export function getOrder(token: string, orderId: string) {

@@ -32,6 +32,8 @@ export function PushReviewsPage() {
   const [submissions, setSubmissions] = useState<PushSubmissionList | null>(null)
   const [loading, setLoading] = useState(false)
   const [target, setTarget] = useState<ReviewTarget | null>(null)
+  // 关闭动画期间 target 已置空，保留最近一次决策，避免标题与按钮闪成“驳回”。
+  const [targetDecision, setTargetDecision] = useState<'approve' | 'reject'>('approve')
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -54,6 +56,7 @@ export function PushReviewsPage() {
 
   const openReview = (item: PushApplicationItem | PushSubmissionItem, kind: ReviewKind, decision: 'approve' | 'reject') => {
     setTarget({ kind, id: item.id, title: kind === 'application' ? '入团申请' : '交单记录', decision })
+    setTargetDecision(decision)
     setNote('')
   }
 
@@ -180,20 +183,20 @@ export function PushReviewsPage() {
         )}
       </div>
       <Modal
-        title={`${target?.decision === 'approve' ? '通过' : '驳回'}${target?.title || ''}`}
+        title={`${targetDecision === 'approve' ? '通过' : '驳回'}${target?.title || ''}`}
         open={target !== null}
         confirmLoading={submitting}
         onOk={() => void submitReview()}
         onCancel={() => setTarget(null)}
-        okText={target?.decision === 'approve' ? '确认通过' : '确认驳回'}
-        okButtonProps={{ danger: target?.decision === 'reject' }}
+        okText={targetDecision === 'approve' ? '确认通过' : '确认驳回'}
+        okButtonProps={{ danger: targetDecision === 'reject' }}
       >
         <Input.TextArea
           rows={3}
           maxLength={300}
           value={note}
           onChange={(event) => setNote(event.target.value)}
-          placeholder={target?.decision === 'reject' ? '请填写驳回原因（必填）' : '审核备注（选填）'}
+          placeholder={targetDecision === 'reject' ? '请填写驳回原因（必填）' : '审核备注（选填）'}
         />
       </Modal>
     </div>

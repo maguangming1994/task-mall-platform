@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Community\Models\CommunityContentSecuritySetting;
 use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Community\Services\CommunityContentService;
 use App\Modules\Settings\Models\SystemSettingDefinition;
@@ -112,6 +113,8 @@ class CommunityPostApiFlowTest extends TestCase
 
     public function test_emoji_post_and_comment_complete_the_authenticated_http_flow(): void
     {
+        // 本用例验证表情经 HTTP 全链路存储与展示，显式关闭外审避免评论被 fail-closed 转人工审核。
+        CommunityContentSecuritySetting::query()->updateOrCreate(['name' => 'default'], ['enabled' => false]);
         [$token] = $this->phoneLoginWithCommunityConsent('13800138120');
         $admin = AdminUser::query()->create(['account' => 'community-http-emoji-reviewer', 'display_name' => '表情接口审核员', 'password' => 'AdminPassword12345!']);
         $title = '校园表情发布 😀';

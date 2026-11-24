@@ -99,7 +99,14 @@ class CheckoutOrderCreationFlowTest extends TestCase
         $this->assertDatabaseHas('inventories', ['on_hand_quantity' => 9, 'reserved_quantity' => 0]);
         $this->assertDatabaseHas('inventories', ['on_hand_quantity' => 10, 'reserved_quantity' => 1]);
         $this->userRequest($token)->getJson('/api/v1/order-batches/'.$batchId)->assertOk()->assertJsonCount(2, 'data.orders');
-        $this->userRequest($token)->getJson('/api/v1/orders')->assertOk()->assertJsonCount(2, 'data.items');
+        $firstPage = $this->userRequest($token)->getJson('/api/v1/orders?page=1&page_size=1')->assertOk()->assertJsonCount(1, 'data.items')
+            ->assertJsonPath('data.pagination.page', 1)->assertJsonPath('data.pagination.page_size', 1)
+            ->assertJsonPath('data.pagination.total', 2)->assertJsonPath('data.pagination.last_page', 2);
+        $secondPage = $this->userRequest($token)->getJson('/api/v1/orders?page=2&page_size=1')->assertOk()->assertJsonCount(1, 'data.items')
+            ->assertJsonPath('data.pagination.page', 2);
+        $this->assertNotSame($firstPage->json('data.items.0.id'), $secondPage->json('data.items.0.id'));
+        $this->userRequest($token)->getJson('/api/v1/orders?page_size=101')->assertStatus(422);
+        $this->userRequest($token)->getJson('/api/v1/orders?page=0')->assertStatus(422);
     }
 
     public function test_create_rejects_a_different_normalized_payload_for_the_same_idempotency_key(): void

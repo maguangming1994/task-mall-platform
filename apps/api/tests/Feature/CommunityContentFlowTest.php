@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Assets\Services\AssetLedgerService;
 use App\Modules\Community\Models\CommunityComment;
+use App\Modules\Community\Models\CommunityContentSecuritySetting;
 use App\Modules\Community\Services\CommunityContentService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,6 +53,8 @@ class CommunityContentFlowTest extends TestCase
 
     public function test_post_and_comment_emoji_are_preserved_through_storage_and_public_api(): void
     {
+        // 本用例聚焦表情存储与公开展示，显式关闭外审，避免无微信身份的评论被 fail-closed 转人工审核。
+        CommunityContentSecuritySetting::query()->updateOrCreate(['name' => 'default'], ['enabled' => false]);
         $user = User::factory()->create(['status' => 'active']);
         $admin = AdminUser::query()->create(['account' => 'community-emoji-reviewer', 'display_name' => '表情内容审核员', 'password' => 'AdminPassword12345!']);
         $service = app(CommunityContentService::class);
@@ -84,6 +87,8 @@ class CommunityContentFlowTest extends TestCase
 
     public function test_comment_sensitive_filter_two_level_limit_and_daily_reward_cap_are_enforced(): void
     {
+        // 本用例验证本地敏感词与奖励上限，关闭外审以免评论被 fail-closed 转人工审核。
+        CommunityContentSecuritySetting::query()->updateOrCreate(['name' => 'default'], ['enabled' => false]);
         $author = User::factory()->create(['status' => 'active']);
         $commenter = User::factory()->create(['status' => 'active']);
         $admin = AdminUser::query()->create(['account' => 'comment-reviewer', 'display_name' => '评论审核员', 'password' => 'AdminPassword12345!']);

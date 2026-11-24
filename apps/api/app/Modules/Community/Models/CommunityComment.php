@@ -12,7 +12,7 @@ class CommunityComment extends Model
 {
     use ScopesAdminCampusThroughRelation, SoftDeletes;
 
-    protected $fillable = ['public_id', 'community_post_id', 'user_id', 'parent_comment_id', 'content', 'status', 'reward_granted', 'rule_snapshot', 'idempotency_key_hash', 'reviewed_by_admin_id', 'review_reason_code', 'review_note', 'published_at'];
+    protected $fillable = ['public_id', 'community_post_id', 'user_id', 'parent_comment_id', 'content', 'status', 'reward_granted', 'rule_snapshot', 'idempotency_key_hash', 'reviewed_by_admin_id', 'review_reason_code', 'review_note', 'reviewed_at', 'published_at'];
 
     protected static function booted(): void
     {
@@ -21,7 +21,7 @@ class CommunityComment extends Model
 
     protected function casts(): array
     {
-        return ['reward_granted' => 'boolean', 'rule_snapshot' => 'array', 'published_at' => 'datetime'];
+        return ['reward_granted' => 'boolean', 'rule_snapshot' => 'array', 'reviewed_at' => 'datetime', 'published_at' => 'datetime'];
     }
 
     public function getRouteKeyName(): string

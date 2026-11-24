@@ -9,6 +9,7 @@ import {
   NotificationOutlined,
   RocketOutlined,
   ReadOutlined,
+  RobotOutlined,
   SettingOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
@@ -68,6 +69,11 @@ const MaterialAuditPage = lazyOf(() => import('../features/material/MaterialAudi
 const MaterialCategoryPage = lazyOf(() => import('../features/material/MaterialCategoryPage'), 'MaterialCategoryPage')
 const MaterialRequestPage = lazyOf(() => import('../features/material/MaterialRequestPage'), 'MaterialRequestPage')
 const PosterTemplatePage = lazyOf(() => import('../features/settings/PosterTemplatePage'), 'PosterTemplatePage')
+const RobotPage = lazyOf(() => import('../features/robot/RobotPage'), 'RobotPage')
+const PostManagePage = lazyOf(() => import('../features/content-audit/PostManagePage'), 'PostManagePage')
+const CommentManagePage = lazyOf(() => import('../features/content-audit/CommentManagePage'), 'CommentManagePage')
+const AuditConfigPage = lazyOf(() => import('../features/content-audit/AuditConfigPage'), 'AuditConfigPage')
+const AuditRecordPage = lazyOf(() => import('../features/content-audit/AuditRecordPage'), 'AuditRecordPage')
 
 export const ADMIN_GROUPS: AdminGroupDef[] = [
   { key: 'workbench', label: '工作台', icon: <DashboardOutlined />, pages: [
@@ -118,6 +124,15 @@ export const ADMIN_GROUPS: AdminGroupDef[] = [
     { path: '/push/tasks', title: '推广任务配置', navCode: 'push', element: PushTasksPage },
     { path: '/push/reviews', title: '申请与交单审核', navCode: 'push', element: PushReviewsPage },
     { path: '/push/settlements', title: '结算批次', navCode: 'push', element: PushSettlementsPage },
+  ] },
+  { key: 'robot', label: 'XP 机器人', icon: <RobotOutlined />, pages: [
+    { path: '/robot', title: 'XP 机器人', navCode: 'robot', element: RobotPage },
+  ] },
+  { key: 'content_audit', label: '内容审核', icon: <SafetyCertificateOutlined />, pages: [
+    { path: '/content-audit/posts', title: '帖子管理', navCode: 'community', element: PostManagePage },
+    { path: '/content-audit/comments', title: '评论管理', navCode: 'community', element: CommentManagePage },
+    { path: '/content-audit/config', title: '审核配置', navCode: 'settings', element: AuditConfigPage },
+    { path: '/content-audit/records', title: '审核记录', navCode: 'community', element: AuditRecordPage },
   ] },
   { key: 'config', label: '配置中心', icon: <SettingOutlined />, pages: [
     { path: '/config', title: '配置中心', navCode: 'settings', element: SettingsPage },

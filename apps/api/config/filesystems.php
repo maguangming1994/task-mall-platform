@@ -33,7 +33,10 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // 必须 false：Laravel 11+ 的 serve=true 会自动注册 storage/{path} 的
+            // GET 和 PUT 路由，前者可任意读取，后者可任意写入，且无中间件保护。
+            // 媒体文件统一走 Media 模块 API，不走 Laravel 自动 serving。
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

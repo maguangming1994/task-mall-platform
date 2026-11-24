@@ -28,6 +28,7 @@ class AdminNavigationService
             ['code' => 'identity_review', 'label' => '实名审核', 'icon' => 'SafetyCertificateOutlined', 'path' => '/identity-review', 'permissions' => ['identity.review']],
             ['code' => 'support', 'label' => '客服工单', 'icon' => 'CustomerServiceOutlined', 'path' => '/support', 'permissions' => ['after_sale.review', 'privacy.manage']],
             ['code' => 'operations', 'label' => '运营与消息', 'icon' => 'NotificationOutlined', 'path' => '/operations', 'permissions' => ['operations.manage']],
+            ['code' => 'robot', 'label' => 'XP 机器人', 'icon' => 'RobotOutlined', 'path' => '/robot', 'permissions' => ['robot.view', 'robot.settings_manage', 'robot.message_send']],
             ['code' => 'push', 'label' => '地推运营', 'icon' => 'RocketOutlined', 'path' => '/push', 'permissions' => ['push.view', 'push.team_manage', 'push.settle']],
             ['code' => 'data_board', 'label' => '数据看板', 'icon' => 'BarChartOutlined', 'path' => '/data-board', 'permissions' => ['operations.manage']],
             ['code' => 'settings', 'label' => '配置中心', 'icon' => 'SettingOutlined', 'path' => '/settings', 'permissions' => ['settings.manage']],

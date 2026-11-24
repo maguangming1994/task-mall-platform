@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
-import { completeOrder, createPayment, getPayment, listOrders, type Order, type Payment } from '@/api/orders'
+import { completeOrder, createPayment, getPayment, listAllOrders, type Order, type Payment } from '@/api/orders'
 import AppTabBar from '@/components/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
@@ -234,7 +234,7 @@ async function resumeStoredPayment() {
   if (!order || order.status !== 'pending_payment') return clearPendingPayment(stored.orderId)
   await pollPayment(stored.paymentId, stored.orderId)
 }
-async function refreshOrders() { if (auth.accessToken) orders.value = (await listOrders(auth.accessToken)).items }
+async function refreshOrders() { if (auth.accessToken) orders.value = await listAllOrders(auth.accessToken) }
 async function confirmComplete(order: Order) { if (!auth.accessToken) return; payingOrderId.value = order.id; try { await completeOrder(auth.accessToken, order.id); await refreshOrders(); uni.showToast({ title: '订单已完成', icon: 'success' }) } catch (error) { uni.showToast({ title: error instanceof Error ? error.message : '确认失败', icon: 'none' }) } finally { payingOrderId.value = '' } }
 function openAfterSales() { uni.navigateTo({ url: '/pages/after-sales/index' }) }
 function openProducts() { uni.reLaunch({ url: '/pages/products/index' }) }

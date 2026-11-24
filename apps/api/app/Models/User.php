@@ -45,6 +45,7 @@ class User extends Authenticatable
         'task_publish_permission_granted_at',
         'task_publish_permission_granted_by_admin_id',
         'status',
+        'is_bot',
         'cancelled_at',
         'merged_into_user_id',
     ];
@@ -145,6 +146,7 @@ class User extends Authenticatable
             'phone_verified_at' => 'datetime',
             'profile_completed_at' => 'datetime',
             'can_publish_tasks' => 'boolean',
+            'is_bot' => 'boolean',
             'task_publish_permission_granted_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'grade_year' => 'integer',

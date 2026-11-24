@@ -9,10 +9,11 @@ import {
   StopOutlined,
 } from '@ant-design/icons'
 import { Alert, Button, Card, Empty, Form, Input, Modal, Select, Space, Switch, Table, Tabs, Tag, Typography, message, type FormInstance } from 'antd'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ApiError,
   closeCommunityActivity,
+  createCommunityPostAsAdmin,
   getCommunityHomepageConfig,
   listCommunityActivities,
   listCommunityAppeals,
@@ -25,10 +26,13 @@ import {
   reviewCommunityAppeal,
   reviewCommunityComment,
   reviewCommunityPost,
+  searchCommunityPostAuthors,
   updateCommunityHomepageConfig,
   type CommunityHomepageConfig,
   type CommunityHomepageConfigInput,
   type CommunityHomepageLinkType,
+  type CommunityPostAuthorOption,
+  type CommunityPostCategory,
   type CommunityQuickTarget,
   type ManagedCommunityActivity,
   type ManagedCommunityActivityParticipant,
@@ -57,6 +61,22 @@ interface ActivityCloseForm {
 interface ParticipantRemoveForm {
   reason: string
 }
+
+interface AdminPostForm {
+  author_id: string
+  title: string
+  category_code: CommunityPostCategory
+  content: string
+  location_name?: string
+  admin_note?: string
+}
+
+const postCategoryOptions: Array<{ value: CommunityPostCategory; label: string }> = [
+  { value: 'experience', label: '经验分享' },
+  { value: 'guide', label: '实用攻略' },
+  { value: 'question', label: '互助问答' },
+  { value: 'showcase', label: '成果展示' },
+]
 
 const activityStatusMeta: Record<string, { label: string; color: string }> = {
   pending_review: { label: '待审核', color: 'gold' },
@@ -196,13 +216,21 @@ export function CommunityManagementPage() {
   const [configOpen, setConfigOpen] = useState(false)
   const [configSaving, setConfigSaving] = useState(false)
   const [activityReview, setActivityReview] = useState<{ activity: ManagedCommunityActivity; decision: ActivityReviewDecision } | null>(null)
+  // 关闭动画期间 activityReview 已置空，保留最近一次决策，避免“通过”弹窗闪成驳回样式。
+  const [activityReviewDecision, setActivityReviewDecision] = useState<ActivityReviewDecision>('approve')
   const [activityClosing, setActivityClosing] = useState<ManagedCommunityActivity | null>(null)
   const [activityParticipants, setActivityParticipants] = useState<ManagedCommunityActivity | null>(null)
   const [participantRemoving, setParticipantRemoving] = useState<{ activity: ManagedCommunityActivity; participant: ManagedCommunityActivityParticipant } | null>(null)
+  const [adminPostOpen, setAdminPostOpen] = useState(false)
+  const [adminPostSaving, setAdminPostSaving] = useState(false)
+  const [authorOptions, setAuthorOptions] = useState<CommunityPostAuthorOption[]>([])
+  const [authorLoading, setAuthorLoading] = useState(false)
+  const authorSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [configForm] = Form.useForm<CommunityConfigForm>()
   const [reviewForm] = Form.useForm<ActivityReviewForm>()
   const [closeForm] = Form.useForm<ActivityCloseForm>()
   const [participantForm] = Form.useForm<ParticipantRemoveForm>()
+  const [adminPostForm] = Form.useForm<AdminPostForm>()
   const [messageApi, contextHolder] = message.useMessage()
 
   const load = useCallback(async () => {
@@ -248,10 +276,55 @@ export function CommunityManagementPage() {
     }
   }
 
-  const contentReviewButtons = (id: string, type: 'post' | 'comment') => <Space wrap>
-    <Button size="small" type="primary" icon={<CheckOutlined />} loading={busy === `${type}-${id}`} onClick={() => void act(`${type}-${id}`, () => type === 'post' ? reviewCommunityPost(id, 'approve', '内容符合校园社区规则，准予发布。') : reviewCommunityComment(id, 'approve', '评论符合校园社区规则，准予发布。'), '内容已审核通过。')}>通过</Button>
-    <Button size="small" danger icon={<CloseOutlined />} loading={busy === `${type}-${id}`} onClick={() => void act(`${type}-${id}`, () => type === 'post' ? reviewCommunityPost(id, 'reject', '内容不符合校园社区规则。') : reviewCommunityComment(id, 'reject', '评论不符合校园社区规则。'), '内容已驳回。')}>驳回</Button>
+  const openContentAudit = (type: 'post' | 'comment') => {
+    window.location.hash = type === 'post' ? '#/content-audit/posts' : '#/content-audit/comments'
+  }
+
+  const contentReviewActions = (id: string, type: 'post' | 'comment') => <Space wrap>
+    <Button size="small" type="primary" icon={<CheckOutlined />} loading={busy === `${type}-${id}`} onClick={() => void act(`${type}-${id}`, () => type === 'post' ? reviewCommunityPost(id, 'approve', '内容符合校园社区规则，准予发布。') : reviewCommunityComment(id, 'approve', '评论符合校园社区规则，准予发布。'), '内容已审核通过。')}>一键通过</Button>
+    <Button size="small" onClick={() => openContentAudit(type)}>去审核</Button>
   </Space>
+
+  const authorSearch = (keyword: string) => {
+    if (authorSearchTimer.current) clearTimeout(authorSearchTimer.current)
+    authorSearchTimer.current = setTimeout(async () => {
+      setAuthorLoading(true)
+      try {
+        const result = await searchCommunityPostAuthors(keyword.trim())
+        setAuthorOptions(result.items)
+      } catch {
+        setAuthorOptions([])
+      } finally {
+        setAuthorLoading(false)
+      }
+    }, 350)
+  }
+
+  const openAdminPost = () => {
+    setAdminPostOpen(true)
+    void searchCommunityPostAuthors('').then((result) => setAuthorOptions(result.items)).catch(() => setAuthorOptions([]))
+  }
+
+  const submitAdminPost = async (values: AdminPostForm) => {
+    setAdminPostSaving(true)
+    try {
+      const post = await createCommunityPostAsAdmin({
+        authorId: values.author_id,
+        title: values.title.trim(),
+        content: values.content.trim(),
+        categoryCode: values.category_code,
+        locationName: values.location_name?.trim(),
+        adminNote: values.admin_note?.trim(),
+      })
+      messageApi.success(`帖子已发布，帖子 ID：${post.id}`)
+      setAdminPostOpen(false)
+      await load()
+    } catch (error) {
+      messageApi.error(compactError(error, '后台发帖失败，请稍后重试。'))
+    } finally {
+      setAdminPostSaving(false)
+    }
+  }
 
   const openConfig = () => {
     if (!config) return
@@ -322,7 +395,7 @@ export function CommunityManagementPage() {
       <div>
         <Typography.Text className="eyebrow">CAMPUS COMMUNITY</Typography.Text>
         <Typography.Title level={2}>校园社区运营</Typography.Title>
-        <Typography.Paragraph type="secondary">帖子、评论、举报与申诉闭环治理；新增校园组团审核和高饱和社区首页装修。</Typography.Paragraph>
+        <Typography.Paragraph type="secondary">待审内容可一键通过或跳转「内容审核」处理；举报申诉闭环治理，并管理校园组团与社区首页装修。</Typography.Paragraph>
       </div>
       <Space wrap><Tag color="magenta">校园项目</Tag><Tag color="gold">高饱和装修</Tag></Space>
     </div>
@@ -332,26 +405,38 @@ export function CommunityManagementPage() {
         {
           key: 'posts',
           label: `待审帖子 (${posts.length})`,
-          children: <Table rowKey="id" loading={loading} dataSource={posts} pagination={false} scroll={{ x: 900 }} locale={{ emptyText: '当前没有待审核的帖子' }} columns={[
-            { title: '作者', width: 140, render: (_: unknown, row: ManagedCommunityPost) => row.author.nickname },
-            { title: '标题', width: 190, dataIndex: 'title' },
-            { title: '正文', dataIndex: 'content', ellipsis: true },
-            { title: '互动', width: 110, render: (_: unknown, row: ManagedCommunityPost) => `${row.comment_count} 条评论` },
-            { title: '版本', width: 90, render: (_: unknown, row: ManagedCommunityPost) => `v${row.current_version_no}` },
-            { title: '创建时间', width: 180, dataIndex: 'created_at', render: formatDate },
-            { title: '操作', width: 170, fixed: 'right', render: (_: unknown, row: ManagedCommunityPost) => contentReviewButtons(row.id, 'post') },
-          ]} />,
+          children: <>
+            <Space wrap style={{ marginBottom: 12 }}>
+              <Button type="primary" icon={<PlusOutlined />} onClick={openAdminPost}>新增帖子</Button>
+              <Typography.Text type="secondary">此处只做待审内容的快速处理：可一键通过；驳回、删除与详情统一到「内容审核」处理。</Typography.Text>
+            </Space>
+            <Table rowKey="id" loading={loading} dataSource={posts} pagination={false} scroll={{ x: 1100 }} locale={{ emptyText: '当前没有待审核的帖子' }} columns={[
+              { title: '帖子 ID', width: 200, dataIndex: 'id', render: (value: string) => <Typography.Text copyable={{ text: value }}>{value}</Typography.Text> },
+              { title: '作者', width: 140, render: (_: unknown, row: ManagedCommunityPost) => row.author.nickname },
+              { title: '标题', width: 190, dataIndex: 'title' },
+              { title: '正文', dataIndex: 'content', ellipsis: true },
+              { title: '互动', width: 110, render: (_: unknown, row: ManagedCommunityPost) => `${row.comment_count} 条评论` },
+              { title: '版本', width: 90, render: (_: unknown, row: ManagedCommunityPost) => `v${row.current_version_no}` },
+              { title: '创建时间', width: 180, dataIndex: 'created_at', render: formatDate },
+              { title: '操作', width: 180, fixed: 'right', render: (_: unknown, row: ManagedCommunityPost) => contentReviewActions(row.id, 'post') },
+            ]} />
+          </>,
         },
         {
           key: 'comments',
           label: `待审评论 (${comments.length})`,
-          children: <Table rowKey="id" loading={loading} dataSource={comments} pagination={false} scroll={{ x: 760 }} locale={{ emptyText: '当前没有待审核的评论' }} columns={[
-            { title: '作者', width: 150, render: (_: unknown, row: ManagedCommunityComment) => row.author.nickname },
-            { title: '评论内容', dataIndex: 'content', ellipsis: true },
-            { title: '状态', width: 110, render: (_: unknown, row: ManagedCommunityComment) => statusTag(row.status) },
-            { title: '创建时间', width: 180, dataIndex: 'created_at', render: formatDate },
-            { title: '操作', width: 170, fixed: 'right', render: (_: unknown, row: ManagedCommunityComment) => contentReviewButtons(row.id, 'comment') },
-          ]} />,
+          children: <>
+            <Space wrap style={{ marginBottom: 12 }}>
+              <Typography.Text type="secondary">此处只做待审评论的快速处理：可一键通过；驳回、删除与详情统一到「内容审核」处理。</Typography.Text>
+            </Space>
+            <Table rowKey="id" loading={loading} dataSource={comments} pagination={false} scroll={{ x: 760 }} locale={{ emptyText: '当前没有待审核的评论' }} columns={[
+              { title: '作者', width: 150, render: (_: unknown, row: ManagedCommunityComment) => row.author.nickname },
+              { title: '评论内容', dataIndex: 'content', ellipsis: true },
+              { title: '状态', width: 110, render: (_: unknown, row: ManagedCommunityComment) => statusTag(row.status) },
+              { title: '创建时间', width: 180, dataIndex: 'created_at', render: formatDate },
+              { title: '操作', width: 180, fixed: 'right', render: (_: unknown, row: ManagedCommunityComment) => contentReviewActions(row.id, 'comment') },
+            ]} />
+          </>,
         },
         {
           key: 'activities',
@@ -365,7 +450,7 @@ export function CommunityManagementPage() {
               { title: '活动说明', width: 260, dataIndex: 'details', ellipsis: true },
               { title: '状态', width: 110, render: (_: unknown, row: ManagedCommunityActivity) => statusTag(row.status) },
               { title: '审核意见', width: 220, render: (_: unknown, row: ManagedCommunityActivity) => row.review_note ? <Typography.Text ellipsis={{ tooltip: row.review_note }}>{row.review_note}</Typography.Text> : '—' },
-              { title: '操作', width: 300, fixed: 'right', render: (_: unknown, row: ManagedCommunityActivity) => <Space wrap><Button size="small" onClick={() => setActivityParticipants(row)}>参与名单</Button>{row.status === 'pending_review' && <><Button size="small" type="primary" icon={<CheckOutlined />} loading={busy === `activity-${row.id}`} onClick={() => { reviewForm.setFieldsValue({ note: '活动内容符合校园社区规则，可公开展示。', reason_code: '' }); setActivityReview({ activity: row, decision: 'approve' }) }}>通过</Button><Button size="small" danger icon={<CloseOutlined />} loading={busy === `activity-${row.id}`} onClick={() => { reviewForm.setFieldsValue({ note: '', reason_code: 'activity_not_compliant' }); setActivityReview({ activity: row, decision: 'reject' }) }}>驳回</Button></>}{row.status === 'approved' && <Button size="small" danger icon={<StopOutlined />} loading={busy === `activity-${row.id}`} onClick={() => { closeForm.setFieldsValue({ reason: '' }); setActivityClosing(row) }}>关闭活动</Button>}</Space> },
+              { title: '操作', width: 300, fixed: 'right', render: (_: unknown, row: ManagedCommunityActivity) => <Space wrap><Button size="small" onClick={() => setActivityParticipants(row)}>参与名单</Button>{row.status === 'pending_review' && <><Button size="small" type="primary" icon={<CheckOutlined />} loading={busy === `activity-${row.id}`} onClick={() => { reviewForm.setFieldsValue({ note: '活动内容符合校园社区规则，可公开展示。', reason_code: '' }); setActivityReviewDecision('approve'); setActivityReview({ activity: row, decision: 'approve' }) }}>通过</Button><Button size="small" danger icon={<CloseOutlined />} loading={busy === `activity-${row.id}`} onClick={() => { reviewForm.setFieldsValue({ note: '', reason_code: 'activity_not_compliant' }); setActivityReviewDecision('reject'); setActivityReview({ activity: row, decision: 'reject' }) }}>驳回</Button></>}{row.status === 'approved' && <Button size="small" danger icon={<StopOutlined />} loading={busy === `activity-${row.id}`} onClick={() => { closeForm.setFieldsValue({ reason: '' }); setActivityClosing(row) }}>关闭活动</Button>}</Space> },
             ]} />
           </>,
         },
@@ -405,19 +490,19 @@ export function CommunityManagementPage() {
     </Card>
 
     <Modal
-      title={activityReview?.decision === 'approve' ? `通过活动：${activityReview.activity.title}` : `驳回活动：${activityReview?.activity.title ?? ''}`}
+      title={activityReviewDecision === 'approve' ? `通过活动：${activityReview?.activity.title ?? ''}` : `驳回活动：${activityReview?.activity.title ?? ''}`}
       open={activityReview !== null}
       onCancel={() => { setActivityReview(null); reviewForm.resetFields() }}
       onOk={() => reviewForm.submit()}
-      okText={activityReview?.decision === 'approve' ? '确认通过' : '确认驳回'}
-      okButtonProps={{ danger: activityReview?.decision === 'reject' }}
+      okText={activityReviewDecision === 'approve' ? '确认通过' : '确认驳回'}
+      okButtonProps={{ danger: activityReviewDecision === 'reject' }}
       confirmLoading={Boolean(activityReview && busy === `activity-${activityReview.activity.id}`)}
       cancelText="取消"
       destroyOnHidden
     >
       <Form form={reviewForm} layout="vertical" onFinish={submitActivityReview}>
-        <Alert showIcon type={activityReview?.decision === 'approve' ? 'info' : 'warning'} message={activityReview?.decision === 'approve' ? '通过后，活动将在校园组团频道公开展示并允许符合条件的用户报名。' : '驳回原因会反馈给发起人。请写清需修改或不符合规则的具体点。'} style={{ marginBottom: 16 }} />
-        {activityReview?.decision === 'reject' && <Form.Item name="reason_code" label="原因分类" rules={[{ required: true, message: '请选择驳回原因分类' }]}><Select options={[{ value: 'activity_not_compliant', label: '不符合社区规则' }, { value: 'unsafe_activity', label: '存在安全风险' }, { value: 'insufficient_information', label: '活动信息不完整' }, { value: 'other', label: '其他原因' }]} /></Form.Item>}
+        <Alert showIcon type={activityReviewDecision === 'approve' ? 'info' : 'warning'} message={activityReviewDecision === 'approve' ? '通过后，活动将在校园组团频道公开展示并允许符合条件的用户报名。' : '驳回原因会反馈给发起人。请写清需修改或不符合规则的具体点。'} style={{ marginBottom: 16 }} />
+        {activityReviewDecision === 'reject' && <Form.Item name="reason_code" label="原因分类" rules={[{ required: true, message: '请选择驳回原因分类' }]}><Select options={[{ value: 'activity_not_compliant', label: '不符合社区规则' }, { value: 'unsafe_activity', label: '存在安全风险' }, { value: 'insufficient_information', label: '活动信息不完整' }, { value: 'other', label: '其他原因' }]} /></Form.Item>}
         <Form.Item name="note" label="审核说明" rules={[{ required: true, min: 5, message: '请填写至少 5 个字的审核说明' }]}><Input.TextArea rows={4} maxLength={500} showCount placeholder="说明审核结论或需修改的内容" /></Form.Item>
       </Form>
     </Modal>
@@ -543,6 +628,39 @@ export function CommunityManagementPage() {
         </Form.List>
 
         <Form.Item name="reason" label="本次发布说明" rules={[{ required: true, min: 5, message: '请填写至少 5 个字的发布说明' }]} extra="会写入配置版本与后台审计记录。"><Input.TextArea rows={3} maxLength={500} showCount placeholder="例如：迎新季启用校园绿色 Banner，新增自习搭子和校园拼车入口。" /></Form.Item>
+      </Form>
+    </Modal>
+
+    <Modal
+      title="新增帖子（后台代发）"
+      open={adminPostOpen}
+      onCancel={() => setAdminPostOpen(false)}
+      onOk={() => adminPostForm.submit()}
+      okText="直接发布"
+      confirmLoading={adminPostSaving}
+      cancelText="取消"
+      width={720}
+      destroyOnHidden
+    >
+      <Form form={adminPostForm} layout="vertical" onFinish={submitAdminPost} initialValues={{ category_code: 'experience' }}>
+        <Alert showIcon type="info" message="帖子会以所选作者身份直接发布" description="内容仍会经过内容安全检测，命中拦截会拒绝发布；发布记录写入后台审计。" style={{ marginBottom: 16 }} />
+        <Form.Item name="author_id" label="发布作者" rules={[{ required: true, message: '请选择帖子作者' }]}>
+          <Select
+            showSearch
+            allowClear
+            filterOption={false}
+            loading={authorLoading}
+            onSearch={authorSearch}
+            placeholder="输入昵称或用户 ID 搜索当前校区用户"
+            notFoundContent={authorLoading ? '搜索中…' : '没有匹配的可用用户'}
+            options={authorOptions.map((author) => ({ value: author.id, label: `${author.nickname}（${author.id}）` }))}
+          />
+        </Form.Item>
+        <Form.Item name="title" label="标题" rules={[{ required: true, min: 4, max: 200, message: '标题需 4-200 个字' }]}><Input maxLength={200} showCount placeholder="例如：期末自习预约攻略合集" /></Form.Item>
+        <Form.Item name="category_code" label="分类" rules={[{ required: true, message: '请选择帖子分类' }]}><Select options={postCategoryOptions} /></Form.Item>
+        <Form.Item name="content" label="正文" rules={[{ required: true, min: 10, max: 20000, message: '正文需 10-20000 个字' }]}><Input.TextArea rows={8} maxLength={20000} showCount placeholder="填写帖子正文内容" /></Form.Item>
+        <Form.Item name="location_name" label="地点（可选）"><Input maxLength={100} placeholder="例如：图书馆三楼自习区" /></Form.Item>
+        <Form.Item name="admin_note" label="发帖说明（可选）" extra="会写入后台审计，不展示给用户。"><Input.TextArea rows={2} maxLength={500} showCount placeholder="例如：官方迎新公告，按运营计划发布。" /></Form.Item>
       </Form>
     </Modal>
   </>

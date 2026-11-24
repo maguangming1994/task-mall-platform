@@ -67,10 +67,13 @@ page=1&page_size=20
   "pagination": {
     "page": 1,
     "page_size": 20,
-    "total": 0
+    "total": 0,
+    "last_page": 1
   }
 }
 ```
+
+订单列表 `GET /api/v1/orders` 已按此约定分页：支持 `page`、`page_size`（默认 20，最大 100）和 `status` 过滤，响应包含 `last_page`，客户端需逐页拉取或滚动加载，禁止假设一次返回全部订单。
 
 数据量较大的积分流水、社区内容和订单后续切换为 `created_at + id` 游标分页。
 

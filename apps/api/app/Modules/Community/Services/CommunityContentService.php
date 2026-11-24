@@ -13,6 +13,7 @@ use App\Modules\Notification\Services\NotificationService;
 use App\Modules\Settings\Services\SystemSettingService;
 use App\Modules\Upload\Models\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class CommunityContentService
@@ -68,11 +69,11 @@ class CommunityContentService
         $this->validatePostText($data, $rules);
         $this->enforceDailyLimit($user, CommunityPost::class, (int) $this->value('community.daily_post_limit'));
         $files = $this->validateAttachments($user, $data['image_file_ids'] ?? [], $data['video_file_id'] ?? null);
-        // 微信 msg_sec_check：明确违规直接拒绝，疑似违规即使在自动发布模式下也转人工审核。
-        $forceReview = $this->scanPostForReview($user, $data);
+        // 内容安全：明确违规直接拒绝，疑似违规即使在自动发布模式下也转人工审核。
+        $security = $this->scanPostForReview($user, $data);
 
-        return DB::transaction(function () use ($user, $data, $hash, $rules, $files, $forceReview) {
-            $auto = $rules['review_mode'] === 'auto_publish' && ! $forceReview;
+        return DB::transaction(function () use ($user, $data, $hash, $rules, $files, $security) {
+            $auto = $rules['review_mode'] === 'auto_publish' && ! $security['force_review'];
             $post = CommunityPost::query()->create([
                 'user_id' => $user->id,
                 'title' => $data['title'],
@@ -95,9 +96,58 @@ class CommunityContentService
                 'reviewed_at' => $auto ? now() : null,
             ]);
             $this->attach($version, $files);
+            $this->contentSecurity->linkToContent($security['record_ids'], $post, 1);
             if ($auto) {
                 $this->grantPostReward($post);
             }
+
+            return $post->fresh();
+        });
+    }
+
+    public function createPostAsAdmin(AdminUser $admin, User $author, array $data): CommunityPost
+    {
+        $this->assertAllowed($author, 'post');
+        $key = trim((string) ($data['idempotency_key'] ?? ''));
+        $hash = hash('sha256', 'admin:'.($key !== '' ? $key : Str::uuid()));
+        if ($key !== '' && $existing = CommunityPost::withTrashed()->where('idempotency_key_hash', $hash)->first()) {
+            return $existing;
+        }
+        $rules = $this->postRules();
+        $this->validatePostText($data, $rules);
+        $files = $this->validateAttachments($author, $data['image_file_ids'] ?? [], $data['video_file_id'] ?? null);
+        // 后台代发仍走真实内容安全链路：命中拦截直接失败，疑似违规由运营本人确认后发布。
+        $security = $this->scanPostForReview($author, $data);
+        $note = trim((string) ($data['admin_note'] ?? '')) ?: '后台运营代发并直接发布。';
+
+        return DB::transaction(function () use ($admin, $author, $data, $rules, $files, $security, $note, $hash) {
+            $post = CommunityPost::query()->create([
+                'user_id' => $author->id,
+                'title' => $data['title'],
+                'content' => $data['content'],
+                'category_code' => $data['category_code'] ?? 'experience',
+                'location_name' => $this->normalizeLocation($data['location_name'] ?? null),
+                'status' => 'published',
+                'published_version_no' => 1,
+                'idempotency_key_hash' => $hash,
+                'reviewed_by_admin_id' => $admin->id,
+                'review_note' => $note,
+                'published_at' => now(),
+            ]);
+            $version = CommunityPostVersion::query()->create([
+                'community_post_id' => $post->id,
+                'version_no' => 1,
+                'title' => $data['title'],
+                'content' => $data['content'],
+                'category_code' => $data['category_code'] ?? 'experience',
+                'review_status' => 'approved',
+                'rule_snapshot' => $rules,
+                'reviewed_by_admin_id' => $admin->id,
+                'review_note' => $note,
+                'reviewed_at' => now(),
+            ]);
+            $this->attach($version, $files);
+            $this->contentSecurity->linkToContent($security['record_ids'], $post, 1);
 
             return $post->fresh();
         });
@@ -119,12 +169,12 @@ class CommunityContentService
         $rules = $this->postRules();
         $this->validatePostText($data, $rules);
         $files = $this->validateAttachments($user, $data['image_file_ids'] ?? [], $data['video_file_id'] ?? null);
-        $forceReview = $this->scanPostForReview($user, $data);
+        $security = $this->scanPostForReview($user, $data, $post);
 
-        return DB::transaction(function () use ($post, $data, $rules, $files, $forceReview) {
+        return DB::transaction(function () use ($post, $data, $rules, $files, $security) {
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
             $versionNo = $locked->current_version_no + 1;
-            $auto = $rules['review_mode'] === 'auto_publish' && ! $forceReview;
+            $auto = $rules['review_mode'] === 'auto_publish' && ! $security['force_review'];
             $version = CommunityPostVersion::query()->create([
                 'community_post_id' => $locked->id,
                 'version_no' => $versionNo,
@@ -136,6 +186,7 @@ class CommunityContentService
                 'reviewed_at' => $auto ? now() : null,
             ]);
             $this->attach($version, $files);
+            $this->contentSecurity->linkToContent($security['record_ids'], $locked, $versionNo);
             $updates = [
                 'current_version_no' => $versionNo,
                 'location_name' => array_key_exists('location_name', $data)
@@ -177,10 +228,14 @@ class CommunityContentService
             }
         }
         $sensitive = collect($this->value('community.sensitive_words'))->contains(fn ($word) => $word !== '' && str_contains($data['content'], (string) $word));
-        $wechatReview = $this->scanFieldForReview($user, (string) $data['content'], 2, 'content');
-        $auto = $rules['review_mode'] === 'sensitive_filter' && ! $sensitive && ! $wechatReview;
+        $security = $this->scanFieldForReview($user, (string) $data['content'], 2, 'content', [
+            'content_type' => 'comment',
+            'campus_id' => $post->campus_id,
+            'subject_snapshot' => $post->title,
+        ]);
+        $auto = $rules['review_mode'] === 'sensitive_filter' && ! $sensitive && ! $security['force_review'];
 
-        return DB::transaction(function () use ($user, $post, $data, $hash, $rules, $parent, $auto) {
+        return DB::transaction(function () use ($user, $post, $data, $hash, $rules, $parent, $auto, $security) {
             $comment = CommunityComment::query()->create([
                 'community_post_id' => $post->id,
                 'user_id' => $user->id,
@@ -191,6 +246,7 @@ class CommunityContentService
                 'idempotency_key_hash' => $hash,
                 'published_at' => $auto ? now() : null,
             ]);
+            $this->contentSecurity->linkToContent($security['record_ids'], $comment);
             if ($auto) {
                 CommunityPost::query()->whereKey($post->id)->increment('comment_count');
                 $this->grantCommentReward($comment);
@@ -207,6 +263,9 @@ class CommunityContentService
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
             $version = CommunityPostVersion::query()->where('community_post_id', $locked->id)->where('version_no', $locked->current_version_no)->where('review_status', 'pending')->lockForUpdate()->firstOrFail();
             if ($data['decision'] === 'approve') {
+                if (in_array($locked->status, ['hidden', 'deleted'], true)) {
+                    throw ValidationException::withMessages(['post' => '帖子已隐藏或删除，不能审核发布。']);
+                }
                 $version->update(['review_status' => 'approved', 'reviewed_by_admin_id' => $admin->id, 'review_note' => $data['note'], 'reviewed_at' => now()]);
                 $locked->update(['title' => $version->title, 'content' => $version->content, 'category_code' => $version->category_code, 'status' => 'published', 'published_version_no' => $version->version_no, 'reviewed_by_admin_id' => $admin->id, 'review_note' => $data['note'], 'published_at' => now()]);
                 $this->grantPostReward($locked);
@@ -229,14 +288,14 @@ class CommunityContentService
                 throw ValidationException::withMessages(['comment' => '评论状态不可审核。']);
             }
             if ($data['decision'] === 'approve') {
-                $locked->update(['status' => 'published', 'reviewed_by_admin_id' => $admin->id, 'review_note' => $data['note'], 'published_at' => now()]);
+                $locked->update(['status' => 'published', 'reviewed_by_admin_id' => $admin->id, 'review_note' => $data['note'], 'reviewed_at' => now(), 'published_at' => now()]);
                 CommunityPost::query()->whereKey($locked->community_post_id)->increment('comment_count');
                 $this->grantCommentReward($locked);
                 $this->notifyPublishedComment($locked);
                 $postPublicId = CommunityPost::query()->whereKey($locked->community_post_id)->value('public_id');
                 $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'comment_review_approved', '评论审核通过', '你的评论已通过审核并公开。', 'comment-review:'.$locked->public_id.':approved', false, ['in_app'], ['post_id' => $postPublicId, 'comment_id' => $locked->public_id]);
             } else {
-                $locked->update(['status' => 'rejected', 'reviewed_by_admin_id' => $admin->id, 'review_reason_code' => $data['reason_code'], 'review_note' => $data['note']]);
+                $locked->update(['status' => 'rejected', 'reviewed_by_admin_id' => $admin->id, 'review_reason_code' => $data['reason_code'], 'review_note' => $data['note'], 'reviewed_at' => now()]);
                 $postPublicId = CommunityPost::query()->whereKey($locked->community_post_id)->value('public_id');
                 $this->notifications->create(User::query()->findOrFail($locked->user_id), 'community', 'comment_review_rejected', '评论审核未通过', $data['note'], 'comment-review:'.$locked->public_id.':rejected', false, ['in_app'], ['post_id' => $postPublicId, 'comment_id' => $locked->public_id]);
             }
@@ -395,27 +454,52 @@ class CommunityContentService
     }
 
     /**
-     * 帖子标题与正文的微信内容安全检测（scene=3 论坛社区）。
-     * 明确违规直接抛 422；返回 true 表示微信判定疑似违规，需强制人工审核。
+     * 帖子标题与正文的内容安全检测（scene=3 论坛社区）。
+     * 两个字段都必须检测，避免标题需复审时短路跳过正文。
      *
      * @param  array<string,mixed>  $data
+     * @return array{force_review:bool,record_ids:array<int,int>}
      */
-    private function scanPostForReview(User $user, array $data): bool
+    private function scanPostForReview(User $user, array $data, ?CommunityPost $post = null): array
     {
-        return $this->scanFieldForReview($user, (string) ($data['title'] ?? ''), 3, 'title')
-            || $this->scanFieldForReview($user, (string) ($data['content'] ?? ''), 3, 'content');
+        $context = [
+            'content_type' => 'post',
+            'campus_id' => $post?->campus_id ?? $user->campus_id,
+            'content_id' => $post?->id,
+            'content_public_id' => $post?->public_id,
+            'content_version_no' => $post === null ? 1 : $post->current_version_no + 1,
+            'subject_snapshot' => (string) ($data['title'] ?? ''),
+        ];
+        $title = $this->scanFieldForReview($user, (string) ($data['title'] ?? ''), 3, 'title', $context);
+        $content = $this->scanFieldForReview($user, (string) ($data['content'] ?? ''), 3, 'content', $context);
+
+        return [
+            'force_review' => $title['force_review'] || $content['force_review'],
+            'record_ids' => [...$title['record_ids'], ...$content['record_ids']],
+        ];
     }
 
-    private function scanFieldForReview(User $user, string $text, int $scene, string $field): bool
+    /**
+     * @param  array<string,mixed>  $context
+     * @return array{force_review:bool,record_ids:array<int,int>}
+     */
+    private function scanFieldForReview(User $user, string $text, int $scene, string $field, array $context = []): array
     {
-        $scan = $this->contentSecurity->scanText($user, $text, $scene);
+        $scan = $this->contentSecurity->scanText($user, $text, $scene, $context + ['content_field' => $field]);
         if ($scan['verdict'] === CommunityContentSecurityService::BLOCK) {
             throw ValidationException::withMessages([
                 $field => '内容包含违法违规或不当信息，无法发布，请修改后再试。',
             ]);
         }
 
-        return $scan['verdict'] === CommunityContentSecurityService::REVIEW;
+        return [
+            // fail-closed：除管理员显式关闭检测外，检测未执行（未配置/接口异常/无 openid 等）
+            // 都不能当作通过，必须转人工审核。
+            'force_review' => $scan['verdict'] === CommunityContentSecurityService::REVIEW
+                || ($scan['verdict'] === CommunityContentSecurityService::SKIPPED
+                    && ($scan['skip_reason'] ?? null) !== 'disabled'),
+            'record_ids' => [$scan['record_id']],
+        ];
     }
 
     private function postRules(): array

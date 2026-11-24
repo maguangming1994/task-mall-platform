@@ -40,6 +40,8 @@ export function PointsPage() {
   const [detail, setDetail] = useState<ManagedEndUser | null>(null)
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [reviewTarget, setReviewTarget] = useState<{ item: AssetAdjustment; decision: 'approve' | 'reject' } | null>(null)
+  // 关闭动画期间 reviewTarget 已置空，保留最近一次决策，避免标题与备注文案闪成“拒绝”。
+  const [reviewDecision, setReviewDecision] = useState<'approve' | 'reject'>('approve')
   const [submitting, setSubmitting] = useState(false)
   const [adjustForm] = Form.useForm<AdjustFormValue>()
   const [reviewForm] = Form.useForm<{ note?: string }>()
@@ -137,8 +139,8 @@ export function PointsPage() {
       title: '操作',
       render: (_, r) => (
         <Links items={[
-          r.status === 'pending' && { label: '通过', onClick: () => { reviewForm.resetFields(); setReviewTarget({ item: r, decision: 'approve' }) } },
-          r.status === 'pending' && { label: '驳回', danger: true, onClick: () => { reviewForm.resetFields(); setReviewTarget({ item: r, decision: 'reject' }) } },
+          r.status === 'pending' && { label: '通过', onClick: () => { reviewForm.resetFields(); setReviewDecision('approve'); setReviewTarget({ item: r, decision: 'approve' }) } },
+          r.status === 'pending' && { label: '驳回', danger: true, onClick: () => { reviewForm.resetFields(); setReviewDecision('reject'); setReviewTarget({ item: r, decision: 'reject' }) } },
         ]} />
       ),
     },
@@ -233,7 +235,7 @@ export function PointsPage() {
       </Modal>
 
       <Modal
-        title={reviewTarget?.decision === 'approve' ? '批准积分调整' : '拒绝积分调整'}
+        title={reviewDecision === 'approve' ? '批准积分调整' : '拒绝积分调整'}
         open={!!reviewTarget}
         onCancel={() => setReviewTarget(null)}
         onOk={() => reviewForm.submit()}
@@ -245,8 +247,8 @@ export function PointsPage() {
           调整单号：{reviewTarget?.item.id}，原因：{reviewTarget?.item.reason}
         </p>
         <Form form={reviewForm} layout="vertical" onFinish={submitReview}>
-          <Form.Item name="note" label="复核备注" rules={reviewTarget?.decision === 'reject' ? [{ required: true, message: '拒绝时请填写原因' }] : []}>
-            <Input.TextArea rows={3} placeholder={reviewTarget?.decision === 'approve' ? '复核通过（可不填）' : '请填写拒绝原因'} />
+          <Form.Item name="note" label="复核备注" rules={reviewDecision === 'reject' ? [{ required: true, message: '拒绝时请填写原因' }] : []}>
+            <Input.TextArea rows={3} placeholder={reviewDecision === 'approve' ? '复核通过（可不填）' : '请填写拒绝原因'} />
           </Form.Item>
         </Form>
       </Modal>

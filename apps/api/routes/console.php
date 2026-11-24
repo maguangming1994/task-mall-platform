@@ -12,6 +12,9 @@ use App\Modules\Privacy\Services\AccountCancellationService;
 use App\Modules\Privacy\Services\DataDeletionService;
 use App\Modules\Refund\Services\ExchangeService;
 use App\Modules\Refund\Services\RefundService;
+use App\Modules\Robot\Services\RobotForwardDispatchService;
+use App\Modules\Robot\Services\RobotMessageService;
+use App\Modules\Robot\Services\RobotPostBotService;
 use App\Modules\SecondHand\Http\Controllers\SecondHandRefundController;
 use App\Modules\Task\Models\TaskSubmission;
 use App\Modules\Task\Services\TaskAppealService;
@@ -137,6 +140,21 @@ Artisan::command('release:transition {release} {action} {--percentage=0} {--reas
     $this->line(json_encode(['id' => $updated->public_id, 'status' => $updated->status, 'rollout_percentage' => $updated->rollout_percentage], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
 })->purpose('Record canary, completion or rollback after an authorized external deployment action');
 
+Artisan::command('robot:forward-posts {--limit=20} {--config=}', function (RobotForwardDispatchService $service) {
+    $result = $service->dispatchDue($this->option('config'), (int) $this->option('limit'));
+    $this->info('Scanned forward configs: '.$result['configs'].', dispatched messages: '.$result['dispatched']);
+})->purpose('Aggregate new community posts and forward them to XP robot groups');
+
+Artisan::command('robot:post-bots {--limit=20} {--bot=}', function (RobotPostBotService $service) {
+    $result = $service->dispatchDue($this->option('bot'), (int) $this->option('limit'));
+    $this->info('Checked post bots: '.$result['checked'].', published: '.$result['posted']);
+})->purpose('Publish scheduled community posts from robot post bots');
+
+Artisan::command('robot:dispatch-scheduled {--limit=50}', function (RobotMessageService $messages) {
+    $count = $messages->dispatchDue((int) $this->option('limit'));
+    $this->info('Dispatched scheduled XP robot messages: '.$count);
+})->purpose('Dispatch due scheduled XP robot group messages to the XP provider');
+
 Schedule::command('privacy:process-cancellations')->hourly()->withoutOverlapping();
 Schedule::command('privacy:replay-deletions')->dailyAt('03:30')->withoutOverlapping();
 Schedule::command('tasks:activate-scheduled')->everyMinute()->withoutOverlapping();
@@ -155,4 +173,7 @@ Schedule::command('withdrawals:sync-payouts --limit=100')->everyFiveMinutes()->w
 Schedule::command('notifications:dispatch-business-events --limit=500')->everyMinute()->withoutOverlapping();
 Schedule::command('notifications:deliver --limit=500')->everyMinute()->withoutOverlapping();
 Schedule::command('notifications:run-campaigns --limit=20')->everyMinute()->withoutOverlapping();
+Schedule::command('robot:dispatch-scheduled --limit=50')->everyMinute()->withoutOverlapping();
+Schedule::command('robot:forward-posts --limit=20')->everyMinute()->withoutOverlapping();
+Schedule::command('robot:post-bots --limit=20')->everyMinute()->withoutOverlapping();
 Schedule::command('system:consistency-audit --strict')->dailyAt('04:10')->withoutOverlapping();

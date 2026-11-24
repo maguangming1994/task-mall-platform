@@ -34,6 +34,7 @@ use App\Modules\Campus\Http\Controllers\AdminCampusController;
 use App\Modules\Campus\Http\Controllers\CampusController;
 use App\Modules\Cart\Http\Controllers\CartController;
 use App\Modules\Chat\Http\Controllers\ChatController;
+use App\Modules\Community\Http\Controllers\AdminCommunityContentSecurityController;
 use App\Modules\Community\Http\Controllers\CommunityActivityController;
 use App\Modules\Community\Http\Controllers\CommunityCommentController;
 use App\Modules\Community\Http\Controllers\CommunityEngagementController;
@@ -87,6 +88,10 @@ use App\Modules\Refund\Http\Controllers\ExchangeController;
 use App\Modules\Refund\Http\Controllers\RefundController;
 use App\Modules\Refund\Http\Controllers\ReturnShippingCompensationController;
 use App\Modules\Refund\Http\Controllers\WechatRefundNotificationController;
+use App\Modules\Robot\Http\Controllers\AdminRobotAssistantController;
+use App\Modules\Robot\Http\Controllers\AdminRobotController;
+use App\Modules\Robot\Http\Controllers\AdminRobotForwardController;
+use App\Modules\Robot\Http\Controllers\AdminRobotPostBotController;
 use App\Modules\SecondHand\Http\Controllers\SecondHandItemController;
 use App\Modules\SecondHand\Http\Controllers\SecondHandOrderController;
 use App\Modules\SecondHand\Http\Controllers\SecondHandRatingController;
@@ -153,7 +158,8 @@ Route::middleware(['auth.optional', 'module.gate:module_second_hand'])->group(fu
     Route::get('/second-hand/items', [SecondHandItemController::class, 'index']);
     Route::get('/second-hand/items/{item}', [SecondHandItemController::class, 'show']);
 });
-Route::get('/media/assets/{mediaAsset}', [MediaAssetController::class, 'show']);
+Route::get('/media/assets/{mediaAsset}', [MediaAssetController::class, 'show'])
+    ->middleware('throttle:120,1');
 Route::get('/avatars/{file}', [UserAvatarController::class, 'show'])
     ->middleware('throttle:120,1')
     ->name('user-avatars.show');
@@ -499,6 +505,81 @@ Route::prefix('admin')->group(function () {
             Route::post('/settlements/{settlement}/confirm', [AdminPushController::class, 'confirmSettlement'])->middleware('admin.permission:push.settle');
             Route::post('/settlements/{settlement}/pay', [AdminPushController::class, 'paySettlement'])->middleware(['admin.permission:push.settle', 'admin.recent_verification']);
         });
+        // XP 机器人：密钥仅由后端持有，消息以本地记录和 cmd_id 状态为准
+        Route::prefix('robot')->group(function () {
+            Route::get('/settings', [AdminRobotController::class, 'settings'])->middleware('admin.permission:robot.view');
+            Route::put('/settings', [AdminRobotController::class, 'updateSettings'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::post('/settings/test', [AdminRobotController::class, 'testSettings'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification', 'throttle:10,1']);
+            Route::get('/devices', [AdminRobotController::class, 'devices'])->middleware('admin.permission:robot.view');
+            Route::get('/accounts', [AdminRobotController::class, 'accounts'])->middleware('admin.permission:robot.view');
+            Route::get('/groups', [AdminRobotController::class, 'groups'])->middleware('admin.permission:robot.view');
+            Route::get('/forwards', [AdminRobotForwardController::class, 'index'])->middleware('admin.permission:robot.view');
+            Route::post('/forwards', [AdminRobotForwardController::class, 'store'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::get('/forwards/filter-options', [AdminRobotForwardController::class, 'filterOptions'])->middleware('admin.permission:robot.view');
+            Route::get('/forwards/{forward}', [AdminRobotForwardController::class, 'show'])->middleware('admin.permission:robot.view');
+            Route::put('/forwards/{forward}', [AdminRobotForwardController::class, 'update'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::delete('/forwards/{forward}', [AdminRobotForwardController::class, 'destroy'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::patch('/forwards/{forward}/status', [AdminRobotForwardController::class, 'status'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::post('/forwards/batch-status', [AdminRobotForwardController::class, 'batchStatus'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::post('/forwards/{forward}/test', [AdminRobotForwardController::class, 'test'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.permission:robot.message_send', 'admin.recent_verification', 'throttle:30,1']);
+            Route::get('/assistants', [AdminRobotAssistantController::class, 'index'])->middleware('admin.permission:robot.view');
+            Route::get('/post-bots', [AdminRobotPostBotController::class, 'index'])->middleware('admin.permission:robot.view');
+            Route::post('/post-bots', [AdminRobotPostBotController::class, 'store'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::get('/post-bots/{bot}', [AdminRobotPostBotController::class, 'show'])->middleware('admin.permission:robot.view');
+            Route::put('/post-bots/{bot}', [AdminRobotPostBotController::class, 'update'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::delete('/post-bots/{bot}', [AdminRobotPostBotController::class, 'destroy'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::patch('/post-bots/{bot}/status', [AdminRobotPostBotController::class, 'status'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::post('/post-bots/{bot}/publish', [AdminRobotPostBotController::class, 'publishNow'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification', 'throttle:10,1']);
+            Route::get('/post-bots/{bot}/templates', [AdminRobotPostBotController::class, 'templates'])->middleware('admin.permission:robot.view');
+            Route::post('/post-bots/{bot}/templates', [AdminRobotPostBotController::class, 'storeTemplate'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::put('/post-bots/{bot}/templates/{template}', [AdminRobotPostBotController::class, 'updateTemplate'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::delete('/post-bots/{bot}/templates/{template}', [AdminRobotPostBotController::class, 'destroyTemplate'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::post('/assistants', [AdminRobotAssistantController::class, 'store'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::get('/assistants/{assistant}', [AdminRobotAssistantController::class, 'show'])->middleware('admin.permission:robot.view');
+            Route::put('/assistants/{assistant}', [AdminRobotAssistantController::class, 'update'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::delete('/assistants/{assistant}', [AdminRobotAssistantController::class, 'destroy'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::patch('/assistants/{assistant}/status', [AdminRobotAssistantController::class, 'status'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::post('/assistants/{assistant}/bindings', [AdminRobotAssistantController::class, 'bind'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::delete('/assistants/{assistant}/bindings/{bindingId}', [AdminRobotAssistantController::class, 'unbind'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::get('/assistants/{assistant}/webhook', [AdminRobotAssistantController::class, 'webhook'])->middleware('admin.permission:robot.view');
+            Route::post('/assistants/{assistant}/webhook/test', [AdminRobotAssistantController::class, 'testWebhook'])
+                ->middleware(['admin.permission:robot.settings_manage', 'admin.recent_verification']);
+            Route::get('/messages', [AdminRobotController::class, 'messages'])->middleware('admin.permission:robot.view');
+            Route::post('/messages/group-text', [AdminRobotController::class, 'sendGroupText'])
+                ->middleware(['admin.permission:robot.message_send', 'throttle:30,1']);
+            Route::post('/messages', [AdminRobotController::class, 'sendMessage'])
+                ->middleware(['admin.permission:robot.message_send', 'throttle:30,1']);
+            Route::post('/message-batches', [AdminRobotController::class, 'sendMessageBatch'])
+                ->middleware(['admin.permission:robot.message_send', 'throttle:30,1']);
+            Route::post('/message-batches/{batchId}/cancel', [AdminRobotController::class, 'cancelMessageBatch'])
+                ->middleware(['admin.permission:robot.message_send', 'throttle:30,1']);
+            Route::post('/messages/{message:public_id}/cancel', [AdminRobotController::class, 'cancelMessage'])
+                ->middleware(['admin.permission:robot.message_send', 'throttle:30,1']);
+            Route::post('/messages/{message:public_id}/refresh', [AdminRobotController::class, 'refreshMessage'])
+                ->middleware(['admin.permission:robot.view', 'throttle:30,1']);
+        });
         // 校区功能模块矩阵：学校代理可读（只读）；写入仅持 campus.module_manage 的平台超管 + 近期二次验证
         Route::get('/campuses/{campus}/modules', [AdminCampusModuleController::class, 'show']);
         Route::put('/campuses/{campus}/modules/{code}', [AdminCampusModuleController::class, 'update'])
@@ -608,8 +689,8 @@ Route::prefix('admin')->group(function () {
         Route::post('/media/storage/providers/{mediaStorageProvider}/activate', [AdminMediaController::class, 'activate'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
         Route::get('/media/storage/migrations', [AdminMediaController::class, 'migrations'])->middleware('admin.permission:settings.manage');
         Route::post('/media/storage/migrations', [AdminMediaController::class, 'migrate'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
-        Route::post('/media/assets/upload', [AdminMediaController::class, 'upload'])->middleware(['admin.permission:product.manage|task.manage|community.review|legal.manage|privacy.manage|settings.manage|campus.manage', 'throttle:60,1']);
-        Route::post('/media/assets/import-url', [AdminMediaController::class, 'importUrl'])->middleware(['admin.permission:product.manage|task.manage|community.review|legal.manage|privacy.manage|settings.manage|campus.manage', 'throttle:30,1']);
+        Route::post('/media/assets/upload', [AdminMediaController::class, 'upload'])->middleware(['admin.permission:product.manage|task.manage|community.review|legal.manage|privacy.manage|settings.manage|campus.manage|robot.message_send', 'throttle:60,1']);
+        Route::post('/media/assets/import-url', [AdminMediaController::class, 'importUrl'])->middleware(['admin.permission:product.manage|task.manage|community.review|legal.manage|privacy.manage|settings.manage|campus.manage|robot.message_send', 'throttle:30,1']);
         Route::get('/production-readiness', [AdminProductionReadinessController::class, 'show'])
             ->middleware('admin.permission:settings.manage');
         Route::get('/operations/dashboard', [AdminOperationsController::class, 'dashboard'])->middleware('admin.permission:operations.manage');
@@ -693,9 +774,18 @@ Route::prefix('admin')->group(function () {
         Route::post('/task-risk-cases/{taskRiskCase}/review', [AdminTaskRiskController::class, 'review'])->middleware('admin.permission:task.review');
         Route::get('/coupon-templates', [AdminCouponTemplateController::class, 'index'])->middleware('admin.permission:product.manage');
         Route::get('/coupon-templates/{couponTemplate}', [AdminCouponTemplateController::class, 'show'])->middleware('admin.permission:product.manage');
+        Route::get('/community/content-security/settings', [AdminCommunityContentSecurityController::class, 'show'])->middleware('admin.permission:settings.manage');
+        Route::put('/community/content-security/settings', [AdminCommunityContentSecurityController::class, 'update'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::post('/community/content-security/settings/test', [AdminCommunityContentSecurityController::class, 'test'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification', 'throttle:10,1']);
+        Route::get('/community/content-security/records', [AdminCommunityContentSecurityController::class, 'records'])->middleware('admin.permission:community.review');
         Route::get('/community/posts', [CommunityPostController::class, 'adminIndex'])->middleware('admin.permission:community.review');
+        Route::get('/community/post-authors', [CommunityPostController::class, 'authors'])->middleware('admin.permission:community.review');
+        Route::post('/community/posts', [CommunityPostController::class, 'adminStore'])->middleware('admin.permission:community.review');
+        Route::post('/community/posts/batch-review', [CommunityPostController::class, 'batchReview'])->middleware('admin.permission:community.review');
         Route::post('/community/posts/{post}/review', [CommunityPostController::class, 'review'])->middleware('admin.permission:community.review');
+        Route::post('/community/posts/{post}/forward', [CommunityPostController::class, 'forward'])->middleware(['admin.permission:community.review', 'throttle:20,1']);
         Route::get('/community/comments', [CommunityCommentController::class, 'adminIndex'])->middleware('admin.permission:community.review');
+        Route::post('/community/comments/batch-review', [CommunityCommentController::class, 'batchReview'])->middleware('admin.permission:community.review');
         Route::post('/community/comments/{comment}/review', [CommunityCommentController::class, 'review'])->middleware('admin.permission:community.review');
         Route::get('/community/reports', [CommunityModerationController::class, 'reports'])->middleware('admin.permission:community.review');
         Route::post('/community/{contentType}/{contentId}/moderate', [CommunityModerationController::class, 'moderate'])->middleware('admin.permission:community.review');

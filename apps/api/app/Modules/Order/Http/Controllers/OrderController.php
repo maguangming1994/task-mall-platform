@@ -16,9 +16,35 @@ class OrderController extends Controller
     public function index(Request $request, CheckoutOrderService $service): JsonResponse
     {
         /** @var User $user */ $user = $request->user();
-        $orders = Order::query()->where('user_id', $user->id)->with(['batch', 'items', 'fulfillments'])->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))->latest('id')->get()->map(fn ($order) => $service->presentOrder($order));
+        $filters = $request->validate([
+            'status' => ['sometimes', 'string', 'max:32'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'page_size' => ['sometimes', 'integer', 'min:1', 'max:100'],
+        ]);
 
-        return ApiResponse::success(['items' => $orders, 'pagination' => ['page' => 1, 'page_size' => $orders->count(), 'total' => $orders->count()]]);
+        $paginator = Order::query()
+            ->where('user_id', $user->id)
+            ->with(['batch', 'items', 'fulfillments'])
+            ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
+            ->latest('id')
+            ->paginate(
+                (int) ($filters['page_size'] ?? 20),
+                ['*'],
+                'page',
+                (int) ($filters['page'] ?? 1),
+            );
+
+        $orders = collect($paginator->items())->map(fn ($order) => $service->presentOrder($order))->values();
+
+        return ApiResponse::success([
+            'items' => $orders,
+            'pagination' => [
+                'page' => $paginator->currentPage(),
+                'page_size' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ],
+        ]);
     }
 
     public function show(Request $request, Order $order, CheckoutOrderService $service): JsonResponse

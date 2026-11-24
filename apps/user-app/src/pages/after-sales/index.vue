@@ -111,7 +111,7 @@
 import { onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { listExchanges, listRefunds, type Exchange, type Refund } from '@/api/after-sales'
-import { listOrders, type Order, type OrderItem } from '@/api/orders'
+import { listAllOrders, type Order, type OrderItem } from '@/api/orders'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
@@ -213,8 +213,8 @@ async function load() {
   if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true; loadError.value = ''
   try {
-    const [orderResult, refundResult, exchangeResult] = await Promise.all([listOrders(auth.accessToken), listRefunds(auth.accessToken), listExchanges(auth.accessToken)])
-    orders.value = orderResult.items; refunds.value = refundResult.items; exchanges.value = exchangeResult.items
+    const [orderResult, refundResult, exchangeResult] = await Promise.all([listAllOrders(auth.accessToken), listRefunds(auth.accessToken), listExchanges(auth.accessToken)])
+    orders.value = orderResult; refunds.value = refundResult.items; exchanges.value = exchangeResult.items
   } catch (error) {
     loadError.value = error instanceof Error ? error.message : '请检查网络后重试'
   } finally {

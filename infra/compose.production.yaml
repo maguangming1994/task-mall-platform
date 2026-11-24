@@ -40,9 +40,10 @@ services:
     <<: *api
     command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
     # 容器内固定 8080（nginx 经 backend 网络反代 /app/）；宿主机默认 8081，
-    # 避开同机 nginx 网关占用的 8080。
+    # 避开同机 nginx 网关占用的 8080。REVERB_PORT 是客户端握手端口（生产为 443），
+    # 不可复用到宿主机端口映射，否则会与网关抢 443。
     ports:
-      - "${REVERB_BIND_ADDRESS:-127.0.0.1}:${REVERB_PORT:-8081}:8080"
+      - "${REVERB_BIND_ADDRESS:-127.0.0.1}:${REVERB_BIND_PORT:-8081}:8080"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/up || exit 1"]
       interval: 10s

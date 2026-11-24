@@ -12,6 +12,13 @@ class CommunityPost extends Model
 {
     use BelongsToCampus, SoftDeletes;
 
+    public const CATEGORIES = [
+        'experience' => '经验分享',
+        'guide' => '实用攻略',
+        'question' => '互助问答',
+        'showcase' => '成果展示',
+    ];
+
     protected $fillable = ['public_id', 'campus_id', 'user_id', 'title', 'content', 'category_code', 'location_name', 'status', 'current_version_no', 'published_version_no', 'comment_count', 'like_count', 'favorite_count', 'reward_granted', 'idempotency_key_hash', 'reviewed_by_admin_id', 'review_reason_code', 'review_note', 'published_at'];
 
     protected static function booted(): void

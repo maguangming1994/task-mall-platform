@@ -610,8 +610,176 @@ export interface ReturnShippingCompensation { id: string; source_type: string; r
 export interface AfterSaleShipment { id?: string; direction?: string; method?: string; carrier_code?: string | null; tracking_no?: string | null; no_logistics_note?: string | null; paid_shipping_amount?: number; status?: string; shipped_at?: string | null; received_at?: string | null; compensation?: ReturnShippingCompensation | null }
 export interface ManagedRefund { id: string; refund_no: string; order_no?: string | null; user?: { id: string; nickname: string } | null; service_type: string; reason_name: string; status: string; refund_cash_amount: number; refund_points: number; responsibility_party: string; return_shipping_payer: string; return_method: string | null; review_note?: string | null; user_action_deadline_at: string | null; return_shipment?: AfterSaleShipment | null; compensation?: ReturnShippingCompensation | null; created_at: string }
 export interface ManagedExchange { id: string; exchange_no: string; order_no?: string | null; user?: { id: string; nickname: string } | null; reason_name: string; status: string; quantity: number; responsibility_party: string; return_shipping_payer: string; replacement_shipping_payer: string; return_method: string; review_note?: string | null; return_deadline_at: string | null; replacement_auto_complete_at?: string | null; shipments?: AfterSaleShipment[]; created_at: string }
-export interface ManagedCommunityPost { id: string; author: { id: string; nickname: string }; title: string; content: string; status: string; current_version_no: number; published_version_no: number | null; comment_count: number; reward_granted: boolean; created_at: string }
-export interface ManagedCommunityComment { id: string; post_id: string; parent_comment_id: string | null; author: { id: string; nickname: string }; content: string; status: string; reward_granted: boolean; created_at: string }
+export type CommunityAuditStatus = 'pending_review' | 'published' | 'rejected' | 'hidden' | 'deleted'
+export type CommunityModerationReasonCode = 'spam' | 'sexual' | 'fraud' | 'abuse' | 'infringement' | 'illegal' | 'other'
+export type CommunityPostCategory = 'experience' | 'guide' | 'question' | 'showcase'
+export interface ManagedCommunityPostVersion {
+  version_no: number
+  title: string
+  content: string
+  category_code: CommunityPostCategory
+  review_status: 'pending' | 'approved' | 'rejected'
+  review_reason_code: CommunityModerationReasonCode | null
+  review_note: string | null
+  reviewed_at?: string | null
+}
+export type CommunityPostForwardStatus = 'none' | 'success' | 'failed'
+export interface CommunityPostForwardGroup {
+  group_id: string
+  group_name: string | null
+  status: 'success' | 'failed' | 'unknown'
+  error_message: string | null
+  manual: boolean
+  forwarded_at: string | null
+}
+export interface CommunityPostForwardSummary {
+  status: CommunityPostForwardStatus
+  groups: CommunityPostForwardGroup[]
+}
+export interface CommunityPostForwardResult {
+  status: 'success' | 'failed'
+  groups: Omit<CommunityPostForwardGroup, 'manual'>[]
+}
+export interface ManagedCommunityPost {
+  id: string
+  author: { id: string; nickname: string; campus_name?: string | null }
+  title: string
+  content: string
+  category_code: CommunityPostCategory
+  category_label?: string
+  location_name: string | null
+  status: string
+  audit_status: CommunityAuditStatus
+  current_version_no: number
+  published_version_no: number | null
+  latest_version: ManagedCommunityPostVersion | null
+  review_reason_code: CommunityModerationReasonCode | null
+  review_note: string | null
+  reviewed_at: string | null
+  comment_count: number
+  like_count: number
+  favorite_count: number
+  reward_granted: boolean
+  published_at: string | null
+  created_at: string
+  forward: CommunityPostForwardSummary
+}
+export interface ManagedCommunityComment {
+  id: string
+  post_id: string
+  post_title: string
+  parent_comment_id: string | null
+  author: { id: string; nickname: string; campus_name?: string | null }
+  content: string
+  status: string
+  audit_status: CommunityAuditStatus
+  review_reason_code: CommunityModerationReasonCode | null
+  review_note: string | null
+  reviewed_at: string | null
+  reward_granted: boolean
+  published_at: string | null
+  created_at: string
+}
+export interface CommunityAuditStats {
+  total: number
+  pending_review: number
+  published: number
+  rejected: number
+  hidden: number
+  deleted: number
+}
+export interface CommunityAdminPagination { page: number; page_size: number; total: number; last_page: number }
+export interface ManagedCommunityPostFilters {
+  page?: number
+  page_size?: number
+  id?: string
+  keyword?: string
+  category_code?: CommunityPostCategory
+  audit_status?: CommunityAuditStatus
+}
+export interface ManagedCommunityCommentFilters {
+  page?: number
+  page_size?: number
+  keyword?: string
+  audit_status?: CommunityAuditStatus
+}
+export interface ManagedCommunityList<T> { items: T[]; pagination: CommunityAdminPagination; stats: CommunityAuditStats }
+export type CommunityReviewDecision = 'approve' | 'reject'
+export interface CommunityBatchReviewInput { ids: string[]; decision: CommunityReviewDecision; note: string; reasonCode?: CommunityModerationReasonCode }
+export interface CommunityBatchReviewResult { id: string; success: boolean; code: string | null; message: string }
+export interface CommunityPostAuthorOption { id: string; nickname: string }
+export interface CommunityPostAdminCreateInput {
+  authorId: string
+  title: string
+  content: string
+  categoryCode: CommunityPostCategory
+  locationName?: string
+  adminNote?: string
+}
+export type CommunityContentSecurityProvider = 'wechat' | 'aliyun'
+export type CommunityContentSecurityTestStatus = 'success' | 'failed' | 'credential_only'
+export interface CommunityContentSecuritySettings {
+  enabled: boolean
+  provider: CommunityContentSecurityProvider
+  region: string
+  endpoint: string
+  service: string
+  last_tested_at: string | null
+  last_test_status: CommunityContentSecurityTestStatus | null
+  last_test_message: string | null
+  aliyun: {
+    configured: boolean
+    source: 'backend' | 'env' | 'none'
+    access_key_id_masked: string | null
+    access_key_secret_masked: string | null
+  }
+}
+export interface CommunityContentSecuritySettingsInput {
+  enabled: boolean
+  provider: CommunityContentSecurityProvider
+  reason: string
+  access_key_id?: string
+  access_key_secret?: string
+  clear_credentials?: boolean
+  region: string
+  endpoint: string
+  service: string
+}
+export type CommunityContentSecurityVerdict = 'pass' | 'review' | 'block' | 'skipped'
+export type CommunityContentSecurityRiskLevel = 'none' | 'low' | 'medium' | 'high'
+export interface CommunityContentSecurityRecord {
+  id: string
+  content_type: 'post' | 'comment'
+  content_id: string | null
+  content_version_no: number | null
+  content_field: 'title' | 'content'
+  subject_snapshot: string | null
+  content_snapshot: string
+  author: { id: string; nickname: string }
+  provider: CommunityContentSecurityProvider
+  verdict: CommunityContentSecurityVerdict
+  risk_level: CommunityContentSecurityRiskLevel | null
+  risk_labels: string[]
+  skip_reason: string | null
+  request_id: string | null
+  response_time_ms: number | null
+  created_at: string
+}
+export interface CommunityContentSecurityRecordFilters {
+  page?: number
+  page_size?: number
+  content_type?: 'post' | 'comment'
+  provider?: CommunityContentSecurityProvider
+  verdict?: CommunityContentSecurityVerdict
+  risk_level?: CommunityContentSecurityRiskLevel
+  keyword?: string
+}
+export interface CommunityContentSecurityRecordStats { total: number; pass: number; review: number; block: number; skipped: number }
+export interface CommunityContentSecurityRecordList {
+  items: CommunityContentSecurityRecord[]
+  pagination: CommunityAdminPagination
+  stats: CommunityContentSecurityRecordStats
+}
 export interface ManagedContentReport { id: string; content_type: 'post' | 'comment'; content_id: string; reason_code: string; description: string | null; status: string; created_at: string }
 export interface ManagedContentAppeal { id: string; action_id: string; reason: string; status: string; review_note: string | null; created_at: string }
 export type CommunityActivityStatus = 'pending_review' | 'approved' | 'rejected' | 'closed'
@@ -1055,6 +1223,14 @@ const validationFieldLabels: Record<string, string> = {
   claim_ends_at: '领取截止时间',
   submit_ends_at: '提交截止时间',
   steps: '任务步骤',
+  device_id: '设备',
+  wxid: '微信账号',
+  group_id: '群聊',
+  message: '消息内容',
+  api_key: 'XP API Key',
+  clear_api_key: '清除后台密钥',
+  force_realtime: '强制实时同步',
+  idempotency_key: '幂等键',
 }
 
 function friendlyValidationMessage(errors: Record<string, string[]>): string | undefined {
@@ -1076,6 +1252,9 @@ function friendlyValidationMessage(errors: Record<string, string[]>): string | u
   if (/at least/i.test(rawMessage)) return `${label}未达到最小要求。`
   if (/greater than/i.test(rawMessage)) return `${label}超出允许范围。`
 
+  // 后端已返回通顺的中文提示（含字段中文名）时直接呈现，避免“字段：字段不能为空”的重复。
+  if (/[一-龥]/.test(rawMessage)) return rawMessage
+
   return `${label}：${rawMessage}`
 }
 
@@ -1083,7 +1262,16 @@ const ACCESS_KEY = 'task_mall_admin_access'
 const REFRESH_KEY = 'task_mall_admin_refresh'
 const REMEMBER_KEY = 'task_mall_admin_remember'
 const REMEMBERED_ACCOUNT_KEY = 'task_mall_admin_account'
+// 仅用于清除历史版本写入浏览器本地的密码，绝不再写入该键。
+const LEGACY_REMEMBERED_PASSWORD_KEY = 'task_mall_admin_password_v1'
 const CAMPUS_SCOPE_KEY = 'task_mall_admin_campus_scope'
+
+// 登录密码不得落盘：清除旧版本遗留的可逆混淆值。
+try {
+  localStorage.removeItem(LEGACY_REMEMBERED_PASSWORD_KEY)
+} catch {
+  // 隐私模式下 localStorage 不可用，忽略即可。
+}
 
 function removeTokenValues() {
   sessionStorage.removeItem(ACCESS_KEY)
@@ -1841,13 +2029,71 @@ export async function listAdminAuditLogs(filters: { keyword?: string; action?: s
   })
   return request(`/admin/audit-logs${query.size ? `?${query.toString()}` : ''}`)
 }
-export async function listPendingCommunityPosts(): Promise<{ items: ManagedCommunityPost[] }> { return request('/admin/community/posts') }
-export async function listPendingCommunityComments(): Promise<{ items: ManagedCommunityComment[] }> { return request('/admin/community/comments') }
-export async function reviewCommunityPost(id: string, decision: 'approve' | 'reject', note: string): Promise<ManagedCommunityPost> { return request(`/admin/community/posts/${id}/review`, { method: 'POST', body: JSON.stringify({ decision, reason_code: decision === 'reject' ? 'content_not_compliant' : undefined, note }) }) }
-export async function reviewCommunityComment(id: string, decision: 'approve' | 'reject', note: string): Promise<ManagedCommunityComment> { return request(`/admin/community/comments/${id}/review`, { method: 'POST', body: JSON.stringify({ decision, reason_code: decision === 'reject' ? 'content_not_compliant' : undefined, note }) }) }
+function communityAdminQuery(filters: object): string {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  })
+  return query.size ? `?${query.toString()}` : ''
+}
+export async function listCommunityPosts(filters: ManagedCommunityPostFilters = {}): Promise<ManagedCommunityList<ManagedCommunityPost>> {
+  return request(`/admin/community/posts${communityAdminQuery(filters)}`)
+}
+export async function listCommunityComments(filters: ManagedCommunityCommentFilters = {}): Promise<ManagedCommunityList<ManagedCommunityComment>> {
+  return request(`/admin/community/comments${communityAdminQuery(filters)}`)
+}
+export async function listPendingCommunityPosts(): Promise<ManagedCommunityList<ManagedCommunityPost>> {
+  return listCommunityPosts({ audit_status: 'pending_review', page_size: 50 })
+}
+export async function listPendingCommunityComments(): Promise<ManagedCommunityList<ManagedCommunityComment>> {
+  return listCommunityComments({ audit_status: 'pending_review', page_size: 50 })
+}
+export async function reviewCommunityPost(id: string, decision: CommunityReviewDecision, note: string, reasonCode: CommunityModerationReasonCode = 'other'): Promise<ManagedCommunityPost> {
+  return request(`/admin/community/posts/${encodeURIComponent(id)}/review`, { method: 'POST', body: JSON.stringify({ decision, reason_code: decision === 'reject' ? reasonCode : undefined, note }) })
+}
+export async function forwardCommunityPost(id: string): Promise<CommunityPostForwardResult> {
+  return request(`/admin/community/posts/${encodeURIComponent(id)}/forward`, { method: 'POST' })
+}
+export async function reviewCommunityComment(id: string, decision: CommunityReviewDecision, note: string, reasonCode: CommunityModerationReasonCode = 'other'): Promise<ManagedCommunityComment> {
+  return request(`/admin/community/comments/${encodeURIComponent(id)}/review`, { method: 'POST', body: JSON.stringify({ decision, reason_code: decision === 'reject' ? reasonCode : undefined, note }) })
+}
+export async function batchReviewCommunityPosts(input: CommunityBatchReviewInput): Promise<{ items: CommunityBatchReviewResult[] }> {
+  return request('/admin/community/posts/batch-review', { method: 'POST', body: JSON.stringify({ ids: input.ids, decision: input.decision, reason_code: input.decision === 'reject' ? input.reasonCode ?? 'other' : undefined, note: input.note }) })
+}
+export async function batchReviewCommunityComments(input: CommunityBatchReviewInput): Promise<{ items: CommunityBatchReviewResult[] }> {
+  return request('/admin/community/comments/batch-review', { method: 'POST', body: JSON.stringify({ ids: input.ids, decision: input.decision, reason_code: input.decision === 'reject' ? input.reasonCode ?? 'other' : undefined, note: input.note }) })
+}
+export async function searchCommunityPostAuthors(keyword = ''): Promise<{ items: CommunityPostAuthorOption[] }> {
+  return request(`/admin/community/post-authors${communityAdminQuery({ keyword })}`)
+}
+export async function createCommunityPostAsAdmin(input: CommunityPostAdminCreateInput): Promise<ManagedCommunityPost> {
+  return request('/admin/community/posts', {
+    method: 'POST',
+    body: JSON.stringify({
+      author_id: input.authorId,
+      title: input.title,
+      content: input.content,
+      category_code: input.categoryCode,
+      location_name: input.locationName || undefined,
+      admin_note: input.adminNote || undefined,
+    }),
+  })
+}
+export async function getCommunityContentSecuritySettings(): Promise<CommunityContentSecuritySettings> {
+  return request('/admin/community/content-security/settings')
+}
+export async function saveCommunityContentSecuritySettings(input: CommunityContentSecuritySettingsInput): Promise<CommunityContentSecuritySettings> {
+  return request('/admin/community/content-security/settings', { method: 'PUT', body: JSON.stringify(input) })
+}
+export async function testCommunityContentSecuritySettings(reason: string): Promise<CommunityContentSecuritySettings> {
+  return request('/admin/community/content-security/settings/test', { method: 'POST', body: JSON.stringify({ reason }) })
+}
+export async function listCommunityContentSecurityRecords(filters: CommunityContentSecurityRecordFilters = {}): Promise<CommunityContentSecurityRecordList> {
+  return request(`/admin/community/content-security/records${communityAdminQuery(filters)}`)
+}
 export async function listCommunityReports(): Promise<{ items: ManagedContentReport[] }> { return request('/admin/community/reports') }
 export async function listCommunityAppeals(): Promise<{ items: ManagedContentAppeal[] }> { return request('/admin/community/appeals') }
-export async function moderateCommunityContent(type: 'post' | 'comment', id: string, decision: 'warning' | 'hide' | 'delete', restrictions: string[] = []): Promise<{ id: string }> { return request(`/admin/community/${type}/${id}/moderate`, { method: 'POST', headers: { 'Idempotency-Key': `moderation-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify({ decision, reason_code: 'other', note: '依据举报材料执行社区治理处置。', restrictions, restriction_days: restrictions.length ? 7 : undefined }) }) }
+export async function moderateCommunityContent(type: 'post' | 'comment', id: string, decision: 'warning' | 'hide' | 'delete', restrictions: string[] = [], reasonCode: CommunityModerationReasonCode = 'other', note = '依据举报材料执行社区治理处置。'): Promise<{ id: string }> { return request(`/admin/community/${type}/${encodeURIComponent(id)}/moderate`, { method: 'POST', headers: { 'Idempotency-Key': `moderation-${Date.now()}-${crypto.randomUUID()}` }, body: JSON.stringify({ decision, reason_code: reasonCode, note, restrictions, restriction_days: restrictions.length ? 7 : undefined }) }) }
 export async function reviewCommunityAppeal(id: string, decision: 'approve' | 'reject'): Promise<ManagedContentAppeal> { return request(`/admin/community/appeals/${id}/review`, { method: 'POST', body: JSON.stringify({ decision, note: decision === 'approve' ? '复核确认原处置有误，恢复内容、奖励与限制。' : '复核维持原处置。' }) }) }
 export async function listCommunityActivities(status?: CommunityActivityStatus): Promise<{ items: ManagedCommunityActivity[] }> {
   const query = status ? `?${new URLSearchParams({ status }).toString()}` : ''
@@ -2406,4 +2652,450 @@ export function confirmPushSettlement(id: string): Promise<PushSettlementMember>
 }
 export function payPushSettlement(id: string): Promise<PushSettlementMember> {
   return request(`/admin/push/settlements/${encodeURIComponent(id)}/pay`, { method: 'POST', body: JSON.stringify({}) })
+}
+
+export interface XpRobotSettings {
+  configured: boolean
+  masked: string | null
+  source: 'backend' | 'env' | 'none'
+  base_url: string
+  last_tested_at: string | null
+  last_test_status: 'success' | 'failed' | null
+  last_test_message: string | null
+}
+
+export interface XpRobotDevice {
+  device_id: string
+  description?: string | null
+  online?: boolean
+  enabled?: boolean
+  last_connected_at?: string | null
+}
+
+export interface XpRobotAccount {
+  wxid: string
+  nickname?: string | null
+  account_type?: string | null
+  status?: string | null
+}
+
+export interface XpRobotGroup {
+  group_id: string
+  name?: string | null
+  nickname?: string | null
+  group_name?: string | null
+  member_count?: number | null
+}
+
+export type XpRobotMsgType = 'text' | 'image' | 'link'
+export interface XpRobotLinkPayload {
+  link_url?: string
+  title?: string
+  desc?: string
+  image_url?: string
+}
+export interface XpRobotMessage {
+  id: string
+  batch_id: string | null
+  batch_sequence: number | null
+  device_id: string
+  resolved_device_id: string | null
+  wxid: string
+  group_id: string
+  group_name: string | null
+  forward_config_id?: string | null
+  trigger_type?: 'MANUAL' | 'CONFIG_TEST' | 'AUTO_FORWARD'
+  message: string | null
+  msg_type: XpRobotMsgType
+  payload: XpRobotLinkPayload | null
+  cmd_id: string | null
+  status: string
+  provider_status: string | null
+  queued: boolean
+  error_code: string | null
+  error_message: string | null
+  submitted_at: string | null
+  last_synced_at: string | null
+  scheduled_at: string | null
+  dispatched_at: string | null
+  canceled_at: string | null
+  created_at: string | null
+}
+
+export interface XpRobotMessageBatchItemInput {
+  msg_type: XpRobotMsgType
+  message?: string | null
+  link_url?: string
+  title?: string
+  desc?: string
+  image_url?: string
+}
+export interface XpRobotMessageBatchInput {
+  device_id: string
+  wxid: string
+  group_id: string
+  group_name?: string
+  scheduled_at?: string | null
+  items: XpRobotMessageBatchItemInput[]
+}
+export interface XpRobotMessageBatch {
+  batch_id: string
+  batch_size: number
+  items: XpRobotMessage[]
+}
+
+export interface XpRobotTestResult {
+  accepted: boolean
+  tested_at: string
+  message: string
+  device_count: number
+  online_count: number
+}
+
+export function getXpRobotSettings(): Promise<XpRobotSettings> {
+  return adminRequest('/admin/robot/settings')
+}
+export function updateXpRobotSettings(input: { api_key?: string; clear_api_key?: boolean; reason: string }): Promise<XpRobotSettings> {
+  return adminRequest('/admin/robot/settings', { method: 'PUT', body: JSON.stringify(input) })
+}
+export function testXpRobotSettings(): Promise<XpRobotTestResult> {
+  return adminRequest('/admin/robot/settings/test', { method: 'POST', body: JSON.stringify({}) })
+}
+export function listXpRobotDevices(status?: 'enabled' | 'disabled'): Promise<{ items: XpRobotDevice[]; total: number; online_count: number }> {
+  const query = status ? `?status=${status}` : ''
+  return adminRequest(`/admin/robot/devices${query}`)
+}
+export function listXpRobotAccounts(deviceId: string): Promise<{ items: XpRobotAccount[] }> {
+  return adminRequest(`/admin/robot/accounts?device_id=${encodeURIComponent(deviceId)}`)
+}
+export function listXpRobotGroups(deviceId: string, wxid: string, forceRealtime = false): Promise<{ items: XpRobotGroup[] }> {
+  const query = new URLSearchParams({ device_id: deviceId, wxid, force_realtime: String(forceRealtime) })
+  return adminRequest(`/admin/robot/groups?${query.toString()}`)
+}
+export function listXpRobotMessages(): Promise<{ items: XpRobotMessage[] }> {
+  return adminRequest('/admin/robot/messages')
+}
+export function sendXpRobotGroupText(
+  input: { device_id: string; wxid: string; group_id: string; message: string; group_name?: string },
+  idempotencyKey: string,
+): Promise<XpRobotMessage> {
+  return adminRequest('/admin/robot/messages/group-text', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify(input),
+  })
+}
+export function sendXpRobotMessage(
+  input: {
+    device_id: string
+    wxid: string
+    group_id: string
+    group_name?: string
+    msg_type: XpRobotMsgType
+    message?: string | null
+    link_url?: string
+    title?: string
+    desc?: string
+    image_url?: string
+    scheduled_at?: string | null
+  },
+  idempotencyKey: string,
+): Promise<XpRobotMessage> {
+  return adminRequest('/admin/robot/messages', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify(input),
+  })
+}
+export function cancelXpRobotMessage(id: string): Promise<XpRobotMessage> {
+  return adminRequest(`/admin/robot/messages/${encodeURIComponent(id)}/cancel`, { method: 'POST', body: JSON.stringify({}) })
+}
+export function sendXpRobotMessageBatch(input: XpRobotMessageBatchInput, idempotencyKey: string): Promise<XpRobotMessageBatch> {
+  return adminRequest('/admin/robot/message-batches', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify(input),
+  })
+}
+export function cancelXpRobotMessageBatch(batchId: string): Promise<XpRobotMessageBatch> {
+  return adminRequest(`/admin/robot/message-batches/${encodeURIComponent(batchId)}/cancel`, { method: 'POST', body: JSON.stringify({}) })
+}
+export function refreshXpRobotMessage(id: string): Promise<XpRobotMessage> {
+  return adminRequest(`/admin/robot/messages/${encodeURIComponent(id)}/refresh`, { method: 'POST', body: JSON.stringify({}) })
+}
+
+export interface XpRobotForwardGroup {
+  group_id: string
+  group_name: string | null
+}
+
+export interface XpRobotForwardTarget {
+  target_id: string
+  device_id: string
+  device_name: string | null
+  wxid: string
+  account_name: string | null
+  groups: XpRobotForwardGroup[]
+}
+
+export interface XpRobotForumCategory {
+  code: string
+  name: string
+}
+
+export interface XpRobotSchoolOption {
+  id: string
+  name: string
+  province: string | null
+  city: string | null
+}
+
+export type XpRobotForwardPostStatus = 'published' | 'pending_review' | 'rejected' | 'hidden' | 'deleted'
+
+export const XP_ROBOT_FORWARD_POST_STATUS_OPTIONS: Array<{ value: XpRobotForwardPostStatus; label: string }> = [
+  { value: 'published', label: '已发布（审核通过）' },
+  { value: 'pending_review', label: '待审核' },
+  { value: 'rejected', label: '已驳回' },
+  { value: 'hidden', label: '已隐藏' },
+  { value: 'deleted', label: '已删除' },
+]
+
+export interface XpRobotForwardFilterRules {
+  platforms: string[]
+  campus_id: string | null
+  campus_name: string | null
+  categories: XpRobotForumCategory[]
+  post_statuses: XpRobotForwardPostStatus[]
+  aggregate_interval: number
+  min_messages: number
+  max_messages: number
+  quiet_start: string | null
+  quiet_end: string | null
+  active_weekdays: number[]
+}
+
+export interface XpRobotForwardTemplateConfig {
+  template: string
+  footer?: string | null
+  keywords: string[]
+  content_max_length: number
+}
+
+export interface XpRobotForwardConfig {
+  id: string
+  name: string
+  description: string | null
+  enabled: boolean
+  filter_rules: XpRobotForwardFilterRules
+  template_config: XpRobotForwardTemplateConfig
+  robot_targets: XpRobotForwardTarget[]
+  last_forwarded_at: string | null
+  stats: { test_count: number; success_count: number; last_tested_at: string | null }
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface XpRobotForwardConfigInput {
+  name: string
+  description: string | null
+  enabled: boolean
+  filter_rules: XpRobotForwardFilterRules
+  template_config: XpRobotForwardTemplateConfig
+  robot_targets: XpRobotForwardTarget[]
+}
+
+export function listXpRobotForwardFilterOptions(campusId?: string): Promise<{ schools: XpRobotSchoolOption[]; categories: XpRobotForumCategory[] }> {
+  const query = campusId ? `?campus_id=${encodeURIComponent(campusId)}` : ''
+  return adminRequest(`/admin/robot/forwards/filter-options${query}`)
+}
+export function listXpRobotForwards(filters: { name?: string; enabled?: boolean } = {}): Promise<{ items: XpRobotForwardConfig[] }> {
+  const query = new URLSearchParams()
+  if (filters.name?.trim()) query.set('name', filters.name.trim())
+  if (filters.enabled !== undefined) query.set('enabled', filters.enabled ? '1' : '0')
+  const suffix = query.size ? `?${query.toString()}` : ''
+  return adminRequest(`/admin/robot/forwards${suffix}`)
+}
+export function getXpRobotForward(id: string): Promise<XpRobotForwardConfig> {
+  return adminRequest(`/admin/robot/forwards/${encodeURIComponent(id)}`)
+}
+export function createXpRobotForward(input: XpRobotForwardConfigInput): Promise<XpRobotForwardConfig> {
+  return adminRequest('/admin/robot/forwards', { method: 'POST', body: JSON.stringify(input) })
+}
+export function updateXpRobotForward(id: string, input: XpRobotForwardConfigInput): Promise<XpRobotForwardConfig> {
+  return adminRequest(`/admin/robot/forwards/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+export function deleteXpRobotForward(id: string): Promise<{ id: string }> {
+  return adminRequest(`/admin/robot/forwards/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+export function updateXpRobotForwardStatus(id: string, enabled: boolean): Promise<XpRobotForwardConfig> {
+  return adminRequest(`/admin/robot/forwards/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: JSON.stringify({ enabled }) })
+}
+export function batchUpdateXpRobotForwardStatus(ids: string[], enabled: boolean): Promise<{ items: XpRobotForwardConfig[] }> {
+  return adminRequest('/admin/robot/forwards/batch-status', { method: 'POST', body: JSON.stringify({ ids, enabled }) })
+}
+export function testXpRobotForward(id: string, input: { target_id: string; group_id: string; post_count?: number }, idempotencyKey: string): Promise<XpRobotMessage> {
+  return adminRequest(`/admin/robot/forwards/${encodeURIComponent(id)}/test`, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify(input),
+  })
+}
+
+export type XpRobotPostContentSource = 'pool' | 'history' | 'ai'
+
+export interface XpRobotPostBot {
+  id: string
+  name: string
+  enabled: boolean
+  campus_id: string | null
+  campus_name: string | null
+  category_code: string
+  category_name: string
+  content_source: XpRobotPostContentSource
+  posts_per_day: number
+  posts_per_run: number
+  posted_today: number
+  active_weekdays: number[]
+  active_start: string
+  active_end: string
+  min_gap_minutes: number
+  history_min_likes: number
+  ai_prompt: string | null
+  last_posted_at: string | null
+  last_error: string | null
+  templates_total: number
+  templates_available: number
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface XpRobotPostBotInput {
+  name: string
+  enabled: boolean
+  campus_id: string
+  category_code: string
+  content_source: XpRobotPostContentSource
+  posts_per_day: number
+  posts_per_run: number
+  active_weekdays: number[]
+  active_start: string
+  active_end: string
+  min_gap_minutes: number
+  history_min_likes: number
+  ai_prompt?: string | null
+}
+
+export interface XpRobotPostTemplate {
+  id: string
+  title: string
+  content: string
+  enabled: boolean
+  sort: number
+  used_at: string | null
+  updated_at: string | null
+}
+
+export function listXpRobotPostBots(keyword?: string): Promise<{ items: XpRobotPostBot[] }> {
+  const query = keyword?.trim() ? `?keyword=${encodeURIComponent(keyword.trim())}` : ''
+  return adminRequest(`/admin/robot/post-bots${query}`)
+}
+export function createXpRobotPostBot(input: XpRobotPostBotInput): Promise<XpRobotPostBot> {
+  return adminRequest('/admin/robot/post-bots', { method: 'POST', body: JSON.stringify(input) })
+}
+export function updateXpRobotPostBot(id: string, input: XpRobotPostBotInput): Promise<XpRobotPostBot> {
+  return adminRequest(`/admin/robot/post-bots/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+export function updateXpRobotPostBotStatus(id: string, enabled: boolean): Promise<XpRobotPostBot> {
+  return adminRequest(`/admin/robot/post-bots/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: JSON.stringify({ enabled }) })
+}
+export function deleteXpRobotPostBot(id: string): Promise<{ deleted: boolean }> {
+  return adminRequest(`/admin/robot/post-bots/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+export function publishXpRobotPostBotNow(id: string): Promise<{ post_id: string; title: string; status: string }> {
+  return adminRequest(`/admin/robot/post-bots/${encodeURIComponent(id)}/publish`, { method: 'POST' })
+}
+export function listXpRobotPostTemplates(botId: string): Promise<{ items: XpRobotPostTemplate[] }> {
+  return adminRequest(`/admin/robot/post-bots/${encodeURIComponent(botId)}/templates`)
+}
+export function createXpRobotPostTemplate(botId: string, input: { title: string; content: string; enabled: boolean; sort: number }): Promise<XpRobotPostTemplate> {
+  return adminRequest(`/admin/robot/post-bots/${encodeURIComponent(botId)}/templates`, { method: 'POST', body: JSON.stringify(input) })
+}
+export function updateXpRobotPostTemplate(botId: string, templateId: string, input: { title: string; content: string; enabled: boolean; sort: number }): Promise<XpRobotPostTemplate> {
+  return adminRequest(`/admin/robot/post-bots/${encodeURIComponent(botId)}/templates/${encodeURIComponent(templateId)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+export function deleteXpRobotPostTemplate(botId: string, templateId: string): Promise<{ deleted: boolean }> {
+  return adminRequest(`/admin/robot/post-bots/${encodeURIComponent(botId)}/templates/${encodeURIComponent(templateId)}`, { method: 'DELETE' })
+}
+
+export interface XpRobotAssistantBinding {
+  binding_id: string
+  device_id: string
+  device_name: string | null
+  wxid: string
+  account_name: string | null
+  bound_at: string
+}
+
+export interface XpRobotAssistant {
+  id: string
+  name: string
+  remark: string | null
+  enabled: boolean
+  app_id: string
+  app_secret_masked: string | null
+  robot_bindings: XpRobotAssistantBinding[]
+  robot_count: number
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface XpRobotAssistantInput {
+  name: string
+  remark: string | null
+  enabled: boolean
+}
+
+export interface XpRobotAssistantWebhook {
+  assistant_id: string
+  assistant_name: string
+  app_id: string
+  url: string
+  binding_count: number
+  last_tested_at: string | null
+  last_test_status: 'LOCAL_READY' | 'LOCAL_FAILED' | null
+  last_test_message: string | null
+  notice: string
+}
+
+export function listXpRobotAssistants(filters: { name?: string; app_id?: string; enabled?: boolean } = {}): Promise<{ items: XpRobotAssistant[] }> {
+  const query = new URLSearchParams()
+  if (filters.name?.trim()) query.set('name', filters.name.trim())
+  if (filters.app_id?.trim()) query.set('app_id', filters.app_id.trim())
+  if (filters.enabled !== undefined) query.set('enabled', filters.enabled ? '1' : '0')
+  const suffix = query.size ? `?${query.toString()}` : ''
+  return adminRequest(`/admin/robot/assistants${suffix}`)
+}
+export function createXpRobotAssistant(input: XpRobotAssistantInput): Promise<XpRobotAssistant & { app_secret_once: string }> {
+  return adminRequest('/admin/robot/assistants', { method: 'POST', body: JSON.stringify(input) })
+}
+export function updateXpRobotAssistant(id: string, input: Omit<XpRobotAssistantInput, 'enabled'>): Promise<XpRobotAssistant> {
+  return adminRequest(`/admin/robot/assistants/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+export function deleteXpRobotAssistant(id: string): Promise<{ id: string }> {
+  return adminRequest(`/admin/robot/assistants/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+export function updateXpRobotAssistantStatus(id: string, enabled: boolean): Promise<XpRobotAssistant> {
+  return adminRequest(`/admin/robot/assistants/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: JSON.stringify({ enabled }) })
+}
+export function bindXpRobotAssistant(id: string, input: { device_id: string; device_name?: string | null; wxid: string; account_name?: string | null }): Promise<XpRobotAssistant> {
+  return adminRequest(`/admin/robot/assistants/${encodeURIComponent(id)}/bindings`, { method: 'POST', body: JSON.stringify(input) })
+}
+export function unbindXpRobotAssistant(id: string, bindingId: string): Promise<XpRobotAssistant> {
+  return adminRequest(`/admin/robot/assistants/${encodeURIComponent(id)}/bindings/${encodeURIComponent(bindingId)}`, { method: 'DELETE' })
+}
+export function getXpRobotAssistantWebhook(id: string): Promise<XpRobotAssistantWebhook> {
+  return adminRequest(`/admin/robot/assistants/${encodeURIComponent(id)}/webhook`)
+}
+export function testXpRobotAssistantWebhook(id: string): Promise<XpRobotAssistantWebhook> {
+  return adminRequest(`/admin/robot/assistants/${encodeURIComponent(id)}/webhook/test`, { method: 'POST', body: JSON.stringify({}) })
 }

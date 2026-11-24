@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cb015dbe26306c505bb80a659d299a96",
+    "content-hash": "9f2609f7a966bc30c5be79a9c0a85ce0",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -327,6 +327,47 @@
                 "source": "https://github.com/alibabacloud-sdk-php/alibabacloud-gateway-spi/tree/1.0.0"
             },
             "time": "2022-07-14T05:31:35+00:00"
+        },
+        {
+            "name": "alibabacloud/green-20220302",
+            "version": "3.6.10",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/green-20220302.git",
+                "reference": "a500933c623d7deb55217d25197d8423b99e662d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/green-20220302/zipball/a500933c623d7deb55217d25197d8423b99e662d",
+                "reference": "a500933c623d7deb55217d25197d8423b99e662d",
+                "shasum": ""
+            },
+            "require": {
+                "alibabacloud/darabonba": "^1.0.0",
+                "php": ">5.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AlibabaCloud\\SDK\\Green\\V20220302\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Alibaba Cloud SDK",
+                    "email": "sdk-team@alibabacloud.com"
+                }
+            ],
+            "description": "Alibaba Cloud Green (20220302) SDK Library for PHP",
+            "support": {
+                "source": "https://github.com/alibabacloud-sdk-php/green-20220302/tree/3.6.10"
+            },
+            "time": "2026-11-09T17:28:07+00:00",
+            "published-time": "2026-11-09T17:28:46+00:00"
         },
         {
             "name": "alibabacloud/openapi-core",
@@ -9959,5 +10000,5 @@
         "php": "^8.3"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.11.0"
 }

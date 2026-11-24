@@ -35,4 +35,22 @@ return [
         ],
     ],
 
+    'xp' => [
+        'base_url' => env('XP_BASE_URL', 'https://xp.vvbot.cc'),
+        'api_key' => env('XP_API_KEY'),
+        'timeout_seconds' => (int) env('XP_TIMEOUT_SECONDS', 35),
+    ],
+
+    'green' => [
+        'access_key_id' => env('GREEN_ACCESS_KEY_ID'),
+        'access_key_secret' => env('GREEN_ACCESS_KEY_SECRET'),
+    ],
+
+    // 发帖机器人 AI 内容生成：任意 OpenAI 兼容接口
+    'robot_ai' => [
+        'base_url' => env('ROBOT_AI_BASE_URL', ''),
+        'api_key' => env('ROBOT_AI_API_KEY', ''),
+        'model' => env('ROBOT_AI_MODEL', ''),
+    ],
+
 ];

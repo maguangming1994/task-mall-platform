@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Community\Http\Controllers\CommunityEngagementController;
+use App\Modules\Community\Models\CommunityContentSecuritySetting;
 use App\Modules\Community\Services\CommunityContentService;
 use App\Modules\Notification\Models\Notification;
 use App\Modules\Notification\Services\NotificationService;
@@ -71,6 +72,8 @@ class CampusCommunityActivityFlowTest extends TestCase
 
     public function test_published_comments_and_replies_notify_the_affected_classmate_once(): void
     {
+        // 本用例验证评论通知，显式关闭外审以免无微信身份的评论被 fail-closed 转人工审核。
+        CommunityContentSecuritySetting::query()->updateOrCreate(['name' => 'default'], ['enabled' => false]);
         $author = User::factory()->create(['status' => 'active', 'nickname' => '发帖同学']);
         $commenter = User::factory()->create(['status' => 'active', 'nickname' => '评论同学']);
         $admin = AdminUser::query()->create(['account' => 'interaction-reviewer', 'display_name' => '互动审核员', 'password' => 'AdminPassword12345!']);
