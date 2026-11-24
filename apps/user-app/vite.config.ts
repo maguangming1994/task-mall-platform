@@ -8,15 +8,15 @@ export default defineConfig({
     host: '127.0.0.1',
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: 'https://rwsc.jxgxnxs.cn',
         changeOrigin: true,
       },
       '/content': {
-        target: 'http://127.0.0.1:8000',
+        target: 'https://rwsc.jxgxnxs.cn',
         changeOrigin: true,
       },
       '/storage': {
-        target: 'http://127.0.0.1:8000',
+        target: 'https://rwsc.jxgxnxs.cn',
         changeOrigin: true,
       },
     },
