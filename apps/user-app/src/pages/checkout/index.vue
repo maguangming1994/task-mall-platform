@@ -350,6 +350,10 @@ function amountText(cash: number, points: number) { return [cash ? `¥${money(ca
 .subnav{display:flex;align-items:center;justify-content:center;height:88rpx;position:relative;background:#0BBF63}
 .nav-back{position:absolute;left:16rpx;top:14rpx;display:flex;align-items:center;justify-content:center;width:60rpx;height:60rpx;margin:0;padding:0;border-radius:50%;color:#fff;font-size:40rpx;line-height:56rpx}
 .nav-back::after{border:0}
+/* #ifdef MP-WEIXIN */
+/* 小程序原生导航栏已有返回键，页内返回键不再显示，避免出现两个返回按钮 */
+.nav-back{visibility:hidden}
+/* #endif */
 .nav-title{color:#fff;font-size:32rpx;font-weight:700}
 .card,.form-card{margin:20rpx 24rpx 0;border-radius:24rpx;background:#fff}
 .addr-card{display:flex;align-items:center;gap:22rpx;margin:20rpx 24rpx 0;padding:28rpx;border-radius:24rpx;background:#fff}

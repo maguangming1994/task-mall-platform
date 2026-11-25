@@ -556,6 +556,10 @@ function goCommunity() { uni.reLaunch({ url: '/pages/community/index' }) }
 .subnav{display:flex;align-items:center;height:88rpx;padding:0 16rpx;background:#fff}
 .nav-back{display:flex;align-items:center;justify-content:center;width:68rpx;height:68rpx;margin:0;padding:0;color:#191B1F;font-size:40rpx;line-height:60rpx}
 .nav-back::after{border:0}
+/* #ifdef MP-WEIXIN */
+/* 小程序原生导航栏已有返回键，页内返回键保留占位但不再显示，避免出现两个返回按钮 */
+.nav-back{visibility:hidden}
+/* #endif */
 .nav-title{flex:1;font-size:32rpx;font-weight:700;text-align:center}
 .nav-more{display:flex;align-items:center;justify-content:center;width:68rpx;height:68rpx;margin:0;padding:0;color:#767C85;font-size:22rpx;letter-spacing:2rpx}
 .nav-more::after{border:0}

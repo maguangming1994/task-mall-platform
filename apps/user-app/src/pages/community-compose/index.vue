@@ -135,6 +135,7 @@ import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
 import { redirectToLogin } from '@/utils/authRedirect'
 import { insertTextAtCursor, unicodeLength } from '@/utils/textInput'
+import { primeCommunitySubscription, requestCommunitySubscriptionAndWait } from '@/utils/wechatSubscription'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
 
@@ -179,6 +180,7 @@ onLoad(async (options?: Record<string, string | undefined>) => {
   await modules.ensureReady()
   if (!moduleEnabled.value) return
   if (!auth.isAuthenticated) { redirectToLogin(); return }
+  if (auth.accessToken) void primeCommunitySubscription(auth.accessToken)
   editingId.value = options?.postId || ''
   const requestedCategory = options?.category
   try {
@@ -273,6 +275,8 @@ async function submit() {
   submitting.value = true; submitError.value = ''
   const payload = { title: title.value.trim(), content: content.value.trim(), category_code: categoryCode.value, location_name: locationName.value.trim() || undefined, image_file_ids: images.value.map(item => item.fileId) }
   try {
+    // 发布成功场景会立即消费订阅授权，等用户完成授权后再提交，避免授权晚到导致推送被跳过。
+    await requestCommunitySubscriptionAndWait(auth.accessToken)
     const post = editingId.value ? await updateCommunityPost(auth.accessToken, editingId.value, payload) : await createCommunityPost(auth.accessToken, payload, submitRequestKey.value)
     uni.removeStorageSync(draftKey())
     uni.showToast({ title: post.status === 'published' ? '发布成功' : '内容已提交审核', icon: 'success' })
@@ -290,6 +294,10 @@ function errorMessage(error: unknown) { return error instanceof Error ? error.me
 .subnav{display:flex;align-items:center;height:88rpx;padding:0 16rpx;background:#fff}
 .nav-back{display:flex;align-items:center;justify-content:center;width:68rpx;height:68rpx;margin:0;padding:0;color:#191B1F;font-size:40rpx;line-height:60rpx}
 .nav-back::after{border:0}
+/* #ifdef MP-WEIXIN */
+/* 小程序原生导航栏已有返回键，页内返回键保留占位但不再显示，避免出现两个返回按钮 */
+.nav-back{visibility:hidden}
+/* #endif */
 .nav-title{flex:1;font-size:32rpx;font-weight:700;text-align:center}
 .nav-draft{display:flex;align-items:center;justify-content:center;height:68rpx;margin:0;padding:0 10rpx;color:#767C85;font-size:26rpx}
 .nav-draft::after{border:0}

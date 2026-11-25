@@ -251,6 +251,10 @@ function toastError(error:unknown,fallback:string){if(handlePublisherAccessError
 /* 顶部白色导航 */
 .subnav{display:flex;align-items:center;justify-content:space-between;height:88rpx;padding:0 28rpx;background:#fff}
 .subnav-back{display:flex;align-items:center;justify-content:center;width:64rpx;height:64rpx;border-radius:50%;background:#F4F6F4;color:#191B1F;font-size:22px;font-weight:800}
+/* #ifdef MP-WEIXIN */
+/* 小程序原生导航栏已有返回键，页内返回键保留占位但不再显示，避免出现两个返回按钮 */
+.subnav-back{visibility:hidden}
+/* #endif */
 .subnav-title{flex:1;text-align:center;color:#191B1F;font-size:17px;font-weight:800}
 .subnav-right{width:64rpx}
 

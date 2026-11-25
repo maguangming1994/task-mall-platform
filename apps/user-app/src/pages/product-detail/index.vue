@@ -24,7 +24,7 @@
         </swiper>
         <view v-else class="hero-img hero-placeholder"><text>{{ product.name.slice(0, 1) }}</text></view>
         <view class="hero-nav">
-          <button class="hero-btn" aria-label="返回商城" @click="backToMall">‹</button>
+          <button class="hero-btn hero-back" aria-label="返回商城" @click="backToMall">‹</button>
           <button class="hero-btn cart-btn" aria-label="打开购物车" @click="openCart">购物车</button>
         </view>
       </view>
@@ -220,6 +220,10 @@ function openCart() { uni.navigateTo({ url: '/pages/cart/index' }) }
 .hero-btn{display:flex;align-items:center;justify-content:center;min-width:60rpx;height:60rpx;margin:0;padding:0 16rpx;border-radius:999rpx;background:rgba(255,255,255,.92);color:#191B1F;font-size:34rpx;line-height:56rpx}
 .hero-btn.cart-btn{font-size:24rpx;font-weight:700}
 .hero-btn::after{border:0}
+/* #ifdef MP-WEIXIN */
+/* 小程序原生导航栏已有返回键，页内返回键不再显示，避免出现两个返回按钮；购物车入口保留 */
+.hero-back{visibility:hidden}
+/* #endif */
 .title-card{position:relative;margin:-32rpx 24rpx 0;padding:28rpx;border-radius:32rpx;background:#fff;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
 .price-row{display:flex;align-items:baseline;gap:16rpx}
 .price{color:#FF3B30;font-size:44rpx;font-weight:800}
