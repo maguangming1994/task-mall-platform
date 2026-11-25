@@ -80,11 +80,13 @@ class CommunityPostController extends Controller
         ]);
     }
 
-    public function show(Request $request, CommunityPost $post): JsonResponse
+    public function show(Request $request, string $post): JsonResponse
     {
-        abort_unless($post->status === 'published', 404);
+        // 分享/短链详情：已发布帖子允许跨校区直接阅读；列表与互动仍按校区隔离。
+        $model = CommunityPost::query()->withoutGlobalScope('campus_context')->where('public_id', $post)->first();
+        abort_unless($model !== null && $model->status === 'published', 404);
 
-        return ApiResponse::success($this->data($post, meta: $this->viewerMeta($request, collect([$post]))));
+        return ApiResponse::success($this->data($model, meta: $this->viewerMeta($request, collect([$model]))));
     }
 
     public function categories(CommunityContentService $service): JsonResponse

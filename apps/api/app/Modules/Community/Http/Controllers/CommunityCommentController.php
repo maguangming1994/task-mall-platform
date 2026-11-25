@@ -17,11 +17,12 @@ use Illuminate\Validation\ValidationException;
 
 class CommunityCommentController extends Controller
 {
-    public function index(CommunityPost $post): JsonResponse
+    public function index(string $post): JsonResponse
     {
-        abort_unless($post->status === 'published', 404);
+        $model = CommunityPost::query()->withoutGlobalScope('campus_context')->where('public_id', $post)->first();
+        abort_unless($model !== null && $model->status === 'published', 404);
 
-        return ApiResponse::success(['items' => CommunityComment::query()->where('community_post_id', $post->id)->where('status', 'published')->oldest()->get()->map(fn (CommunityComment $comment) => $this->data($comment))]);
+        return ApiResponse::success(['items' => CommunityComment::query()->where('community_post_id', $model->id)->where('status', 'published')->oldest()->get()->map(fn (CommunityComment $comment) => $this->data($comment))]);
     }
 
     public function store(Request $request, CommunityPost $post, CommunityContentService $service): JsonResponse
