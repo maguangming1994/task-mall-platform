@@ -90,6 +90,8 @@
         :title="material?.title || ''"
         :content="material?.description || '校园资料互助，学习资料免费获取。'"
         :link="posterLink"
+        qr-target-type="material"
+        :qr-target-id="material?.id || materialId"
         @close="posterVisible = false"
       />
     </template>

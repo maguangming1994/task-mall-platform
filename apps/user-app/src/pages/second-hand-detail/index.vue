@@ -90,6 +90,8 @@
       :title="item.title"
       :content="posterContent"
       :link="posterLink"
+      qr-target-type="second_hand"
+      :qr-target-id="item.id"
       :image-url="shareImage()"
       @close="posterVisible = false"
     />

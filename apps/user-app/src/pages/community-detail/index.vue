@@ -141,6 +141,8 @@ import { computed, nextTick, ref } from 'vue'
 import CommunityCommentComposer from '@/components/CommunityCommentComposer.vue'
 import { communityAttachmentUrl, createCommunityComment, createCommunityRequestKey, DEFAULT_COMMUNITY_PUBLISHING_RULES, getCommunityPost, likeCommunityPost, listCommunityCategories, listCommunityComments, reportCommunityContent, unlikeCommunityPost, type CommunityComment, type CommunityPost, type CommunityPublishingRules } from '@/api/community'
 import { getPosterTemplate, type PosterTemplate } from '@/api/poster'
+import { loadPosterQr, type PosterQr } from '@/utils/posterQr'
+import { primeCommunitySubscription, requestCommunitySubscription } from '@/utils/wechatSubscription'
 import { ApiError } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
@@ -172,6 +174,7 @@ const posterReady = ref(false)
 const posterWidth = ref(330)
 const posterHeight = ref(520)
 const posterTemplate = ref<PosterTemplate | null>(null)
+const posterQr = ref<PosterQr>({ link: '' })
 const postId = ref('')
 const DEFAULT_POSTER_TEMPLATE: PosterTemplate = {
   public_id: 'default',
@@ -201,6 +204,7 @@ const sharePath = computed(() => `/pages/community-detail/index?id=${encodeURICo
 onLoad(async (query) => {
   await modules.ensureReady()
   if (!moduleEnabled.value) { loading.value = false; return }
+  if (auth.accessToken) void primeCommunitySubscription(auth.accessToken)
   void loadPublishingRules()
   postId.value = typeof query?.id === 'string' ? query.id.trim() : ''
   invalidId.value = !postId.value
@@ -283,6 +287,8 @@ function closeCommentComposer() {
 }
 async function submitComment(content: string) {
   if (!post.value || !auth.accessToken || commentSubmitting.value) return
+  // 评论是用户点击触发的动作，先同步拉起订阅授权，再提交评论，避免失去微信要求的手势上下文。
+  requestCommunitySubscription(auth.accessToken)
   commentSubmitting.value = true
   commentSubmitError.value = ''
   try {
@@ -369,6 +375,9 @@ async function openPoster() {
     // 接口失败时使用默认模板，不阻塞体验
   }
 
+  // 二维码优先取微信小程序码；小程序未上线时回退 H5 链接
+  posterQr.value = await loadPosterQr('community_post', post.value?.id || postId.value, shareLink())
+
   const system = uni.getSystemInfoSync()
   const baseW = posterTemplate.value.canvas_width || 330
   const baseH = posterTemplate.value.canvas_height || 520
@@ -402,6 +411,18 @@ function applyBackground(ctx: UniApp.CanvasContext, width: number, height: numbe
     // image 背景：先铺底色兜底，图片加载完成后重绘
     ctx.setFillStyle('#ffffff'); ctx.fillRect(0, 0, width, height)
   }
+}
+
+/** 绘制二维码：有微信小程序码时直接贴图，否则用 H5 链接本地生成 */
+function drawQrContent(ctx: UniApp.CanvasContext, size: number, x: number, y: number) {
+  if (posterQr.value.imagePath) {
+    ctx.drawImage(posterQr.value.imagePath, x, y, size, size)
+    return
+  }
+  const qr = qrcode(0, 'M'); qr.addData(posterQr.value.link || shareLink()); qr.make()
+  const cells = qr.getModuleCount(); const cell = size / cells
+  ctx.setFillStyle('#11344f')
+  for (let row = 0; row < cells; row += 1) for (let col = 0; col < cells; col += 1) if (qr.isDark(row, col)) ctx.fillRect(x + col * cell, y + row * cell, Math.ceil(cell), Math.ceil(cell))
 }
 
 function drawPoster() {
@@ -443,12 +464,10 @@ function drawPoster() {
   ctx.setFillStyle((qr.cta_color as string) || '#173c58'); ctx.setFontSize(px(12))
   ctx.fillText((qr.cta_text as string) || '扫码查看动态详情', px(51), px(345))
 
-  // 二维码
-  const qrc = qrcode(0, 'M'); qrc.addData(shareLink()); qrc.make()
-  const qrSize = px(86); const qrX = px(38); const qrY = px(382); const cells = qrc.getModuleCount(); const cell = qrSize / cells
+  // 二维码：优先绘制微信小程序码，回退到 H5 链接本地二维码
+  const qrSize = px(86); const qrX = px(38); const qrY = px(382)
   ctx.setFillStyle('#fff'); ctx.fillRect(qrX - px(7), qrY - px(7), qrSize + px(14), qrSize + px(14))
-  ctx.setFillStyle('#11344f')
-  for (let row = 0; row < cells; row += 1) for (let col = 0; col < cells; col += 1) if (qrc.isDark(row, col)) ctx.fillRect(qrX + col * cell, qrY + row * cell, Math.ceil(cell), Math.ceil(cell))
+  drawQrContent(ctx, qrSize, qrX, qrY)
 
   // 底部辅助文案 + 水印
   ctx.setFillStyle((qr.helper_color as string) || '#173c58'); ctx.setFontSize(px(15))
@@ -495,11 +514,8 @@ function drawPoster() {
           rctx.setFillStyle((qr.cta_color as string) || '#173c58'); rctx.setFontSize(px(12))
           rctx.fillText((qr.cta_text as string) || '扫码查看动态详情', px(51), px(345))
           // QR
-          const qrr = qrcode(0, 'M'); qrr.addData(shareLink()); qrr.make()
-          const cells2 = qrr.getModuleCount(); const cell2 = qrSize / cells2
           rctx.setFillStyle('#fff'); rctx.fillRect(qrX - px(7), qrY - px(7), qrSize + px(14), qrSize + px(14))
-          rctx.setFillStyle('#11344f')
-          for (let row = 0; row < cells2; row += 1) for (let col = 0; col < cells2; col += 1) if (qrr.isDark(row, col)) rctx.fillRect(qrX + col * cell2, qrY + row * cell2, Math.ceil(cell2), Math.ceil(cell2))
+          drawQrContent(rctx, qrSize, qrX, qrY)
           // Bottom text
           rctx.setFillStyle((qr.helper_color as string) || '#173c58'); rctx.setFontSize(px(15))
           rctx.fillText((qr.helper_text as string) || '分享给同学，一起发现校园', px(150), px(414))

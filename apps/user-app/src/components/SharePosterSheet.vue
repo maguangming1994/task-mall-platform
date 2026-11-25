@@ -36,6 +36,8 @@
 import qrcode from 'qrcode-generator'
 import { computed, nextTick, ref, watch } from 'vue'
 import { getPosterTemplate, type PosterTemplate } from '@/api/poster'
+import type { ShareQrTargetType } from '@/api/share'
+import { loadPosterQr, type PosterQr } from '@/utils/posterQr'
 
 const props = withDefaults(defineProps<{
   /** 是否显示海报弹层 */
@@ -52,8 +54,12 @@ const props = withDefaults(defineProps<{
   title?: string
   /** 海报正文摘要 */
   content?: string
-  /** 二维码指向的完整地址 */
+  /** 二维码指向的完整地址（小程序码不可用时的 H5 兜底） */
   link?: string
+  /** 分享二维码目标类型：提供后优先使用微信小程序码 */
+  qrTargetType?: ShareQrTargetType
+  /** 分享二维码目标 ID（public_id 或邀请码） */
+  qrTargetId?: string
   /** 可选图片，模板使用图片背景但未配置图片时作为兜底 */
   imageUrl?: string
   /** canvas 元素 id，同一页面只挂载一个海报弹层时保持默认即可 */
@@ -66,6 +72,7 @@ const props = withDefaults(defineProps<{
   title: '',
   content: '',
   link: '',
+  qrTargetId: '',
   imageUrl: '',
   canvasId: 'sharePosterCanvas',
 })
@@ -78,6 +85,7 @@ const posterHeight = ref(520)
 // H5 保存时生成的图片地址，用于长按保存
 const previewImage = ref('')
 const template = ref<PosterTemplate>(createDefaultTemplate())
+const posterQr = ref<PosterQr>({ link: '' })
 
 const previewStyle = computed(() => `width:${posterWidth.value}px;height:${posterHeight.value}px`)
 
@@ -129,6 +137,9 @@ async function preparePoster() {
     }
   }
 
+  if (!props.visible) return
+  // 二维码优先取小程序码；小程序未上线时自动回退 H5 链接
+  posterQr.value = await loadPosterQr(props.qrTargetType, props.qrTargetId, props.link)
   if (!props.visible) return
   fitCanvas()
   await nextTick()
@@ -261,16 +272,22 @@ function paint(ctx: UniApp.CanvasContext, bg: { path: string; width: number; hei
   ctx.setFillStyle((qr.cta_color as string) || '#173c58'); ctx.setFontSize(px(12))
   ctx.fillText((qr.cta_text as string) || '扫码查看详情', px(51), px(345))
 
-  // 二维码
-  if (props.link) {
-    const qrc = qrcode(0, 'M'); qrc.addData(props.link); qrc.make()
+  // 二维码：优先绘制微信小程序码，回退到 H5 链接本地二维码
+  const qrImage = posterQr.value.imagePath
+  const qrLink = posterQr.value.link
+  if (qrImage || qrLink) {
     const qrSize = px(86); const qrX = px(38); const qrY = px(382)
-    const cells = qrc.getModuleCount(); const cell = qrSize / cells
     ctx.setFillStyle('#fff'); ctx.fillRect(qrX - px(7), qrY - px(7), qrSize + px(14), qrSize + px(14))
-    ctx.setFillStyle('#11344f')
-    for (let row = 0; row < cells; row += 1) {
-      for (let col = 0; col < cells; col += 1) {
-        if (qrc.isDark(row, col)) ctx.fillRect(qrX + col * cell, qrY + row * cell, Math.ceil(cell), Math.ceil(cell))
+    if (qrImage) {
+      ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize)
+    } else if (qrLink) {
+      const qrc = qrcode(0, 'M'); qrc.addData(qrLink); qrc.make()
+      const cells = qrc.getModuleCount(); const cell = qrSize / cells
+      ctx.setFillStyle('#11344f')
+      for (let row = 0; row < cells; row += 1) {
+        for (let col = 0; col < cells; col += 1) {
+          if (qrc.isDark(row, col)) ctx.fillRect(qrX + col * cell, qrY + row * cell, Math.ceil(cell), Math.ceil(cell))
+        }
       }
     }
   }

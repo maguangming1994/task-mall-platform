@@ -165,6 +165,7 @@ import { ApiError } from '@/api/http'
 import { claimTask, getHallTask, reportTask, type HallTask, type TaskReward } from '@/api/tasks'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import { loadPosterQr, type PosterQr } from '@/utils/posterQr'
 import { richTextContent } from '@/utils/richText'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
@@ -181,6 +182,7 @@ const claimConfirmVisible = ref(false)
 const shareVisible = ref(false)
 const posterVisible = ref(false)
 const posterReady = ref(false)
+const posterQr = ref<PosterQr>({ link: '' })
 const posterWidth = ref(330)
 const posterHeight = ref(520)
 const heroImageFallback = ref(false)
@@ -404,7 +406,7 @@ function copyTaskLink() {
   uni.setClipboardData({ data: taskShareLink(), success: () => uni.showToast({ title: '任务链接已复制', icon: 'success' }) })
 }
 
-function openPoster() {
+async function openPoster() {
   if (!task.value) return
   closeSharePanel()
   const system = uni.getSystemInfoSync()
@@ -412,6 +414,8 @@ function openPoster() {
   posterHeight.value = Math.round(posterWidth.value * 1.56)
   posterReady.value = false
   posterVisible.value = true
+  // 二维码优先取微信小程序码；小程序未上线时回退 H5 链接
+  posterQr.value = await loadPosterQr('task', task.value.id, taskShareLink())
   nextTick(() => setTimeout(drawTaskPoster, 100))
 }
 
@@ -453,11 +457,17 @@ function drawTaskPoster() {
   ctx.setFillStyle('#173c58'); ctx.setFontSize(px(12)); ctx.fillText(`剩余 ${task.value.remaining_reward_slots} 份`, px(51), px(329)); ctx.fillText(`限时 ${task.value.completion_window_hours} 小时`, px(177), px(329))
   ctx.setFillStyle('#6f8392'); ctx.setFontSize(px(10)); ctx.fillText('扫码进入任务详情，领取后按步骤完成', px(51), px(349))
 
-  const qr = qrcode(0, 'M'); qr.addData(taskShareLink()); qr.make()
-  const qrSize = px(84); const qrX = px(38); const qrY = px(382); const cells = qr.getModuleCount(); const cell = qrSize / cells
+  // 二维码：优先绘制微信小程序码，回退到 H5 链接本地二维码
+  const qrSize = px(84); const qrX = px(38); const qrY = px(382)
   ctx.setFillStyle('#ffffff'); ctx.fillRect(qrX - px(7), qrY - px(7), qrSize + px(14), qrSize + px(14))
-  ctx.setFillStyle('#11344f')
-  for (let row = 0; row < cells; row += 1) for (let col = 0; col < cells; col += 1) if (qr.isDark(row, col)) ctx.fillRect(qrX + col * cell, qrY + row * cell, Math.ceil(cell), Math.ceil(cell))
+  if (posterQr.value.imagePath) {
+    ctx.drawImage(posterQr.value.imagePath, qrX, qrY, qrSize, qrSize)
+  } else {
+    const qr = qrcode(0, 'M'); qr.addData(posterQr.value.link || taskShareLink()); qr.make()
+    const cells = qr.getModuleCount(); const cell = qrSize / cells
+    ctx.setFillStyle('#11344f')
+    for (let row = 0; row < cells; row += 1) for (let col = 0; col < cells; col += 1) if (qr.isDark(row, col)) ctx.fillRect(qrX + col * cell, qrY + row * cell, Math.ceil(cell), Math.ceil(cell))
+  }
   ctx.setFillStyle('#173c58'); ctx.setFontSize(px(15)); ctx.fillText('扫码查看任务', px(151), px(414))
   ctx.setFillStyle('#748895'); ctx.setFontSize(px(10)); ctx.fillText('分享给同学，一起完成', px(151), px(438))
   ctx.setFillStyle('#ffffff'); ctx.setFontSize(px(10)); ctx.fillText('任务商城 · 校园成长与奖励平台', px(22), height - px(17))

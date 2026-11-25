@@ -92,6 +92,8 @@
         :title="product.name"
         :content="shareDesc()"
         :link="posterLink"
+        qr-target-type="product"
+        :qr-target-id="product.id"
         :image-url="shareImage()"
         @close="posterVisible = false"
       />

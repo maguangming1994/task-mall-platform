@@ -14,12 +14,15 @@ use Throwable;
 /**
  * 为社区帖子生成微信小程序 URL Link（mp:// 开头）。
  *
- * 未配置小程序凭据或微信接口失败时回退为该帖子的 H5 链接，
- * 保证转发内容始终带有可定位到帖子的链接。
+ * 转发内容优先使用小程序短链；只有小程序未配置、未发布或微信接口明确不可用时，
+ * 才回退为该帖子的 H5 短链，保证转发内容始终带有可定位到帖子的链接。
  */
 class WechatMiniUrlLinkService
 {
     private const POST_PATH = 'pages/community-detail/index';
+
+    /** 小程序短链不可用状态缓存 5 分钟，避免每次转发都重复请求微信接口。 */
+    private const UNAVAILABLE_MINUTES = 5;
 
     public function __construct(
         private readonly WechatProviderSettingsService $settings,
@@ -43,13 +46,18 @@ class WechatMiniUrlLinkService
         if (is_string($cached) && $cached !== '') {
             return $cached;
         }
+        if (Cache::has($cacheKey.':unavailable')) {
+            return $fallback;
+        }
 
         try {
             $link = $this->request($configuration, ['id' => (string) $post->public_id], false);
         } catch (Throwable) {
-            return $fallback;
+            $link = null;
         }
         if ($link === null) {
+            Cache::put($cacheKey.':unavailable', true, now()->addMinutes(self::UNAVAILABLE_MINUTES));
+
             return $fallback;
         }
         Cache::put($cacheKey, $link, now()->addDays(29));
@@ -81,17 +89,28 @@ class WechatMiniUrlLinkService
      */
     private function request(array $configuration, array $query, bool $refreshed): ?string
     {
-        try {
-            $response = Http::acceptJson()->timeout($configuration['timeout_seconds'])
-                ->withQueryParameters(['access_token' => $this->tokens->token('mini', $refreshed)])
-                ->post('https://api.weixin.qq.com/wxa/generate_urllink', [
-                    'path' => self::POST_PATH,
-                    'query' => http_build_query($query),
-                    'expire_type' => 1,
-                    'expire_interval' => 30,
-                    'env_version' => 'release',
-                ]);
-        } catch (ConnectionException) {
+        $response = null;
+        // 跨境网络偶发超时：重试一次，避免小程序仍在线却因瞬时抖动降级为 H5 短链
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            try {
+                $response = Http::acceptJson()->timeout($configuration['timeout_seconds'])
+                    ->withQueryParameters(['access_token' => $this->tokens->token('mini', $refreshed)])
+                    ->post('https://api.weixin.qq.com/wxa/generate_urllink', [
+                        'path' => self::POST_PATH,
+                        'query' => http_build_query($query),
+                        'expire_type' => 1,
+                        'expire_interval' => 30,
+                        'env_version' => 'release',
+                    ]);
+                break;
+            } catch (ConnectionException) {
+                if ($attempt === 2) {
+                    return null;
+                }
+                usleep(200000);
+            }
+        }
+        if ($response === null) {
             return null;
         }
         $payload = $response->json();

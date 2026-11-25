@@ -100,6 +100,7 @@ use App\Modules\Settings\Http\Controllers\AdminSystemSettingController;
 use App\Modules\Settings\Http\Controllers\AppearanceContentController;
 use App\Modules\Settings\Http\Controllers\AppNavigationController;
 use App\Modules\Settings\Http\Controllers\HomeContentController;
+use App\Modules\Share\Http\Controllers\ShareQrCodeController;
 use App\Modules\Support\Http\Controllers\AdminSupportTicketController;
 use App\Modules\Support\Http\Controllers\SupportTicketController;
 use App\Modules\Task\Http\Controllers\AdminRewardBudgetController;
@@ -140,6 +141,9 @@ Route::get('/appearance-content', [AppearanceContentController::class, 'show']);
 Route::get('/app-navigation', [AppNavigationController::class, 'show']);
 Route::get('/icon-configs', [IconConfigController::class, 'index']);
 Route::get('/poster-templates/{code}', [PosterTemplateController::class, 'show'])->middleware('throttle:60,1');
+// 分享二维码：优先生成微信小程序码，小程序未上线时返回 H5 链接（公开接口，限流防刷）
+Route::get('/share/qrcode', [ShareQrCodeController::class, 'show'])->middleware('throttle:120,1');
+Route::get('/share/qrcode/image', [ShareQrCodeController::class, 'image'])->middleware('throttle:120,1');
 Route::get('/legal-documents', [LegalDocumentController::class, 'index']);
 // 公开的小程序基础配置（仅 AppID 等公开信息，凭据绝不外泄），供发布脚本/流水线自动读取
 Route::get('/app-config', [MiniProgramConfigController::class, 'show'])->middleware('throttle:60,1');
@@ -275,6 +279,7 @@ Route::middleware('auth.access')->group(function () {
     Route::put('/notification-preferences', [NotificationController::class, 'updatePreference'])->middleware('legal.consent:account');
     Route::get('/notification-subscriptions/wechat', [NotificationController::class, 'wechatSubscriptionOptions'])->middleware('legal.consent:account');
     Route::post('/notification-subscriptions/wechat', [NotificationController::class, 'recordWechatSubscriptions'])->middleware(['legal.consent:account', 'throttle:20,1']);
+    Route::get('/notification-subscriptions/official-account', [NotificationController::class, 'wechatOfficialAccountTemplates'])->middleware('legal.consent:account');
     Route::post('/growth/referrals', [ReferralController::class, 'bind'])->middleware(['module.gate:module_referrals', 'legal.consent:account', 'throttle:5,1']);
     // 社区发帖/互动（浏览门禁在公开区；父链 module_community 关闭时由 gate 服务级联关闭）
     Route::middleware('module.gate:module_community_post')->group(function () {
