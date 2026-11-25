@@ -1,5 +1,6 @@
 import {
   BellOutlined,
+  DownOutlined,
   KeyOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
@@ -15,6 +16,7 @@ import {
   Checkbox,
   ConfigProvider,
   Drawer,
+  Dropdown,
   Form,
   Input,
   Layout,
@@ -278,10 +280,27 @@ function AdminShell() {
             <Badge dot color="#f59e0b"><span className="xq-header-bell"><BellOutlined /></span></Badge>
             <Button type="text" className="xq-header-action-desktop" icon={<KeyOutlined />} onClick={() => setPasswordOpen(true)}>修改密码</Button>
             <Button type="text" danger className="xq-header-action-desktop" icon={<LogoutOutlined />} onClick={signOut}>退出登录</Button>
-            <div className="xq-header-user">
-              <Avatar size={32}>{admin?.display_name.slice(0, 1)}</Avatar>
-              <span><strong style={{ fontSize: 13 }}>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
-            </div>
+            <Dropdown
+              trigger={['click']}
+              placement="bottomRight"
+              menu={{
+                items: [
+                  { key: 'password', icon: <KeyOutlined />, label: '修改密码' },
+                  { type: 'divider' },
+                  { key: 'logout', icon: <LogoutOutlined />, danger: true, label: '退出登录' },
+                ],
+                onClick: ({ key }) => {
+                  if (key === 'password') setPasswordOpen(true)
+                  if (key === 'logout') signOut()
+                },
+              }}
+            >
+              <div className="xq-header-user">
+                <Avatar size={32}>{admin?.display_name.slice(0, 1)}</Avatar>
+                <span><strong style={{ fontSize: 13 }}>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
+                <DownOutlined style={{ fontSize: 10, color: '#9ca3af' }} />
+              </div>
+            </Dropdown>
           </div>
         </Layout.Header>
         <Layout.Content className="xq-content">
