@@ -102,7 +102,7 @@
             </view>
           </view>
           <text class="post-title" @click="openPost(post.id)"><text class="topic-prefix">#{{ post.category_label }}</text> {{ post.title }}</text>
-          <text :class="['post-content', { collapsed: !isExpanded(post.id) }]" @click="toggleExpanded(post.id)">{{ post.content }}</text>
+          <text :class="['post-content', { collapsed: !isExpanded(post.id) }]" @click="openPost(post.id)">{{ post.content }}</text>
           <text v-if="unicodeLength(post.content) > 92" class="expand-link" @click="toggleExpanded(post.id)">{{ isExpanded(post.id) ? '收起' : '展开全文' }}</text>
           <view v-if="postImages(post).length" :class="['media-grid', `count-${Math.min(postImages(post).length, 3)}`]">
             <image v-for="(attachment, imageIndex) in postImages(post).slice(0, 6)" :key="attachment.file_id" class="post-image" :src="communityAttachmentUrl(attachment)" mode="aspectFill" @click="previewPostImages(post, imageIndex)" />

@@ -8,7 +8,7 @@
     <template v-else>
     <view class="subnav">
       <button class="nav-back" aria-label="返回社区" @click="goCommunity">‹</button>
-      <text class="nav-title">动态详情</text>
+      <view class="nav-spacer" />
       <button v-if="post" class="nav-more" aria-label="更多操作" @click="report('post', post.id)">•••</button>
       <view v-else class="nav-more" />
     </view>
@@ -564,7 +564,7 @@ function goCommunity() { uni.reLaunch({ url: '/pages/community/index' }) }
 /* 小程序原生导航栏已有返回键，页内返回键保留占位但不再显示，避免出现两个返回按钮 */
 .nav-back{visibility:hidden}
 /* #endif */
-.nav-title{flex:1;font-size:32rpx;font-weight:700;text-align:center}
+.nav-spacer{flex:1}
 .nav-more{display:flex;align-items:center;justify-content:center;width:68rpx;height:68rpx;margin:0;padding:0;color:#767C85;font-size:22rpx;letter-spacing:2rpx}
 .nav-more::after{border:0}
 .loading-shell{display:flex;flex-direction:column;gap:18rpx;padding:24rpx}
