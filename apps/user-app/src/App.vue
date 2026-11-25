@@ -3,6 +3,8 @@ import { onLaunch, onShow, onHide } from "@dcloudio/uni-app";
 import { useModulesStore } from '@/stores/modules'
 import { useIconConfigStore } from '@/stores/icons'
 import { useCampusProfileStore } from '@/stores/campusProfile'
+import { useAuthStore } from '@/stores/auth'
+import { capturePendingH5Code } from '@/platform/auth'
 import { CAMPUS_REQUIRED_EVENT, showCampusRequiredModal } from '@/utils/campusGate'
 import { ensureCampusBinding } from '@/utils/campusBindingGuard'
 
@@ -14,6 +16,10 @@ function handleCampusRequired(code?: string) {
 
 onLaunch(() => {
   console.info("Task Mall launched");
+  // 公众号授权回跳：先暂存 code，未登录时引导到登录页完成换取
+  if (!useAuthStore().accessToken && capturePendingH5Code()) {
+    setTimeout(() => { void uni.reLaunch({ url: '/pages/login/index' }) }, 0)
+  }
   const modules = useModulesStore()
   modules.hydrate()
   void modules.load(true)

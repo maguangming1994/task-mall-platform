@@ -103,7 +103,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ApiError } from '@/api/http'
 import { loadHomeContent, type HomeBrand } from '@/api/home'
 import { loadPendingLegalDocuments } from '@/api/legal'
-import { requestWechatLoginCode } from '@/platform/auth'
+import { hasPendingH5Code, requestWechatLoginCode } from '@/platform/auth'
 import { loadClientCapabilities, type ClientCapabilities } from '@/platform/capabilities'
 import { useAuthStore } from '@/stores/auth'
 import { appendReturnUrl, clearReturnUrl, resolveReturnUrl } from '@/utils/authRedirect'
@@ -365,6 +365,11 @@ onMounted(async () => {
   const [capabilityResult, homeResult] = await Promise.allSettled([loadClientCapabilities(), loadHomeContent()])
   capabilities.value = capabilityResult.status === 'fulfilled' ? capabilityResult.value : null
   if (homeResult.status === 'fulfilled') brand.value = homeResult.value.brand
+  // 公众号授权回跳后自动换取登录态（点击授权前已同意协议，此处不重复拦截）
+  if (!auth.accessToken && hasPendingH5Code()) {
+    agreed.value = true
+    void wechatLogin()
+  }
 })
 
 onUnmounted(() => {

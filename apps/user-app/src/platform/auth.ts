@@ -8,6 +8,31 @@ export interface WechatLoginCode {
 
 const localSubjectKey = 'task_mall_local_wechat_subject'
 const oauthStateKey = 'task_mall_wechat_oauth_state'
+const pendingH5CodeKey = 'task_mall_pending_h5_code'
+
+/**
+ * 公众号授权回跳会落到站点根路径（hash 路由的 # 不参与 redirect_uri），
+ * 因此需在应用启动时把 URL 上的 code 暂存起来，再由登录页消费并换取登录态。
+ */
+export function capturePendingH5Code(): boolean {
+  if (typeof window === 'undefined' || clientPlatform !== 'h5-wechat') return false
+  const code = readQueryString(window.location.search, 'code')
+  if (!code) return false
+
+  uni.setStorageSync(pendingH5CodeKey, {
+    code,
+    state: readQueryString(window.location.search, 'state'),
+  })
+  window.history.replaceState({}, '', window.location.pathname + window.location.hash)
+
+  return true
+}
+
+export function hasPendingH5Code(): boolean {
+  const pending = uni.getStorageSync(pendingH5CodeKey)
+
+  return Boolean(pending && typeof pending === 'object' && typeof pending.code === 'string' && pending.code)
+}
 
 function localCode(channel: 'mini' | 'h5'): string {
   let subject = uni.getStorageSync(localSubjectKey)
@@ -34,6 +59,17 @@ function miniLoginCode(): Promise<string> {
 }
 
 function h5LoginCode(configuredAppId?: string | null): string | null {
+  const pending = uni.getStorageSync(pendingH5CodeKey)
+  if (pending && typeof pending === 'object' && typeof pending.code === 'string' && pending.code) {
+    uni.removeStorageSync(pendingH5CodeKey)
+    const expectedState = uni.getStorageSync(oauthStateKey)
+    uni.removeStorageSync(oauthStateKey)
+    if (import.meta.env.MODE === 'production' && (!expectedState || expectedState !== pending.state)) {
+      throw new Error('微信授权状态校验失败，请重新发起登录。')
+    }
+    return pending.code
+  }
+
   const code = readQueryString(window.location.search, 'code')
   if (code) {
     const expectedState = uni.getStorageSync(oauthStateKey)
