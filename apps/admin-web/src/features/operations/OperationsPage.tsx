@@ -50,6 +50,29 @@ const campaignStatusNames: Record<string, string> = {
   draft: '草稿', ready: '待发送', scheduled: '计划中', sending: '发送中', completed: '已完成', cancelled: '已取消', failed: '发送失败',
 }
 const deliveryStatusNames: Record<string, string> = { retrying: '等待重试', failed: '发送失败' }
+
+// 审核模式一键切换清单：与 scripts/one-shot/{enable,disable}-modules.mjs 保持一致。
+// module_withdraw 不在清单里，它由后端 ModuleGateService 在 review_in_progress=enabled 时动态关闭。
+const REVIEW_MODULES = [
+  'module_community',
+  'module_community_post',
+  'module_material',
+  'module_material_post',
+  'module_material_request',
+  'module_follow',
+  'module_identity_verification',
+]
+interface ReviewTarget { code: string; enabled: boolean }
+function reviewTargets(reviewing: boolean): ReviewTarget[] {
+  return [
+    { code: 'review_in_progress', enabled: reviewing },
+    ...REVIEW_MODULES.map((code) => ({ code, enabled: !reviewing })),
+  ]
+}
+function flagMatchesTarget(flag: ManagedFeatureFlag, target: ReviewTarget): boolean {
+  return flag.mode === (target.enabled ? 'enabled' : 'disabled')
+    && flag.rollout_percentage === (target.enabled ? 100 : 0)
+}
 const sceneNames: Record<string, string> = {
   campaign_launch: '活动上线通知', marketing_campaign: '营销活动触达', payment_succeeded: '订单支付成功',
   task_reviewed: '任务审核结果', task_claim_expiring: '任务即将到期', refund_succeeded: '退款成功',
@@ -98,6 +121,8 @@ export function OperationsPage() {
   const [uatRuns, setUatRuns] = useState<UatRun[]>([])
   const [featureFlags, setFeatureFlags] = useState<ManagedFeatureFlag[]>([])
   const [releases, setReleases] = useState<ManagedRelease[]>([])
+  // null=空闲；true/false=正在切换到「审核中/审核过」
+  const [reviewSwitching, setReviewSwitching] = useState<boolean | null>(null)
   const [templateOpen, setTemplateOpen] = useState(false)
   const [editingRule, setEditingRule] = useState<ManagedNotificationRule | null>(null)
   const [editingTemplate, setEditingTemplate] = useState<ManagedNotificationTemplate | null>(null)
@@ -340,13 +365,69 @@ export function OperationsPage() {
   }
 
   const reviewFlag = featureFlags.find((f) => f.code === 'review_in_progress')
-  const setReviewStatus = async (reviewing: boolean) => {
-    if (!canDeploy || !reviewFlag) return
-    try {
-      await updateFeatureFlag(reviewFlag.code, { mode: reviewing ? 'enabled' : 'disabled', rollout_percentage: reviewing ? 100 : 0, audience: reviewFlag.audience ?? {}, expected_version: reviewFlag.version, reason: reviewing ? '切换为审核中占位文案。' : '切换为审核过占位文案。' })
-      await load()
-      messageApi.success(reviewing ? '已切换为审核中文案' : '已切换为审核过文案')
-    } catch (error) { messageApi.error(error instanceof Error ? error.message : '切换失败') }
+  // 一致性判定：所有 8 个目标开关都已到位才认为模式就绪；否则视为「配置不一致」
+  const reviewModeReady = (reviewing: boolean): boolean =>
+    reviewTargets(reviewing).every((target) => {
+      const flag = featureFlags.find((item) => item.code === target.code)
+      return !!flag && flagMatchesTarget(flag, target)
+    })
+
+  const applyReviewMode = (reviewing: boolean) => {
+    if (!canDeploy || reviewSwitching !== null) return
+    const targets = reviewTargets(reviewing)
+    Modal.confirm({
+      title: reviewing ? '进入小程序审核模式' : '退出审核模式并恢复功能',
+      width: 560,
+      content: (
+        <Space direction="vertical" size={4} style={{ marginTop: 12 }}>
+          <Typography.Text type="secondary">
+            将{reviewing ? '关闭' : '恢复'}以下 {targets.length} 个功能开关（module_withdraw 由审核总开关自动控制，无需手动改）：
+          </Typography.Text>
+          <ul style={{ paddingLeft: 20, margin: '8px 0 0' }}>
+            {targets.map((t) => <li key={t.code}><Typography.Text code>{t.code}</Typography.Text> → {t.enabled ? '开启 100%' : '关闭 0%'}</li>)}
+          </ul>
+        </Space>
+      ),
+      okText: '确认执行',
+      cancelText: '取消',
+      onOk: async () => {
+        setReviewSwitching(reviewing)
+        try {
+          // 改前重新拉最新 version，避免乐观锁冲突
+          const fresh = await getReleaseControl()
+          const byCode = new Map(fresh.feature_flags.map((f) => [f.code, f]))
+          const pending = targets
+            .map((target) => ({ flag: byCode.get(target.code), target }))
+            .filter((entry): entry is { flag: ManagedFeatureFlag; target: ReviewTarget } => !!entry.flag && !flagMatchesTarget(entry.flag, entry.target))
+          if (pending.length === 0) {
+            messageApi.info(`所有开关已处于目标状态，无需变更`)
+            return
+          }
+          // 不同 flag 之间不会乐观锁冲突，可并行
+          const results = await Promise.allSettled(pending.map(({ flag, target }) =>
+            updateFeatureFlag(flag.code, {
+              mode: target.enabled ? 'enabled' : 'disabled',
+              rollout_percentage: target.enabled ? 100 : 0,
+              audience: flag.audience ?? {},
+              expected_version: flag.version,
+              reason: reviewing ? '进入小程序审核期，关闭敏感功能。' : '小程序审核通过，恢复审核期间关闭的功能。',
+            })))
+          const failures = results.flatMap((r, i) => r.status === 'rejected'
+            ? [`${pending[i].flag.code}: ${r.reason instanceof Error ? r.reason.message : '未知错误'}`]
+            : [])
+          if (failures.length > 0) {
+            messageApi.error({ content: `${pending.length - failures.length}/${pending.length} 成功；失败：${failures.join('；')}。请核对状态后重试。`, duration: 10 })
+          } else {
+            messageApi.success(reviewing ? `已进入审核模式（${pending.length}/${targets.length} 项已切换）` : `已退出审核模式（${pending.length}/${targets.length} 项已切换）`)
+          }
+        } catch (error) {
+          messageApi.error(error instanceof Error ? error.message : '审核模式切换失败')
+        } finally {
+          await load()
+          setReviewSwitching(null)
+        }
+      },
+    })
   }
 
   return <>
@@ -358,7 +439,7 @@ export function OperationsPage() {
     <Card bordered={false} title="业务状态通知规则" style={{ marginTop: 16 }}>
       <Alert showIcon type="info" message="任务、订单和帖子状态由系统统一触发；站内消息始终保留，小程序和短信需先发布对应渠道模板。" style={{ marginBottom: 16 }} />
       <Tabs items={[
-        { key: 'task', label: '任务进度' }, { key: 'order', label: '订单状态' }, { key: 'community', label: '帖子发布' },
+        { key: 'task', label: '任务进度' }, { key: 'order', label: '订单状态' }, { key: 'community', label: '社区互动' },
       ].map((tab) => ({
         ...tab,
         children: <Table rowKey="scene_code" size="small" dataSource={rules.filter((rule) => rule.domain === tab.key)} pagination={false} columns={[
@@ -404,10 +485,14 @@ export function OperationsPage() {
     </Card>
     <Card bordered={false} title="用户验收测试（UAT）记录" style={{ marginTop: 16 }}><Table rowKey="id" dataSource={uatRuns} pagination={false} columns={[{ title: '验收版本', dataIndex: 'release_version', render: releaseVersion }, { title: '运行环境', dataIndex: 'environment', render: (value: string) => environmentNames[value] ?? '其他环境' }, { title: '验收状态', render: (_: unknown, row: UatRun) => <Tag color={row.status === 'failed' ? 'red' : row.status === 'passed' ? 'green' : 'cyan'}>{uatStatusNames[row.status] ?? '未知状态'}</Tag> }, { title: '通过/阻塞', render: (_: unknown, row: UatRun) => `${row.summary.passed} 项通过 / ${row.summary.blocked} 项阻塞` }, { title: '报告校验码', render: (_: unknown, row: UatRun) => <Tooltip title="用于验证验收报告未被修改，点击可复制完整校验码"><Typography.Text code copyable={{ text: row.report_hash }}>报告 #{row.report_hash.slice(0, 8)}</Typography.Text></Tooltip> }, { title: '完成时间', dataIndex: 'completed_at', render: formatDate }]} /></Card>
     {canDeploy && <Card bordered={false} title="功能灰度发布" style={{ marginTop: 16 }} extra={reviewFlag && <Space>
-      <Typography.Text type="secondary">当前占位文案：</Typography.Text>
-      <Tag color={reviewFlag.mode === 'enabled' ? 'gold' : 'green'}>{reviewFlag.mode === 'enabled' ? '审核中' : '审核过'}</Tag>
-      <Button size="small" type={reviewFlag.mode === 'enabled' ? 'default' : 'primary'} onClick={() => void setReviewStatus(true)} disabled={reviewFlag.mode === 'enabled'}>切到审核中</Button>
-      <Button size="small" type={reviewFlag.mode === 'disabled' ? 'default' : 'primary'} onClick={() => void setReviewStatus(false)} disabled={reviewFlag.mode === 'disabled'}>切到审核过</Button>
+      <Typography.Text type="secondary">当前状态：</Typography.Text>
+      {reviewModeReady(true)
+        ? <Tag color="gold">审核模式 8/8</Tag>
+        : reviewModeReady(false)
+          ? <Tag color="green">正常模式 8/8</Tag>
+          : <Tag color="red">配置不一致，请重试</Tag>}
+      <Button size="small" type="primary" loading={reviewSwitching === true} disabled={reviewSwitching !== null || reviewModeReady(true)} onClick={() => applyReviewMode(true)}>一键进入审核模式</Button>
+      <Button size="small" type="primary" loading={reviewSwitching === false} disabled={reviewSwitching !== null || reviewModeReady(false)} onClick={() => applyReviewMode(false)}>一键退出审核模式</Button>
       <Button size="small" type="primary" loading={submitting} onClick={openAllH5}>H5 全量开放</Button>
     </Space>}>
       <Alert showIcon type="info" message="审核中/审核过两套占位文案可按模块单独编辑；关闭模块时小程序展示当前审核状态对应的文案。" style={{ marginBottom: 16 }} />
