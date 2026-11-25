@@ -228,3 +228,102 @@
 .perm-tree-footer { font-size: 12px; color: var(--xq-muted); }
 .perm-tree-footer strong { color: var(--xq-green-deep); font-weight: 700; }
 
+/* =====================================================================
+   响应式：≤768px 触发移动端布局（抽屉侧栏 + 内容堆叠），>768px 保持桌面
+   ===================================================================== */
+@media (max-width: 768px) {
+  /* ---- 外壳 ---- */
+  .xq-layout { overflow-x: hidden; }
+  .xq-header { padding: 0 12px; gap: 8px; }
+  .xq-header .ant-breadcrumb { display: none; }
+  .xq-header-right { gap: 10px; }
+  .xq-header-action-desktop { display: none !important; }
+  .xq-header-right .ant-select { max-width: 130px; }
+  .xq-header-right .ant-select-selector { padding: 0 8px !important; }
+  .xq-header-user span small { display: none; }
+  .xq-header-user span strong { font-size: 12px; }
+  .xq-mobile-menu-btn .anticon { font-size: 18px; }
+
+  /* 移动端抽屉（复用 xq 深色侧栏视觉） */
+  .xq-mobile-drawer .ant-drawer-content { background: var(--xq-sider); }
+  .xq-mobile-drawer .ant-drawer-body {
+    padding: 0; height: 100vh; display: flex; flex-direction: column;
+  }
+  .xq-mobile-drawer .ant-menu { background: transparent; padding: 6px 10px; }
+  .xq-mobile-drawer .ant-menu-item,
+  .xq-mobile-drawer .ant-menu-submenu-title {
+    color: var(--xq-sider-text); border-radius: 8px; margin-block: 2px;
+  }
+  .xq-mobile-drawer .ant-menu-item:hover,
+  .xq-mobile-drawer .ant-menu-submenu-title:hover { color: #fff; background: var(--xq-sider-hover) !important; }
+  .xq-mobile-drawer .ant-menu-item-selected { background: var(--xq-green-dark) !important; color: #fff !important; font-weight: 600; }
+  .xq-mobile-drawer .ant-menu-sub { background: rgba(0,0,0,.18) !important; border-radius: 8px; }
+  .xq-mobile-drawer .ant-menu-sub .ant-menu-item { padding-left: 44px !important; }
+  .xq-mobile-drawer-footer {
+    margin-top: auto; padding: 14px 18px; border-top: 1px solid rgba(255,255,255,.08);
+  }
+  .xq-mobile-drawer-user { display: flex; align-items: center; gap: 10px; color: #fff; margin-bottom: 10px; }
+  .xq-mobile-drawer-user .ant-avatar { background: var(--xq-green); font-weight: 700; }
+  .xq-mobile-drawer-user strong { display: block; font-size: 14px; }
+  .xq-mobile-drawer-user small { display: block; color: var(--xq-sider-text); font-size: 11px; }
+  .xq-mobile-drawer-actions { display: flex; gap: 8px; }
+  .xq-mobile-drawer-actions .ant-btn { color: #d1fae5 !important; }
+
+  /* ---- 内容区 ---- */
+  .xq-content { padding: 12px 12px 32px; min-width: 0; }
+  .xq-page { min-width: 0; }
+  .xq-page-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .xq-page-head h2 { font-size: 18px; }
+  .xq-card { padding: 14px; border-radius: 10px; }
+  .xq-card + .xq-card { margin-top: 12px; }
+  .xq-card .ant-card-body { padding: 14px !important; }
+
+  /* 统计卡 4 列 → 2 列 */
+  .xq-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .xq-stats.two { grid-template-columns: 1fr; }
+  .xq-stat { padding: 14px; }
+  .xq-stat .v { font-size: 24px; }
+
+  /* 筛选条控件全宽，避免 min-width 撑破 */
+  .xq-filter { gap: 10px; }
+  .xq-filter .ant-select,
+  .xq-filter .ant-input,
+  .xq-filter .ant-input-search { min-width: 0 !important; max-width: none !important; width: 100%; }
+  .xq-filter .grow { width: 100%; flex: none; }
+
+  /* 表格内部横向滚动，不撑破容器 */
+  .xq-content .ant-table-wrapper,
+  .xq-table .ant-table-wrapper { overflow-x: auto; }
+  .xq-content .ant-table,
+  .xq-table .ant-table { min-width: 640px; }
+  .xq-content .ant-table-thead > tr > th,
+  .xq-table .ant-table-thead > tr > th { white-space: nowrap; }
+
+  /* 左右分栏 → 上下堆叠；覆盖 SupportPage 等内联 width:300 */
+  .xq-split { flex-direction: column; align-items: stretch; }
+  .xq-split > .xq-card { width: auto !important; }
+  .xq-split .main { width: 100%; }
+  .xq-subnav { width: 100%; }
+
+  /* Modal / Drawer 适配屏宽 */
+  .xq-content .ant-modal,
+  .xq-page .ant-modal { max-width: calc(100vw - 16px); margin: 8px auto !important; top: 8px; }
+  .xq-content .ant-modal-body,
+  .xq-page .ant-modal-body { max-height: calc(100vh - 140px); overflow-y: auto; }
+  .xq-content .ant-drawer-content-wrapper,
+  .xq-page .ant-drawer-content-wrapper {
+    width: calc(100vw - 8px) !important; max-width: 100vw;
+  }
+
+  /* Tabs 横向滚动不换行 */
+  .xq-tabs { overflow-x: auto; flex-wrap: nowrap; }
+  .xq-bars { height: 180px; }
+}
+
+/* 精修断点：≤480px 进一步收紧 */
+@media (max-width: 480px) {
+  .xq-stats { grid-template-columns: 1fr; }
+  .xq-header-user span strong { display: none; }
+  .xq-header-right .ant-select { max-width: 100px; }
+}
+

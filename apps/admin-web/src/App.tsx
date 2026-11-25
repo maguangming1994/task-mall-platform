@@ -3,6 +3,7 @@ import {
   KeyOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
+  MenuOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons'
 import {
@@ -13,6 +14,7 @@ import {
   Button,
   Checkbox,
   ConfigProvider,
+  Drawer,
   Form,
   Input,
   Layout,
@@ -128,6 +130,8 @@ function AdminShell() {
   const [campusScope, setCampusScopeState] = useState<string | null>(() => getAdminCampusScope())
   const [passwordForm] = Form.useForm()
   const [messageApi, contextHolder] = message.useMessage()
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const groups = useMemo(() => visibleGroups(navigation), [navigation])
   const route = findRoute(path, groups) ?? findRoute('/workbench', groups) ?? (groups[0] ? { group: groups[0], page: groups[0].pages[0] } : null)
@@ -136,6 +140,16 @@ function AdminShell() {
   useEffect(() => {
     if (route) setOpenKeys([route.group.key])
   }, [route?.group.key]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 768px)')
+    const onChange = (event: MediaQueryListEvent) => {
+      setIsMobile(event.matches)
+      if (!event.matches) setMobileNavOpen(false)
+    }
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [])
 
   useEffect(() => {
     if (route && path !== route.page.path) navigate(route.page.path)
@@ -177,36 +191,75 @@ function AdminShell() {
     }
   }
 
+  const goTo = (key: string) => {
+    navigate(key)
+    if (isMobile) setMobileNavOpen(false)
+  }
+
   const menuItems = groups.map((g) => g.pages.length === 1
     ? { key: g.pages[0].path, icon: g.icon, label: g.label }
     : { key: g.key, icon: g.icon, label: g.label, children: g.pages.map((p) => ({ key: p.path, label: p.title })) })
+
+  const renderMenu = (inDrawer = false) => (
+    <Menu
+      theme="dark"
+      mode="inline"
+      selectedKeys={route ? [route.page.path] : []}
+      openKeys={inDrawer ? openKeys : (collapsed ? undefined : openKeys)}
+      onOpenChange={(keys) => setOpenKeys(keys as string[])}
+      items={menuItems}
+      onClick={({ key }) => goTo(String(key))}
+    />
+  )
 
   const PageComponent = route?.page.element
 
   return (
     <Layout className="xq-layout">
       {contextHolder}
-      <Layout.Sider width={216} collapsedWidth={72} collapsed={collapsed} className="xq-sider">
-        <div className="xq-sider-brand"><span className="logo">校</span>{!collapsed && <span>校圈 Admin</span>}</div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={route ? [route.page.path] : []}
-          openKeys={collapsed ? undefined : openKeys}
-          onOpenChange={(keys) => setOpenKeys(keys as string[])}
-          items={menuItems}
-          onClick={({ key }) => navigate(String(key))}
-        />
-        <div className="xq-sider-foot">{collapsed ? 'v3.2.0' : '校圈 v3.2.0 · build 20261004'}</div>
-      </Layout.Sider>
+      {!isMobile && (
+        <Layout.Sider width={216} collapsedWidth={72} collapsed={collapsed} className="xq-sider">
+          <div className="xq-sider-brand"><span className="logo">校</span>{!collapsed && <span>校圈 Admin</span>}</div>
+          {renderMenu(false)}
+          <div className="xq-sider-foot">{collapsed ? 'v3.2.0' : '校圈 v3.2.0 · build 20261004'}</div>
+        </Layout.Sider>
+      )}
+      <Drawer
+        open={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+        placement="left"
+        width={260}
+        closable={false}
+        className="xq-mobile-drawer"
+      >
+        <div className="xq-sider-brand"><span className="logo">校</span><span>校圈 Admin</span></div>
+        {renderMenu(true)}
+        <div className="xq-mobile-drawer-footer">
+          <div className="xq-mobile-drawer-user">
+            <Avatar size={32}>{admin?.display_name.slice(0, 1)}</Avatar>
+            <span>
+              <strong>{admin?.display_name}</strong>
+              <small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small>
+            </span>
+          </div>
+          <div className="xq-mobile-drawer-actions">
+            <Button type="text" icon={<KeyOutlined />} onClick={() => { setMobileNavOpen(false); setPasswordOpen(true) }}>修改密码</Button>
+            <Button type="text" danger icon={<LogoutOutlined />} onClick={signOut}>退出登录</Button>
+          </div>
+        </div>
+      </Drawer>
       <Layout>
         <Layout.Header className="xq-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed((v) => !v)}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            {isMobile ? (
+              <Button type="text" className="xq-mobile-menu-btn" icon={<MenuOutlined />} onClick={() => setMobileNavOpen(true)} />
+            ) : (
+              <Button
+                type="text"
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setCollapsed((v) => !v)}
+              />
+            )}
             <Breadcrumb items={[
               { title: '首页' },
               ...(route?.group.key === 'workbench' ? [{ title: '工作台' }] : [{ title: route?.group.label ?? '' }, { title: route?.page.title ?? '' }]),
@@ -223,8 +276,8 @@ function AdminShell() {
               />
             ) : null}
             <Badge dot color="#f59e0b"><span className="xq-header-bell"><BellOutlined /></span></Badge>
-            <Button type="text" icon={<KeyOutlined />} onClick={() => setPasswordOpen(true)}>修改密码</Button>
-            <Button type="text" danger icon={<LogoutOutlined />} onClick={signOut}>退出登录</Button>
+            <Button type="text" className="xq-header-action-desktop" icon={<KeyOutlined />} onClick={() => setPasswordOpen(true)}>修改密码</Button>
+            <Button type="text" danger className="xq-header-action-desktop" icon={<LogoutOutlined />} onClick={signOut}>退出登录</Button>
             <div className="xq-header-user">
               <Avatar size={32}>{admin?.display_name.slice(0, 1)}</Avatar>
               <span><strong style={{ fontSize: 13 }}>{admin?.display_name}</strong><small>{admin?.roles.map((role) => roleNames[role] ?? role).join('、')}</small></span>
