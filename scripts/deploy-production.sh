@@ -121,7 +121,21 @@ if [ "${SYNC_CAMPUS_BRANDING_SUPPLEMENT_ON_DEPLOY:-true}" = "true" ] \
 fi
 
 echo "[12/14] 启动 API、队列、调度器和 Web"
-compose up -d --no-build --pull never --remove-orphans --wait --wait-timeout 240
+existing_api=$(compose ps -aq api)
+if [ -n "$existing_api" ]; then
+  api_running=$(docker inspect --format '{{.State.Running}}' "$existing_api")
+  api_health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$existing_api")
+  if [ "$api_running" != "true" ] || [ "$api_health" = "unhealthy" ]; then
+    echo "检测到既有 API 容器异常（running=$api_running, health=$api_health），强制重建。"
+    compose up -d --no-build --pull never --no-deps --force-recreate api
+  fi
+fi
+if ! compose up -d --no-build --pull never --remove-orphans --wait --wait-timeout 240; then
+  echo "服务启动失败，输出 API 状态和最近日志。" >&2
+  compose ps api || true
+  compose logs --tail 120 api || true
+  exit 1
+fi
 
 echo "[13/14] 生成 Laravel 生产缓存"
 compose exec -T api php artisan optimize
