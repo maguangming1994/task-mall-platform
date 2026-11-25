@@ -502,6 +502,8 @@ class AdminUserCenterController extends Controller
                 return [
                     'provider' => $identity->provider,
                     'label' => $this->wechatProviderLabel((string) $identity->provider),
+                    'openid' => $identity->provider_user_value,
+                    'unionid' => $identity->union_value,
                     'openid_masked' => $this->maskIdentifier($identity->provider_user_value),
                     'unionid_masked' => $this->maskIdentifier($identity->union_value),
                     'nickname' => is_string($profile['nickname'] ?? null) ? $profile['nickname'] : null,

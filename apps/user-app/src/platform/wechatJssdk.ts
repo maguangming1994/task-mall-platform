@@ -113,7 +113,11 @@ export async function enableWechatShare(options: WechatShareOptions): Promise<vo
       const signature = await apiRequest<JssdkSignature>({ path: signaturePath(pageUrl) })
 
       await new Promise<void>((resolve, reject) => {
-        sdk.error(() => reject(new Error('wechat jssdk config failed')))
+        const timer = setTimeout(() => reject(new Error('wechat jssdk config timeout')), 5000)
+        sdk.error(() => {
+          clearTimeout(timer)
+          reject(new Error('wechat jssdk config failed'))
+        })
         sdk.config({
           debug: false,
           appId: signature.appId,
@@ -127,13 +131,18 @@ export async function enableWechatShare(options: WechatShareOptions): Promise<vo
             'onMenuShareTimeline',
           ],
         })
-        sdk.ready(() => resolve())
+        sdk.ready(() => {
+          clearTimeout(timer)
+          resolve()
+        })
       })
       configuredSignature = pageUrl
     }
 
     const link = toWechatShareLink(options.link)
     const imgUrl = absoluteAsset(options.imageUrl || DEFAULT_WECHAT_SHARE_IMAGE)
+    // 朋友圈卡片标题取自页面 title，配置成功后同步一份作为兜底。
+    if (typeof document !== 'undefined') document.title = options.title
     const shareData = {
       title: options.title,
       desc: options.desc || options.title,

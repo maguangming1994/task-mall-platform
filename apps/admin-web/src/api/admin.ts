@@ -1019,6 +1019,7 @@ export interface ManagedTaskPublishingPermission {
 }
 export interface ManagedWechatChannel {
   provider: string; label: string
+  openid: string | null; unionid: string | null
   openid_masked: string | null; unionid_masked: string | null
   nickname: string | null; avatar_url: string | null
   bound_at: string | null; last_login_at: string | null

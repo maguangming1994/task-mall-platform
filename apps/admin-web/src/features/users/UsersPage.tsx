@@ -347,7 +347,16 @@ export function UsersPage() {
                       : <div style={{ width: 40, height: 40, borderRadius: 20, background: '#e8f5ec', color: '#2f9e44', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 40px' }}>{ch.label.slice(0, 1)}</div>}
                     <div style={{ fontSize: 12, lineHeight: 1.7, wordBreak: 'break-all' }}>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{ch.label} · {ch.nickname ?? '未获取昵称'}</div>
-                      <div style={{ color: '#8c8c8c' }}>OpenID {ch.openid_masked ?? '—'} · UnionID {ch.unionid_masked ?? '—'}</div>
+                      <div style={{ color: '#8c8c8c' }}>
+                        OpenID {ch.openid ?? ch.openid_masked ?? '—'}
+                        <Button
+                          size="small"
+                          type="link"
+                          style={{ padding: '0 6px' }}
+                          onClick={() => { void navigator.clipboard?.writeText(ch.openid ?? '').then(() => message.success('OpenID 已复制')) }}
+                        >复制</Button>
+                        · UnionID {ch.unionid ?? ch.unionid_masked ?? '—'}
+                      </div>
                       <div style={{ color: '#8c8c8c' }}>绑定 {fmtTime(ch.bound_at)} · 最近登录 {fmtTime(ch.last_login_at)}</div>
                     </div>
                   </div>
