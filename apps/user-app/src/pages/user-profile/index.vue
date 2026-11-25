@@ -304,6 +304,8 @@ async function toggleFollow() {
     profile.value.is_followed = result.is_followed
     profile.value.follower_count = result.follower_count
     profile.value.following_count = result.following_count
+    await refreshProfile()
+    if (activeTab.value === 'posts') await loadContent(true)
   } catch (error) {
     uni.showToast({ title: errorMessage(error, '操作失败，请重试。'), icon: 'none' })
   } finally {

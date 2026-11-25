@@ -35,8 +35,9 @@ class TaskHallController extends Controller
         ]);
     }
 
-    public function show(Task $task, TaskClaimService $claims): JsonResponse
+    public function show(string $task, TaskClaimService $claims): JsonResponse
     {
+        $task = Task::query()->withoutGlobalScope('campus_context')->where('public_id', $task)->firstOrFail();
         abort_if($task->status !== 'published', 404);
 
         $presented = $claims->publicTask($task, true);

@@ -99,12 +99,16 @@ class SecondHandItemController extends Controller
         ]);
     }
 
-    public function show(Request $request, SecondHandItem $item): JsonResponse
+    public function show(Request $request, string $item): JsonResponse
     {
+        $item = SecondHandItem::query()->withoutGlobalScope('campus_context')->where('public_id', $item)->firstOrFail();
         abort_unless(in_array($item->status, ['on_sale', 'reserved', 'sold'], true), 404);
         abort_if(UserBlock::existsBetween($request->user(), $item->seller_user_id), 404);
         $item->increment('view_count');
         $item->loadMissing(['seller', 'category']);
+        if ($item->seller === null) {
+            $item->setRelation('seller', User::query()->withoutGlobalScope('admin_campus')->find($item->seller_user_id));
+        }
         $isOwner = $request->user()?->id === $item->seller_user_id;
 
         // 非本人查看时，审核不通过的商品不可见

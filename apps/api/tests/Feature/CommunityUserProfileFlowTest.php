@@ -123,6 +123,13 @@ class CommunityUserProfileFlowTest extends TestCase
             }
         }
 
+        $this->withToken($viewerToken)->getJson("/api/v1/second-hand/items/{$item->public_id}")
+            ->assertOk()->assertJsonPath('data.id', $item->public_id)->assertJsonPath('data.seller.id', $target->public_id);
+        $this->withToken($viewerToken)->getJson("/api/v1/community/activities/{$activity->public_id}")
+            ->assertOk()->assertJsonPath('data.id', $activity->public_id)->assertJsonPath('data.creator.id', $target->public_id);
+        $this->withToken($viewerToken)->getJson("/api/v1/tasks/{$task->public_id}")
+            ->assertOk()->assertJsonPath('data.id', $task->public_id);
+
         $this->withToken($viewerToken)->postJson("/api/v1/community/users/{$target->public_id}/follow")->assertOk();
         $this->withToken($viewerToken)->getJson("/api/v1/community/users/{$target->public_id}/content?type=posts")
             ->assertOk()
@@ -247,7 +254,20 @@ class CommunityUserProfileFlowTest extends TestCase
             'status' => 'published',
             'change_type' => 'initial',
             'changed_fields' => [],
-            'content' => ['title' => '公开校园任务', 'description' => '公开任务说明', 'description_text' => '公开任务说明', 'task_type' => 'one_off', 'reward_budgets' => ['secret' => '不返回']],
+            'content' => [
+                'title' => '公开校园任务',
+                'description' => '公开任务说明',
+                'description_text' => '公开任务说明',
+                'task_type' => 'one_time',
+                'visibility' => 'public',
+                'participation_mode' => 'claim_and_submit',
+                'claim_starts_at' => now()->subHour()->toIso8601String(),
+                'claim_ends_at' => now()->addDay()->toIso8601String(),
+                'submit_ends_at' => now()->addDay()->toIso8601String(),
+                'completion_window_hours' => 24,
+                'progress_target' => 1,
+                'reward_budgets' => ['secret' => '不返回'],
+            ],
             'created_by_admin_id' => $admin->id,
             'published_at' => now(),
         ]);

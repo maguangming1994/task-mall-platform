@@ -47,8 +47,9 @@ class CommunityActivityController extends Controller
         ]);
     }
 
-    public function show(Request $request, CommunityActivity $activity): JsonResponse
+    public function show(Request $request, string $activity): JsonResponse
     {
+        $activity = CommunityActivity::query()->withoutGlobalScope('campus_context')->where('public_id', $activity)->firstOrFail();
         abort_unless($activity->status === 'approved', 404);
         abort_if(UserBlock::existsBetween($request->user(), $activity->creator_user_id), 404);
 
@@ -174,7 +175,7 @@ class CommunityActivityController extends Controller
 
     private function data(CommunityActivity $activity, ?User $viewer = null, bool $includeReview = false): array
     {
-        $creator = $activity->creator()->first();
+        $creator = User::query()->withoutGlobalScope('admin_campus')->find($activity->creator_user_id);
         $joined = $viewer !== null && CommunityActivityParticipant::query()
             ->where('community_activity_id', $activity->id)->where('user_id', $viewer->id)->where('status', 'joined')->exists();
         $isCreator = $viewer?->id === $activity->creator_user_id;
