@@ -118,16 +118,24 @@ function loadSdk(): Promise<WechatJsSdk | null> {
   return sdkPromise
 }
 
-/** 把站内路径转成微信分享可用的绝对地址（H5 hash 路由）。 */
+/**
+ * 把站内路径转成微信分享可用的绝对地址。
+ *
+ * 关键：微信 JSSDK 分享的 link **不能带 # 或 query**，因为微信服务器会直接 HTTP 请求
+ * 这个 URL 来抓取页面元数据生成卡片；# 是浏览器端的，服务器收不到，最终卡片退化为裸链接。
+ * 不带 # 的根路径 `origin/` 即可让 SPA hash 路由正常接管。
+ */
 export function toWechatShareLink(path: string): string {
   const value = String(path || '').trim()
-  if (/^https?:\/\//i.test(value)) return value
+  if (/^https?:\/\//i.test(value)) {
+    // 外部链接也必须剔除 hash，否则微信服务器抓取失败。
+    return value.split('#')[0].split('?')[0] || value
+  }
   // #ifdef H5
   if (typeof window !== 'undefined') {
     const origin = window.location.origin
-    if (value.startsWith('#')) return `${origin}/${value}`
-    if (value.startsWith('/pages/')) return `${origin}/#${value}`
-    return `${origin}${value.startsWith('/') ? '' : '/'}${value}`
+    // 直接返回 origin 即可（根路径），让 SPA hash 路由接管页面跳转。
+    return origin
   }
   // #endif
   // #ifndef H5
