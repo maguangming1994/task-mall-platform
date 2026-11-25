@@ -32,6 +32,10 @@
       </view>
     </view>
 
+    <view class="logout-card" @click="confirmLogout">
+      <text class="logout-text">退出当前账号</text>
+    </view>
+
     <view v-if="loading && !requests.length && !eligibility" class="state-card" role="status" aria-live="polite">
       <text class="state-title">正在加载隐私权益…</text>
       <text class="state-copy">正在同步数据副本和账号状态。</text>
@@ -193,8 +197,20 @@ async function clearCache() {
   }
 }
 
-function showAbout() {
-  uni.showModal({
+/* 退出当前账号：便于切换账号或结束演示体验 */
+async function confirmLogout() {
+  const result = await uni.showModal({
+    title: '退出账号',
+    content: '确认退出当前登录账号？退出后需重新登录才能查看个人数据。',
+    confirmText: '退出',
+    confirmColor: '#E54D42',
+  })
+  if (!result.confirm) return
+  await auth.logout()
+  uni.reLaunch({ url: '/pages/index/index' })
+}
+
+function showAbout() {  uni.showModal({
     title: '关于校圈',
     content: `校圈 ${versionText}\n校园任务与闲置交易平台。`,
     showCancel: false,
@@ -273,7 +289,8 @@ function isTerminalFailure(error: unknown) { return error instanceof ApiError &&
 .page { min-height: 100vh; padding: 24rpx 24rpx 80rpx; box-sizing: border-box; background: #F4F6F4; }
 
 .settings-card { border-radius: 24rpx; background: #fff; box-shadow: 0 2rpx 4rpx rgba(23,26,23,.03), 0 12rpx 40rpx rgba(23,26,23,.05); overflow: hidden; }
-.row { display: flex; align-items: center; justify-content: space-between; padding: 32rpx 28rpx; border-bottom: 1rpx solid #F2F4F3; }
+.logout-card { margin-top: 20rpx; border-radius: 24rpx; background: #fff; box-shadow: 0 2rpx 4rpx rgba(23,26,23,.03), 0 12rpx 40rpx rgba(23,26,23,.05); }
+.logout-text { display: block; padding: 32rpx; text-align: center; color: #E54D42; font-size: 28rpx; font-weight: 600; }.row { display: flex; align-items: center; justify-content: space-between; padding: 32rpx 28rpx; border-bottom: 1rpx solid #F2F4F3; }
 .row-last { border-bottom: 0; }
 .row-label { color: #191B1F; font-size: 28rpx; font-weight: 600; }
 .row-extra { display: flex; align-items: center; gap: 8rpx; }
