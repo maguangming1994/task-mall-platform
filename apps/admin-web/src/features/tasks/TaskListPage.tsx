@@ -2,6 +2,7 @@ import { Button, Descriptions, Form, Input, Modal, Select, Table, message } from
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ApiError,
+  forwardManagedTask,
   listManagedTasks,
   transitionManagedTask,
   type ManagedTask,
@@ -47,6 +48,7 @@ export function TaskListPage() {
   const [keyword, setKeyword] = useState('')
   const [detail, setDetail] = useState<ManagedTask | null>(null)
   const [offShelfTarget, setOffShelfTarget] = useState<ManagedTask | null>(null)
+  const [forwardingId, setForwardingId] = useState<string | null>(null)
   const [offShelfForm] = Form.useForm<{ reason: string }>()
   const [messageApi, contextHolder] = message.useMessage()
 
@@ -113,6 +115,32 @@ export function TaskListPage() {
       }
     },
   })
+
+  const forwardTask = (task: ManagedTask) => {
+    if (forwardingId) return
+    Modal.confirm({
+      title: '转发任务到群',
+      content: `将按当前启用中的「任务」转发配置把「${task.title}」发送到目标群，可能产生重复消息。确认继续？`,
+      okText: '确认转发',
+      cancelText: '取消',
+      onOk: async () => {
+        setForwardingId(task.id)
+        try {
+          const result = await forwardManagedTask(task.id)
+          const failed = result.groups.filter((group) => group.status !== 'success')
+          if (failed.length) {
+            messageApi.warning(`转发完成：成功 ${result.groups.length - failed.length} 个群，失败 ${failed.length} 个群。`)
+          } else {
+            messageApi.success(`已转发到 ${result.groups.length} 个群。`)
+          }
+        } catch (cause) {
+          messageApi.error(cause instanceof ApiError ? cause.message : '转发失败，请稍后重试。')
+        } finally {
+          setForwardingId(null)
+        }
+      },
+    })
+  }
 
   return (
     <div className="xq-page">
@@ -194,6 +222,7 @@ export function TaskListPage() {
                   { label: '详情', onClick: () => setDetail(item) },
                   ['published', 'scheduled'].includes(item.status) && { label: '下架', danger: true, onClick: () => { offShelfForm.resetFields(); setOffShelfTarget(item) } },
                   item.status === 'paused' && { label: '上架', onClick: () => resume(item) },
+                  item.status === 'published' && { label: '转发', onClick: () => forwardTask(item) },
                   item.status === 'published' && { label: '催办', onClick: () => messageApi.info('催办能力待接入。') },
                   item.status === 'published' && { label: '介入', onClick: () => messageApi.info('纠纷介入能力待接入。') },
                 ]} />

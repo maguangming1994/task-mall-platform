@@ -6,6 +6,7 @@ use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
+use App\Modules\Robot\Services\RobotForwardDispatchService;
 use App\Modules\Settings\Exceptions\SettingException;
 use App\Modules\Settings\Services\SystemSettingService;
 use App\Modules\Task\Models\Task;
@@ -26,6 +27,16 @@ class AdminTaskController extends Controller
     public function show(Task $task, TaskDefinitionService $tasks): JsonResponse
     {
         return ApiResponse::success($tasks->present($task));
+    }
+
+    public function forward(Request $request, Task $task, RobotForwardDispatchService $dispatch, AuditLogger $audit): JsonResponse
+    {
+        /** @var AdminUser $admin */
+        $admin = $request->user();
+        $result = $dispatch->forwardTask($admin, $task);
+        $audit->record($admin, 'task.forward', 'task', $task->public_id, null, $result, '管理员手动转发任务到机器人目标群。');
+
+        return ApiResponse::success($result, 200, '任务转发已提交，请根据消息状态确认最终投递结果。');
     }
 
     public function store(Request $request, TaskDefinitionService $tasks, AuditLogger $audit, SystemSettingService $settings, TaskDataBatchService $batches): JsonResponse

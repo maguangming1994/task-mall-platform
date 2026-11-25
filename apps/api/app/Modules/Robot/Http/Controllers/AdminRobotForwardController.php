@@ -11,6 +11,7 @@ use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Robot\Models\RobotForwardConfig;
 use App\Modules\Robot\Models\RobotMessageRequest;
 use App\Modules\Robot\Services\RobotForwardConfigService;
+use App\Modules\Robot\Services\RobotForwardContentService;
 use App\Modules\Robot\Services\RobotMessageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,6 +45,9 @@ class AdminRobotForwardController extends Controller
         return ApiResponse::success([
             'schools' => $schools,
             'categories' => $campus === null ? [] : collect(CommunityPost::CATEGORIES)
+                ->map(fn (string $name, string $code): array => ['code' => $code, 'name' => $name])
+                ->values(),
+            'task_categories' => collect(RobotForwardContentService::TASK_CATEGORIES)
                 ->map(fn (string $name, string $code): array => ['code' => $code, 'name' => $name])
                 ->values(),
         ]);
@@ -210,12 +214,15 @@ class AdminRobotForwardController extends Controller
             'filter_rules.platforms' => ['sometimes', 'array', 'max:50'],
             'filter_rules.platforms.*' => ['string', 'max:100', 'distinct'],
             'filter_rules.campus_id' => ['sometimes', 'nullable', 'string', 'max:26'],
+            'filter_rules.content_type' => ['sometimes', 'nullable', 'string', Rule::in(RobotForwardConfigService::CONTENT_TYPES)],
             'filter_rules.campus_name' => ['sometimes', 'nullable', 'string', 'max:191'],
             'filter_rules.categories' => ['sometimes', 'array', 'max:50'],
-            'filter_rules.categories.*.code' => ['required', 'string', 'max:100', 'distinct', Rule::in(array_keys(CommunityPost::CATEGORIES))],
+            'filter_rules.categories.*.code' => ['required', 'string', 'max:100', 'distinct', Rule::in(array_merge(array_keys(CommunityPost::CATEGORIES), array_keys(RobotForwardContentService::TASK_CATEGORIES)))],
             'filter_rules.categories.*.name' => ['sometimes', 'nullable', 'string', 'max:100'],
             'filter_rules.post_statuses' => ['sometimes', 'array', 'min:1', 'max:5'],
             'filter_rules.post_statuses.*' => ['required', 'string', Rule::in(RobotForwardConfigService::POST_STATUSES)],
+            'filter_rules.task_statuses' => ['sometimes', 'array', 'max:10'],
+            'filter_rules.task_statuses.*' => ['required', 'string', Rule::in(RobotForwardConfigService::TASK_STATUSES)],
             'filter_rules.aggregate_interval' => ['required', 'integer', 'min:1', 'max:1440'],
             'filter_rules.min_messages' => ['required', 'integer', 'min:1', 'max:1000'],
             'filter_rules.max_messages' => ['required', 'integer', 'min:1', 'max:1000'],
@@ -251,6 +258,15 @@ class AdminRobotForwardController extends Controller
             throw ValidationException::withMessages(['filter_rules.categories' => '请先选择学校，再选择该学校论坛的分类。']);
         }
         $data['filter_rules']['campus_name'] = $campus?->name;
+        $contentType = ($data['filter_rules']['content_type'] ?? 'community_post') === 'task' ? 'task' : 'community_post';
+        $allowedCategoryCodes = $contentType === 'task'
+            ? array_keys(RobotForwardContentService::TASK_CATEGORIES)
+            : array_keys(CommunityPost::CATEGORIES);
+        foreach (($data['filter_rules']['categories'] ?? []) as $idx => $category) {
+            if (! in_array((string) ($category['code'] ?? ''), $allowedCategoryCodes, true)) {
+                throw ValidationException::withMessages(["filter_rules.categories.$idx.code" => '所选分类与内容类型不匹配，请重新选择。']);
+            }
+        }
 
         return $data;
     }

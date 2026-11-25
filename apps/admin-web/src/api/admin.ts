@@ -2062,6 +2062,9 @@ export async function reviewCommunityPost(id: string, decision: CommunityReviewD
 export async function forwardCommunityPost(id: string): Promise<CommunityPostForwardResult> {
   return request(`/admin/community/posts/${encodeURIComponent(id)}/forward`, { method: 'POST' })
 }
+export async function forwardManagedTask(id: string): Promise<CommunityPostForwardResult> {
+  return request(`/admin/tasks/${encodeURIComponent(id)}/forward`, { method: 'POST' })
+}
 export async function reviewCommunityComment(id: string, decision: CommunityReviewDecision, note: string, reasonCode: CommunityModerationReasonCode = 'other'): Promise<ManagedCommunityComment> {
   return request(`/admin/community/comments/${encodeURIComponent(id)}/review`, { method: 'POST', body: JSON.stringify({ decision, reason_code: decision === 'reject' ? reasonCode : undefined, note }) })
 }
@@ -2868,12 +2871,30 @@ export const XP_ROBOT_FORWARD_POST_STATUS_OPTIONS: Array<{ value: XpRobotForward
   { value: 'deleted', label: '已删除' },
 ]
 
+export type XpRobotForwardTaskStatus = 'published' | 'draft' | 'pending_review' | 'rejected' | 'offline' | 'archived'
+
+export const XP_ROBOT_FORWARD_TASK_STATUS_OPTIONS: Array<{ value: XpRobotForwardTaskStatus; label: string }> = [
+  { value: 'published', label: '已发布（进行中）' },
+  { value: 'draft', label: '草稿' },
+  { value: 'pending_review', label: '待审核' },
+  { value: 'rejected', label: '已驳回' },
+  { value: 'offline', label: '已下架' },
+  { value: 'archived', label: '已归档' },
+]
+
+export interface XpRobotTaskCategory {
+  code: string
+  name: string
+}
+
 export interface XpRobotForwardFilterRules {
+  content_type: 'community_post' | 'task'
   platforms: string[]
   campus_id: string | null
   campus_name: string | null
   categories: XpRobotForumCategory[]
   post_statuses: XpRobotForwardPostStatus[]
+  task_statuses: XpRobotForwardTaskStatus[]
   aggregate_interval: number
   min_messages: number
   max_messages: number
@@ -2912,7 +2933,7 @@ export interface XpRobotForwardConfigInput {
   robot_targets: XpRobotForwardTarget[]
 }
 
-export function listXpRobotForwardFilterOptions(campusId?: string): Promise<{ schools: XpRobotSchoolOption[]; categories: XpRobotForumCategory[] }> {
+export function listXpRobotForwardFilterOptions(campusId?: string): Promise<{ schools: XpRobotSchoolOption[]; categories: XpRobotForumCategory[]; task_categories: XpRobotTaskCategory[] }> {
   const query = campusId ? `?campus_id=${encodeURIComponent(campusId)}` : ''
   return adminRequest(`/admin/robot/forwards/filter-options${query}`)
 }

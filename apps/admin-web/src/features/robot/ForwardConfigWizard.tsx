@@ -10,6 +10,7 @@ import {
   listXpRobotGroups,
   updateXpRobotForward,
   XP_ROBOT_FORWARD_POST_STATUS_OPTIONS,
+  XP_ROBOT_FORWARD_TASK_STATUS_OPTIONS,
   type XpRobotAccount,
   type XpRobotDevice,
   type XpRobotForwardConfig,
@@ -18,13 +19,15 @@ import {
   type XpRobotForwardPostStatus,
   type XpRobotForwardTarget,
   type XpRobotForumCategory,
+  type XpRobotForwardTaskStatus,
   type XpRobotGroup,
   type XpRobotSchoolOption,
+  type XpRobotTaskCategory,
 } from '../../api/admin'
 import { robotAccountName, robotAccountStatusLabel, robotAccountTypeLabel, robotDeviceName, robotGroupName } from './robotUtils'
 import { useRobotRecentVerification } from './useRobotRecentVerification'
 
-const templateVariables = [
+const postTemplateVariables = [
   { variable: '${index}', label: '序号', source: '本条在本次转发列表中的序号，从 1 开始。' },
   { variable: '${title}', label: '标题', source: '帖子标题（community_posts.title）。' },
   { variable: '${content}', label: '正文', source: '帖子正文，按“正文截取长度”截取。' },
@@ -37,6 +40,20 @@ const templateVariables = [
   { variable: '${wappLink}', label: '小程序链接', source: '该帖子的链接：优先微信 URL Link（mp://），未配置小程序凭据或生成失败时回退为 H5 帖子链接。' },
   { variable: '${addTime}', label: '发布时间', source: '帖子发布时间。' },
   { variable: '${total}', label: '总数', source: '本次转发聚合的帖子总数。' },
+] as const
+
+const taskTemplateVariables = [
+  { variable: '${index}', label: '序号', source: '本条在本次转发列表中的序号，从 1 开始。' },
+  { variable: '${title}', label: '标题', source: '任务标题（任务当前发布版本标题）。' },
+  { variable: '${content}', label: '任务说明', source: '任务描述，按“正文截取长度”截取。' },
+  { variable: '${categoryName}', label: '任务分类', source: '任务分类：新手任务、日常任务、社区任务、商城任务、调研任务、活动任务。' },
+  { variable: '${reward}', label: '任务奖励', source: '任务奖励摘要，例如 +10 积分 或 +¥5.00 余额。' },
+  { variable: '${nickname}', label: '发布者', source: '任务发布者显示名称。' },
+  { variable: '${campusName}', label: '学校', source: '任务所属学校名称。' },
+  { variable: '${lookNum}', label: '浏览数', source: '任务浏览量。' },
+  { variable: '${wappLink}', label: '小程序链接', source: '该任务的链接：优先微信 URL Link（mp://），未配置小程序凭据或生成失败时回退为 H5 任务详情链接。' },
+  { variable: '${addTime}', label: '发布时间', source: '任务发布时间。' },
+  { variable: '${total}', label: '总数', source: '本次转发聚合的任务总数。' },
 ] as const
 
 const templatePresets = [
@@ -72,11 +89,13 @@ const createDefaults = (): XpRobotForwardConfigInput => ({
   description: '',
   enabled: true,
   filter_rules: {
+    content_type: 'community_post',
     platforms: [],
     campus_id: null,
     campus_name: null,
     categories: [],
     post_statuses: ['published'] as XpRobotForwardPostStatus[],
+    task_statuses: ['published'] as XpRobotForwardTaskStatus[],
     aggregate_interval: 30,
     min_messages: 1,
     max_messages: 20,
@@ -99,6 +118,8 @@ const quietText = (start: string | null, end: string | null) => start || end ? `
 export function ForwardConfigSummary({ value }: { value: XpRobotForwardConfigInput }) {
   const filter = value.filter_rules
   const template = value.template_config
+  const isTask = filter.content_type === 'task'
+  const statusOptions = isTask ? XP_ROBOT_FORWARD_TASK_STATUS_OPTIONS : XP_ROBOT_FORWARD_POST_STATUS_OPTIONS
   return <div>
     <Descriptions
       bordered
@@ -108,10 +129,11 @@ export function ForwardConfigSummary({ value }: { value: XpRobotForwardConfigInp
         { key: 'name', label: '配置名称', children: value.name },
         { key: 'enabled', label: '启用状态', children: value.enabled ? <Tag color="success">启用</Tag> : <Tag>停用</Tag> },
         { key: 'description', label: '描述', span: 2, children: value.description || '—' },
+        { key: 'content_type', label: '内容类型', children: isTask ? '校园任务' : '社区帖子' },
         { key: 'platforms', label: '平台', children: listText(filter.platforms) },
         { key: 'campus', label: '学校', children: filter.campus_name || filter.campus_id || '不限' },
-        { key: 'categories', label: '论坛分类', children: listText(filter.categories.map((category) => category.name || category.code)) },
-        { key: 'post_statuses', label: '帖子状态', children: listText((filter.post_statuses ?? ['published']).map((status) => XP_ROBOT_FORWARD_POST_STATUS_OPTIONS.find((item) => item.value === status)?.label ?? status)) },
+        { key: 'categories', label: isTask ? '任务分类' : '论坛分类', children: listText(filter.categories.map((category) => category.name || category.code)) },
+        { key: 'statuses', label: isTask ? '任务状态' : '帖子状态', children: listText((isTask ? filter.task_statuses ?? ['published'] : filter.post_statuses ?? ['published']).map((status) => statusOptions.find((item) => item.value === status)?.label ?? status)) },
         { key: 'keywords', label: '关键词', children: listText(template.keywords) },
         { key: 'aggregate', label: '聚合间隔', children: `${filter.aggregate_interval} 分钟` },
         { key: 'messages', label: '消息数范围', children: `${filter.min_messages} – ${filter.max_messages} 条` },
@@ -154,6 +176,7 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
   const [saving, setSaving] = useState(false)
   const [schools, setSchools] = useState<XpRobotSchoolOption[]>([])
   const [forumCategories, setForumCategories] = useState<XpRobotForumCategory[]>([])
+  const [taskCategories, setTaskCategories] = useState<XpRobotTaskCategory[]>([])
   const [filterOptionsLoading, setFilterOptionsLoading] = useState(false)
   const [devices, setDevices] = useState<XpRobotDevice[]>([])
   const [devicesLoading, setDevicesLoading] = useState(false)
@@ -167,11 +190,14 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
   const templateRef = useRef<TextAreaRef>(null)
   const watchedValues = Form.useWatch([], form) as XpRobotForwardConfigInput | undefined
   const watchedCampusId = Form.useWatch(['filter_rules', 'campus_id'], form) as string | null | undefined
+  const watchedContentType = Form.useWatch(['filter_rules', 'content_type'], form) as 'community_post' | 'task' | undefined
+  const isTaskContent = watchedContentType === 'task'
 
   useEffect(() => {
     if (!open) return
     setCurrent(0)
     form.setFieldsValue(config ? structuredClone(config) : createDefaults())
+    setTaskCategories([])
     setAccountsByTarget({})
     setGroupsByTarget({})
     setAccountsLoading({})
@@ -186,6 +212,7 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
       if (filterOptionRequest.current !== requestId) return
       setSchools(result.schools)
       setForumCategories(result.categories)
+      setTaskCategories(result.task_categories ?? [])
     } catch (error) {
       if (filterOptionRequest.current === requestId) {
         messageApi.error(error instanceof Error ? error.message : '学校或论坛分类加载失败，已保留原配置快照。')
@@ -335,6 +362,25 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
       forumCategoryOptions.push({ value: category.code, label: `${category.name || category.code} · 已保存快照` })
     }
   })
+  const taskCategoryOptions = taskCategories.map((category) => ({ value: category.code, label: category.name }))
+  selectedFilter?.categories.forEach((category) => {
+    if (!taskCategoryOptions.some((item) => item.value === category.code)) {
+      taskCategoryOptions.push({ value: category.code, label: `${category.name || category.code} · 已保存快照` })
+    }
+  })
+
+  const selectContentType = (type: 'community_post' | 'task') => {
+    const currentFilter = form.getFieldValue('filter_rules') as XpRobotForwardConfigInput['filter_rules']
+    form.setFieldsValue({
+      filter_rules: {
+        ...currentFilter,
+        content_type: type,
+        categories: [],
+        post_statuses: type === 'community_post' ? ['published'] : [],
+        task_statuses: type === 'task' ? ['published'] : [],
+      },
+    })
+  }
 
   const selectSchool = (campusId: string | undefined) => {
     const school = schools.find((item) => item.id === campusId)
@@ -393,8 +439,10 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
         platforms: values.filter_rules.platforms.map((item) => item.trim()).filter(Boolean),
         campus_id: values.filter_rules.campus_id || null,
         campus_name: values.filter_rules.campus_name || null,
+        content_type: values.filter_rules.content_type === 'task' ? 'task' : 'community_post',
         categories: values.filter_rules.categories.map((category) => ({ code: category.code.trim(), name: category.name.trim() })).filter((category) => category.code),
         post_statuses: (values.filter_rules.post_statuses ?? []).filter((status) => XP_ROBOT_FORWARD_POST_STATUS_OPTIONS.some((option) => option.value === status)),
+        task_statuses: (values.filter_rules.task_statuses ?? []).filter((status) => XP_ROBOT_FORWARD_TASK_STATUS_OPTIONS.some((option) => option.value === status)),
         quiet_start: values.filter_rules.quiet_start || null,
         quiet_end: values.filter_rules.quiet_end || null,
       },
@@ -467,6 +515,15 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
 
         <div style={{ display: current === 1 ? undefined : 'none' }}>
           <Alert showIcon type="info" message="这些规则用于持久化配置与人工测试模板；本期不执行外部采集或自动聚合调度。" style={{ marginBottom: 18 }} />
+          <Form.Item name={['filter_rules', 'content_type']} label="内容类型" extra="选择该配置转发的内容来源：社区帖子或校园任务；切换后分类与状态选项会同步切换。">
+            <Select
+              options={[
+                { value: 'community_post', label: '社区帖子' },
+                { value: 'task', label: '校园任务' },
+              ]}
+              onChange={selectContentType}
+            />
+          </Form.Item>
           <Form.Item name={['filter_rules', 'campus_name']} hidden><Input /></Form.Item>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0 16px' }}>
             <Form.Item name={['filter_rules', 'platforms']} label="平台筛选" extra="输入后回车，可添加多个；留空表示不限。">
@@ -486,14 +543,15 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
             </Form.Item>
             <Form.Item
               name={['filter_rules', 'categories']}
-              label="本校论坛分类"
+              label={isTaskContent ? '任务分类' : '本校论坛分类'}
               getValueProps={(categories: XpRobotForumCategory[] | undefined) => ({ value: (categories ?? []).map((category) => category.code) })}
               getValueFromEvent={(codes: string[]) => {
                 const currentCategories = (form.getFieldValue(['filter_rules', 'categories']) ?? []) as XpRobotForumCategory[]
+                const source = isTaskContent ? taskCategories : forumCategories
                 return codes.map((code) => {
                   const snapshot = currentCategories.find((category) => category.code === code)
                   if (snapshot) return snapshot
-                  const category = forumCategories.find((item) => item.code === code)
+                  const category = source.find((item) => item.code === code)
                   return { code, name: category?.name ?? code }
                 })
               }}
@@ -502,16 +560,22 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
                 mode="multiple"
                 showSearch
                 optionFilterProp="label"
-                disabled={!watchedCampusId}
+                disabled={!isTaskContent && !watchedCampusId}
                 loading={filterOptionsLoading}
-                options={forumCategoryOptions}
-                placeholder={watchedCampusId ? '选择该校论坛分类，可多选' : '请先选择学校'}
-                onOpenChange={(isOpen) => { if (isOpen && watchedCampusId && forumCategories.length === 0 && !filterOptionsLoading) void loadFilterOptions(watchedCampusId) }}
+                options={isTaskContent ? taskCategoryOptions : forumCategoryOptions}
+                placeholder={isTaskContent ? '选择任务分类，可多选' : watchedCampusId ? '选择该校论坛分类，可多选' : '请先选择学校'}
+                onOpenChange={(isOpen) => { if (isOpen && !isTaskContent && watchedCampusId && forumCategories.length === 0 && !filterOptionsLoading) void loadFilterOptions(watchedCampusId) }}
               />
             </Form.Item>
-            <Form.Item name={['filter_rules', 'post_statuses']} label="帖子状态" extra="默认仅转发已发布、审核通过的帖子；请谨慎勾选其他状态，避免把待审核内容发到群里。" rules={[{ required: true, type: 'array', min: 1, message: '至少选择一个帖子状态。' }]}>
-              <Select mode="multiple" options={XP_ROBOT_FORWARD_POST_STATUS_OPTIONS} placeholder="选择帖子状态，至少一项" style={{ width: '100%' }} />
-            </Form.Item>
+            {isTaskContent ? (
+              <Form.Item name={['filter_rules', 'task_statuses']} label="任务状态" extra="默认仅转发已发布（进行中）的任务；请谨慎勾选其他状态，避免把未发布内容发到群里。" rules={[{ required: true, type: 'array', min: 1, message: '至少选择一个任务状态。' }]}>
+                <Select mode="multiple" options={XP_ROBOT_FORWARD_TASK_STATUS_OPTIONS} placeholder="选择任务状态，至少一项" style={{ width: '100%' }} />
+              </Form.Item>
+            ) : (
+              <Form.Item name={['filter_rules', 'post_statuses']} label="帖子状态" extra="默认仅转发已发布、审核通过的帖子；请谨慎勾选其他状态，避免把待审核内容发到群里。" rules={[{ required: true, type: 'array', min: 1, message: '至少选择一个帖子状态。' }]}>
+                <Select mode="multiple" options={XP_ROBOT_FORWARD_POST_STATUS_OPTIONS} placeholder="选择帖子状态，至少一项" style={{ width: '100%' }} />
+              </Form.Item>
+            )}
             <Form.Item name={['filter_rules', 'aggregate_interval']} label="聚合间隔（分钟）" rules={[{ required: true, message: '请设置聚合间隔。' }]}>
               <InputNumber min={1} max={1440} precision={0} style={{ width: '100%' }} />
             </Form.Item>
@@ -543,8 +607,8 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
 
         <div style={{ display: current === 2 ? undefined : 'none' }}>
           <Alert showIcon type="info" message="配置转发消息的格式模板；可选择预设后继续编辑，切换预设会替换当前模板内容。" style={{ marginBottom: 18 }} />
-          <Form.Item label="插入模板变量" extra="变量取自社区帖子真实字段，仅替换以下固定白名单变量，不执行表达式或脚本；${lookNum}、${shareNum} 为历史模板兼容，固定输出 0。">
-            <Space wrap>{templateVariables.map((item) => <Tooltip key={item.variable} title={item.source}><Button size="small" onClick={() => insertVariable(item.variable)}>{item.label} {item.variable}</Button></Tooltip>)}</Space>
+          <Form.Item label="插入模板变量" extra={isTaskContent ? '变量取自校园任务真实字段，仅替换以下固定白名单变量，不执行表达式或脚本。' : '变量取自社区帖子真实字段，仅替换以下固定白名单变量，不执行表达式或脚本；${lookNum}、${shareNum} 为历史模板兼容，固定输出 0。'}>
+            <Space wrap>{(isTaskContent ? taskTemplateVariables : postTemplateVariables).map((item) => <Tooltip key={item.variable} title={item.source}><Button size="small" onClick={() => insertVariable(item.variable)}>{item.label} {item.variable}</Button></Tooltip>)}</Space>
           </Form.Item>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
             <Typography.Text strong>消息模板</Typography.Text>

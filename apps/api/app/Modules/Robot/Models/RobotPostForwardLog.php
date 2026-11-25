@@ -12,6 +12,7 @@ class RobotPostForwardLog extends Model
     protected $fillable = [
         'public_id',
         'post_id',
+        'content_type',
         'forward_config_id',
         'group_id',
         'group_name',

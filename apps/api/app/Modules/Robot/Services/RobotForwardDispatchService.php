@@ -8,6 +8,7 @@ use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Robot\Models\RobotForwardConfig;
 use App\Modules\Robot\Models\RobotMessageRequest;
 use App\Modules\Robot\Models\RobotPostForwardLog;
+use App\Modules\Task\Models\Task;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -185,6 +186,86 @@ class RobotForwardDispatchService
         return ['status' => $status, 'groups' => $groups];
     }
 
+    /**
+     * 手动转发单条任务：按启用中的「任务」转发配置渲染并发送到全部目标群。
+     *
+     * @return array{status: string, groups: array<int, array<string, mixed>>}
+     */
+    public function forwardTask(AdminUser $admin, Task $task): array
+    {
+        if ($task->status !== 'published') {
+            throw ValidationException::withMessages(['task' => '仅已发布的任务可以转发。']);
+        }
+
+        $campusPublicId = $task->campus_id !== null
+            ? Campus::query()->whereKey($task->campus_id)->value('public_id')
+            : null;
+        $configs = RobotForwardConfig::query()->where('enabled', true)->orderBy('id')->get()
+            ->filter(function (RobotForwardConfig $config) use ($campusPublicId): bool {
+                if (($config->filter_rules['content_type'] ?? 'community_post') !== 'task') {
+                    return false;
+                }
+                $campusId = $config->filter_rules['campus_id'] ?? null;
+
+                return ! is_string($campusId) || $campusId === '' || $campusId === $campusPublicId;
+            });
+
+        if ($configs->isEmpty()) {
+            throw ValidationException::withMessages(['task' => '没有启用中的「任务」转发配置匹配该任务，请先检查转发配置。']);
+        }
+
+        $items = collect([$task]);
+        $groups = [];
+        foreach ($configs as $config) {
+            $message = $this->configs->renderPosts($config, $items);
+            foreach ($config->robot_targets ?? [] as $target) {
+                foreach ($target['groups'] ?? [] as $group) {
+                    $entry = [
+                        'group_id' => (string) $group['group_id'],
+                        'group_name' => $group['group_name'] ?? null,
+                        'status' => 'failed',
+                        'error_message' => null,
+                        'forwarded_at' => now()->toIso8601String(),
+                    ];
+                    $key = sprintf(
+                        'manual-forward:task:%d:%s:%s:%s',
+                        (int) $task->id,
+                        $config->public_id,
+                        (string) $group['group_id'],
+                        (string) Str::ulid(),
+                    );
+                    try {
+                        $record = $this->messages->sendGroupText($admin, [
+                            'device_id' => $target['device_id'],
+                            'wxid' => $target['wxid'],
+                            'group_id' => $group['group_id'],
+                            'group_name' => $group['group_name'] ?? null,
+                            'message' => $message,
+                        ], $key, ['forward_config_id' => $config->id, 'trigger_type' => 'MANUAL_FORWARD']);
+                        [$status, $error] = $this->classify($record);
+                        $entry['status'] = $status;
+                        $entry['error_message'] = $error;
+                        $this->logForward($items, $config, $group, $status, $error, (int) $record->id, true);
+                    } catch (Throwable $exception) {
+                        $entry['error_message'] = $exception->getMessage();
+                        $this->logForward($items, $config, $group, 'failed', $exception->getMessage(), null, true);
+                    }
+                    $groups[] = $entry;
+                }
+            }
+        }
+
+        if ($groups === []) {
+            throw ValidationException::withMessages(['task' => '匹配的任务转发配置没有配置任何目标群。']);
+        }
+
+        $status = collect($groups)->every(fn (array $group): bool => $group['status'] === 'success')
+            ? 'success'
+            : 'failed';
+
+        return ['status' => $status, 'groups' => $groups];
+    }
+
     /** 把发送结果归一为 success / failed / unknown。 @return array{0: string, 1: string|null} */
     private function classify(RobotMessageRequest $record): array
     {
@@ -215,9 +296,11 @@ class RobotForwardDispatchService
         bool $manual,
     ): void {
         $now = now();
+        $contentType = $posts->first() instanceof Task ? 'task' : 'community_post';
         foreach ($posts as $post) {
             RobotPostForwardLog::query()->create([
                 'post_id' => (int) $post->id,
+                'content_type' => $contentType,
                 'forward_config_id' => $config?->id,
                 'group_id' => (string) $group['group_id'],
                 'group_name' => $group['group_name'] ?? null,
@@ -234,30 +317,47 @@ class RobotForwardDispatchService
     private function pendingPosts(RobotForwardConfig $config, array $filter): ?Collection
     {
         $max = max(1, (int) ($filter['max_messages'] ?? 20));
+        $contentType = $this->contentType($filter);
+        // 任务查询 join 了 task_versions，两表都含 id，需全限定避免 ambiguous。
+        $prefix = $contentType === 'task' ? 'tasks.' : '';
         $query = $this->configs->matchingPostsQuery($filter)
-            ->where('published_at', '<=', now())
-            ->where('id', '>', (int) ($config->last_forwarded_post_id ?? 0));
-        $this->applyKeywords($query, $config->template_config['keywords'] ?? []);
+            ->where($prefix.'published_at', '<=', now())
+            ->where($prefix.'id', '>', (int) ($config->last_forwarded_post_id ?? 0));
+        $this->applyKeywords($query, $config->template_config['keywords'] ?? [], $contentType);
 
-        $posts = $query->orderBy('id')->limit($max)->get();
+        $posts = $query->orderBy($prefix.'id')->limit($max)->get();
 
         return $posts->isEmpty() ? null : $posts;
     }
 
     /** @param array<int, string> $keywords */
-    private function applyKeywords(Builder $query, array $keywords): void
+    private function applyKeywords(Builder $query, array $keywords, string $contentType = 'community_post'): void
     {
         $keywords = collect($keywords)->map(fn (mixed $keyword): string => trim((string) $keyword))->filter()->values();
         if ($keywords->isEmpty()) {
             return;
         }
 
-        $query->where(function (Builder $nested) use ($keywords): void {
+        $query->where(function (Builder $nested) use ($keywords, $contentType): void {
             foreach ($keywords as $keyword) {
                 $like = '%'.$keyword.'%';
-                $nested->orWhere('title', 'like', $like)->orWhere('content', 'like', $like);
+                if ($contentType === 'task') {
+                    // 任务的 title/description 存放在 task_versions.content 中
+                    $nested->orWhereRaw("task_versions.content->>'title' LIKE ?", [$like])
+                        ->orWhereRaw("task_versions.content->>'description' LIKE ?", [$like]);
+                } else {
+                    $nested->orWhere('title', 'like', $like)->orWhere('content', 'like', $like);
+                }
             }
         });
+    }
+
+    /** @param array<string, mixed> $filter */
+    private function contentType(array $filter): string
+    {
+        $type = trim((string) ($filter['content_type'] ?? 'community_post'));
+
+        return $type === 'task' ? 'task' : 'community_post';
     }
 
     /** @param array<string, mixed> $filter */

@@ -752,6 +752,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/tasks', [AdminTaskController::class, 'index'])->middleware('admin.permission:task.view');
         Route::post('/tasks', [AdminTaskController::class, 'store'])->middleware('admin.permission:task.manage');
         Route::get('/tasks/{task}', [AdminTaskController::class, 'show'])->middleware('admin.permission:task.view');
+        Route::post('/tasks/{task}/forward', [AdminTaskController::class, 'forward'])->middleware(['admin.permission:task.manage', 'throttle:20,1']);
         Route::put('/tasks/{task}', [AdminTaskController::class, 'update'])->middleware('admin.permission:task.manage');
         Route::get('/tasks/{task}/versions', [AdminTaskController::class, 'versions'])->middleware('admin.permission:task.view');
         Route::post('/tasks/{task}/versions/{versionNo}/rollback', [AdminTaskController::class, 'rollback'])->middleware('admin.permission:task.manage');
