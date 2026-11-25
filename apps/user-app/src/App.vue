@@ -4,9 +4,32 @@ import { useModulesStore } from '@/stores/modules'
 import { useIconConfigStore } from '@/stores/icons'
 import { useCampusProfileStore } from '@/stores/campusProfile'
 import { useAuthStore } from '@/stores/auth'
-import { capturePendingH5Code } from '@/platform/auth'
+import { capturePendingH5Code, requestWechatLoginCode } from '@/platform/auth'
+import { loadClientCapabilities } from '@/platform/capabilities'
+import { clientPlatform } from '@/platform/runtime'
 import { CAMPUS_REQUIRED_EVENT, showCampusRequiredModal } from '@/utils/campusGate'
 import { ensureCampusBinding } from '@/utils/campusBindingGuard'
+
+const oauthAttemptKey = 'task_mall_oauth_attempted_at'
+
+/** 公众号内首次进入且未登录时自动发起授权，10 分钟内不重复打扰。 */
+function shouldAutoAuthorize(): boolean {
+  const last = Number(uni.getStorageSync(oauthAttemptKey) || 0)
+  if (last && Date.now() - last < 10 * 60 * 1000) return false
+  uni.setStorageSync(oauthAttemptKey, Date.now())
+
+  return true
+}
+
+async function autoAuthorizeWechat(): Promise<void> {
+  try {
+    const capabilities = await loadClientCapabilities()
+    await requestWechatLoginCode(capabilities.wechat_official_account_app_id)
+  } catch (error) {
+    // 授权域名或接口未就绪时保留手动登录入口，不影响浏览。
+    console.warn('[wechat-oauth] 自动授权失败，保留手动登录入口。', error)
+  }
+}
 
 function handleCampusRequired(code?: string) {
   // 写接口被校区门禁拦截：刷新账号校区状态并统一提示（可取消继续浏览）
@@ -16,9 +39,15 @@ function handleCampusRequired(code?: string) {
 
 onLaunch(() => {
   console.info("Task Mall launched");
-  // 公众号授权回跳：先暂存 code，未登录时引导到登录页完成换取
-  if (!useAuthStore().accessToken && capturePendingH5Code()) {
-    setTimeout(() => { void uni.reLaunch({ url: '/pages/login/index' }) }, 0)
+  const auth = useAuthStore()
+  if (!auth.accessToken && clientPlatform === 'h5-wechat') {
+    if (capturePendingH5Code()) {
+      // 授权回跳：先暂存 code，引导到登录页完成换取
+      setTimeout(() => { void uni.reLaunch({ url: '/pages/login/index' }) }, 0)
+    } else if (shouldAutoAuthorize()) {
+      // 公众号内未登录：自动弹出「获取昵称头像」授权
+      setTimeout(() => { void autoAuthorizeWechat() }, 600)
+    }
   }
   const modules = useModulesStore()
   modules.hydrate()

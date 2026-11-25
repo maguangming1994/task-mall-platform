@@ -96,6 +96,8 @@ function signaturePath(url: string): string {
  * 配置公众号分享卡片。失败时静默降级（复制链接仍然可用），不影响页面。
  */
 export async function enableWechatShare(options: WechatShareOptions): Promise<void> {
+  // JSSDK 不可用时微信会退化为抓取页面标题，这里先同步一份保证朋友圈卡片有标题。
+  if (typeof document !== 'undefined' && options.title) document.title = options.title
   // #ifndef H5
   return
   // #endif
@@ -141,8 +143,6 @@ export async function enableWechatShare(options: WechatShareOptions): Promise<vo
 
     const link = toWechatShareLink(options.link)
     const imgUrl = absoluteAsset(options.imageUrl || DEFAULT_WECHAT_SHARE_IMAGE)
-    // 朋友圈卡片标题取自页面 title，配置成功后同步一份作为兜底。
-    if (typeof document !== 'undefined') document.title = options.title
     const shareData = {
       title: options.title,
       desc: options.desc || options.title,
