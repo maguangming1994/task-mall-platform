@@ -1,0 +1,89 @@
+name: Production container recovery
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Read API container logs or restart only the API container'
+        required: true
+        default: 'diagnose'
+        type: choice
+        options:
+          - diagnose
+          - restart-api
+
+permissions:
+  contents: read
+
+jobs:
+  recover-api:
+    name: Diagnose or restart production API
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 5
+    steps:
+      - name: Configure deployment SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          DEPLOY_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+          DEPLOY_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_KEY"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+          test -n "$DEPLOY_PORT"
+          test -n "$DEPLOY_USER"
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/task-mall-deploy"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/task-mall-deploy" "$HOME/.ssh/known_hosts"
+          ssh-keygen -y -f "$HOME/.ssh/task-mall-deploy" >/dev/null
+
+      - name: Run selected API recovery action
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          DEPLOY_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          ACTION: ${{ inputs.action }}
+        run: |
+          set -euo pipefail
+          case "$ACTION" in
+            diagnose|restart-api) ;;
+            *) echo "Unsupported action: $ACTION" >&2; exit 1 ;;
+          esac
+          ssh -T \
+            -i "$HOME/.ssh/task-mall-deploy" \
+            -p "$DEPLOY_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=20 \
+            "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -euo pipefail
+            cid=\$(docker ps -a --filter 'name=task-mall-production-api' --format '{{.ID}}' | head -n 1)
+            test -n \"\$cid\"
+            docker inspect --format 'container={{.Name}} status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} restart_count={{.RestartCount}}' \"\$cid\"
+            if [ \"$ACTION\" = 'diagnose' ]; then
+              docker logs --tail 120 \"\$cid\" 2>&1
+              exit 0
+            fi
+            docker restart \"\$cid\"
+            for attempt in \$(seq 1 30); do
+              health=\$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' \"\$cid\")
+              if [ \"\$health\" = 'healthy' ]; then
+                exit 0
+              fi
+              sleep 3
+            done
+            docker logs --tail 120 \"\$cid\" 2>&1
+            exit 1
+          "
+
+      - name: Verify public API readiness
+        if: inputs.action == 'restart-api'
+        run: |
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors \
+            https://rwsc.jxgxnxs.cn/api/v1/health/ready >/dev/null
