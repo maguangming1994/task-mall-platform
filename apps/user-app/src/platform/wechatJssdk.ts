@@ -35,7 +35,8 @@ interface WechatJsSdk {
 const SDK_SRC = 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js'
 
 /** 无封面内容分享时使用的默认卡片图。 */
-export const DEFAULT_WECHAT_SHARE_IMAGE = '/static/home/hero-campus-reward.png'
+// 微信要求分享缩略图 < 32KB，jpg 压到 27KB 才能被微信服务器接受
+export const DEFAULT_WECHAT_SHARE_IMAGE = '/static/home/hero-campus-reward.jpg'
 
 let sdkPromise: Promise<WechatJsSdk | null> | null = null
 let configuredSignature = ''
