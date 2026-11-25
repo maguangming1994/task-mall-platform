@@ -38,6 +38,17 @@ export const DEFAULT_WECHAT_SHARE_IMAGE = '/static/home/hero-campus-reward.png'
 
 let sdkPromise: Promise<WechatJsSdk | null> | null = null
 let configuredSignature = ''
+let shareErrorReported = false
+
+// iOS 微信使用「首次进入页面的 URL」校验签名，Android 使用当前 URL。
+// 模块加载早于路由改写地址，因此在这里先保存进入地址。
+const ENTRY_URL = typeof window !== 'undefined' ? window.location.href.split('#')[0] : ''
+const IS_IOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+function signatureUrl(): string {
+  if (typeof window === 'undefined') return ''
+  return IS_IOS ? ENTRY_URL : window.location.href.split('#')[0]
+}
 
 function isWechatBrowser(): boolean {
   return typeof navigator !== 'undefined' && /MicroMessenger/i.test(navigator.userAgent)
@@ -110,15 +121,16 @@ export async function enableWechatShare(options: WechatShareOptions): Promise<vo
     const sdk = loaded as WechatJsSdk
 
     // 签名必须基于当前页面地址（不含 #），且每个地址只 config 一次。
-    const pageUrl = window.location.href.split('#')[0]
+    const pageUrl = signatureUrl()
     if (configuredSignature !== pageUrl) {
       const signature = await apiRequest<JssdkSignature>({ path: signaturePath(pageUrl) })
 
       await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error('wechat jssdk config timeout')), 5000)
-        sdk.error(() => {
+        sdk.error((result) => {
           clearTimeout(timer)
-          reject(new Error('wechat jssdk config failed'))
+          const detail = (result as { errMsg?: string } | undefined)?.errMsg || 'config failed'
+          reject(new Error(`微信分享初始化失败：${detail}`))
         })
         sdk.config({
           debug: false,
@@ -156,6 +168,12 @@ export async function enableWechatShare(options: WechatShareOptions): Promise<vo
     sdk.onMenuShareTimeline?.({ title: shareData.title, link, imgUrl })
   } catch (error) {
     console.warn('[wechat-share] 分享配置失败，已降级为复制链接。', error)
+    // 每个会话只提示一次，便于定位签名/域名问题。
+    if (!shareErrorReported) {
+      shareErrorReported = true
+      const message = error instanceof Error ? error.message : '微信分享初始化失败'
+      uni.showToast({ title: message, icon: 'none', duration: 5000 })
+    }
   }
   // #endif
 }
