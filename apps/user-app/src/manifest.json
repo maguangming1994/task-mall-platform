@@ -77,5 +77,8 @@
     "uniStatistics": {  
         "enable": false
     },
+    "h5" : {
+        "title" : "校圈 · 校园任务与闲置交易"
+    },
     "vueVersion" : "3"
 }

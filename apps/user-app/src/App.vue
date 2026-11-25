@@ -26,8 +26,10 @@ async function autoAuthorizeWechat(): Promise<void> {
     const capabilities = await loadClientCapabilities()
     await requestWechatLoginCode(capabilities.wechat_official_account_app_id)
   } catch (error) {
-    // 授权域名或接口未就绪时保留手动登录入口，不影响浏览。
+    // 授权域名或接口未就绪时保留手动登录入口，同时把原因暴露出来便于排查。
     console.warn('[wechat-oauth] 自动授权失败，保留手动登录入口。', error)
+    const message = error instanceof Error ? error.message : '微信授权未完成，请手动点击微信授权登录'
+    uni.showToast({ title: message, icon: 'none', duration: 5000 })
   }
 }
 
