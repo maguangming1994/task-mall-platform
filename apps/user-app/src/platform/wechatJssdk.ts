@@ -156,26 +156,22 @@ function applyShareData(sdk: WechatJsSdk, shareData: Record<string, unknown>) {
     link: String(shareData.link || ''),
     imgUrl: String(shareData.imgUrl || ''),
   }
-  const withCallbacks = {
-    ...shareData,
+  const makeCallbacks = (label: string) => ({
+    success: (result: unknown) =>
+      logDiag(`${label}-ok=${(result as { errMsg?: string } | undefined)?.errMsg || 'success'}`),
     fail: (result: unknown) =>
-      logDiag(`share-fail=${(result as { errMsg?: string } | undefined)?.errMsg || 'unknown'}`),
-  }
+      logDiag(`${label}-fail=${(result as { errMsg?: string } | undefined)?.errMsg || 'unknown'}`),
+  })
+  const appShare = { ...shareData, ...makeCallbacks('updateAppMessageShareData') }
+  const timelineShare = { ...timeline, ...makeCallbacks('updateTimelineShareData') }
   logDiag(
     `share-set title=${String(shareData.title || '')} link=${String(shareData.link || '')} img=${String(shareData.imgUrl || '')}`,
   )
-  sdk.checkJsApi?.({
-    jsApiList: ['updateAppMessageShareData', 'updateTimelineShareData'],
-    success: (result: unknown) =>
-      logDiag(`checkJsApi=${JSON.stringify((result as { checkResult?: unknown })?.checkResult || {})}`),
-    fail: (result: unknown) =>
-      logDiag(`checkJsApi-fail=${(result as { errMsg?: string } | undefined)?.errMsg || 'unknown'}`),
-  })
-  sdk.updateAppMessageShareData?.(withCallbacks)
-  sdk.updateTimelineShareData?.({ ...timeline, fail: withCallbacks.fail })
-  // 兼容未支持新接口的旧版微信客户端。
-  sdk.onMenuShareAppMessage?.(withCallbacks)
-  sdk.onMenuShareTimeline?.({ ...timeline, fail: withCallbacks.fail })
+  sdk.updateAppMessageShareData?.(appShare)
+  sdk.updateTimelineShareData?.(timelineShare)
+  // 兼容旧版微信客户端。
+  sdk.onMenuShareAppMessage?.({ ...shareData, ...makeCallbacks('onMenuShareAppMessage') })
+  sdk.onMenuShareTimeline?.({ ...timeline, ...makeCallbacks('onMenuShareTimeline') })
 }
 
 /**
