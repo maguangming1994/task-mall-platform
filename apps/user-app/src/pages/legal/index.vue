@@ -57,7 +57,7 @@
       </view>
       <view class="panel">
         <view class="permission-row">
-          <text class="permission-name">微信基础信息</text>
+          <text class="permission-name">基础信息</text>
           <text class="permission-value enabled">登录后按需授权</text>
         </view>
         <view class="permission-row">

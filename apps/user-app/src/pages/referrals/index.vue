@@ -26,7 +26,7 @@
     <view class="compliance-card"><text class="compliance-icon">♢</text><view><text class="compliance-title">合规邀请 · 安心分享</text><text class="compliance-copy">禁止使用不正当手段（如刷单、批量注册、虚假信息等）获取奖励。平台将对违规行为进行处理，必要时追究法律责任。详情见 <text class="link">《用户协议》</text> 和 <text class="link">《隐私政策》</text>。</text></view></view>
 
     <!-- #ifdef MP-WEIXIN -->
-    <button class="wechat-share" :disabled="!referralCode" open-type="share">微信分享</button>
+    <button class="wechat-share" :disabled="!referralCode" open-type="share">分享</button>
     <!-- #endif -->
     </template>
     <AppTabBar current-target="account" />

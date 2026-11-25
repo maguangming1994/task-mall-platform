@@ -139,7 +139,7 @@ function isSettledOrderStatus(status: string) { return ['pending_fulfillment', '
 
 function money(value:number){return (value/100).toFixed(2)}
 function amountText(cash:number,points:number){return [cash?`¥${money(cash)}`:'',points?`${points} 积分`:''].filter(Boolean).join(' + ')||'无需支付'}
-function paymentText(value:string){return ({wallet:'余额全额支付',wechat:'微信现金支付',none:'积分兑换 / 无现金支付'} as Record<string,string>)[value]||'支付方式待确认'}
+function paymentText(value:string){return ({wallet:'余额全额支付',wechat:'在线现金支付',none:'积分兑换 / 无现金支付'} as Record<string,string>)[value]||'支付方式待确认'}
 function statusText(value:string){return ({pending_payment:'待支付',pending_fulfillment:'待履约',fulfilled:'待确认',completed:'已完成',partially_refunded:'部分退款',refunded:'已退款',cancelled:'已取消'} as Record<string,string>)[value]||'处理中'}
 function goOrderEntry(){
   if (orderIds.value.length > 1) return uni.redirectTo({ url: `/pages/orders/index?ids=${encodeURIComponent(orderIds.value.join(','))}` })

@@ -11,10 +11,10 @@
 
     <view v-if="showSettings && preference" class="settings-card">
       <view class="settings-head"><view class="settings-icon">🔔</view><view><text>通知偏好</text><text>外部渠道可关闭，站内关键记录始终保留</text></view></view>
-      <view class="setting-row"><view class="setting-copy"><text>微信通知</text><text>接收任务、订单与资产提醒</text></view><switch color="#0BBF63" :checked="preference.wechat_enabled" :disabled="savingPreference" @change="changePreference('wechat_enabled', $event)" /></view>
+      <view class="setting-row"><view class="setting-copy"><text>服务通知</text><text>接收任务、订单与资产提醒</text></view><switch color="#0BBF63" :checked="preference.wechat_enabled" :disabled="savingPreference" @change="changePreference('wechat_enabled', $event)" /></view>
       <!-- #ifdef MP-WEIXIN -->
       <view v-if="wechatSubscriptions?.configured" class="subscription-section">
-        <view class="subscription-heading"><text>小程序订阅提醒</text><text>微信一次授权对应一次后续服务通知</text></view>
+        <view class="subscription-heading"><text>小程序订阅提醒</text><text>一次授权对应一次后续服务通知</text></view>
         <view class="subscription-actions">
           <button v-for="group in wechatSubscriptions.groups" :key="group.context" class="subscription-button" :loading="subscribingContext === group.context" :disabled="Boolean(subscribingContext)" @click="subscribeWechat(group)">
             <text>{{ group.label }}</text><text>{{ availableGrantCount(group) > 0 ? `可用 ${availableGrantCount(group)} 次` : '点击授权' }}</text>
@@ -255,7 +255,7 @@ async function subscribeWechat(group: WechatSubscriptionGroup) {
     // #ifdef MP-WEIXIN
     const pendingStatus = await syncPendingWechatSubscriptionResults()
     if (pendingStatus === 'pending') {
-      uni.showToast({ title: '上次微信授权结果仍待同步', icon: 'none' })
+      uni.showToast({ title: '上次授权结果仍待同步', icon: 'none' })
       return
     }
     if (pendingStatus === 'discarded') {
@@ -274,7 +274,7 @@ async function subscribeWechat(group: WechatSubscriptionGroup) {
     try {
       result = await uni.requestSubscribeMessage({ tmplIds: templateIds })
     } catch (error) {
-      toast(error, '微信订阅授权未完成')
+      toast(error, '订阅授权未完成')
       return
     }
 
@@ -283,7 +283,7 @@ async function subscribeWechat(group: WechatSubscriptionGroup) {
     uni.setStorageSync(pendingWechatSubscriptionStorageKey(), { request_id: requestId, results: statuses } satisfies PendingWechatSubscriptionResults)
     const syncStatus = await syncPendingWechatSubscriptionResults()
     if (syncStatus === 'pending') {
-      uni.showToast({ title: '微信授权已完成，结果稍后自动同步', icon: 'none' })
+      uni.showToast({ title: '授权已完成，结果稍后自动同步', icon: 'none' })
       return
     }
     if (syncStatus === 'discarded') {
@@ -295,7 +295,7 @@ async function subscribeWechat(group: WechatSubscriptionGroup) {
     uni.showToast({ title: accepted > 0 ? '订阅授权成功' : '未开启订阅提醒', icon: accepted > 0 ? 'success' : 'none' })
     // #endif
     // #ifndef MP-WEIXIN
-    uni.showToast({ title: '请在微信小程序中完成订阅授权', icon: 'none' })
+    uni.showToast({ title: '请在小程序中完成订阅授权', icon: 'none' })
     // #endif
   } catch (error) { toast(error, '订阅操作失败') }
   finally { subscribingContext.value = '' }

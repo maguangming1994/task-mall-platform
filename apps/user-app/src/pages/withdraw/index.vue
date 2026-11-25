@@ -34,8 +34,8 @@
     <view class="section-card channel-card">
       <view class="section-head"><text class="section-title">到账方式</text><text class="rule-link" @click="goBankCards">银行卡管理 ›</text></view>
       <view class="channel-option" :class="{ on: channel === 'wechat_transfer' }" @click="channel = 'wechat_transfer'">
-        <view class="channel-ic wechat">微</view>
-        <view class="channel-main"><text class="channel-name">微信零钱</text><text class="channel-note">审核通过后转账至微信支付实名账户</text></view>
+        <view class="channel-ic wechat">零</view>
+        <view class="channel-main"><text class="channel-name">零钱</text><text class="channel-note">审核通过后转账至本人实名支付账户</text></view>
         <view class="channel-radio" :class="{ on: channel === 'wechat_transfer' }" />
       </view>
       <view class="channel-option" :class="{ on: channel === 'bank_card' }" @click="chooseBankChannel">
@@ -54,7 +54,7 @@
     <view class="safety-note">平台保障资金安全，禁止任何形式的线下交易或提现代办行为</view>
 
     <view v-if="actionError" class="action-error" role="alert"><text>{{ actionError }}</text><button @click="actionError = ''">知道了</button></view>
-    <view v-if="withdrawals.length" class="history-card section-card"><view class="section-head"><text class="section-title">提现记录</text><text class="rule-link">最近记录</text></view><view v-for="item in withdrawals" :key="item.id" class="history-row"><view><text>{{ item.withdrawal_no }}</text><small>{{ formatDate(item.created_at) }} · {{ item.channel_label || '微信零钱' }} · {{ item.workflow?.next_action || '请稍后刷新处理状态' }}</small></view><view><text>¥{{ money(item.requested_amount) }}</text><small>{{ item.workflow?.status_label || statusText(item.status) }}</small></view></view></view>
+    <view v-if="withdrawals.length" class="history-card section-card"><view class="section-head"><text class="section-title">提现记录</text><text class="rule-link">最近记录</text></view><view v-for="item in withdrawals" :key="item.id" class="history-row"><view><text>{{ item.withdrawal_no }}</text><small>{{ formatDate(item.created_at) }} · {{ item.channel_label || '零钱' }} · {{ item.workflow?.next_action || '请稍后刷新处理状态' }}</small></view><view><text>¥{{ money(item.requested_amount) }}</text><small>{{ item.workflow?.status_label || statusText(item.status) }}</small></view></view></view>
 
     <view v-if="showRules" class="rules-mask" @click="showRules = false">
       <view class="rules-sheet" @click.stop>
@@ -65,7 +65,7 @@
           <view class="rule-block"><text class="block-title">3. 手续费</text><text class="block-text">手续费率 {{ feeRateText }}，手续费 = 提现金额 × 费率并向上取整到 0.01 元，从提现金额中扣除；当应计手续费达到或超过提现金额时（如 0.01 元的极小额提现）免收手续费。实际到账 = 提现金额 − 手续费，以提交时试算结果为准。</text></view>
           <view class="rule-block"><text class="block-title">4. 提现流程</text><text class="block-text">提交申请后，申请金额将立即从余额冻结；平台对提现资格与金额进行人工审核，审核通过后按所选方式出款。处理中的金额可在页面顶部「冻结额」查看。</text></view>
           <view class="rule-block"><text class="block-title">5. 到账时间</text><text class="block-text">{{ rules?.arrival_text || '提交后平台审核，预计 1-3 个工作日到账，周末及节假日顺延。' }}</text></view>
-          <view class="rule-block"><text class="block-title">6. 到账方式</text><text class="block-text">微信零钱：审核通过后转账至微信支付实名账户；银行卡：审核通过后由财务在工作日人工转账至本人储蓄卡，可在「银行卡管理」中维护收款卡。</text></view>
+          <view class="rule-block"><text class="block-title">6. 到账方式</text><text class="block-text">零钱：审核通过后转账至本人实名支付账户；银行卡：审核通过后由财务在工作日人工转账至本人储蓄卡，可在「银行卡管理」中维护收款卡。</text></view>
           <view class="rule-block"><text class="block-title">7. 失败与退回</text><text class="block-text">审核未通过或出款失败时，冻结的申请金额将自动退回可提现余额，不收取任何费用，可按规则重新发起提现。</text></view>
           <view class="rule-block"><text class="block-title">8. 余额来源</text><text class="block-text">任务佣金、交易收入等在确认收货并完成结算后计入可提现余额，余额永久有效；平台不收取提现手续费之外的任何费用。</text></view>
           <view class="rule-block"><text class="block-title">9. 安全提示</text><text class="block-text">请使用本人实名账户收款，禁止任何形式的线下交易或提现代办行为；如有疑问请联系平台客服。</text></view>
@@ -197,7 +197,7 @@ async function handleWithdraw() {
   }
   const destination = channel.value === 'bank_card' && selectedCard.value
     ? `${selectedCard.value.bank_name} ${selectedCard.value.card_masked}`
-    : '微信零钱'
+    : '零钱'
   const confirmed = await uni.showModal({ title: '确认提现', content: `到账方式：${destination}\n手续费 ¥${money(quote.value.fee_amount)}，预计到账 ¥${money(quote.value.received_amount)}。提交后将冻结申请金额。` })
   if (!confirmed.confirm) return
   withdrawing.value = true

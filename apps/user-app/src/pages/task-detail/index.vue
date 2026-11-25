@@ -126,7 +126,7 @@
           <text class="sheet-h3">分享这个校园任务</text>
           <view class="share-options">
             <!-- #ifdef MP-WEIXIN -->
-            <button class="share-option" open-type="share"><text class="share-option-icon friend">友</text><text class="share-option-name">微信好友</text></button>
+            <button class="share-option" open-type="share"><text class="share-option-icon friend">友</text><text class="share-option-name">好友</text></button>
             <!-- #endif -->
             <!-- #ifndef MP-WEIXIN -->
             <button class="share-option" @click="shareToFriend"><text class="share-option-icon friend">友</text><text class="share-option-name">分享好友</text></button>

@@ -55,7 +55,7 @@
         </view>
       </view>
 
-      <text class="scan-tip">{{ support.qr_code_url ? (support.qr_code_tip || '长按二维码识别，或使用微信扫一扫') : '配置后可扫码联系在线客服' }}</text>
+      <text class="scan-tip">{{ support.qr_code_url ? (support.qr_code_tip || '长按二维码识别，或使用扫一扫') : '配置后可扫码联系在线客服' }}</text>
       <button v-if="support.qr_code_url" class="preview-button" @click="previewQRCode">查看二维码大图</button>
     </view>
 
@@ -92,7 +92,7 @@ const support = ref<HomeFloatingSupport>({
   label: '客服二维码',
   subtitle: '扫码添加校园客服',
   qr_code_url: '',
-  qr_code_tip: '长按二维码识别，或使用微信扫一扫',
+  qr_code_tip: '长按二维码识别，或使用扫一扫',
   position: 'right',
   bottom_offset_rpx: 170,
 })

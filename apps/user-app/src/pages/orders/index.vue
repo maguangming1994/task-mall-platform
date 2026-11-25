@@ -47,7 +47,7 @@
         <text v-else>虚拟交付内容：{{ deliveryText(fulfillment.virtual_delivery) }}</text>
       </view>
       <view class="card-entry"><text>查看订单详情</text><text>›</text></view>
-      <button v-if="order.status === 'pending_payment'" class="pay" :loading="payingOrderId === order.id || isPaymentPolling(order.id)" :disabled="!!payingOrderId || isPaymentPolling(order.id)" @click.stop="pay(order)">{{ isPaymentPolling(order.id) ? '支付结果确认中…' : (order.cash_payment_method === 'wallet' ? '余额全额支付' : '微信支付') }}</button>
+      <button v-if="order.status === 'pending_payment'" class="pay" :loading="payingOrderId === order.id || isPaymentPolling(order.id)" :disabled="!!payingOrderId || isPaymentPolling(order.id)" @click.stop="pay(order)">{{ isPaymentPolling(order.id) ? '支付结果确认中…' : (order.cash_payment_method === 'wallet' ? '余额全额支付' : '在线支付') }}</button>
       <button v-if="order.status === 'fulfilled'" class="pay" :loading="payingOrderId === order.id" @click.stop="confirmComplete(order)">确认完成</button>
     </view>
 
@@ -142,7 +142,7 @@ function money(cents: number) { return (cents / 100).toFixed(2) }
 function amountText(cash: number, points: number) { return [cash ? `¥${money(cash)}` : '', points ? `${points} 积分` : ''].filter(Boolean).join(' + ') || '无需支付' }
 function statusText(status: string) { return ({ pending_payment: '待支付', pending_fulfillment: '待履约', fulfilled: '待确认', completed: '已完成', partially_refunded: '部分退款', refunded: '已退款', cancelled: '已取消', closed: '已关闭' } as Record<string, string>)[status] || '状态更新中' }
 function fulfillmentText(type: string) { return ({ logistics: '物流配送', no_logistics: '无需物流', virtual_delivery: '虚拟交付' } as Record<string, string>)[type] || type }
-function paymentText(method: string) { return ({ wallet: '余额全额', wechat: '微信支付', none: '无现金支付' } as Record<string, string>)[method] || method }
+function paymentText(method: string) { return ({ wallet: '余额全额', wechat: '在线支付', none: '无现金支付' } as Record<string, string>)[method] || method }
 function modeText(mode: string) { return ({ cash: '现金', points: '积分', cash_points: '现金 + 积分' } as Record<string, string>)[mode] || mode }
 function deliveryText(value: Record<string, unknown> | null) { return value ? Object.entries(value).map(([key, item]) => `${key}：${String(item)}`).join('；') : '已完成虚拟交付' }
 async function pay(order: Order) {

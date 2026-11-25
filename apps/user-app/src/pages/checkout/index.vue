@@ -55,7 +55,7 @@
         <view class="pay-copy">
           <text class="pay-name">{{ option.label }}</text>
           <text v-if="option.code === 'wallet'" class="pay-sub">可用 ¥{{ wallet ? money(wallet.available_amount) : '—' }}{{ walletInsufficient ? ' · 余额不足' : '' }}</text>
-          <text v-else class="pay-sub">使用微信支付现金与运费</text>
+          <text v-else class="pay-sub">使用在线支付现金与运费</text>
         </view>
         <view class="pay-check" :class="{ on: paymentIndex === index }">{{ paymentIndex === index ? '✓' : '' }}</view>
       </view>
@@ -96,7 +96,7 @@
       <view class="amount-row total"><text>应付合计</text><text class="total-val">{{ preview ? amountText(preview.payable_cash_amount, preview.payable_points) : amountText(itemsCashAmount + (quote?.shipping_cash_amount || 0), itemsPoints) }}</text></view>
     </view>
 
-    <view class="rule-note" v-if="!reviewing">本单现金部分仅可选择微信或余额全额支付，两者不可组合；运费始终使用现金。</view>
+    <view class="rule-note" v-if="!reviewing">本单现金部分仅可选择在线支付或余额全额支付，两者不可组合；运费始终使用现金。</view>
 
     <view class="action-bar">
       <view class="total-box">

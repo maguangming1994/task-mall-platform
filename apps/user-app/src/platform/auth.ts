@@ -52,8 +52,8 @@ function miniLoginCode(): Promise<string> {
   return new Promise((resolve, reject) => {
     uni.login({
       provider: 'weixin',
-      success: result => result.code ? resolve(result.code) : reject(new Error('未取得微信登录凭证。')),
-      fail: () => reject(new Error('微信登录调用失败，请稍后重试。')),
+      success: result => result.code ? resolve(result.code) : reject(new Error('未取得登录凭证。')),
+      fail: () => reject(new Error('登录调用失败，请稍后重试。')),
     })
   })
 }
@@ -65,7 +65,7 @@ function h5LoginCode(configuredAppId?: string | null): string | null {
     const expectedState = uni.getStorageSync(oauthStateKey)
     uni.removeStorageSync(oauthStateKey)
     if (import.meta.env.MODE === 'production' && (!expectedState || expectedState !== pending.state)) {
-      throw new Error('微信授权状态校验失败，请重新发起登录。')
+      throw new Error('授权状态校验失败，请重新发起登录。')
     }
     return pending.code
   }
@@ -76,7 +76,7 @@ function h5LoginCode(configuredAppId?: string | null): string | null {
     const returnedState = readQueryString(window.location.search, 'state')
     uni.removeStorageSync(oauthStateKey)
     if (import.meta.env.MODE === 'production' && (!expectedState || expectedState !== returnedState)) {
-      throw new Error('微信授权状态校验失败，请重新发起登录。')
+      throw new Error('授权状态校验失败，请重新发起登录。')
     }
     return code
   }
@@ -106,5 +106,5 @@ export async function requestWechatLoginCode(officialAccountAppId?: string | nul
     return code ? { channel: 'h5', code } : null
   }
 
-  throw new Error('当前浏览器不支持微信快捷登录，请使用手机号登录。')
+  throw new Error('当前浏览器不支持快捷登录，请使用手机号登录。')
 }

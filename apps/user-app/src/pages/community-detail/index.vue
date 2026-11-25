@@ -105,7 +105,7 @@
         <view class="share-sheet-head"><view><text class="share-kicker">SHARE POST</text><text class="share-title">分享这条校园动态</text></view><button class="share-close" @click="closeSharePanel">×</button></view>
         <view class="share-options">
           <!-- #ifdef MP-WEIXIN -->
-          <button class="share-option" open-type="share" @click="closeSharePanel"><text class="share-option-icon friend">友</text><text class="share-option-name">微信好友</text></button>
+          <button class="share-option" open-type="share" @click="closeSharePanel"><text class="share-option-icon friend">友</text><text class="share-option-name">好友</text></button>
           <!-- #endif -->
           <!-- #ifndef MP-WEIXIN -->
           <button class="share-option" @click="shareToFriend"><text class="share-option-icon friend">友</text><text class="share-option-name">分享好友</text></button>

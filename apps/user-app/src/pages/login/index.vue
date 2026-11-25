@@ -11,21 +11,20 @@
       <image v-if="brand.logo_url" class="login-logo login-logo-img" :src="brand.logo_url" mode="aspectFit" />
       <view v-else class="login-logo">{{ brand.logo_text }}</view>
       <text class="login-name">{{ brand.name }}</text>
-      <text class="login-slogan">{{ needsPhoneBinding ? '微信身份已验证，绑定手机号后继续使用' : '校园任务互助 · 积分换好物' }}</text>
+      <text class="login-slogan">{{ needsPhoneBinding ? '身份已验证，绑定手机号后继续使用' : '校园任务互助 · 积分换好物' }}</text>
     </view>
 
     <view class="login-card">
       <template v-if="wechatMethod && !needsPhoneBinding">
         <button class="btn-wx" :loading="wechatSubmitting" :disabled="wechatSubmitting" @click="wechatLogin">
-          <text class="btn-wx-icon">微</text>
-          {{ wechatMethod === 'wechat_mini' ? '微信一键登录' : '微信授权登录' }}
+          {{ wechatMethod === 'wechat_mini' ? '快捷登录' : '授权登录' }}
         </button>
         <view class="divider"><view /><text>或使用手机号登录</text><view /></view>
       </template>
 
       <view v-if="needsPhoneBinding" class="verified-tip">
         <text class="verified-badge">✓</text>
-        <view class="verified-main"><text class="verified-title">微信身份验证成功</text><text class="verified-copy">绑定手机号后即可继续使用任务、资产与商城服务</text></view>
+        <view class="verified-main"><text class="verified-title">身份验证成功</text><text class="verified-copy">绑定手机号后即可继续使用任务、资产与商城服务</text></view>
       </view>
 
       <!-- #ifdef MP-WEIXIN -->
@@ -38,13 +37,13 @@
           :disabled="wechatPhoneSubmitting"
           @getphonenumber="authorizeWechatPhone"
         >
-          微信授权手机号
+          手机号快捷登录
         </button>
-        <button v-else class="btn-wx" @click="ensureAgreed">微信授权手机号</button>
+        <button v-else class="btn-wx" @click="ensureAgreed">手机号快捷登录</button>
         <view class="divider"><view /><text>或使用短信验证码</text><view /></view>
       </template>
       <view v-else-if="needsPhoneBinding && capabilities" class="wechat-phone-unavailable">
-        微信手机号授权暂时不可用，请使用短信验证码完成绑定。
+        手机号快捷登录暂时不可用，请使用短信验证码完成绑定。
       </view>
       <!-- #endif -->
 
@@ -236,7 +235,7 @@ async function bindWechatPhoneWithSessionRecovery(phoneCode: string) {
   const restoreSessionAndBind = async () => {
     const credential = await requestWechatLoginCode(capabilities.value?.wechat_official_account_app_id)
     if (!credential || credential.channel !== 'mini') {
-      throw new Error('微信登录状态已更新，请重新点击授权手机号。')
+      throw new Error('登录状态已更新，请重新点击手机号快捷登录。')
     }
 
     const user = await auth.loginWithWechat('mini', credential.code)
@@ -262,7 +261,7 @@ async function authorizeWechatPhone(event: WechatPhoneEvent) {
   const phoneCode = event.detail?.code
   if (!phoneCode) {
     const denied = event.detail?.errMsg?.includes('deny') || event.detail?.errMsg?.includes('cancel')
-    formError.value = denied ? '你已取消手机号授权，可改用短信验证码绑定。' : '未获取到微信手机号授权凭证，请重试或改用短信验证码。'
+    formError.value = denied ? '你已取消手机号授权，可改用短信验证码绑定。' : '未获取到手机号授权凭证，请重试或改用短信验证码。'
     uni.showToast({ title: formError.value, icon: 'none', duration: 3000 })
     return
   }
@@ -286,7 +285,7 @@ async function authorizeWechatPhone(event: WechatPhoneEvent) {
           }
         }
       }
-      showError(new Error('微信手机号授权暂时不可用，请使用短信验证码完成绑定，或稍后重试。'))
+      showError(new Error('手机号快捷登录暂时不可用，请使用短信验证码完成绑定，或稍后重试。'))
       return
     }
     showError(error)
@@ -378,7 +377,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* v13 登录页：绿渐变背景 + 白色 logo 块 + 微信一键登录 + 协议勾选 */
+/* v13 登录页：绿渐变背景 + 白色 logo 块 + 快捷登录 + 协议勾选 */
 .page{position:relative;min-height:100vh;overflow:hidden;box-sizing:border-box;background:linear-gradient(135deg,#12D978,#08A152);display:flex;flex-direction:column}
 .page::before{content:'';position:absolute;top:-240rpx;right:-180rpx;width:600rpx;height:600rpx;border-radius:50%;background:rgba(255,255,255,.10);pointer-events:none}
 .page::after{content:'';position:absolute;bottom:420rpx;left:-160rpx;width:400rpx;height:400rpx;border-radius:50%;background:rgba(255,255,255,.08);pointer-events:none}
@@ -395,7 +394,6 @@ onUnmounted(() => {
 .login-slogan{margin-top:16rpx;color:rgba(255,255,255,.88);font-size:26rpx;letter-spacing:2rpx}
 .login-card{position:relative;z-index:2;margin:64rpx 40rpx calc(48rpx + env(safe-area-inset-bottom));padding:52rpx 40rpx 44rpx;border-radius:44rpx;background:#fff;box-shadow:0 -16rpx 80rpx rgba(0,0,0,.12)}
 .btn-wx{display:flex;width:100%;height:96rpx;align-items:center;justify-content:center;gap:18rpx;margin:0;border:0;border-radius:48rpx;background:linear-gradient(135deg,#12D978,#08A152);box-shadow:0 16rpx 36rpx rgba(11,191,99,.35);color:#fff;font-size:32rpx;font-weight:700;line-height:96rpx}
-.btn-wx-icon{display:flex;width:44rpx;height:44rpx;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.22);font-size:24rpx;font-weight:700}
 .divider{display:flex;align-items:center;gap:24rpx;margin:36rpx 0 28rpx;color:#AEB3BB;font-size:24rpx}
 .divider view{flex:1;height:2rpx;background:#EDEFEF}
 .field-group+.field-group{margin-top:20rpx}

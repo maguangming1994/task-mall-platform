@@ -43,8 +43,8 @@
 
         <view v-if="wechatH5" class="security card-box">
           <view class="security-main">
-            <text class="security-title">微信免密登录</text>
-            <text class="security-sub">{{ binding?.bound ? '已绑定，下次可在公众号内直接登录' : '绑定后下次可直接微信登录' }}</text>
+            <text class="security-title">免密登录</text>
+            <text class="security-sub">{{ binding?.bound ? '已绑定，下次可在公众号内直接登录' : '绑定后下次可直接登录' }}</text>
           </view>
           <text class="security-action" @click="toggleBinding">{{ binding?.bound ? '解绑' : '绑定' }}</text>
         </view>
@@ -248,7 +248,7 @@ async function toggleBinding() {
     return
   }
   startAdminWechatAuth('bind').catch(() => {
-    uni.showToast({ title: '发起微信授权失败，请稍后重试', icon: 'none' })
+    uni.showToast({ title: '发起授权失败，请稍后重试', icon: 'none' })
   })
 }
 
@@ -256,14 +256,14 @@ async function submitBinding(code: string) {
   try {
     binding.value = await bindWechat(code)
     setWechatBindingFlag(true)
-    uni.showToast({ title: '微信绑定成功', icon: 'success' })
+    uni.showToast({ title: '绑定成功', icon: 'success' })
   } catch (error) {
-    handleSecurityError(error, '微信绑定失败')
+    handleSecurityError(error, '绑定失败')
   }
 }
 
 async function unbindCurrentWechat() {
-  const result = await uni.showModal({ title: '解绑微信', content: '解绑后将不再支持微信免密登录，确认解绑？' })
+  const result = await uni.showModal({ title: '解除绑定', content: '解绑后将不再支持免密登录，确认解绑？' })
   if (!result.confirm) return
 
   try {

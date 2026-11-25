@@ -107,7 +107,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async bindPhone(phone: string, verificationCode: string) {
-      if (!this.accessToken) throw new Error('请先完成微信登录。')
+      if (!this.accessToken) throw new Error('请先完成登录。')
       this.submitting = true
       try {
         const bind = () => apiRequest<PhoneBindingPayload>({
@@ -159,7 +159,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async bindWechatPhone(phoneCode: string) {
-      if (!this.accessToken) throw new Error('请先完成微信登录。')
+      if (!this.accessToken) throw new Error('请先完成登录。')
       this.submitting = true
       try {
         const bind = () => apiRequest<PhoneBindingPayload>({

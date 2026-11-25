@@ -10,8 +10,7 @@
       <template v-if="!challenge">
         <template v-if="wechatAvailable">
           <view class="wechat-login" @click="wechatLogin">
-            <text class="wechat-icon">微</text>
-            <text class="wechat-text">微信一键登录</text>
+            <text class="wechat-text">快捷登录</text>
           </view>
           <view class="divider"><text class="divider-text">或使用账号密码</text></view>
         </template>
@@ -65,7 +64,7 @@
       </button>
 
       <view v-if="wechatAvailable && !challenge" class="remember-row">
-        <text class="remember-label">记住此微信，下次免密登录</text>
+        <text class="remember-label">记住此设备，下次免密登录</text>
         <switch :checked="rememberWechat" color="#08A152" style="transform: scale(.8)" @change="onRememberChange" />
       </view>
 
@@ -181,10 +180,10 @@ async function handleWechatCode(mode: 'login' | 'bind', wechatCode: string) {
     try {
       await bindWechat(wechatCode)
       setWechatBindingFlag(true)
-      uni.showToast({ title: '已记住此微信', icon: 'success' })
+      uni.showToast({ title: '已记住此设备', icon: 'success' })
       uni.reLaunch({ url: '/pages/admin/review/index' })
     } catch (error) {
-      toastError(error, '微信绑定失败')
+      toastError(error, '绑定失败')
     }
     return
   }
@@ -201,10 +200,10 @@ async function handleWechatCode(mode: 'login' | 'bind', wechatCode: string) {
   } catch (error) {
     if (error instanceof ApiError && error.code === 'WECHAT_BINDING_NOT_FOUND') {
       setWechatBindingFlag(false)
-      uni.showToast({ title: '当前微信未绑定管理员，请用账号密码登录', icon: 'none', duration: 2500 })
+      uni.showToast({ title: '当前账号未绑定管理员，请用账号密码登录', icon: 'none', duration: 2500 })
       return
     }
-    toastError(error, '微信登录失败')
+    toastError(error, '登录失败')
   }
 }
 
@@ -215,7 +214,7 @@ function wechatLogin() {
     return
   }
   startAdminWechatAuth('login').catch(() => {
-    uni.showToast({ title: '发起微信授权失败，请稍后重试', icon: 'none' })
+    uni.showToast({ title: '发起授权失败，请稍后重试', icon: 'none' })
   })
 }
 
@@ -248,7 +247,6 @@ function toastError(error: unknown, fallback: string) {
 .input:focus{border-color:#0BBF63;background:#fff}
 .eye{position:absolute;right:24rpx;bottom:24rpx;color:#0BBF63;font-size:22rpx}
 .wechat-login{display:flex;align-items:center;justify-content:center;gap:14rpx;height:92rpx;border-radius:46rpx;background:#E7F9EF;color:#087A43;font-size:28rpx;font-weight:700}
-.wechat-icon{display:flex;align-items:center;justify-content:center;width:40rpx;height:40rpx;border-radius:50%;background:#08A152;color:#fff;font-size:22rpx}
 .wechat-text{font-size:28rpx}
 .divider{display:flex;align-items:center;justify-content:center;margin:32rpx 0 28rpx}
 .divider-text{color:#AEB3BB;font-size:22rpx}

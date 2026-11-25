@@ -73,7 +73,7 @@ const sharePath = computed(() => dashboard.value?.share.path || '/pages/referral
 const posterCanvasStyle = computed(() => `width:${posterWidth.value}px;height:${posterHeight.value}px`)
 const posterPreviewStyle = computed(() => `width:${posterWidth.value}px;height:${posterHeight.value}px`)
 const shareOptions = [
-  { key: 'wechat', label: '微信好友', icon: '●', tone: 'wechat', action: () => shareWechat() },
+  { key: 'wechat', label: '好友', icon: '●', tone: 'wechat', action: () => shareWechat() },
   { key: 'moments', label: '朋友圈', icon: '◉', tone: 'moments', action: () => copyLink() },
   { key: 'qq', label: 'QQ 好友', icon: '♟', tone: 'qq', action: () => copyLink() },
   { key: 'space', label: 'QQ 空间', icon: '★', tone: 'space', action: () => copyLink() },
@@ -97,7 +97,7 @@ function showRules() { uni.showModal({ title: '邀请规则说明', content: '�
 function copyCode() { if (referralCode.value) uni.setClipboardData({ data: referralCode.value, success: () => uni.showToast({ title: '邀请码已复制', icon: 'success' }) }) }
 function inviteLink() { let link = sharePath.value; const publicBase = String(import.meta.env.VITE_H5_PUBLIC_URL || '').trim().replace(/\/$/, ''); if (publicBase) link = `${publicBase}/#${sharePath.value}`; /* #ifdef H5 */ if (!publicBase) link = `${window.location.origin}/#${sharePath.value}`; /* #endif */ return link }
 function copyLink() { if (referralCode.value) uni.setClipboardData({ data: inviteLink(), success: () => uni.showToast({ title: '邀请链接已复制', icon: 'success' }) }) }
-function shareWechat() { if (!referralCode.value) return; uni.showToast({ title: '请使用右上角分享给微信好友', icon: 'none' }) }
+function shareWechat() { if (!referralCode.value) return; uni.showToast({ title: '请使用右上角分享给好友', icon: 'none' }) }
 function openPoster() { if (!referralCode.value) return uni.showToast({ title: '邀请码加载完成后再生成海报', icon: 'none' }); const system = uni.getSystemInfoSync(); posterWidth.value = Math.max(280, Math.min(360, system.windowWidth - 56)); posterHeight.value = Math.round(posterWidth.value * 1.56); posterVisible.value = true; posterReady.value = false; void nextTick(() => setTimeout(drawPoster, 80)) }
 function closePoster() { posterVisible.value = false }
 function roundedRect(context: UniApp.CanvasContext, x: number, y: number, width: number, height: number, radius: number, color: string) { context.beginPath(); context.moveTo(x + radius, y); context.lineTo(x + width - radius, y); context.arcTo(x + width, y, x + width, y + radius, radius); context.lineTo(x + width, y + height - radius); context.arcTo(x + width, y + height, x + width - radius, y + height, radius); context.lineTo(x + radius, y + height); context.arcTo(x, y + height, x, y + height - radius, radius); context.lineTo(x, y + radius); context.arcTo(x, y, x + radius, y, radius); context.closePath(); context.setFillStyle(color); context.fill() }
