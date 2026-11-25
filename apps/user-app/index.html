@@ -10,6 +10,10 @@
         (coverSupport ? ', viewport-fit=cover' : '') + '" />')
     </script>
     <title>校圈 · 校园任务与闲置交易</title>
+    <!-- 微信 iOS 用「首次进入页地址」校验 JSSDK 签名，必须在任何脚本改写 URL 之前记录 -->
+    <script>
+      window.__WX_ENTRY_URL__ = window.location.href.split('#')[0]
+    </script>
     <meta name="description" content="校圈：校园任务接单、闲置交易、社区互动的一站式服务平台。" />
     <meta property="og:title" content="校圈 · 校园任务与闲置交易" />
     <meta property="og:description" content="校园任务接单、闲置交易、社区互动的一站式服务平台。" />

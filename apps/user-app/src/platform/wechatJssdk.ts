@@ -41,8 +41,12 @@ let configuredSignature = ''
 let shareErrorReported = false
 
 // iOS 微信使用「首次进入页面的 URL」校验签名，Android 使用当前 URL。
-// 模块加载早于路由改写地址，因此在这里先保存进入地址。
-const ENTRY_URL = typeof window !== 'undefined' ? window.location.href.split('#')[0] : ''
+// 优先取 index.html 内联脚本记录的最早地址，避免模块加载前已被 replaceState 改写。
+const ENTRY_URL =
+  typeof window !== 'undefined'
+    ? ((window as unknown as { __WX_ENTRY_URL__?: string }).__WX_ENTRY_URL__ ||
+        window.location.href.split('#')[0])
+    : ''
 const IS_IOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent)
 
 function signatureUrl(): string {
@@ -154,7 +158,12 @@ export async function enableWechatShare(options: WechatShareOptions): Promise<vo
   return
   // #endif
   // #ifdef H5
-  if (!isWechatBrowser() || typeof window === 'undefined') return
+  if (typeof window === 'undefined') return
+  logDiag(`ua=${navigator.userAgent}`)
+  if (!isWechatBrowser()) {
+    logDiag('not-wechat')
+    return
+  }
 
   try {
     logDiag(`ios=${IS_IOS} entry=${ENTRY_URL}`)
