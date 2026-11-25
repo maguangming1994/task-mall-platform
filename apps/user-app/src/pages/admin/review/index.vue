@@ -247,7 +247,9 @@ async function toggleBinding() {
     await submitBinding(localCode)
     return
   }
-  startAdminWechatAuth('bind')
+  startAdminWechatAuth('bind').catch(() => {
+    uni.showToast({ title: '发起微信授权失败，请稍后重试', icon: 'none' })
+  })
 }
 
 async function submitBinding(code: string) {

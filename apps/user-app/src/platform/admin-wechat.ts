@@ -1,4 +1,5 @@
 import { clientPlatform } from './runtime'
+import { loadClientCapabilities } from './capabilities'
 
 export type AdminWechatMode = 'login' | 'bind'
 
@@ -48,13 +49,38 @@ function randomState(): string {
  * 回调地址保留当前 hash 路由，微信追加的 code/state 会落在页面参数里，
  * 由登录页的 onLoad 消费；state 使用独立存储键，避免与用户端 OAuth 冲突。
  */
-export function startAdminWechatAuth(mode: AdminWechatMode): boolean {
+let appIdCache: string | null = null
+let appIdPromise: Promise<string | null> | null = null
+
+/**
+ * 公众号 AppID 由后台「第三方服务配置」下发，构建产物里没有该变量，
+ * 因此运行时从 /client-capabilities 读取，并做内存缓存。
+ */
+export function primeAdminWechatAppId(): Promise<string | null> {
+  if (appIdCache) return Promise.resolve(appIdCache)
+  if (appIdPromise) return appIdPromise
+
+  appIdPromise = loadClientCapabilities()
+    .then((capabilities) => {
+      const appId = capabilities.wechat_official_account_app_id
+      appIdCache = typeof appId === 'string' && appId ? appId : null
+      return appIdCache
+    })
+    .catch(() => null)
+    .finally(() => {
+      appIdPromise = null
+    })
+
+  return appIdPromise
+}
+
+export async function startAdminWechatAuth(mode: AdminWechatMode): Promise<boolean> {
   // #ifdef H5
-  const appId = import.meta.env.VITE_WECHAT_OA_APP_ID
   if (!isWechatH5()) {
     uni.showToast({ title: '请在微信中打开本页面', icon: 'none' })
     return false
   }
+  const appId = import.meta.env.VITE_WECHAT_OA_APP_ID || (await primeAdminWechatAppId())
   if (!appId) {
     uni.showToast({ title: '公众号网页授权尚未配置', icon: 'none' })
     return false

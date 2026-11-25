@@ -50,6 +50,25 @@ function signatureUrl(): string {
   return IS_IOS ? ENTRY_URL : window.location.href.split('#')[0]
 }
 
+/** 在地址栏追加 ?wxdebug=1 可在页面底部显示 JSSDK 诊断信息，便于真机定位。 */
+const DEBUG_PANEL =
+  typeof window !== 'undefined' && /[?&]wxdebug=1/.test(window.location.href)
+
+function logDiag(message: string) {
+  console.log('[wx-jsapi]', message)
+  if (!DEBUG_PANEL || typeof document === 'undefined') return
+  let panel = document.getElementById('wx-jsapi-debug')
+  if (!panel) {
+    panel = document.createElement('div')
+    panel.id = 'wx-jsapi-debug'
+    panel.style.cssText =
+      'position:fixed;left:0;right:0;bottom:0;z-index:99999;max-height:45vh;overflow:auto;' +
+      'background:rgba(0,0,0,.86);color:#3f6;font:11px/1.6 monospace;padding:8px;white-space:pre-wrap;'
+    document.body.appendChild(panel)
+  }
+  panel.textContent += `${message}\n`
+}
+
 function isWechatBrowser(): boolean {
   return typeof navigator !== 'undefined' && /MicroMessenger/i.test(navigator.userAgent)
 }
@@ -138,20 +157,29 @@ export async function enableWechatShare(options: WechatShareOptions): Promise<vo
   if (!isWechatBrowser() || typeof window === 'undefined') return
 
   try {
+    logDiag(`ios=${IS_IOS} entry=${ENTRY_URL}`)
     const loaded = await loadSdk()
-    if (!loaded) return
+    if (!loaded) {
+      logDiag('sdk=missing')
+      return
+    }
     const sdk = loaded as WechatJsSdk
 
     // 签名必须基于当前页面地址（不含 #），且每个地址只 config 一次。
     const pageUrl = signatureUrl()
+    logDiag(`sigUrl=${pageUrl}`)
     if (configuredSignature !== pageUrl) {
       const signature = await apiRequest<JssdkSignature>({ path: signaturePath(pageUrl) })
+      logDiag(
+        `appId=${signature.appId} ts=${signature.timestamp} sig=${String(signature.signature).slice(0, 12)}`,
+      )
 
       await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error('wechat jssdk config timeout')), 5000)
         sdk.error((result) => {
           clearTimeout(timer)
           const detail = (result as { errMsg?: string } | undefined)?.errMsg || 'config failed'
+          logDiag(`config-error=${detail}`)
           reject(new Error(`微信分享初始化失败：${detail}`))
         })
         sdk.config({
@@ -169,6 +197,7 @@ export async function enableWechatShare(options: WechatShareOptions): Promise<vo
         })
         sdk.ready(() => {
           clearTimeout(timer)
+          logDiag('config-ok')
           resolve()
         })
       })

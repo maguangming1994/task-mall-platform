@@ -115,7 +115,7 @@ onShow(() => {
   if (callbackHandled || autoAttempted) return
   if (!admin.isLoggedIn && hasWechatBindingFlag() && isWechatH5()) {
     autoAttempted = true
-    startAdminWechatAuth('login')
+    void startAdminWechatAuth('login')
   }
 })
 
@@ -162,7 +162,7 @@ async function finish(profile: AdminProfile, allowBind: boolean) {
       } catch {
         // 绑定失败不影响本次登录
       }
-    } else if (startAdminWechatAuth('bind')) {
+    } else if (await startAdminWechatAuth('bind')) {
       // 授权回调会重新进入本页，由 handleWechatCode 完成绑定后跳转
       return
     }
@@ -214,7 +214,9 @@ function wechatLogin() {
     void handleWechatCode('login', localCode)
     return
   }
-  startAdminWechatAuth('login')
+  startAdminWechatAuth('login').catch(() => {
+    uni.showToast({ title: '发起微信授权失败，请稍后重试', icon: 'none' })
+  })
 }
 
 function onRememberChange(event: Event) {
