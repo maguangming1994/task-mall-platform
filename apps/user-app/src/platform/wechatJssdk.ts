@@ -122,21 +122,24 @@ function loadSdk(): Promise<WechatJsSdk | null> {
 /**
  * 把站内路径转成微信分享可用的绝对地址。
  *
- * 关键：微信 JSSDK 分享的 link **不能带 # 或 query**，因为微信服务器会直接 HTTP 请求
- * 这个 URL 来抓取页面元数据生成卡片；# 是浏览器端的，服务器收不到，最终卡片退化为裸链接。
- * 不带 # 的根路径 `origin/` 即可让 SPA hash 路由正常接管。
+ * 关键规则：
+ * 1. link **不能带 #**：hash 是浏览器端解析的，微信服务器 HTTP 请求时收不到。
+ * 2. link **可以带查询参数**：查询参数是 HTTP 标准，服务器能正常收到。
+ * 3. 加时间戳查询参数绕过微信分享缓存（微信对同一链接有缓存复用机制，最长 48 小时）。
  */
 export function toWechatShareLink(path: string): string {
+  const cacheBuster = `_wx=${Date.now()}`
   const value = String(path || '').trim()
   if (/^https?:\/\//i.test(value)) {
-    // 外部链接也必须剔除 hash，否则微信服务器抓取失败。
-    return value.split('#')[0].split('?')[0] || value
+    // 外部链接剔除 hash，保留路径并加时间戳。
+    const base = value.split('#')[0].split('?')[0]
+    return `${base}?${cacheBuster}`
   }
   // #ifdef H5
   if (typeof window !== 'undefined') {
     const origin = window.location.origin
-    // 直接返回 origin 即可（根路径），让 SPA hash 路由接管页面跳转。
-    return origin
+    // 根路径 + 时间戳参数，让 SPA hash 路由接管页面跳转，同时绕过微信缓存。
+    return `${origin}/?${cacheBuster}`
   }
   // #endif
   // #ifndef H5
