@@ -8,8 +8,8 @@
     <template v-else>
     <view v-if="loading && !points && !wallet" class="module-state" role="status" aria-live="polite"><text>正在加载资产信息…</text></view>
 
-    <!-- 钱包 · wallet 设计屏 -->
-    <view class="wallet-head">
+    <!-- 钱包 · wallet 设计屏（小程序审核期隐藏钱包内容） -->
+    <view v-if="!modules.reviewing" class="wallet-head">
       <text class="wh-lab">钱包余额（元）</text>
       <view class="wh-row">
         <text class="wh-num">{{ wallet ? money(wallet.available_amount) : '—' }}</text>
@@ -24,7 +24,7 @@
     </view>
 
     <view v-if="pointsError" class="module-error"><text>积分资产加载失败：{{ pointsError }}</text><button @click="load">重试</button></view>
-    <view v-if="walletError" class="module-error"><text>钱包流水加载失败：{{ walletError }}</text><button @click="load">重试</button></view>
+    <view v-if="!modules.reviewing && walletError" class="module-error"><text>钱包流水加载失败：{{ walletError }}</text><button @click="load">重试</button></view>
     <view v-if="couponsError" class="module-error"><text>优惠券加载失败：{{ couponsError }}</text><button @click="load">重试</button></view>
     <view v-if="points?.debt_points" class="warning">存在 {{ points.debt_points }} 积分欠额，新获得积分将优先偿还，清零前不能消费积分。</view>
 
@@ -63,15 +63,17 @@
       <text v-if="!pointsError && pointTransactions.length === 0" class="empty">暂无积分流水</text>
     </view>
 
-    <text class="pt-day">收支明细 · 余额无有效期</text>
-    <view id="wallet-ledger" class="card pt-ledger">
-      <view v-for="item in walletTransactions" :key="item.id" class="pt-row">
-        <view class="pt-ic" :class="item.change_amount >= 0 ? 'ic-green' : 'ic-orange'">{{ walletTypeText(item.type).slice(0, 1) }}</view>
-        <view class="pt-main"><text class="pt-title">{{ walletTypeText(item.type) }}</text><text class="pt-note">{{ formatTime(item.created_at) }} · {{ item.remark }}</text></view>
-        <text class="pt-amt" :class="item.change_amount >= 0 ? 'in' : 'out'">{{ signedMoney(item.change_amount) }}</text>
+    <template v-if="!modules.reviewing">
+      <text class="pt-day">收支明细 · 余额无有效期</text>
+      <view id="wallet-ledger" class="card pt-ledger">
+        <view v-for="item in walletTransactions" :key="item.id" class="pt-row">
+          <view class="pt-ic" :class="item.change_amount >= 0 ? 'ic-green' : 'ic-orange'">{{ walletTypeText(item.type).slice(0, 1) }}</view>
+          <view class="pt-main"><text class="pt-title">{{ walletTypeText(item.type) }}</text><text class="pt-note">{{ formatTime(item.created_at) }} · {{ item.remark }}</text></view>
+          <text class="pt-amt" :class="item.change_amount >= 0 ? 'in' : 'out'">{{ signedMoney(item.change_amount) }}</text>
+        </view>
+        <text v-if="!walletError && walletTransactions.length === 0" class="empty">暂无余额流水或尚未同意钱包规则</text>
       </view>
-      <text v-if="!walletError && walletTransactions.length === 0" class="empty">暂无余额流水或尚未同意钱包规则</text>
-    </view>
+    </template>
 
     <!-- 优惠券 · coupons 设计屏 -->
     <text class="pt-day">优惠券 · 可用 {{ couponsError ? '—' : coupons.length }} 张</text>
@@ -141,12 +143,19 @@ async function load() {
     if (pointExpiry.status === 'fulfilled') pointBatches.value = pointExpiry.value.items
     else { pointBatches.value = []; pointsError.value ||= errorMessage(pointExpiry.reason, '积分到期计划加载失败') }
 
-    const walletResults = await Promise.allSettled([getWalletAccount(auth.accessToken), listWalletTransactions(auth.accessToken)])
-    const [walletAccount, walletLedger] = walletResults
-    if (walletAccount.status === 'fulfilled') wallet.value = walletAccount.value
-    else { wallet.value = null; walletError.value = errorMessage(walletAccount.reason, '钱包账户加载失败') }
-    if (walletLedger.status === 'fulfilled') walletTransactions.value = walletLedger.value.items
-    else { walletTransactions.value = []; walletError.value ||= errorMessage(walletLedger.reason, '余额流水加载失败') }
+    if (modules.reviewing) {
+      // 小程序审核期不展示钱包内容，也不请求钱包接口
+      wallet.value = null
+      walletTransactions.value = []
+      walletError.value = ''
+    } else {
+      const walletResults = await Promise.allSettled([getWalletAccount(auth.accessToken), listWalletTransactions(auth.accessToken)])
+      const [walletAccount, walletLedger] = walletResults
+      if (walletAccount.status === 'fulfilled') wallet.value = walletAccount.value
+      else { wallet.value = null; walletError.value = errorMessage(walletAccount.reason, '钱包账户加载失败') }
+      if (walletLedger.status === 'fulfilled') walletTransactions.value = walletLedger.value.items
+      else { walletTransactions.value = []; walletError.value ||= errorMessage(walletLedger.reason, '余额流水加载失败') }
+    }
 
     try { coupons.value = await listCoupons(auth.accessToken) } catch (error) { coupons.value = []; couponsError.value = errorMessage(error, '优惠券加载失败') }
   } finally {

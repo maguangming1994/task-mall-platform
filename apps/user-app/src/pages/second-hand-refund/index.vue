@@ -34,7 +34,7 @@
       <!-- 退款信息 -->
       <view class="card">
         <view class="sec-title"><text class="sec-h">退款信息</text></view>
-        <view class="kv"><text class="k">退款金额</text><text class="v price">¥{{ refund.amount }}（退回钱包余额）</text></view>
+        <view class="kv"><text class="k">退款金额</text><text class="v price">¥{{ refund.amount }}（原路退回）</text></view>
         <view class="kv"><text class="k">退款原因</text><text class="v">{{ refund.reason }}</text></view>
         <view v-if="refund.seller_note" class="kv"><text class="k">卖家说明</text><text class="v">{{ refund.seller_note }}</text></view>
         <view v-if="refund.admin_note" class="kv"><text class="k">平台说明</text><text class="v">{{ refund.admin_note }}</text></view>
@@ -83,7 +83,7 @@
       </view>
 
       <view class="card form">
-        <view class="kv"><text class="k">退款金额</text><text class="v price">¥{{ order.price }}（退回钱包余额）</text></view>
+        <view class="kv"><text class="k">退款金额</text><text class="v price">¥{{ order.price }}（原路退回）</text></view>
         <view class="frow column-row">
           <text class="label">退款原因</text>
           <view class="chip-pick">
@@ -174,10 +174,10 @@ const refundStatusDesc = computed(() => {
   if (!r) return ''
   switch (r.status) {
     case 'pending': return '卖家将在 24 小时内处理，超时未处理将自动同意退款；卖家拒绝后可申请平台介入。'
-    case 'seller_approved': return `退款 ¥${r.amount} 已退回钱包余额。`
+    case 'seller_approved': return `退款 ¥${r.amount} 已原路退回。`
     case 'seller_rejected': return '卖家拒绝了退款申请，可联系卖家协商，或申请平台介入仲裁。'
     case 'arbitrating': return '平台正在核实双方凭证并作出仲裁，请耐心等待。'
-    case 'arbitrated_approved': return `平台仲裁通过，退款 ¥${r.amount} 已退回钱包余额。`
+    case 'arbitrated_approved': return `平台仲裁通过，退款 ¥${r.amount} 已原路退回。`
     case 'arbitrated_rejected': return '平台仲裁后驳回了退款申请，如有疑问请联系平台客服。'
     case 'cancelled': return '你已主动撤销退款申请，订单继续履约；如仍有问题可重新申请或联系客服。'
     default: return ''
@@ -212,12 +212,12 @@ const timeline = computed(() => {
   switch (r.status) {
     case 'pending':
       rows.push({ title: '等待卖家处理', desc: countdown.value ? `剩余 ${countdown.value}，超时自动同意退款` : '超时将自动同意退款', state: 'doing' })
-      rows.push({ title: '平台退款', desc: '卖家同意后 1-3 分钟内原路退回钱包', state: 'todo' })
+      rows.push({ title: '平台退款', desc: '卖家同意后 1-3 分钟内原路退回', state: 'todo' })
       rows.push({ title: '退款完成', desc: `退款金额 ¥${r.amount}`, state: 'todo' })
       break
     case 'seller_approved':
       rows.push({ title: '卖家已同意', desc: formatTime(r.seller_responded_at), state: 'done' })
-      rows.push({ title: '平台退款', desc: '退款已原路退回钱包余额', state: 'done' })
+      rows.push({ title: '平台退款', desc: '退款已原路退回余额', state: 'done' })
       rows.push({ title: '退款完成', desc: `退款金额 ¥${r.amount}`, state: 'done' })
       break
     case 'seller_rejected':
@@ -230,7 +230,7 @@ const timeline = computed(() => {
       break
     case 'arbitrated_approved':
       rows.push({ title: '平台仲裁通过', desc: r.admin_note || '', state: 'done' })
-      rows.push({ title: '平台退款', desc: '退款已原路退回钱包余额', state: 'done' })
+      rows.push({ title: '平台退款', desc: '退款已原路退回余额', state: 'done' })
       rows.push({ title: '退款完成', desc: `退款金额 ¥${r.amount}`, state: 'done' })
       break
     case 'arbitrated_rejected':
@@ -345,7 +345,7 @@ function approve() {
   if (!refund.value || acting.value) return
   uni.showModal({
     title: '同意退款',
-    content: `确认同意退款 ¥${refund.value.amount}？退款将立即退回买家钱包。`,
+    content: `确认同意退款 ¥${refund.value.amount}？退款将立即退回买家。`,
     success: async (r) => {
       if (!r.confirm || !order.value) return
       acting.value = true

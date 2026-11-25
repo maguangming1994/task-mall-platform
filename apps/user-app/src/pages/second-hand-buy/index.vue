@@ -84,7 +84,7 @@
         <view class="frow">
           <text class="label">支付方式</text>
           <text class="spacer" />
-          <text class="value wallet">钱包余额 {{ wallet ? `¥${(wallet.available_amount / 100).toFixed(2)}` : '读取中' }}</text>
+          <text class="value wallet">账户余额 {{ wallet ? `¥${(wallet.available_amount / 100).toFixed(2)}` : '读取中' }}</text>
           <view class="radio-on" />
         </view>
         <view class="frow">

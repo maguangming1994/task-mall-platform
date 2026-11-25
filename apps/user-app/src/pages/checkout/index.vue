@@ -96,7 +96,7 @@
       <view class="amount-row total"><text>应付合计</text><text class="total-val">{{ preview ? amountText(preview.payable_cash_amount, preview.payable_points) : amountText(itemsCashAmount + (quote?.shipping_cash_amount || 0), itemsPoints) }}</text></view>
     </view>
 
-    <view class="rule-note">本单现金部分仅可选择微信或余额全额支付，两者不可组合；运费始终使用现金。</view>
+    <view class="rule-note" v-if="!reviewing">本单现金部分仅可选择微信或余额全额支付，两者不可组合；运费始终使用现金。</view>
 
     <view class="action-bar">
       <view class="total-box">
@@ -140,6 +140,7 @@ const selectedCoupons = ref<Partial<Record<FulfillmentType, string>>>({})
 const paymentIndex = ref(0)
 const submitting = ref(false)
 const capabilities = ref<ClientCapabilities | null>(null)
+const reviewing = computed(() => capabilities.value?.review_status === 'reviewing')
 const loading = ref(false)
 const loadError = ref('')
 const quoteError = ref('')
@@ -148,7 +149,10 @@ const directBuy = ref<{ productId: string; skuId: string; purchaseMode: 'cash' |
 const wallet = ref<WalletAccount | null>(null)
 const initialized = ref(false)
 const refreshAfterRecharge = ref(false)
-const paymentOptions = computed(() => (capabilities.value?.payment_methods || []).filter((item) => item.enabled))
+const paymentOptions = computed(() => (capabilities.value?.payment_methods || [])
+  .filter((item) => item.enabled)
+  // 小程序审核期不展示钱包（余额）支付
+  .filter((item) => !reviewing.value || item.code !== 'wallet'))
 const paymentLabels = computed(() => paymentOptions.value.map((item) => item.label))
 const selectedPaymentMethod = computed<CashPaymentMethod>(() => paymentOptions.value[paymentIndex.value]?.code || 'wechat')
 const selectedItems = computed(() => cart.value.items.filter((item) => item.selected && item.valid))
@@ -161,7 +165,9 @@ const requiresCashPayment = computed(() => itemsCashAmount.value > 0 || hasLogis
 const currentPayableCash = computed(() => preview.value?.payable_cash_amount ?? (itemsCashAmount.value + (quote.value?.shipping_cash_amount || 0)))
 const walletInsufficient = computed(() => currentPayableCash.value > (wallet.value?.available_amount || 0))
 const walletSelectionBlocked = computed(() => !!preview.value && selectedPaymentMethod.value === 'wallet' && walletInsufficient.value)
-const paymentUnavailableText = computed(() => capabilities.value?.payment_unavailable_message || '支付能力正在加载，请稍后重试。')
+const paymentUnavailableText = computed(() => reviewing.value
+  ? '当前暂未开放在线支付，请稍后再试。'
+  : (capabilities.value?.payment_unavailable_message || '支付能力正在加载，请稍后重试。'))
 const canCheckout = computed(() => selectedItems.value.length > 0 && (!hasLogistics.value || !!selectedAddress.value) && (!hasLogistics.value || !!quote.value) && !quoteError.value && (!requiresCashPayment.value || paymentOptions.value.length > 0) && !walletSelectionBlocked.value)
 const couponSelectionDirty = computed(() => !!preview.value?.groups.some((group) => (selectedCoupons.value[group.fulfillment_type] || null) !== group.selected_coupon_id))
 const submitText = computed(() => walletSelectionBlocked.value ? '余额不足，请先充值' : !preview.value ? '校验价格并查看优惠券' : couponSelectionDirty.value ? '重新预览优惠与应付金额' : '提交订单并支付')

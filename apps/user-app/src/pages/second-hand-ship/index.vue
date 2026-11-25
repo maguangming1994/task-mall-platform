@@ -29,7 +29,7 @@
     <!-- 结算提示 -->
     <view class="tip">
       <view class="tip-ic"><text>✓</text></view>
-      <text class="tip-text">买家确认收货后，货款 ¥{{ order.price }} 将立即结算到你的钱包余额。</text>
+      <text class="tip-text">买家确认收货后，货款 ¥{{ order.price }} 将立即结算到你的账户余额。</text>
     </view>
 
     <view class="action-bar">

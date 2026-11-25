@@ -1,6 +1,6 @@
 <template>
   <view class="page withdraw-page">
-    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_withdraw" />
+    <ModulePlaceholder v-if="modules.resolved && (!moduleEnabled || modules.reviewing)" code="module_withdraw" />
     <view v-else-if="!modules.resolved" class="mp-skeleton">
       <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
@@ -125,7 +125,7 @@ onShow(load)
 
 async function load() {
   await modules.ensureReady()
-  if (!moduleEnabled.value) return
+  if (!moduleEnabled.value || modules.reviewing) return
   if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true
   loadError.value = ''

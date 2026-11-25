@@ -12,7 +12,7 @@
       <view class="guest-account" role="button" tabindex="0" @click="goLogin">
         <view class="state-mark">未</view>
         <text class="guest-title">未登录</text>
-        <text class="guest-copy">登录后查看任务进度、校园钱包、积分和订单。</text>
+        <text class="guest-copy">{{ modules.reviewing ? '登录后查看任务进度、积分和订单。' : '登录后查看任务进度、校园钱包、积分和订单。' }}</text>
         <button class="guest-login-button" @click.stop="goLogin">{{ guestActionText }}</button>
       </view>
       <text class="guest-admin-entry" @click="openAdminWorkbench">🛡️ 审核管理员入口</text>
@@ -67,7 +67,11 @@
     </view>
 
     <view v-if="modules.isEnabled('module_wallet')" class="data-row">
-      <view class="d" @click="openAssets"><b>¥{{ money(assets?.wallet.available_amount ?? 0) }}</b><span>钱包</span></view>
+      <view class="d" @click="openAssets">
+        <b v-if="modules.reviewing">{{ assets?.points.available ?? 0 }}</b>
+        <b v-else>¥{{ money(assets?.wallet.available_amount ?? 0) }}</b>
+        <span>{{ modules.reviewing ? '积分' : '钱包' }}</span>
+      </view>
       <view class="d" @click="openCoupons"><b>{{ assets?.coupons.available ?? 0 }}<em> 张</em></b><span>优惠券</span></view>
       <view class="d" @click="openAssets"><b>0</b><span>收藏</span></view>
       <view class="d" @click="openAssets"><b>0</b><span>足迹</span></view>
@@ -112,7 +116,7 @@
     <view class="fn-list">
       <view class="fn" @click="openAddresses"><view class="fn-ic" style="background:#E7F9EF">📍</view><text class="fn-label">收货地址</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view v-if="modules.isEnabled('module_wallet')" class="fn" @click="openAssets"><view class="fn-ic" style="background:#FFF2E5">🎫</view><text class="fn-label">积分明细</text><view class="sp" /><text class="fn-arrow">›</text></view>
-      <view v-if="modules.isEnabled('module_wallet_recharge')" class="fn" @click="openRecharge"><view class="fn-ic" style="background:#FFF6DE">💳</view><text class="fn-label">钱包充值</text><view class="sp" /><text class="fn-arrow">›</text></view>
+      <view v-if="modules.isEnabled('module_wallet_recharge') && !modules.reviewing" class="fn" @click="openRecharge"><view class="fn-ic" style="background:#FFF6DE">💳</view><text class="fn-label">钱包充值</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view v-if="auth.user?.phone_bound" class="fn" @click="openPhoneChange"><view class="fn-ic" style="background:#E7F9EF">📱</view><text class="fn-label">手机号</text><view class="sp" /><text class="fn-note">{{ auth.user?.phone_masked || '已绑定' }}</text><text class="fn-arrow">›</text></view>
       <view class="fn" @click="openSupport"><view class="fn-ic" style="background:#EAF2FF">🎧</view><text class="fn-label">客服中心</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view v-if="modules.isLaunched('module_feedback')" class="fn" @click="openSupport"><view class="fn-ic" style="background:#F1EAFF">💬</view><text class="fn-label">意见反馈</text><view class="sp" /><text class="fn-arrow">›</text></view>
@@ -302,11 +306,18 @@ async function load() {
     avatarPreviewUrl.value = ''
     avatarLoadFailed.value = false
     assets.value = await loadAssetOverview(auth.accessToken)
-    try {
-      const stats = await getCommunitySocialStats(auth.accessToken)
-      followingCount.value = stats.following_count
-      followerCount.value = stats.follower_count
-    } catch {
+    // 社区模块关闭时不请求社交统计，避免触发 MODULE_DISABLED 弹出「开发中」提示（审核期间关闭功能需静默）
+    await modules.ensureReady()
+    if (modules.isEnabled('module_community')) {
+      try {
+        const stats = await getCommunitySocialStats(auth.accessToken)
+        followingCount.value = stats.following_count
+        followerCount.value = stats.follower_count
+      } catch {
+        followingCount.value = 0
+        followerCount.value = 0
+      }
+    } else {
       followingCount.value = 0
       followerCount.value = 0
     }

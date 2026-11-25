@@ -1,6 +1,6 @@
 <template>
   <view class="page tm-page-shell">
-    <ModulePlaceholder v-if="modules.resolved && !moduleEnabled" code="module_wallet_recharge" />
+    <ModulePlaceholder v-if="modules.resolved && (!moduleEnabled || modules.reviewing)" code="module_wallet_recharge" />
     <view v-else-if="!modules.resolved" class="mp-skeleton">
       <view class="tm-skeleton" style="height: 200rpx; border-radius: 24rpx; margin: 24rpx 28rpx;" />
       <view class="tm-skeleton" style="height: 320rpx; border-radius: 24rpx; margin: 20rpx 28rpx;" />
@@ -119,7 +119,7 @@ const onlineResultText = computed(() => {
 })
 
 onLoad((query) => { returnToCheckout.value = query?.returnTo === 'checkout' })
-onShow(async () => { await modules.ensureReady(); if (!moduleEnabled.value) return; await load(); await resumeOnlineIntent() })
+onShow(async () => { await modules.ensureReady(); if (!moduleEnabled.value || modules.reviewing) return; await load(); await resumeOnlineIntent() })
 async function load() {
   if (!auth.isAuthenticated) return navigateToLogin()
   loading.value = true

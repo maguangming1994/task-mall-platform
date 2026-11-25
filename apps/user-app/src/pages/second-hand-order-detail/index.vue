@@ -92,7 +92,7 @@ const statusMap: Record<string, { text: string; sub: string }> = {
   shipped: { text: '待收货', sub: '卖家已发货，请确认收货' },
   completed: { text: '已完成', sub: '交易已完成' },
   cancelled: { text: '已取消', sub: '订单已取消' },
-  refunded: { text: '已退款', sub: '退款已退回钱包余额' },
+  refunded: { text: '已退款', sub: '退款已原路退回' },
 }
 
 const statusText = computed(() => statusMap[order.value?.status || '']?.text || order.value?.status)
@@ -119,16 +119,16 @@ const steps = computed<OrderStep[]>(() => {
       rows.push({ title: '等待买家支付', desc: '请在 30 分钟内完成支付', state: 'doing' })
       break
     case 'paid':
-      rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 钱包托管 ¥${o.price}`, state: 'done' })
+      rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 平台托管 ¥${o.price}`, state: 'done' })
       rows.push({ title: o.trade_type === 'meetup' ? '等待卖家确认交付' : '等待卖家发货', desc: '货款由平台托管，确认收货后结算给卖家', state: 'doing' })
       break
     case 'shipped':
-      rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 钱包托管 ¥${o.price}`, state: 'done' })
+      rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 平台托管 ¥${o.price}`, state: 'done' })
       rows.push({ title: shipLabel, desc: formatTime(o.shipped_at), state: 'done' })
       rows.push({ title: '等待买家确认收货', desc: '收到商品并确认无误后点击确认收货', state: 'doing' })
       break
     case 'completed':
-      rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 钱包托管 ¥${o.price}`, state: 'done' })
+      rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 平台托管 ¥${o.price}`, state: 'done' })
       if (o.shipped_at) rows.push({ title: shipLabel, desc: formatTime(o.shipped_at), state: 'done' })
       rows.push({ title: '交易完成', desc: `${formatTime(o.completed_at)} · 货款已结算给卖家`, state: 'done' })
       break
@@ -136,9 +136,9 @@ const steps = computed<OrderStep[]>(() => {
       rows.push({ title: '订单已取消', desc: '交易关闭', state: 'cancel' })
       break
     case 'refunded':
-      if (o.paid_at) rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 钱包托管 ¥${o.price}`, state: 'done' })
+      if (o.paid_at) rows.push({ title: '买家已支付', desc: `${formatTime(o.paid_at)} · 平台托管 ¥${o.price}`, state: 'done' })
       if (o.shipped_at) rows.push({ title: shipLabel, desc: formatTime(o.shipped_at), state: 'done' })
-      rows.push({ title: '退款完成', desc: '款项已退回买家钱包余额', state: 'cancel' })
+      rows.push({ title: '退款完成', desc: '款项已原路退回买家', state: 'cancel' })
       break
     default:
       rows.push({ title: '订单处理中', desc: o.status, state: 'doing' })

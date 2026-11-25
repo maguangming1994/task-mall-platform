@@ -66,7 +66,7 @@
     <!-- 账号注销 -->
     <view class="card danger-card">
       <text class="card-title danger-title">注销账号</text>
-      <text class="hint">注销后将清空账号支付、回收、消息等数据。申请前会检查未结订单、售后、退款、提现、争议、冻结资产和钱包余额；默认冷静期 7 天，期间登录或主动撤销都会取消申请。</text>
+      <text class="hint">注销后将清空账号支付、回收、消息等数据。申请前会检查未结订单、售后、退款、提现、争议、冻结资产和账户余额；默认冷静期 7 天，期间登录或主动撤销都会取消申请。</text>
       <view v-if="eligibility" class="eligibility" :class="{ blocked: !eligibility.eligible }">
         <text>{{ eligibility.eligible ? '当前满足申请条件' : '当前暂不能申请' }}</text>
         <text v-for="blocker in eligibility.blockers" :key="blocker" class="blocker">· {{ blockerName(blocker) }}</text>
@@ -106,7 +106,7 @@ const copyIdempotencyKey = ref<string | null>(null)
 const cancellationIdempotencyKey = ref<string | null>(null)
 const requestNames: Record<string, string> = { access: '查询请求', copy: '个人数据副本', correction: '更正请求', deletion: '删除请求', withdraw_consent: '撤回授权' }
 const statusNames: Record<string, string> = { submitted: '已提交', processing: '处理中', completed: '已完成', verifying: '待核验', rejected: '已拒绝', cooling_off: '冷静期' }
-const blockerNames: Record<string, string> = { ongoing_order: '存在进行中订单', ongoing_after_sale: '存在进行中售后', ongoing_refund: '存在进行中退款', ongoing_withdrawal: '存在进行中提现', active_dispute: '存在争议或法律冻结', frozen_assets: '存在冻结资产', wallet_balance_not_zero: '钱包余额不为零' }
+const blockerNames: Record<string, string> = { ongoing_order: '存在进行中订单', ongoing_after_sale: '存在进行中售后', ongoing_refund: '存在进行中退款', ongoing_withdrawal: '存在进行中提现', active_dispute: '存在争议或法律冻结', frozen_assets: '存在冻结资产', wallet_balance_not_zero: '账户余额不为零' }
 
 /* 清缓存时必须保留的键：登录会话、设备指纹、管理员会话、校区选择 */
 const CACHE_KEEP_KEYS = ['task_mall_auth', 'task_mall_device_id', 'task_mall_admin_session', 'task_mall_selected_campus']
