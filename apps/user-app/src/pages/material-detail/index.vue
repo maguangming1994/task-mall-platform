@@ -8,6 +8,7 @@
       <view class="head">
         <view class="head-back" @click="goBack">‹</view>
         <text class="head-title">资料详情</text>
+        <view class="head-share" @click="posterVisible = true">分享</view>
       </view>
 
       <view v-if="material" class="content">
@@ -78,6 +79,19 @@
       <view v-else class="empty">
         <text class="empty-title">资料不存在或已下架</text>
       </view>
+
+      <!-- 分享朋友圈：生成带二维码的海报后保存转发 -->
+      <SharePosterSheet
+        :visible="posterVisible"
+        template-code="material_share"
+        kicker="MATERIAL POSTER"
+        heading="资料分享海报"
+        :label="material?.category?.name || '校园资料'"
+        :title="material?.title || ''"
+        :content="material?.description || '校园资料互助，学习资料免费获取。'"
+        :link="posterLink"
+        @close="posterVisible = false"
+      />
     </template>
   </view>
 </template>
@@ -94,7 +108,8 @@ import {
   type MaterialMeta,
 } from '@/api/material'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
-import { DEFAULT_WECHAT_SHARE_IMAGE, enableWechatShare } from '@/platform/wechatJssdk'
+import SharePosterSheet from '@/components/SharePosterSheet.vue'
+import { DEFAULT_WECHAT_SHARE_IMAGE, enableWechatShare, toWechatShareLink } from '@/platform/wechatJssdk'
 import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
 
@@ -111,6 +126,10 @@ const meta = ref<MaterialMeta | null>(null)
 const link = ref('')
 const extractCode = ref('')
 const fetching = ref(false)
+const posterVisible = ref(false)
+
+// 海报二维码使用绝对地址，微信内扫码可直接打开资料详情
+const posterLink = computed(() => toWechatShareLink(`/pages/material-detail/index?id=${encodeURIComponent(material.value?.id || materialId.value)}`))
 
 const remaining = computed(() => meta.value?.quota?.total_remaining ?? 0)
 const canFetch = computed(() => {
@@ -252,6 +271,7 @@ onLoad(async (query) => {
 .head { display: flex; align-items: center; gap: 16rpx; padding: calc(var(--status-bar-height) + 16rpx) 24rpx 12rpx; }
 .head-back { width: 60rpx; height: 60rpx; border-radius: 30rpx; background: #fff; font-size: 40rpx; line-height: 54rpx; text-align: center; }
 .head-title { font-size: 34rpx; font-weight: 800; color: #191B1F; }
+.head-share { margin-left: auto; height: 56rpx; padding: 0 26rpx; border-radius: 28rpx; background: #fff; color: #08A152; font-size: 24rpx; font-weight: 700; line-height: 56rpx; }
 .content { padding: 8rpx 24rpx; }
 
 .info-card { background: #fff; border-radius: 28rpx; padding: 26rpx; }

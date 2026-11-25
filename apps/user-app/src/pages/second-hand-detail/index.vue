@@ -61,15 +61,38 @@
     </scroll-view>
 
     <view class="action-bar">
-      <view v-if="item?.is_owner" class="owner-tip">这是你发布的商品，可到「我的闲置」管理</view>
+      <template v-if="item?.is_owner">
+        <view class="owner-tip">这是你发布的商品，可到「我的闲置」管理</view>
+        <view class="ab-ic" @click="posterVisible = true">
+          <text class="ab-ic-glyph">↗</text>
+          <text class="ab-ic-text">分享</text>
+        </view>
+      </template>
       <template v-else>
         <view class="ab-ic" @click="goChat">
           <text class="ab-ic-glyph">✎</text>
           <text class="ab-ic-text">聊一聊</text>
         </view>
+        <view class="ab-ic" @click="posterVisible = true">
+          <text class="ab-ic-glyph">↗</text>
+          <text class="ab-ic-text">分享</text>
+        </view>
         <button class="ab-main" @click="buy">立即购买 ¥{{ item.price }}</button>
       </template>
     </view>
+
+    <!-- 分享朋友圈：生成带二维码的海报后保存转发 -->
+    <SharePosterSheet
+      :visible="posterVisible"
+      kicker="SECOND-HAND POSTER"
+      heading="闲置分享海报"
+      label="校内闲置"
+      :title="item.title"
+      :content="posterContent"
+      :link="posterLink"
+      :image-url="shareImage()"
+      @close="posterVisible = false"
+    />
   </view>
     </template>
   </view>
@@ -82,7 +105,8 @@ import { useAuthStore } from '@/stores/auth'
 import { getSecondHandItem, type SecondHandItem } from '@/api/second-hand'
 import { ensureChatConversation } from '@/api/chat'
 import { resolveApiAssetUrl } from '@/api/http'
-import { enableWechatShare } from '@/platform/wechatJssdk'
+import { enableWechatShare, toWechatShareLink } from '@/platform/wechatJssdk'
+import SharePosterSheet from '@/components/SharePosterSheet.vue'
 import { formatDate } from '@/utils/dateTime'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
@@ -93,6 +117,7 @@ const moduleEnabled = computed(() => modules.isEnabled('module_second_hand'))
 const auth = useAuthStore()
 const item = ref<SecondHandItem | null>(null)
 const itemId = ref('')
+const posterVisible = ref(false)
 
 const allImages = computed(() => {
   if (!item.value) return []
@@ -140,6 +165,9 @@ function shareImage() {
   const url = item.value?.cover || item.value?.images?.[0]
   return url ? resolveApiAssetUrl(url) : undefined
 }
+// 海报二维码使用绝对地址，微信内扫码可直接打开闲置详情
+const posterLink = computed(() => toWechatShareLink(sharePath()))
+const posterContent = computed(() => item.value?.description || `${item.value?.condition_label || ''} · ${tradeTypeText.value}`)
 
 onShareAppMessage(() => ({ title: shareTitle(), path: sharePath(), imageUrl: shareImage() }))
 onShareTimeline(() => ({ title: shareTitle(), query: `id=${encodeURIComponent(item.value?.id || itemId.value)}`, imageUrl: shareImage() }))

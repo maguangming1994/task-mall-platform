@@ -77,10 +77,24 @@
       </view>
 
       <view class="action-bar">
+        <view class="ab-ic" @click="posterVisible = true"><text class="ab-ic-ico">↗</text><text>分享</text></view>
         <view class="ab-ic"><text class="ab-ic-ico">♡</text><text>收藏</text></view>
         <button class="ab-duo cart" :disabled="!canBuy" :loading="submitting && action === 'cart'" @click="submit('cart')">加入购物车</button>
         <button class="ab-duo buy" :disabled="!canBuy" :loading="submitting && action === 'buy'" @click="submit('buy')">立即兑换</button>
       </view>
+
+      <!-- 分享朋友圈：生成带二维码的海报后保存转发 -->
+      <SharePosterSheet
+        :visible="posterVisible"
+        kicker="PRODUCT POSTER"
+        heading="商品分享海报"
+        label="校园好物"
+        :title="product.name"
+        :content="shareDesc()"
+        :link="posterLink"
+        :image-url="shareImage()"
+        @close="posterVisible = false"
+      />
     </template>
     <view v-else class="missing">
       <text class="missing-title">商品暂不可用</text>
@@ -96,7 +110,8 @@ import { computed, ref } from 'vue'
 import { addCartItem } from '@/api/cart'
 import { resolveApiAssetUrl } from '@/api/http'
 import { getProduct, type MallProduct, type PurchaseMode, type PurchaseOption } from '@/api/products'
-import { enableWechatShare } from '@/platform/wechatJssdk'
+import { enableWechatShare, toWechatShareLink } from '@/platform/wechatJssdk'
+import SharePosterSheet from '@/components/SharePosterSheet.vue'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
@@ -112,6 +127,7 @@ const loadError = ref('')
 const productId = ref('')
 const submitting = ref(false)
 const action = ref<'cart' | 'buy'>('cart')
+const posterVisible = ref(false)
 const selectedSkuId = ref('')
 const selectedOptionId = ref('')
 const selectedSku = computed(() => product.value?.skus.find((sku) => sku.id === selectedSkuId.value) || product.value?.skus[0] || null)
@@ -153,6 +169,8 @@ function shareImage() {
   const url = product.value?.gallery_images?.[0]?.url
   return url ? resolveApiAssetUrl(url) : undefined
 }
+// 海报二维码使用绝对地址，微信内扫码可直接打开商品详情
+const posterLink = computed(() => toWechatShareLink(sharePath()))
 
 onShareAppMessage(() => ({ title: shareTitle(), path: sharePath(), imageUrl: shareImage() }))
 onShareTimeline(() => ({ title: shareTitle(), query: `id=${encodeURIComponent(product.value?.id || productId.value)}`, imageUrl: shareImage() }))
