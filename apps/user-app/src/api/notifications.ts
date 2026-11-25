@@ -62,3 +62,10 @@ export function getWechatSubscriptionOptions(token: string) { return apiRequest<
 export function recordWechatSubscriptionResults(token: string, results: WechatSubscriptionResult[], requestId: string) {
   return apiRequest<WechatSubscriptionOptions>({ path: '/notification-subscriptions/wechat', method: 'POST', accessToken: token, data: { request_id: requestId, results } as unknown as Record<string, unknown> })
 }
+
+export interface WechatOaSubscriptionTemplate { template_id: string; label: string; scenes: string[] }
+export interface WechatOaSubscriptionTemplates { configured: boolean; templates: WechatOaSubscriptionTemplate[] }
+
+export function getWechatOaSubscriptionTemplates(token: string) {
+  return apiRequest<WechatOaSubscriptionTemplates>({ path: '/notification-subscriptions/official-account', accessToken: token })
+}
