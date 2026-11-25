@@ -11,6 +11,7 @@ use App\Modules\Notification\Models\NotificationBusinessEvent;
 use App\Modules\Notification\Models\WechatSubscriptionGrant;
 use App\Modules\Notification\Services\NotificationBusinessEventService;
 use App\Modules\Notification\Services\NotificationSceneConfigService;
+use App\Modules\Notification\Services\NotificationSceneRegistry;
 use App\Modules\Notification\Services\NotificationService;
 use App\Modules\Notification\Services\WechatSubscriptionGrantService;
 use App\Modules\Task\Models\Task;
@@ -164,7 +165,7 @@ class BusinessNotificationSubscriptionFlowTest extends TestCase
 
     public function test_community_interaction_scenes_are_configurable_for_wechat_channels(): void
     {
-        $registry = app(\App\Modules\Notification\Services\NotificationSceneRegistry::class);
+        $registry = app(NotificationSceneRegistry::class);
 
         foreach (['community_post_commented', 'community_comment_replied'] as $sceneCode) {
             $this->assertTrue($registry->has($sceneCode));
@@ -180,7 +181,7 @@ class BusinessNotificationSubscriptionFlowTest extends TestCase
 
     public function test_post_publish_and_review_approved_scenes_support_wechat_channels(): void
     {
-        $registry = app(\App\Modules\Notification\Services\NotificationSceneRegistry::class);
+        $registry = app(NotificationSceneRegistry::class);
 
         foreach (['post_published', 'post_review_approved'] as $sceneCode) {
             $scene = $registry->get($sceneCode);
