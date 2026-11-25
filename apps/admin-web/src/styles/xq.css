@@ -244,18 +244,26 @@
   .xq-header-user span strong { font-size: 12px; }
   .xq-mobile-menu-btn .anticon { font-size: 18px; }
 
-  /* 移动端抽屉（复用 xq 深色侧栏视觉） */
-  .xq-mobile-drawer .ant-drawer-content { background: var(--xq-sider); }
+  /* 移动端抽屉（复用 xq 深色侧栏视觉，需 !important 覆盖 antd 运行时注入的默认白底） */
+  .xq-mobile-drawer,
+  .xq-mobile-drawer .ant-drawer-section,
+  .xq-mobile-drawer.ant-drawer-section,
+  .xq-mobile-drawer .ant-drawer-content,
+  .xq-mobile-drawer.ant-drawer-content,
+  .xq-mobile-drawer .ant-drawer-body,
+  .xq-mobile-drawer.ant-drawer-body { background: var(--xq-sider) !important; }
   .xq-mobile-drawer .ant-drawer-body {
-    padding: 0; height: 100vh; display: flex; flex-direction: column;
+    padding: 0; height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
   }
-  .xq-mobile-drawer .ant-menu { background: transparent; padding: 6px 10px; }
+  .xq-mobile-drawer .ant-drawer-body > .xq-sider-brand { flex: none; height: 60px; color: #fff !important; }
+  .xq-mobile-drawer-footer { flex: none; }
+  .xq-mobile-drawer .ant-menu { background: transparent !important; padding: 6px 10px; }
   .xq-mobile-drawer .ant-menu-item,
   .xq-mobile-drawer .ant-menu-submenu-title {
-    color: var(--xq-sider-text); border-radius: 8px; margin-block: 2px;
+    color: var(--xq-sider-text) !important; border-radius: 8px; margin-block: 2px;
   }
   .xq-mobile-drawer .ant-menu-item:hover,
-  .xq-mobile-drawer .ant-menu-submenu-title:hover { color: #fff; background: var(--xq-sider-hover) !important; }
+  .xq-mobile-drawer .ant-menu-submenu-title:hover { color: #fff !important; background: var(--xq-sider-hover) !important; }
   .xq-mobile-drawer .ant-menu-item-selected { background: var(--xq-green-dark) !important; color: #fff !important; font-weight: 600; }
   .xq-mobile-drawer .ant-menu-sub { background: rgba(0,0,0,.18) !important; border-radius: 8px; }
   .xq-mobile-drawer .ant-menu-sub .ant-menu-item { padding-left: 44px !important; }

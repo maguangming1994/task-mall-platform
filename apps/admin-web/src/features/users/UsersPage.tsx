@@ -155,7 +155,7 @@ export function UsersPage() {
 
   const columns: ColumnsType<ManagedEndUser> = [
     { title: '用户ID', dataIndex: 'id' },
-    { title: '用户信息', render: (_, r) => <UCell name={r.nickname} sub={r.level?.name ?? '普通用户'} /> },
+    { title: '用户信息', render: (_, r) => <UCell name={r.nickname} sub={<><span style={{ display: 'block' }}>UID {r.id}</span><span>{r.level?.name ?? '普通用户'}</span></>} /> },
     { title: '手机号', render: (_, r) => r.phone_masked ?? '—' },
     {
       title: '来源',
