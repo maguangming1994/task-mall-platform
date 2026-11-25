@@ -236,6 +236,7 @@ class AdminRobotForwardController extends Controller
             'template_config.keywords' => ['sometimes', 'array', 'max:100'],
             'template_config.keywords.*' => ['string', 'max:100', 'distinct'],
             'template_config.content_max_length' => ['required', 'integer', 'min:0', 'max:5000'],
+            'template_config.link_format' => ['sometimes', 'nullable', Rule::in(RobotForwardConfigService::LINK_FORMATS)],
             'robot_targets' => ['required', 'array', 'min:1', 'max:20'],
             'robot_targets.*.target_id' => ['sometimes', 'nullable', 'string', 'max:64'],
             'robot_targets.*.device_id' => ['required', 'string', 'max:191'],

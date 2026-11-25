@@ -20,6 +20,8 @@ class RobotForwardConfigService
 
     public const TASK_STATUSES = ['published', 'draft', 'pending_review', 'rejected', 'offline', 'archived'];
 
+    public const LINK_FORMATS = ['url_link', 'short_link'];
+
     public function __construct(private readonly RobotForwardContentService $content) {}
 
     /** @param array<string, mixed> $data */
@@ -86,6 +88,7 @@ class RobotForwardConfigService
                 'footer' => $this->nullableString($template['footer'] ?? null),
                 'keywords' => $this->stringList($template['keywords'] ?? []),
                 'content_max_length' => (int) ($template['content_max_length'] ?? 0),
+                'link_format' => $this->linkFormat($template),
             ],
             'robot_targets' => $targets,
         ];
@@ -130,13 +133,16 @@ class RobotForwardConfigService
             ->values()
             ->all();
 
+        $templateConfig = $config->template_config ?? [];
+        $templateConfig['link_format'] = $this->linkFormat($templateConfig);
+
         return [
             'id' => $config->public_id,
             'name' => $config->name,
             'description' => $config->description,
             'enabled' => $config->enabled,
             'filter_rules' => $filter,
-            'template_config' => $config->template_config,
+            'template_config' => $templateConfig,
             'robot_targets' => $config->robot_targets,
             'last_forwarded_at' => $config->last_forwarded_at?->toIso8601String(),
             'stats' => [
@@ -160,17 +166,18 @@ class RobotForwardConfigService
         $templateConfig = $config->template_config ?? [];
         $limit = (int) ($templateConfig['content_max_length'] ?? 0);
         $template = (string) ($templateConfig['template'] ?? '');
+        $linkFormat = $this->linkFormat($templateConfig);
         $contentType = $this->contentType($config->filter_rules ?? []);
         if ($posts->isEmpty()) {
-            return $this->content->render($template, $this->content->sampleVariables($limit, $contentType));
+            return $this->content->render($template, $this->content->sampleVariables($limit, $contentType, $linkFormat));
         }
         $total = $posts->count();
 
         $message = $posts->values()
-            ->map(function (mixed $item, int $index) use ($limit, $template, $total): string {
+            ->map(function (mixed $item, int $index) use ($limit, $template, $total, $linkFormat): string {
                 $variables = $item instanceof Task
-                    ? $this->content->taskVariables($item, $index + 1, $total, $limit)
-                    : $this->content->variables($item, $index + 1, $total, $limit);
+                    ? $this->content->taskVariables($item, $index + 1, $total, $limit, $linkFormat)
+                    : $this->content->variables($item, $index + 1, $total, $limit, $linkFormat);
 
                 return $this->content->render($template, $variables);
             })
@@ -277,6 +284,14 @@ class RobotForwardConfigService
     }
 
     /** @param array<int, mixed> $values @param array<int, string> $allowed @return array<int, string> */
+    /** 读取并校验短链形式，缺省 url_link。 @param array<string, mixed> $template */
+    private function linkFormat(array $template): string
+    {
+        $format = (string) ($template['link_format'] ?? 'url_link');
+
+        return in_array($format, self::LINK_FORMATS, true) ? $format : 'url_link';
+    }
+
     private function normalizeStatuses(array $values, array $allowed): array
     {
         return collect($values)

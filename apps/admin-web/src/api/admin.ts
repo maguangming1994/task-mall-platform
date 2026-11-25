@@ -2903,11 +2903,19 @@ export interface XpRobotForwardFilterRules {
   active_weekdays: number[]
 }
 
+export type XpRobotForwardLinkFormat = 'url_link' | 'short_link'
+
+export const XP_ROBOT_FORWARD_LINK_FORMAT_OPTIONS: Array<{ value: XpRobotForwardLinkFormat; label: string; hint: string }> = [
+  { value: 'url_link', label: 'URL Link（https://wxmpurl.cn/...）', hint: '短信、网页、微信内外都能打开；微信内点击会先经过官方 H5 中间页。' },
+  { value: 'short_link', label: 'Short Link（mp://...）', hint: '仅微信内有效；群聊里点击直跳小程序页面，更短、不经过中间页。' },
+]
+
 export interface XpRobotForwardTemplateConfig {
   template: string
   footer?: string | null
   keywords: string[]
   content_max_length: number
+  link_format?: XpRobotForwardLinkFormat
 }
 
 export interface XpRobotForwardConfig {

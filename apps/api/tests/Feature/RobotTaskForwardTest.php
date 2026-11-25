@@ -9,6 +9,7 @@ use App\Modules\Robot\Models\RobotForwardConfig;
 use App\Modules\Robot\Models\RobotMessageRequest;
 use App\Modules\Robot\Models\RobotPostForwardLog;
 use App\Modules\Robot\Services\RobotForwardConfigService;
+use App\Modules\Robot\Services\WechatMiniUrlLinkService;
 use App\Modules\Task\Models\Task;
 use App\Modules\Task\Models\TaskVersion;
 use Database\Seeders\DatabaseSeeder;
@@ -27,12 +28,15 @@ class RobotTaskForwardTest extends TestCase
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
         config()->set('services.xp.api_key', 'xp-task-forward-secret');
-        Http::fake(fn () => $this->providerFails
-            ? Http::response(['code' => 500, 'msg' => 'provider error'], 500)
-            : Http::response(['code' => 200, 'msg' => 'success', 'data' => [
-                'cmd_id' => 'cmd-task-forward', 'status' => 'QUEUED', 'queued' => true,
-                'resolved_device_id' => 'device-001', 'wxid' => 'wxid_owner',
-            ]]));
+        // 微信接口请求放行（返回 null 交给各测试内的微信 stub），其余一律按 XP 提供商响应。
+        Http::fake(fn ($request) => str_contains($request->url(), 'api.weixin.qq.com')
+            ? null
+            : ($this->providerFails
+                ? Http::response(['code' => 500, 'msg' => 'provider error'], 500)
+                : Http::response(['code' => 200, 'msg' => 'success', 'data' => [
+                    'cmd_id' => 'cmd-task-forward', 'status' => 'QUEUED', 'queued' => true,
+                    'resolved_device_id' => 'device-001', 'wxid' => 'wxid_owner',
+                ]])));
     }
 
     public function test_manual_forward_task_renders_reward_link_and_records_logs(): void
@@ -109,6 +113,39 @@ class RobotTaskForwardTest extends TestCase
         $this->assertSame(2, RobotMessageRequest::query()->where('trigger_type', 'AUTO_FORWARD')->count(), '已转发任务不重复发送');
     }
 
+    public function test_url_link_format_calls_generate_urllink(): void
+    {
+        $admin = $this->admin();
+        $campus = $this->campus();
+        $task = $this->createTask($admin, $campus, '链接任务', now());
+        $this->configureWechatMini();
+        Http::fake([
+            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response(['access_token' => 'token-ul', 'expires_in' => 7200]),
+            'https://api.weixin.qq.com/wxa/generate_urllink*' => Http::response(['errcode' => 0, 'url_link' => 'https://wxmpurl.cn/UrlTicket999']),
+        ]);
+
+        $link = app(WechatMiniUrlLinkService::class)->forTask($task);
+        $this->assertSame('https://wxmpurl.cn/UrlTicket999', $link);
+    }
+
+    public function test_short_link_format_renders_mp_link_in_message(): void
+    {
+        $admin = $this->admin();
+        $campus = $this->campus();
+        $task = $this->createTask($admin, $campus, '短链任务', now());
+        $this->configureWechatMini();
+        Http::fake([
+            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response(['access_token' => 'token-sl', 'expires_in' => 7200]),
+            'https://api.weixin.qq.com/wxa/generateshortlink*' => Http::response(['errcode' => 0, 'link' => '#小程序://鱼泡校园圈/pages/task-detail/index/TaskTicket123']),
+        ]);
+
+        $config = $this->config($admin, $campus, ['aggregate_interval' => 1, 'min_messages' => 1, 'max_messages' => 10]);
+        $config->forceFill(['template_config' => array_merge($config->template_config, ['link_format' => 'short_link'])])->save();
+
+        $message = app(RobotForwardConfigService::class)->renderPosts($config->fresh(), collect([$task]));
+        $this->assertStringContainsString('mp://TaskTicket123', $message);
+    }
+
     private function admin(): AdminUser
     {
         return AdminUser::query()->firstOrCreate(
@@ -174,6 +211,13 @@ class RobotTaskForwardTest extends TestCase
         ]);
 
         return $task;
+    }
+
+    private function configureWechatMini(): void
+    {
+        config()->set('wechat_auth.driver', 'wechat');
+        config()->set('wechat_auth.mini.app_id', 'wx-task-forward-test');
+        config()->set('wechat_auth.mini.app_secret', 'task-forward-secret');
     }
 
     /** @param array<string, mixed> $overrides */

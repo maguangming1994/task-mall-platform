@@ -28,7 +28,7 @@ class RobotForwardContentService
     public function __construct(private readonly WechatMiniUrlLinkService $links) {}
 
     /** @return array<string, string> */
-    public function variables(CommunityPost $post, int $index, int $total, int $contentLimit = 0): array
+    public function variables(CommunityPost $post, int $index, int $total, int $contentLimit = 0, string $linkFormat = 'url_link'): array
     {
         $author = User::query()->find($post->user_id);
         $campusName = (string) (Campus::query()->find($post->campus_id)?->name ?: '校园');
@@ -50,7 +50,7 @@ class RobotForwardContentService
             '${favoriteNum}' => (string) (int) $post->favorite_count,
             '${likeNum}' => (string) (int) $post->like_count,
             '${reward}' => '',
-            '${wappLink}' => $this->links->forCommunityPost($post),
+            '${wappLink}' => $this->links->forCommunityPost($post, $linkFormat),
             '${addTime}' => $post->published_at?->format('Y-m-d H:i:s') ?? '',
             '${total}' => (string) $total,
             '${lookNum}' => '0',
@@ -59,7 +59,7 @@ class RobotForwardContentService
     }
 
     /** @return array<string, string> */
-    public function taskVariables(Task $task, int $index, int $total, int $contentLimit = 0): array
+    public function taskVariables(Task $task, int $index, int $total, int $contentLimit = 0, string $linkFormat = 'url_link'): array
     {
         $version = TaskVersion::query()
             ->where('task_id', $task->id)
@@ -86,7 +86,7 @@ class RobotForwardContentService
             '${favoriteNum}' => '0',
             '${likeNum}' => '0',
             '${reward}' => $this->taskRewardText($snapshot['rewards'] ?? null),
-            '${wappLink}' => $this->links->forTask($task),
+            '${wappLink}' => $this->links->forTask($task, $linkFormat),
             '${addTime}' => $task->published_at?->format('Y-m-d H:i:s') ?? '',
             '${total}' => (string) $total,
             '${lookNum}' => (string) (int) $task->view_count,
@@ -119,7 +119,7 @@ class RobotForwardContentService
     }
 
     /** 没有可匹配的真实内容时使用的示例数据。 @return array<string, string> */
-    public function sampleVariables(int $contentLimit = 0, string $contentType = 'community_post'): array
+    public function sampleVariables(int $contentLimit = 0, string $contentType = 'community_post', string $linkFormat = 'url_link'): array
     {
         $content = $contentType === 'task'
             ? '这是一条任务转发的测试消息，用于验证模板和机器人目标。'
@@ -142,7 +142,7 @@ class RobotForwardContentService
                 '${favoriteNum}' => '0',
                 '${likeNum}' => '0',
                 '${reward}' => '+¥5.00 余额',
-                '${wappLink}' => rtrim((string) config('app.user_h5_url'), '/').'/#/pages/task-detail/index',
+                '${wappLink}' => $linkFormat === 'short_link' ? 'mp://示例任务短链' : rtrim((string) config('app.user_h5_url'), '/').'/#/pages/task-detail/index',
                 '${addTime}' => now()->format('Y-m-d H:i:s'),
                 '${total}' => '1',
                 '${lookNum}' => '0',
@@ -163,7 +163,7 @@ class RobotForwardContentService
             '${favoriteNum}' => '0',
             '${likeNum}' => '0',
             '${reward}' => '',
-            '${wappLink}' => rtrim((string) config('app.user_h5_url'), '/'),
+            '${wappLink}' => $linkFormat === 'short_link' ? 'mp://示例帖子短链' : rtrim((string) config('app.user_h5_url'), '/'),
             '${addTime}' => now()->format('Y-m-d H:i:s'),
             '${total}' => '1',
             '${lookNum}' => '0',

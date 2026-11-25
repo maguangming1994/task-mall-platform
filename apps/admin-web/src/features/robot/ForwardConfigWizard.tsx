@@ -9,6 +9,7 @@ import {
   listXpRobotDevices,
   listXpRobotGroups,
   updateXpRobotForward,
+  XP_ROBOT_FORWARD_LINK_FORMAT_OPTIONS,
   XP_ROBOT_FORWARD_POST_STATUS_OPTIONS,
   XP_ROBOT_FORWARD_TASK_STATUS_OPTIONS,
   type XpRobotAccount,
@@ -108,6 +109,7 @@ const createDefaults = (): XpRobotForwardConfigInput => ({
     footer: '',
     keywords: [],
     content_max_length: 500,
+    link_format: 'url_link',
   },
   robot_targets: [createTarget()],
 })
@@ -140,6 +142,7 @@ export function ForwardConfigSummary({ value }: { value: XpRobotForwardConfigInp
         { key: 'quiet', label: '静默时段', children: quietText(filter.quiet_start, filter.quiet_end) },
         { key: 'weekdays', label: '活跃星期', children: filter.active_weekdays.map((day) => weekdayOptions.find((item) => item.value === day)?.label ?? day).join('、') },
         { key: 'length', label: '正文截取长度', children: template.content_max_length === 0 ? '不截取' : `${template.content_max_length} 字` },
+        { key: 'link_format', label: '小程序短链', children: (template.link_format ?? 'url_link') === 'short_link' ? 'Short Link（mp://）' : 'URL Link' },
         { key: 'footer', label: '结尾文案', span: 2, children: template.footer ? <Typography.Text style={{ whiteSpace: 'pre-wrap' }}>{template.footer}</Typography.Text> : '—' },
         { key: 'template', label: '消息模板', span: 2, children: <Typography.Text style={{ whiteSpace: 'pre-wrap' }}>{template.template}</Typography.Text> },
       ]}
@@ -451,6 +454,7 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
         template: values.template_config.template.trim(),
         footer: (values.template_config.footer ?? '').trim(),
         keywords: values.template_config.keywords.map((item) => item.trim()).filter(Boolean),
+        link_format: values.template_config.link_format === 'short_link' ? 'short_link' : 'url_link',
       },
       robot_targets: values.robot_targets.map((target) => ({
         ...target,
@@ -636,6 +640,12 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
           </Form.Item>
           <Form.Item name={['template_config', 'content_max_length']} label="正文截取长度（0 表示不截取）" rules={[{ required: true, message: '请设置正文截取长度。' }]}>
             <InputNumber min={0} max={5000} precision={0} style={{ width: 240 }} />
+          </Form.Item>
+          <Form.Item name={['template_config', 'link_format']} label="小程序短链形式" extra="URL Link 全场景可点（短信/网页/微信内外），微信内点击会先经过官方 H5 中间页；Short Link 仅微信内有效，群聊里点击直跳小程序页面，更短、不经过中间页。">
+            <Select
+              style={{ maxWidth: 360 }}
+              options={XP_ROBOT_FORWARD_LINK_FORMAT_OPTIONS.map((item) => ({ value: item.value, label: item.label }))}
+            />
           </Form.Item>
         </div>
 
