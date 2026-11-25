@@ -54,9 +54,31 @@ function isWechatBrowser(): boolean {
   return typeof navigator !== 'undefined' && /MicroMessenger/i.test(navigator.userAgent)
 }
 
+type SdkGlobal = { wx?: Partial<WechatJsSdk>; jWeixin?: Partial<WechatJsSdk> }
+
+/**
+ * 微信客户端可能注入一个能力不全的 window.wx，必须校验关键方法齐全才可使用，
+ * 否则会出现 config/error 不存在导致初始化崩溃。
+ */
+function isUsableSdk(sdk: Partial<WechatJsSdk> | undefined): sdk is WechatJsSdk {
+  return (
+    !!sdk &&
+    typeof sdk.config === 'function' &&
+    typeof sdk.ready === 'function' &&
+    typeof sdk.error === 'function'
+  )
+}
+
+function readSdk(): WechatJsSdk | null {
+  const globalObject = window as unknown as SdkGlobal
+  if (isUsableSdk(globalObject.jWeixin)) return globalObject.jWeixin
+  if (isUsableSdk(globalObject.wx)) return globalObject.wx
+  return null
+}
+
 function loadSdk(): Promise<WechatJsSdk | null> {
   if (typeof window === 'undefined') return Promise.resolve(null)
-  const existing = (window as unknown as { wx?: WechatJsSdk }).wx
+  const existing = readSdk()
   if (existing) return Promise.resolve(existing)
   if (sdkPromise) return sdkPromise
 
@@ -64,7 +86,7 @@ function loadSdk(): Promise<WechatJsSdk | null> {
     const script = document.createElement('script')
     script.src = SDK_SRC
     script.async = true
-    script.onload = () => resolve((window as unknown as { wx?: WechatJsSdk }).wx ?? null)
+    script.onload = () => resolve(readSdk())
     script.onerror = () => resolve(null)
     document.head.appendChild(script)
   })
