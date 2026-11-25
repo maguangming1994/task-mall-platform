@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Campus\Models\Campus;
+use App\Modules\Community\Models\UserBlock;
 use App\Modules\Identity\Models\UserIdentityVerification;
 use App\Modules\SecondHand\Models\SecondHandCategory;
 use App\Modules\SecondHand\Models\SecondHandItem;
@@ -60,6 +61,7 @@ class SecondHandItemController extends Controller
         $size = $data['page_size'] ?? 20;
 
         $query = SecondHandItem::query()->where('status', 'on_sale')->where('audit_status', 'approved');
+        $query = UserBlock::excludeFromQuery($query, $request->user(), 'second_hand_items.seller_user_id');
         if (! empty($data['category_id'])) {
             $query->whereHas('category', fn ($q) => $q->where('public_id', $data['category_id']));
         }
@@ -100,6 +102,7 @@ class SecondHandItemController extends Controller
     public function show(Request $request, SecondHandItem $item): JsonResponse
     {
         abort_unless(in_array($item->status, ['on_sale', 'reserved', 'sold'], true), 404);
+        abort_if(UserBlock::existsBetween($request->user(), $item->seller_user_id), 404);
         $item->increment('view_count');
         $item->loadMissing(['seller', 'category']);
         $isOwner = $request->user()?->id === $item->seller_user_id;

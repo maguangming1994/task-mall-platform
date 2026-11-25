@@ -187,6 +187,48 @@ function applyShareData(sdk: WechatJsSdk, shareData: Record<string, unknown>) {
 }
 
 /**
+ * 为微信开放标签（例如 wx-open-subscribe 订阅通知）初始化 JSSDK。
+ * 仅在微信内 H5 生效，失败时返回 false 由页面降级提示。
+ */
+export async function configureWechatOpenTag(openTagList: string[], jsApiList: string[] = []): Promise<boolean> {
+  // #ifndef H5
+  return false
+  // #endif
+  // #ifdef H5
+  if (typeof window === 'undefined' || !isWechatBrowser()) return false
+  const loaded = await loadSdk()
+  if (!loaded) return false
+  const sdk = loaded as WechatJsSdk
+  const pageUrl = signatureUrl()
+  const signature = await apiRequest<JssdkSignature>({ path: signaturePath(pageUrl) })
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('wechat jssdk config timeout')), 5000)
+    sdk.error((result) => {
+      clearTimeout(timer)
+      const detail = (result as { errMsg?: string } | undefined)?.errMsg || 'config failed'
+      reject(new Error(`微信 JSSDK 初始化失败：${detail}`))
+    })
+    sdk.config({
+      debug: false,
+      appId: signature.appId,
+      timestamp: signature.timestamp,
+      nonceStr: signature.nonceStr,
+      signature: signature.signature,
+      jsApiList,
+      openTagList,
+    })
+    sdk.ready(() => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
+  configuredSignature = pageUrl
+
+  return true
+  // #endif
+}
+
+/**
  * 配置公众号分享卡片。失败时静默降级（复制链接仍然可用），不影响页面。
  */
 export async function enableWechatShare(options: WechatShareOptions): Promise<void> {

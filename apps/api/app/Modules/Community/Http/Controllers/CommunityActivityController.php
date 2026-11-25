@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Community\Models\CommunityActivity;
 use App\Modules\Community\Models\CommunityActivityParticipant;
+use App\Modules\Community\Models\UserBlock;
 use App\Modules\Community\Services\CommunityActivityService;
 use App\Modules\Upload\Models\UploadedFile;
 use Illuminate\Http\JsonResponse;
@@ -36,8 +37,9 @@ class CommunityActivityController extends Controller
             ->where('starts_at', '>', now())
             ->when($data['category'] ?? null, fn ($query, $category) => $query->where('category_code', $category))
             ->orderBy('starts_at')->orderBy('id');
-        $total = $query->count();
         $user = $request->user();
+        $query = UserBlock::excludeFromQuery($query, $user, 'community_activities.creator_user_id');
+        $total = $query->count();
 
         return ApiResponse::success([
             'items' => $query->forPage($page, $size)->get()->map(fn (CommunityActivity $activity) => $this->data($activity, $user)),
@@ -48,6 +50,7 @@ class CommunityActivityController extends Controller
     public function show(Request $request, CommunityActivity $activity): JsonResponse
     {
         abort_unless($activity->status === 'approved', 404);
+        abort_if(UserBlock::existsBetween($request->user(), $activity->creator_user_id), 404);
 
         return ApiResponse::success($this->data($activity, $request->user()));
     }

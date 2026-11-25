@@ -9,6 +9,7 @@ use App\Modules\Community\Models\CommunityComment;
 use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Community\Models\CommunityPostVersion;
 use App\Modules\Community\Models\UserRestriction;
+use App\Modules\Notification\Services\NotificationBusinessEventService;
 use App\Modules\Notification\Services\NotificationService;
 use App\Modules\Settings\Services\SystemSettingService;
 use App\Modules\Upload\Models\UploadedFile;
@@ -22,6 +23,7 @@ class CommunityContentService
         private readonly SystemSettingService $settings,
         private readonly AssetLedgerService $assets,
         private readonly NotificationService $notifications,
+        private readonly NotificationBusinessEventService $notificationEvents,
         private readonly CommunityContentSecurityService $contentSecurity,
     ) {}
 
@@ -80,6 +82,9 @@ class CommunityContentService
                 'content' => $data['content'],
                 'category_code' => $data['category_code'] ?? 'experience',
                 'location_name' => $this->normalizeLocation($data['location_name'] ?? null),
+                'visibility' => $data['visibility'] ?? 'public',
+                'location_latitude' => $data['location_latitude'] ?? null,
+                'location_longitude' => $data['location_longitude'] ?? null,
                 'status' => $auto ? 'published' : 'pending_review',
                 'published_version_no' => $auto ? 1 : null,
                 'idempotency_key_hash' => $hash,
@@ -127,6 +132,9 @@ class CommunityContentService
                 'content' => $data['content'],
                 'category_code' => $data['category_code'] ?? 'experience',
                 'location_name' => $this->normalizeLocation($data['location_name'] ?? null),
+                'visibility' => $data['visibility'] ?? 'public',
+                'location_latitude' => $data['location_latitude'] ?? null,
+                'location_longitude' => $data['location_longitude'] ?? null,
                 'status' => 'published',
                 'published_version_no' => 1,
                 'idempotency_key_hash' => $hash,
@@ -192,6 +200,9 @@ class CommunityContentService
                 'location_name' => array_key_exists('location_name', $data)
                     ? $this->normalizeLocation($data['location_name'])
                     : $locked->location_name,
+                'visibility' => $data['visibility'] ?? $locked->visibility,
+                'location_latitude' => array_key_exists('location_latitude', $data) ? $data['location_latitude'] : $locked->location_latitude,
+                'location_longitude' => array_key_exists('location_longitude', $data) ? $data['location_longitude'] : $locked->location_longitude,
             ];
             if ($auto) {
                 $updates += ['title' => $data['title'], 'content' => $data['content'], 'category_code' => $data['category_code'] ?? $locked->category_code, 'status' => 'published', 'published_version_no' => $versionNo, 'published_at' => now()];
@@ -207,7 +218,7 @@ class CommunityContentService
     public function createComment(User $user, CommunityPost $post, array $data, string $key): CommunityComment
     {
         $this->assertAllowed($user, 'comment');
-        abort_unless($post->status === 'published', 404);
+        abort_unless($post->status === 'published' && $post->isVisibleTo($user), 404);
         $hash = hash('sha256', $key);
         if ($comment = CommunityComment::withTrashed()->where('idempotency_key_hash', $hash)->first()) {
             abort_unless($comment->user_id === $user->id, 404);
@@ -354,36 +365,50 @@ class CommunityContentService
             ? CommunityComment::query()->find($comment->parent_comment_id)
             : null;
         $data = ['post_id' => $post->public_id, 'comment_id' => $comment->public_id];
+        $variables = [
+            'post_title' => $post->title,
+            'status_text' => '已发布',
+            'post_id' => $post->public_id,
+            'review_note' => '',
+            'comment_author' => $actor->nickname ?: '一位同学',
+            'comment_excerpt' => Str::limit((string) preg_replace('/\s+/u', ' ', trim($comment->content)), 40),
+            'occurred_at' => now()->format('Y-m-d H:i'),
+        ];
 
         if ($parent !== null && $parent->user_id !== $actor->id) {
             $recipient = User::query()->findOrFail($parent->user_id);
-            $this->notifications->create(
+            $this->notifyCommentInteraction(
                 $recipient,
-                'community',
                 'community_comment_replied',
-                '收到新回复',
-                ($actor->nickname ?: '一位同学').'回复了你在《'.$post->title.'》下的评论。',
+                $variables,
                 'community-comment:'.$comment->public_id.':reply:'.$recipient->public_id,
-                false,
-                ['in_app'],
                 $data + ['parent_comment_id' => $parent->public_id],
             );
         }
 
         if (($parent === null || $parent->user_id !== $post->user_id) && $post->user_id !== $actor->id) {
             $recipient = User::query()->findOrFail($post->user_id);
-            $this->notifications->create(
+            $this->notifyCommentInteraction(
                 $recipient,
-                'community',
                 'community_post_commented',
-                '帖子收到新评论',
-                ($actor->nickname ?: '一位同学').'评论了你的帖子《'.$post->title.'》。',
+                $variables,
                 'community-comment:'.$comment->public_id.':post:'.$recipient->public_id,
-                false,
-                ['in_app'],
                 $data,
             );
         }
+    }
+
+    /**
+     * 评论互动通知统一走业务通知事件，按后台配置同时投递站内信、小程序订阅消息和公众号通知。
+     *
+     * @param  array<string,string>  $variables
+     * @param  array<string,mixed>  $data
+     */
+    private function notifyCommentInteraction(User $recipient, string $sceneCode, array $variables, string $eventKey, array $data): void
+    {
+        $event = $this->notificationEvents->record($recipient, $sceneCode, $variables, $eventKey, $data);
+        // 与原有同步写站内信行为保持一致，立即处理；事务提交后的 afterCommit 回调会自动跳过已处理事件。
+        $this->notificationEvents->process($event->id);
     }
 
     private function validateAttachments(User $user, array $imageIds, ?string $videoId): array

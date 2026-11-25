@@ -5,6 +5,7 @@ namespace App\Modules\Community\Http\Controllers;
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Modules\Community\Models\UserBlock;
 use App\Modules\Community\Models\UserFollow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ class CommunitySocialController extends Controller
     {
         $target = $this->resolveUser($userId);
         abort_if($target->id === $request->user()->id, 422, '不能关注自己。');
+        abort_if(UserBlock::existsBetween($request->user(), $target->id), 403, '拉黑状态下不能关注对方。');
 
         UserFollow::query()->firstOrCreate([
             'follower_id' => $request->user()->id,
@@ -42,7 +44,7 @@ class CommunitySocialController extends Controller
 
     private function resolveUser(string $publicId): User
     {
-        $user = User::query()->where('public_id', $publicId)->where('status', 'active')->first();
+        $user = User::query()->withoutGlobalScope('admin_campus')->where('public_id', $publicId)->where('status', 'active')->first();
         abort_if($user === null, 404);
 
         return $user;

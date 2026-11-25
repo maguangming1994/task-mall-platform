@@ -365,6 +365,8 @@ export function OperationsPage() {
   }
 
   const reviewFlag = featureFlags.find((f) => f.code === 'review_in_progress')
+  // 当前线上运行版本：release-control 已按 created_at 倒序，取第一条 status=deployed 即最新已部署
+  const currentRelease = releases.find((r) => r.status === 'deployed') ?? null
   // 一致性判定：所有 8 个目标开关都已到位才认为模式就绪；否则视为「配置不一致」
   const reviewModeReady = (reviewing: boolean): boolean =>
     reviewTargets(reviewing).every((target) => {
@@ -435,7 +437,10 @@ export function OperationsPage() {
     <div className="page-heading"><div><Typography.Text className="eyebrow">校园运营与消息</Typography.Text><Typography.Title level={2}>运营与消息</Typography.Title><Typography.Paragraph type="secondary">核心业务指标、运行韧性、通知模板、营销订阅触达与失败投递统一管理。</Typography.Paragraph></div><Tag color="cyan">运营工作台</Tag></div>
     {metrics && <div className="stat-grid"><Card bordered={false}><Statistic title="活跃用户" value={metrics.users.active_total} /></Card><Card bordered={false}><Statistic title="今日支付订单" value={metrics.orders.paid_today} /></Card><Card bordered={false}><Statistic title="待审核内容" value={metrics.community.pending_reviews} /></Card><Card bordered={false}><Statistic title="失败通知" value={metrics.notifications.failed_deliveries} /></Card></div>}
     <Card bordered={false} title="运营待办" style={{ marginTop: 16 }}><Space wrap><Tag color="gold">任务待审 {metrics?.tasks.pending_reviews ?? 0}</Tag><Tag color="orange">待履约 {metrics?.orders.pending_fulfillment ?? 0}</Tag><Tag color="red">售后 {metrics?.after_sales.pending_refunds ?? 0}</Tag><Tag color="purple">举报 {metrics?.community.open_reports ?? 0}</Tag><Tag color="volcano">账务差异 {metrics?.finance.reconciliation_differences ?? 0}</Tag></Space></Card>
-    <Card bordered={false} title="系统运行状态" style={{ marginTop: 16 }}><Space wrap><Tag color={resilience?.readiness.status === 'ready' ? 'green' : 'red'}>基础服务：{resilience?.readiness.status === 'ready' ? '运行正常' : '检查中或异常'}</Tag><Tag color={resilience?.consistency.healthy ? 'green' : 'red'}>业务数据：{resilience?.consistency.healthy ? '校验通过' : '存在异常'}</Tag>{Object.entries(resilience?.readiness.checks ?? {}).map(([name, check]) => <Tag key={name} color={check.ready ? 'cyan' : 'red'}>{readinessCheckNames[name] ?? '其他服务'}：{check.ready ? '正常' : '异常'}（{check.latency_ms} 毫秒）</Tag>)}</Space></Card>
+    <Card bordered={false} title="系统运行状态" style={{ marginTop: 16 }}><Space wrap>
+      {currentRelease && <Tag color="blue">系统版本：{currentRelease.release_version}</Tag>}
+      {currentRelease && <Tag color="geekblue">发布时间：{formatDate(currentRelease.deployed_at)}</Tag>}
+      <Tag color={resilience?.readiness.status === 'ready' ? 'green' : 'red'}>基础服务：{resilience?.readiness.status === 'ready' ? '运行正常' : '检查中或异常'}</Tag><Tag color={resilience?.consistency.healthy ? 'green' : 'red'}>业务数据：{resilience?.consistency.healthy ? '校验通过' : '存在异常'}</Tag>{Object.entries(resilience?.readiness.checks ?? {}).map(([name, check]) => <Tag key={name} color={check.ready ? 'cyan' : 'red'}>{readinessCheckNames[name] ?? '其他服务'}：{check.ready ? '正常' : '异常'}（{check.latency_ms} 毫秒）</Tag>)}</Space></Card>
     <Card bordered={false} title="业务状态通知规则" style={{ marginTop: 16 }}>
       <Alert showIcon type="info" message="任务、订单和帖子状态由系统统一触发；站内消息始终保留，小程序和短信需先发布对应渠道模板。" style={{ marginBottom: 16 }} />
       <Tabs items={[

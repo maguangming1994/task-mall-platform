@@ -11,6 +11,7 @@ use App\Modules\Campus\Models\Campus;
 use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Community\Models\CommunityPostFavorite;
 use App\Modules\Community\Models\CommunityPostVersion;
+use App\Modules\Community\Models\UserBlock;
 use App\Modules\Community\Models\UserFollow;
 use App\Modules\Community\Services\CommunityContentService;
 use App\Modules\Identity\Models\UserIdentityVerification;
@@ -23,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -44,8 +46,9 @@ class CommunityPostController extends Controller
         $feed = $data['feed'] ?? 'discover';
         $viewer = $request->user();
 
-        $query = CommunityPost::query()->where('status', 'published')
+        $query = CommunityPost::query()->where('status', 'published')->visibleTo($viewer)
             ->when($data['category'] ?? null, fn ($query, $category) => $query->where('category_code', $category));
+        $query = UserBlock::excludeFromQuery($query, $viewer, 'community_posts.user_id');
 
         if ($feed === 'following') {
             abort_unless($viewer !== null, 401);
@@ -84,7 +87,8 @@ class CommunityPostController extends Controller
     {
         // 分享/短链详情：已发布帖子允许跨校区直接阅读；列表与互动仍按校区隔离。
         $model = CommunityPost::query()->withoutGlobalScope('campus_context')->where('public_id', $post)->first();
-        abort_unless($model !== null && $model->status === 'published', 404);
+        abort_unless($model !== null && $model->status === 'published' && $model->isVisibleTo($request->user()), 404);
+        abort_if(UserBlock::existsBetween($request->user(), $model->user_id), 404);
 
         return ApiResponse::success($this->data($model, meta: $this->viewerMeta($request, collect([$model]))));
     }
@@ -98,17 +102,19 @@ class CommunityPostController extends Controller
         ]);
     }
 
-    public function media(UploadedFile $file): StreamedResponse
+    public function media(Request $request, UploadedFile $file): StreamedResponse
     {
-        $isPublishedAttachment = DB::table('community_attachments as attachment')
+        $attachmentPost = DB::table('community_attachments as attachment')
             ->join('community_post_versions as version', 'version.id', '=', 'attachment.community_post_version_id')
             ->join('community_posts as post', 'post.id', '=', 'version.community_post_id')
             ->where('attachment.uploaded_file_id', $file->id)
             ->where('post.status', 'published')
             ->whereNull('post.deleted_at')
             ->whereColumn('post.published_version_no', 'version.version_no')
-            ->exists();
-        abort_unless($isPublishedAttachment && $file->purpose === 'community' && $file->status === 'clean', 404);
+            ->first(['post.visibility']);
+        abort_unless($attachmentPost !== null && $file->purpose === 'community' && $file->status === 'clean', 404);
+        // 关注者可见帖子的图片仅在有权读取帖子的接口中签发限时地址，不能凭文件 ID 绕过可见范围。
+        abort_if($attachmentPost->visibility === 'followers' && ! $request->hasValidSignature(), 404);
 
         abort_unless(Storage::disk($file->disk)->exists($file->quarantine_path), 404);
 
@@ -207,7 +213,7 @@ class CommunityPostController extends Controller
 
         return ApiResponse::success([
             'items' => $posts->map(function (CommunityPost $post) use ($meta, $forwards): array {
-                $item = $this->data($post, true, false, $meta);
+                $item = $this->data($post, true, false, $meta, true);
                 $item['forward'] = $forwards[(int) $post->id] ?? ['status' => 'none', 'groups' => []];
 
                 return $item;
@@ -346,6 +352,9 @@ class CommunityPostController extends Controller
             'content' => ['required', 'string', 'max:20000'],
             'category_code' => ['nullable', Rule::in(array_keys(CommunityPost::CATEGORIES))],
             'location_name' => ['nullable', 'string', 'max:100'],
+            'visibility' => ['sometimes', 'string', Rule::in(CommunityPost::VISIBILITIES)],
+            'location_latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:location_longitude'],
+            'location_longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:location_latitude'],
             'admin_note' => ['nullable', 'string', 'max:500'],
         ]);
         $author = User::query()->where('public_id', $data['author_id'])->first();
@@ -360,7 +369,7 @@ class CommunityPostController extends Controller
         } catch (ValidationException $exception) {
             return ApiResponse::error('POST_CREATE_REJECTED', (string) collect($exception->errors())->flatten()->first(), 422);
         }
-        $after = $this->data($post);
+        $after = $this->data($post, revealAnonymousAuthor: true);
         $audit->record(
             $admin,
             'community.post.admin_create',
@@ -406,7 +415,7 @@ class CommunityPostController extends Controller
             return ['success' => false, 'code' => 'REVIEW_STATE_CONFLICT', 'message' => '帖子已隐藏或删除，不能审核发布。', 'status' => 409];
         }
 
-        $before = $this->data($post, true);
+        $before = $this->data($post, true, revealAnonymousAuthor: true);
         try {
             $reviewed = $service->reviewPost($admin, $post, $data);
         } catch (ValidationException $exception) {
@@ -414,7 +423,7 @@ class CommunityPostController extends Controller
         } catch (ModelNotFoundException) {
             return ['success' => false, 'code' => 'REVIEW_ALREADY_FINISHED', 'message' => '该帖子当前版本已经完成审核，不能重复操作。', 'status' => 409];
         }
-        $after = $this->data($reviewed, true);
+        $after = $this->data($reviewed, true, revealAnonymousAuthor: true);
         $audit->record(
             $admin,
             'community.post.'.$data['decision'],
@@ -458,6 +467,9 @@ class CommunityPostController extends Controller
             'content' => ['required', 'string', 'max:20000'],
             'category_code' => ['nullable', Rule::in(array_keys(CommunityPost::CATEGORIES))],
             'location_name' => ['nullable', 'string', 'max:80'],
+            'visibility' => ['sometimes', 'string', Rule::in(CommunityPost::VISIBILITIES)],
+            'location_latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:location_longitude'],
+            'location_longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:location_latitude'],
             'image_file_ids' => ['nullable', 'array', 'max:9'],
             'image_file_ids.*' => ['string', 'size:26'],
             'video_file_id' => ['nullable', 'string', 'size:26'],
@@ -526,12 +538,15 @@ class CommunityPostController extends Controller
         return ['liked' => $liked, 'favorited' => $favorited, 'authors' => $authors];
     }
 
-    private function data(CommunityPost $post, bool $includeLatestVersion = false, bool $includeOwnerActions = false, array $meta = []): array
+    private function data(CommunityPost $post, bool $includeLatestVersion = false, bool $includeOwnerActions = false, array $meta = [], bool $revealAnonymousAuthor = false): array
     {
         $author = $meta['authors'][$post->user_id] ?? null;
         if ($author === null) {
             $fallback = DB::table('users')->where('id', $post->user_id)->first();
             $author = ['id' => $fallback?->public_id, 'nickname' => $fallback?->nickname ?: '社区用户', 'avatar_url' => null, 'campus_name' => null, 'verified' => false, 'is_followed' => false, 'is_self' => false];
+        }
+        if ($post->visibility === 'anonymous' && ! $revealAnonymousAuthor && ! $includeOwnerActions && ! ($author['is_self'] ?? false)) {
+            $author = ['id' => null, 'nickname' => '匿名用户', 'avatar_url' => null, 'campus_name' => null, 'verified' => false, 'is_followed' => false, 'is_self' => false];
         }
         $latestVersion = $includeLatestVersion
             ? DB::table('community_post_versions')->where('community_post_id', $post->id)->where('version_no', $post->current_version_no)->first()
@@ -565,6 +580,9 @@ class CommunityPostController extends Controller
             'category_code' => $post->category_code,
             'category_label' => CommunityPost::CATEGORIES[$post->category_code] ?? '经验分享',
             'location_name' => $post->location_name,
+            'visibility' => $post->visibility,
+            'location_latitude' => $post->location_latitude,
+            'location_longitude' => $post->location_longitude,
             'status' => $post->trashed() ? 'deleted' : $post->status,
             'audit_status' => $auditStatus,
             'current_version_no' => $post->current_version_no,
@@ -605,7 +623,9 @@ class CommunityPostController extends Controller
                 'file_id' => $attachment->file_id,
                 'type' => $attachment->type,
                 'url' => $versionNo === $post->published_version_no && $post->status === 'published' && ! $post->trashed()
-                    ? "/community/media/{$attachment->file_id}"
+                    ? ($post->visibility === 'followers'
+                        ? URL::temporarySignedRoute('community.media', now()->addHour(), ['file' => $attachment->file_id])
+                        : "/community/media/{$attachment->file_id}")
                     : null,
             ])->all();
     }

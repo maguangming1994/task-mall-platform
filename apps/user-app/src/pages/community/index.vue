@@ -78,7 +78,7 @@
       <template v-else>
         <view v-for="post in visiblePosts" :key="post.id" class="post-card">
           <view class="post-head">
-            <view class="author-row">
+            <view class="author-row" @click="openUserProfile(post.author.id)">
               <view class="author-avatar">
                 <image v-if="post.author.avatar_url" :src="post.author.avatar_url" mode="aspectFill" />
                 <text v-else>{{ avatarText(post.author.nickname) }}</text>
@@ -127,8 +127,8 @@
             <view v-else-if="commentsError" class="comments-state error"><text>{{ commentsError }}</text><text @click="loadComments(post.id)">重试</text></view>
             <view v-else-if="!comments.length" class="comments-state">还没有评论，来坐第一排吧。</view>
             <view v-for="item in comments" v-else :key="item.id" :class="['comment-row', { 'reply-row': item.parent_comment_id }]">
-              <view class="comment-avatar">{{ avatarText(item.author.nickname) }}</view>
-              <view class="comment-main"><text class="comment-author">{{ item.author.nickname }}<text v-if="item.parent_comment_id" class="comment-reply-target"> 回复 @{{ parentCommentAuthor(item) }}</text></text><text class="comment-content">{{ item.content }}</text><view><text v-if="!item.parent_comment_id" @click="openCommentComposer(post, item)">回复</text><text v-if="auth.user?.id !== item.author.id" @click="report('comment', item.id)">举报</text></view></view>
+              <view class="comment-avatar" @click="openUserProfile(item.author.id)">{{ avatarText(item.author.nickname) }}</view>
+              <view class="comment-main"><text class="comment-author" @click="openUserProfile(item.author.id)">{{ item.author.nickname }}<text v-if="item.parent_comment_id" class="comment-reply-target"> 回复 @{{ parentCommentAuthor(item) }}</text></text><text class="comment-content">{{ item.content }}</text><view><text v-if="!item.parent_comment_id" @click="openCommentComposer(post, item)">回复</text><text v-if="auth.user?.id !== item.author.id" @click="report('comment', item.id)">举报</text></view></view>
             </view>
           </view>
         </view>
@@ -412,6 +412,7 @@ function openTarget(target: string) {
 }
 function openCompose(category?: CommunityCategory['code'], postId?: string) { if (!ensureAuth()) return; showPublishSheet.value = false; const suffix = buildQueryString({ category, postId }); uni.navigateTo({ url: `/pages/community-compose/index${suffix ? `?${suffix}` : ''}` }) }
 function openPost(id: string) { uni.navigateTo({ url: `/pages/community-detail/index?id=${encodeURIComponent(id)}` }) }
+function openUserProfile(id: string | null) { if (id) uni.navigateTo({ url: `/pages/user-profile/index?id=${encodeURIComponent(id)}` }) }
 function ensureAuth() { if (auth.isAuthenticated) return true; uni.showModal({ title: '登录后参与校园社区', content: '登录后可以发帖、点赞、关注、收藏和参加组团。', confirmText: '去登录', success: result => { if (result.confirm) navigateToLogin() } }); return false }
 function avatarText(name: string) { return (name || '同').trim().slice(0, 1) }
 function postImages(post: CommunityPost) { return (post.attachments || []).filter(item => item.type === 'image') }
@@ -460,7 +461,7 @@ async function toggleFollow(post: CommunityPost) {
   }
 }
 async function toggleComments(post: CommunityPost) { if (openedPostId.value === post.id) { openedPostId.value = ''; comments.value = []; return } openedPostId.value = post.id; await loadComments(post.id) }
-async function loadComments(postId: string) { commentsLoading.value = true; commentsError.value = ''; try { comments.value = (await listCommunityComments(postId)).items } catch (error) { commentsError.value = errorMessage(error) } finally { commentsLoading.value = false } }
+async function loadComments(postId: string) { commentsLoading.value = true; commentsError.value = ''; try { comments.value = (await listCommunityComments(postId, auth.accessToken || undefined)).items } catch (error) { commentsError.value = errorMessage(error) } finally { commentsLoading.value = false } }
 function parentCommentAuthor(comment: CommunityComment) { return comments.value.find(item => item.id === comment.parent_comment_id)?.author.nickname || '原评论' }
 function openCommentComposer(post: CommunityPost, parent?: CommunityComment) {
   if (!ensureAuth() || !auth.accessToken) return

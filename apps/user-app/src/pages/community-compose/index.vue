@@ -66,26 +66,30 @@
           <text class="frow-val topic">#{{ selectedCategoryLabel }}</text>
           <text class="spacer" />
         </view>
-        <view class="frow" @click="locationEditing = true">
+        <view class="frow" @click="openLocationPicker">
           <view class="frow-ic orange">位</view>
           <text :class="['frow-val', { dim: !locationName }]">{{ locationName || '添加位置（选填）' }}</text>
           <text class="spacer" />
-          <text v-if="locationName" class="frow-clear" @click.stop="locationName = ''">×</text>
-          <text v-else class="frow-arrow">›</text>
+          <text v-if="locationName" class="frow-clear" @click.stop="clearLocation">×</text>
+          <text class="frow-arrow">›</text>
         </view>
         <view v-if="locationEditing" class="loc-edit">
-          <input v-model="locationName" focus :maxlength="80" placeholder="如：图书馆三楼 / 8 号宿舍楼" @blur="locationEditing = false" @confirm="locationEditing = false" />
+          <input v-model="locationName" focus :maxlength="80" placeholder="如：图书馆三楼 / 8 号宿舍楼" @input="clearLocationCoordinates" @blur="locationEditing = false" @confirm="locationEditing = false" />
         </view>
-        <view class="frow">
+        <view class="frow" @click="selectVisibility">
           <view class="frow-ic blue">见</view>
-          <text class="frow-val dim">所有人可见</text>
+          <view class="frow-main">
+            <text class="frow-val">{{ currentVisibility.label }}</text>
+            <text class="frow-sub">{{ currentVisibility.hint }}</text>
+          </view>
           <text class="spacer" />
+          <text class="frow-arrow">›</text>
         </view>
       </view>
 
-      <view class="reward-card">
+      <view v-if="postRewardPoints > 0" class="reward-card">
         <view class="reward-ic">奖</view>
-        <text class="reward-copy">带话题发布并通过审核后，可获得 <text class="reward-strong">{{ rewardText }}</text> 创作奖励</text>
+        <text class="reward-copy">帖子通过审核后，可获得 <text class="reward-strong">+{{ postRewardPoints }} 积分</text> 创作奖励，每篇仅限一次</text>
       </view>
 
       <view class="guidance">
@@ -100,6 +104,7 @@
         <text class="preview-category"># {{ selectedCategoryLabel }}</text>
         <text class="preview-title">{{ title || '未填写标题' }}</text>
         <text class="preview-content">{{ content || '未填写正文' }}</text>
+        <text class="preview-meta">{{ locationName || '未添加位置' }} · {{ currentVisibility.label }}</text>
         <view v-if="images.length" class="preview-images"><image v-for="image in images.filter(item => item.previewUrl)" :key="image.fileId" :src="image.previewUrl" mode="aspectFill" /></view>
       </view>
 
@@ -124,12 +129,13 @@ import {
   createCommunityRequestKey,
   createCommunityPost,
   DEFAULT_COMMUNITY_PUBLISHING_RULES,
-  DEFAULT_POST_REWARD_POINTS,
   listCommunityCategories,
   listMyCommunityPosts,
   updateCommunityPost,
   type CommunityCategory,
+  type CommunityPostPayload,
   type CommunityPublishingRules,
+  type CommunityVisibility,
 } from '@/api/community'
 import { chooseAndUploadPrivateImage } from '@/api/upload'
 import { useAuthStore } from '@/stores/auth'
@@ -143,12 +149,27 @@ const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_community_post'))
 
 interface EditableImage { fileId: string; previewUrl: string }
-interface SavedDraft { title?: string; content?: string; categoryCode?: CommunityCategory['code']; locationName?: string; images?: EditableImage[]; requestKey?: string }
+interface SavedDraft {
+  title?: string
+  content?: string
+  categoryCode?: CommunityCategory['code']
+  locationName?: string
+  locationLatitude?: number | null
+  locationLongitude?: number | null
+  visibility?: CommunityVisibility
+  images?: EditableImage[]
+  requestKey?: string
+}
 interface TextareaEvent { detail?: { cursor?: number } }
 
 const fallbackCategories: CommunityCategory[] = [
   { code: 'experience', label: '经验分享' }, { code: 'guide', label: '实用攻略' },
   { code: 'question', label: '互助问答' }, { code: 'showcase', label: '成果展示' },
+]
+const visibilityOptions: Array<{ value: CommunityVisibility; label: string; hint: string }> = [
+  { value: 'public', label: '所有人可见', hint: '公开帖子，展示你的作者信息' },
+  { value: 'followers', label: '关注者可见', hint: '仅你和关注你的用户可以查看' },
+  { value: 'anonymous', label: '匿名发布', hint: '内容公开，其他读者看不到作者身份' },
 ]
 const auth = useAuthStore()
 const editingId = ref('')
@@ -158,11 +179,13 @@ const contentCursor = ref(0)
 const emojiVisible = ref(false)
 const categoryCode = ref<CommunityCategory['code']>('experience')
 const locationName = ref('')
+const locationLatitude = ref<number | null>(null)
+const locationLongitude = ref<number | null>(null)
 const locationEditing = ref(false)
+const visibility = ref<CommunityVisibility>('public')
 const categories = ref<CommunityCategory[]>(fallbackCategories)
 const publishingRules = ref<CommunityPublishingRules>(DEFAULT_COMMUNITY_PUBLISHING_RULES)
-const postRewardPoints = ref(DEFAULT_POST_REWARD_POINTS)
-const rewardText = computed(() => (postRewardPoints.value > 0 ? `+${postRewardPoints.value} 积分` : '平台奖励'))
+const postRewardPoints = ref(0)
 const images = ref<EditableImage[]>([])
 const reviewNote = ref('')
 const previewing = ref(false)
@@ -174,6 +197,7 @@ const uploadError = ref('')
 const submitError = ref('')
 const submitRequestKey = ref(createCommunityRequestKey('post'))
 const selectedCategoryLabel = computed(() => categories.value.find(item => item.code === categoryCode.value)?.label || '经验分享')
+const currentVisibility = computed(() => visibilityOptions.find(item => item.value === visibility.value) || visibilityOptions[0]!)
 const submitLabel = computed(() => editingId.value ? (reviewNote.value ? '修改并重新提交' : '提交新版本') : '发布')
 
 onLoad(async (options?: Record<string, string | undefined>) => {
@@ -187,10 +211,11 @@ onLoad(async (options?: Record<string, string | undefined>) => {
     const result = await listCommunityCategories()
     categories.value = result.items
     publishingRules.value = result.publishing_rules || DEFAULT_COMMUNITY_PUBLISHING_RULES
-    postRewardPoints.value = result.post_reward_points ?? DEFAULT_POST_REWARD_POINTS
+    postRewardPoints.value = result.post_reward_points ?? 0
   } catch {
     categories.value = fallbackCategories
     publishingRules.value = DEFAULT_COMMUNITY_PUBLISHING_RULES
+    postRewardPoints.value = 0
   }
   if (editingId.value) await loadEditing()
   else restoreDraft()
@@ -211,6 +236,9 @@ async function loadEditing() {
     contentCursor.value = content.value.length
     categoryCode.value = version?.category_code || post.category_code
     locationName.value = post.location_name || ''
+    locationLatitude.value = post.location_latitude ?? null
+    locationLongitude.value = post.location_longitude ?? null
+    visibility.value = post.visibility || 'public'
     images.value = (version?.attachments || post.attachments).filter(item => item.type === 'image').map(item => ({ fileId: item.file_id, previewUrl: communityAttachmentUrl(item) }))
     reviewNote.value = version?.review_status === 'rejected' ? version.review_note || '内容暂未通过审核，请修改后重新提交。' : ''
     restoreDraft()
@@ -227,6 +255,9 @@ function restoreDraft() {
   contentCursor.value = content.value.length
   categoryCode.value = draft.categoryCode ?? categoryCode.value
   locationName.value = draft.locationName ?? locationName.value
+  locationLatitude.value = draft.locationLatitude === undefined ? locationLatitude.value : draft.locationLatitude
+  locationLongitude.value = draft.locationLongitude === undefined ? locationLongitude.value : draft.locationLongitude
+  visibility.value = draft.visibility ?? visibility.value
   images.value = Array.isArray(draft.images) ? draft.images : images.value
   submitRequestKey.value = draft.requestKey || submitRequestKey.value
 }
@@ -241,9 +272,78 @@ function validate() {
   if (contentLength > contentRule.max_length) return `正文最多输入 ${contentRule.max_length} 个字符`
   return ''
 }
-function persistDraft() { uni.setStorageSync(draftKey(), { title: title.value, content: content.value, categoryCode: categoryCode.value, locationName: locationName.value, images: images.value, requestKey: submitRequestKey.value, savedAt: Date.now() }) }
+function persistDraft() {
+  uni.setStorageSync(draftKey(), {
+    title: title.value,
+    content: content.value,
+    categoryCode: categoryCode.value,
+    locationName: locationName.value,
+    locationLatitude: locationLatitude.value,
+    locationLongitude: locationLongitude.value,
+    visibility: visibility.value,
+    images: images.value,
+    requestKey: submitRequestKey.value,
+    savedAt: Date.now(),
+  })
+}
 function saveDraft() { persistDraft(); uni.showToast({ title: '草稿已保存在本机', icon: 'success' }) }
 function preview() { const message = validate(); if (message) return uni.showToast({ title: message, icon: 'none' }); previewing.value = true }
+async function openLocationPicker() {
+  const itemList = ['地图定位选择', '手动填写位置']
+  if (locationName.value || locationLatitude.value !== null || locationLongitude.value !== null) itemList.push('清除位置')
+  const action = await uni.showActionSheet({ itemList }).catch(() => null)
+  if (!action) return
+  if (action.tapIndex === 0) { await pickMapLocation(); return }
+  if (action.tapIndex === 1) { locationEditing.value = true; return }
+  clearLocation()
+}
+async function pickMapLocation() {
+  // #ifndef MP-WEIXIN
+  locationEditing.value = true
+  uni.showToast({ title: '当前平台请手动填写位置', icon: 'none' })
+  return
+  // #endif
+  // #ifdef MP-WEIXIN
+  try {
+    const options: UniApp.ChooseLocationOptions = {}
+    const latitude = locationLatitude.value
+    const longitude = locationLongitude.value
+    if (latitude !== null && longitude !== null) {
+      options.latitude = latitude!
+      options.longitude = longitude!
+    }
+    const picked = await uni.chooseLocation(options)
+    locationName.value = (picked.name.trim() || picked.address.trim() || '已选位置').slice(0, 80)
+    locationLatitude.value = picked.latitude
+    locationLongitude.value = picked.longitude
+    locationEditing.value = false
+  } catch (error) {
+    const message = String((error as { errMsg?: unknown } | null)?.errMsg || '')
+    if (/cancel/i.test(message)) return
+    if (/auth deny|auth denied|authorize denied|user denied|permission denied/i.test(message)) {
+      const guide = await uni.showModal({ title: '需要位置权限', content: '请在设置中允许使用位置，再重新进行地图选点；也可以选择手动填写。', confirmText: '去设置', cancelText: '手动填写' }).catch(() => null)
+      if (guide?.confirm) uni.openSetting({ fail: () => uni.showToast({ title: '无法打开设置，请手动填写位置', icon: 'none' }) })
+      else if (guide) locationEditing.value = true
+      return
+    }
+    uni.showToast({ title: '地图选点失败，可重试或手动填写', icon: 'none' })
+  }
+  // #endif
+}
+function clearLocation() {
+  locationName.value = ''
+  clearLocationCoordinates()
+  locationEditing.value = false
+}
+function clearLocationCoordinates() {
+  locationLatitude.value = null
+  locationLongitude.value = null
+}
+async function selectVisibility() {
+  const action = await uni.showActionSheet({ itemList: visibilityOptions.map(item => item.label) }).catch(() => null)
+  if (!action) return
+  visibility.value = visibilityOptions[action.tapIndex]?.value || 'public'
+}
 async function addImage() {
   if (!auth.accessToken || uploading.value || images.value.length >= 9) return
   uploading.value = true; uploadError.value = ''
@@ -273,7 +373,16 @@ async function submit() {
   if (message) return uni.showToast({ title: message, icon: 'none' })
   if (!auth.isAuthenticated) return redirectToLogin()
   submitting.value = true; submitError.value = ''
-  const payload = { title: title.value.trim(), content: content.value.trim(), category_code: categoryCode.value, location_name: locationName.value.trim() || undefined, image_file_ids: images.value.map(item => item.fileId) }
+  const payload: CommunityPostPayload = {
+    title: title.value.trim(),
+    content: content.value.trim(),
+    category_code: categoryCode.value,
+    location_name: locationName.value.trim() || null,
+    visibility: visibility.value,
+    location_latitude: locationLatitude.value,
+    location_longitude: locationLongitude.value,
+    image_file_ids: images.value.map(item => item.fileId),
+  }
   try {
     // 发布成功场景会立即消费订阅授权，等用户完成授权后再提交，避免授权晚到导致推送被跳过。
     await requestCommunitySubscriptionAndWait(auth.accessToken)
@@ -341,7 +450,9 @@ function errorMessage(error: unknown) { return error instanceof Error ? error.me
 .frow-ic.green{background:#E7F9EF;color:#08A152}
 .frow-ic.orange{background:#FFF2E5;color:#F2620A}
 .frow-ic.blue{background:#EAF2FF;color:#3B82F6}
+.frow-main{min-width:0}
 .frow-val{font-size:28rpx;color:#191B1F}
+.frow-sub{display:block;margin-top:4rpx;color:#AEB3BB;font-size:20rpx;line-height:1.4}
 .frow-val.topic{color:#08A152;font-weight:700}
 .frow-val.dim{color:#AEB3BB}
 .spacer{flex:1}
@@ -362,6 +473,7 @@ function errorMessage(error: unknown) { return error instanceof Error ? error.me
 .preview-category{display:block;margin-top:18rpx;color:#08A152;font-size:24rpx;font-weight:700}
 .preview-title{display:block;margin-top:10rpx;font-size:32rpx;font-weight:800}
 .preview-content{display:block;margin-top:12rpx;color:#3A3D43;font-size:26rpx;line-height:1.75;white-space:pre-wrap}
+.preview-meta{display:block;margin-top:14rpx;color:#767C85;font-size:22rpx}
 .preview-images{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10rpx;margin-top:18rpx}
 .preview-images image{width:100%;height:160rpx;border-radius:16rpx}
 .review-alert,.submit-error{margin:20rpx 24rpx 0;padding:24rpx 28rpx;border-radius:24rpx;background:#FFEEEA;color:#FF3B30;font-size:24rpx;line-height:1.55}

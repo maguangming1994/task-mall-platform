@@ -42,6 +42,7 @@ use App\Modules\Community\Http\Controllers\CommunityHomepageController;
 use App\Modules\Community\Http\Controllers\CommunityModerationController;
 use App\Modules\Community\Http\Controllers\CommunityPostController;
 use App\Modules\Community\Http\Controllers\CommunitySocialController;
+use App\Modules\Community\Http\Controllers\CommunityUserProfileController;
 use App\Modules\Fulfillment\Http\Controllers\FulfillmentController;
 use App\Modules\Growth\Http\Controllers\DailyCheckInController;
 use App\Modules\Growth\Http\Controllers\ReferralController;
@@ -173,11 +174,13 @@ Route::middleware(['auth.optional', 'module.gate:module_community'])->group(func
     Route::get('/community/posts', [CommunityPostController::class, 'index']);
     Route::get('/community/posts/{post}/comments', [CommunityCommentController::class, 'index']);
     Route::get('/community/posts/{post}', [CommunityPostController::class, 'show']);
-    Route::get('/community/media/{file}', [CommunityPostController::class, 'media']);
+    Route::get('/community/media/{file}', [CommunityPostController::class, 'media'])->name('community.media');
     Route::get('/community/activity-categories', [CommunityActivityController::class, 'categories']);
     Route::get('/community/activities', [CommunityActivityController::class, 'index']);
     Route::get('/community/activities/media/{file}', [CommunityActivityController::class, 'media']);
     Route::get('/community/activities/{activity}', [CommunityActivityController::class, 'show']);
+    Route::get('/community/users/{userId}/profile', [CommunityUserProfileController::class, 'show']);
+    Route::get('/community/users/{userId}/content', [CommunityUserProfileController::class, 'content']);
 });
 Route::get('/after-sale-reasons', [AfterSaleReasonController::class, 'index'])->middleware(['auth.optional', 'module.gate:module_after_sale']);
 
@@ -300,6 +303,8 @@ Route::middleware('auth.access')->group(function () {
         Route::delete('/community/activities/{activity}/join', [CommunityActivityController::class, 'leave'])->middleware(['legal.consent:community', 'throttle:30,1']);
         Route::get('/community/my-activities', [CommunityActivityController::class, 'mine'])->middleware('legal.consent:community');
     });
+    Route::post('/community/users/{userId}/block', [CommunityUserProfileController::class, 'block'])->middleware(['legal.consent:community', 'throttle:60,1']);
+    Route::delete('/community/users/{userId}/block', [CommunityUserProfileController::class, 'unblock'])->middleware(['legal.consent:community', 'throttle:60,1']);
     // 举报/申诉属于安全治理通道，任何时候都可用，不挂模块门禁
     Route::post('/community/content/{contentType}/{contentId}/reports', [CommunityModerationController::class, 'report'])->middleware(['legal.consent:community', 'throttle:20,1']);
     Route::post('/community/moderation-actions/{action}/appeals', [CommunityModerationController::class, 'appeal'])->middleware(['legal.consent:community', 'throttle:10,1']);

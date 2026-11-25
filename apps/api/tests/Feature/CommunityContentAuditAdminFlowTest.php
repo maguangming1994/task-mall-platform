@@ -390,6 +390,31 @@ class CommunityContentAuditAdminFlowTest extends TestCase
         $this->assertDatabaseMissing('community_posts', ['user_id' => $author->id]);
     }
 
+    public function test_admin_projection_reveals_the_real_author_of_an_anonymous_post(): void
+    {
+        $campus = $this->campus('anonymous-admin-campus', '匿名审核本校');
+        [$admin, $token] = $this->admin('anonymous-admin-agent', $campus);
+        $author = $this->user($campus, '后台可见真实作者');
+        $post = $this->content()->createPost($author, [
+            'title' => '匿名帖子后台作者核验',
+            'content' => '这是用于验证匿名帖子在审核后台保留真实作者身份的完整帖子正文内容。',
+            'category_code' => 'experience',
+            'visibility' => 'anonymous',
+        ], 'anonymous-admin-review-post');
+        $post->forceFill(['campus_id' => $author->campus_id])->save();
+        $this->content()->reviewPost($admin, $post, ['decision' => 'approve', 'note' => '匿名后台测试审核通过。']);
+
+        $this->getJson('/api/v1/community/posts/'.$post->public_id)
+            ->assertOk()
+            ->assertJsonPath('data.author.id', null)
+            ->assertJsonPath('data.author.nickname', '匿名用户');
+        $this->withToken($token)->getJson('/api/v1/admin/community/posts?id='.$post->public_id)
+            ->assertOk()
+            ->assertJsonPath('data.items.0.visibility', 'anonymous')
+            ->assertJsonPath('data.items.0.author.id', $author->public_id)
+            ->assertJsonPath('data.items.0.author.nickname', '后台可见真实作者');
+    }
+
     private function content(): CommunityContentService
     {
         return app(CommunityContentService::class);

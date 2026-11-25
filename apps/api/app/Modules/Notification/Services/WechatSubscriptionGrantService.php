@@ -27,7 +27,7 @@ class WechatSubscriptionGrantService
             $context = $definition['context'];
             $groups[$context] ??= [
                 'context' => $context,
-                'label' => ['task' => '任务进度提醒', 'order' => '订单状态提醒', 'community' => '帖子审核提醒'][$context],
+                'label' => ['task' => '任务进度提醒', 'order' => '订单状态提醒', 'community' => '社区互动提醒'][$context],
                 'template_ids' => [],
                 'scenes' => [],
             ];

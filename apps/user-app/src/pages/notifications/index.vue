@@ -22,6 +22,12 @@
         </view>
       </view>
       <!-- #endif -->
+      <!-- #ifdef H5 -->
+      <view class="setting-row" @click="openOfficialAccountSubscription">
+        <view class="setting-copy"><text>公众号订阅提醒</text><text>订阅后评论与回复消息推送到公众号</text></view>
+        <text class="right-action">去订阅 ›</text>
+      </view>
+      <!-- #endif -->
       <view class="setting-row"><view class="setting-copy"><text>短信通知</text><text>用于重要状态及安全验证</text></view><switch color="#0BBF63" :checked="preference.sms_enabled" :disabled="savingPreference" @change="changePreference('sms_enabled', $event)" /></view>
       <view class="setting-row"><view class="setting-copy"><text>营销订阅</text><text>接收校园活动与优惠推荐</text></view><switch color="#0BBF63" :checked="preference.marketing_subscribed" :disabled="savingPreference" @change="changePreference('marketing_subscribed', $event)" /></view>
       <view class="quiet-row">
@@ -550,6 +556,10 @@ function goBack() {
     return
   }
   uni.reLaunch({ url: '/pages/account/index' })
+}
+
+function openOfficialAccountSubscription() {
+  uni.navigateTo({ url: '/pages/wechat-subscribe/index' })
 }
 </script>
 

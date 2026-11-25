@@ -39,8 +39,11 @@
     <template v-else-if="post">
       <view class="card post-card">
         <view class="publisher">
-          <view class="avatar">{{ avatarText(post.author.nickname) }}</view>
-          <view class="pub-main">
+          <view class="avatar" @click="openUserProfile(post.author.id)">
+            <image v-if="post.author.avatar_url" :src="post.author.avatar_url" mode="aspectFill" />
+            <text v-else>{{ avatarText(post.author.nickname) }}</text>
+          </view>
+          <view class="pub-main" @click="openUserProfile(post.author.id)">
             <text class="pub-name">{{ post.author.nickname }}</text>
             <text class="pub-sub">校园伙伴 · {{ formatTime(post.published_at || post.created_at) }}</text>
           </view>
@@ -66,10 +69,10 @@
         <view v-else-if="commentsError" class="cstate error"><text>{{ commentsError }}</text><text class="cstate-retry" @click="retryComments">重新加载</text></view>
         <view v-else-if="!comments.length" class="cstate">还没有评论，来坐第一排吧。</view>
         <view v-for="item in comments" v-else :key="item.id" :class="['cmt', { 'cmt-reply-row': item.parent_comment_id }]">
-          <view class="cmt-av">{{ avatarText(item.author.nickname) }}</view>
+          <view class="cmt-av" @click="openUserProfile(item.author.id)">{{ avatarText(item.author.nickname) }}</view>
           <view class="cmt-main">
             <view class="cmt-nm">
-              <text>{{ item.author.nickname }}<text v-if="item.parent_comment_id" class="cmt-reply-target"> 回复 @{{ parentCommentAuthor(item) }}</text></text>
+              <text @click="openUserProfile(item.author.id)">{{ item.author.nickname }}<text v-if="item.parent_comment_id" class="cmt-reply-target"> 回复 @{{ parentCommentAuthor(item) }}</text></text>
               <text class="cmt-time">{{ formatTime(item.created_at) }}</text>
             </view>
             <text class="cmt-txt">{{ item.content }}</text>
@@ -233,7 +236,7 @@ async function loadPost() {
   notFound.value = false
   post.value = null
   try {
-    post.value = await getCommunityPost(postId.value)
+    post.value = await getCommunityPost(postId.value, auth.accessToken || undefined)
   } catch (error) {
     if (error instanceof ApiError && error.statusCode === 404) notFound.value = true
     else loadError.value = error instanceof Error ? error.message : '请检查网络后重试。'
@@ -249,7 +252,7 @@ async function loadPost() {
 async function loadComments(id: string) {
   commentsLoading.value = true
   commentsError.value = ''
-  try { comments.value = (await listCommunityComments(id)).items }
+  try { comments.value = (await listCommunityComments(id, auth.accessToken || undefined)).items }
   catch (error) { commentsError.value = error instanceof Error ? error.message : '评论加载失败，请稍后重试' }
   finally { commentsLoading.value = false }
 }
@@ -548,6 +551,7 @@ function savePoster() {
   }, fail: () => uni.showToast({ title: '海报生成失败，请重试', icon: 'none' }) })
 }
 function avatarText(value: string) { return (value || '同').trim().slice(0, 1) }
+function openUserProfile(id: string | null) { if (id) uni.navigateTo({ url: `/pages/user-profile/index?id=${encodeURIComponent(id)}` }) }
 function toast(error: unknown) { uni.showToast({ title: error instanceof Error ? error.message : '操作失败', icon: 'none' }) }
 function goCommunity() { uni.reLaunch({ url: '/pages/community/index' }) }
 </script>
@@ -578,7 +582,8 @@ function goCommunity() { uni.reLaunch({ url: '/pages/community/index' }) }
 .card{margin:20rpx 24rpx 0;border-radius:32rpx;background:#fff}
 .post-card{overflow:hidden;padding-bottom:24rpx}
 .publisher{display:flex;align-items:center;gap:20rpx;padding:28rpx 30rpx 12rpx}
-.avatar{display:flex;align-items:center;justify-content:center;width:88rpx;height:88rpx;flex:none;border-radius:50%;background:#E7F9EF;color:#08A152;font-size:34rpx;font-weight:800}
+.avatar{display:flex;align-items:center;justify-content:center;width:88rpx;height:88rpx;flex:none;overflow:hidden;border-radius:50%;background:#E7F9EF;color:#08A152;font-size:34rpx;font-weight:800}
+.avatar image{width:100%;height:100%}
 .pub-main{min-width:0;flex:1}
 .pub-name{display:block;font-size:28rpx;font-weight:700}
 .pub-sub{display:block;margin-top:6rpx;color:#AEB3BB;font-size:22rpx}

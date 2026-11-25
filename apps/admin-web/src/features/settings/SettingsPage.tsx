@@ -63,6 +63,7 @@ function displayValue(setting: SystemSetting, value: SettingValue) {
     if (setting.key === 'homepage.floating_support') return value.enabled ? `${String(value.label || '客服二维码')} · ${value.qr_code_url ? '已上传二维码' : '待上传二维码'}` : '已停用'
     if (setting.key === 'homepage.modules') return `${Array.isArray(value.quick_entries) ? value.quick_entries.length : 0} 个快捷入口 · ${Array.isArray((value.product_section as Record<string, unknown> | undefined)?.cards) ? ((value.product_section as Record<string, unknown>).cards as unknown[]).length : 0} 个商城推荐位`
     if (setting.key === 'community.homepage') return `${Array.isArray(value.quick_entries) ? value.quick_entries.length : 0} 个社区入口 · 品牌图标可更换`
+    if (setting.key === 'points.source_reward_amounts') return `签到 ${Number(value.sign_in ?? 0)} · 发帖 ${Number(value.post ?? 0)} · 评论 ${Number(value.comment ?? 0)} · 完善资料 ${Number(value.profile ?? 0)} · 推荐 ${Number(value.referral ?? 0)} 积分`
     if (setting.key === 'mall.appearance') return `${Array.isArray(value.assurances) ? value.assurances.length : 0} 个服务图标 · 商城 Logo 可更换`
     if (setting.key === 'accounts.appearance') return `${Array.isArray(value.service_icons) ? value.service_icons.length : 0} 个账户服务图标`
     if (setting.key === 'navigation.bottom_tabs') return `${Array.isArray(value.items) ? (value.items as Array<Record<string, unknown>>).filter((item) => item.enabled).length : 0} 个显示入口 · 支持排序与跳转配置`
@@ -74,7 +75,7 @@ function displayValue(setting: SystemSetting, value: SettingValue) {
 function editorInitialValue(setting: SystemSetting) {
   const value = setting.draft?.value ?? setting.current_value
   if (setting.value_type === 'money' && typeof value === 'number') return value / 100
-  if (setting.value_type === 'object' && !setting.key.startsWith('homepage.') && !setting.key.startsWith('navigation.') && !['community.homepage', 'mall.appearance', 'accounts.appearance'].includes(setting.key)) return JSON.stringify(value, null, 2)
+  if (setting.value_type === 'object' && !setting.key.startsWith('homepage.') && !setting.key.startsWith('navigation.') && !['community.homepage', 'mall.appearance', 'accounts.appearance', 'points.source_reward_amounts'].includes(setting.key)) return JSON.stringify(value, null, 2)
   return value
 }
 
@@ -425,7 +426,37 @@ function AppearanceSettingEditor({ setting, value, onChange }: ValueEditorProps)
   </Space>
 }
 
+const rewardAmountFields = [
+  { key: 'sign_in', label: '每日签到' },
+  { key: 'post', label: '发布帖子' },
+  { key: 'comment', label: '有效评论' },
+  { key: 'profile', label: '完善资料' },
+  { key: 'referral', label: '推荐新人' },
+] as const
+
+function RewardAmountsSettingEditor({ value, onChange }: ValueEditorProps) {
+  const current = typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {}
+  return <Space direction="vertical" style={{ width: '100%' }} size="middle">
+    <Alert showIcon type="info" message="发帖奖励在帖子审核通过或自动发布时发放，每篇仅发放一次；对应来源设为 0 即可关闭奖励。" />
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 12 }}>
+      {rewardAmountFields.map((field) => <label key={field.key}>
+        <Typography.Text type="secondary">{field.label}</Typography.Text>
+        <InputNumber
+          value={Number(current[field.key] ?? 0)}
+          onChange={(next) => onChange?.({ ...current, [field.key]: next ?? 0 })}
+          min={0}
+          max={100000}
+          precision={0}
+          addonAfter="积分"
+          style={{ width: '100%', marginTop: 6 }}
+        />
+      </label>)}
+    </div>
+  </Space>
+}
+
 function ValueEditor({ setting, value, onChange }: ValueEditorProps) {
+  if (setting.key === 'points.source_reward_amounts') return <RewardAmountsSettingEditor setting={setting} value={value} onChange={onChange} />
   if (setting.key === 'navigation.bottom_tabs') return <BottomNavigationSettingEditor setting={setting} value={value} onChange={onChange} />
   if (setting.key.startsWith('homepage.')) return <HomeSettingEditor setting={setting} value={value} onChange={onChange} />
   if (['community.homepage', 'mall.appearance', 'accounts.appearance'].includes(setting.key)) return <AppearanceSettingEditor setting={setting} value={value} onChange={onChange} />

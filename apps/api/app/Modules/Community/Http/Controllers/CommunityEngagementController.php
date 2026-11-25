@@ -17,7 +17,7 @@ class CommunityEngagementController extends Controller
 {
     public function like(Request $request, CommunityPost $post, NotificationService $notifications): JsonResponse
     {
-        abort_unless($post->status === 'published', 404);
+        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user()), 404);
         $created = DB::transaction(function () use ($request, $post): bool {
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
             $like = CommunityPostLike::query()->firstOrCreate([
@@ -51,7 +51,7 @@ class CommunityEngagementController extends Controller
 
     public function unlike(Request $request, CommunityPost $post): JsonResponse
     {
-        abort_unless($post->status === 'published', 404);
+        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user()), 404);
         DB::transaction(function () use ($request, $post): void {
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
             $deleted = CommunityPostLike::query()
@@ -68,7 +68,7 @@ class CommunityEngagementController extends Controller
 
     public function favorite(Request $request, CommunityPost $post): JsonResponse
     {
-        abort_unless($post->status === 'published', 404);
+        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user()), 404);
         DB::transaction(function () use ($request, $post): void {
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
             $favorite = CommunityPostFavorite::query()->firstOrCreate([
@@ -85,7 +85,7 @@ class CommunityEngagementController extends Controller
 
     public function unfavorite(Request $request, CommunityPost $post): JsonResponse
     {
-        abort_unless($post->status === 'published', 404);
+        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user()), 404);
         DB::transaction(function () use ($request, $post): void {
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
             $deleted = CommunityPostFavorite::query()

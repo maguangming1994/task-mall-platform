@@ -25,6 +25,7 @@ import {
   moderationReasonLabels,
   moderationReasonOptions,
 } from './shared'
+import { useAutoRefresh } from './useAutoRefresh'
 
 interface CommentFilters {
   keyword: string
@@ -66,9 +67,11 @@ export function CommentManagePage() {
   const [reviewForm] = Form.useForm<ReviewFormValues>()
   const [deleteForm] = Form.useForm<{ reason_code: CommunityModerationReasonCode; note: string }>()
 
-  const load = useCallback(async () => {
-    setSelectedRowKeys([])
-    setLoading(true)
+  const load = useCallback(async (silent = false) => {
+    if (!silent) {
+      setSelectedRowKeys([])
+      setLoading(true)
+    }
     setLoadError('')
     try {
       const result = await listCommunityComments({
@@ -80,13 +83,17 @@ export function CommentManagePage() {
       setItems(result.items)
       setStats(result.stats)
       setTotal(result.pagination.total)
+      if (silent) {
+        const visibleIds = new Set(result.items.map((item) => item.id))
+        setSelectedRowKeys((current) => current.filter((id) => visibleIds.has(id)))
+      }
       if (page > result.pagination.last_page && result.pagination.last_page > 0) setPage(result.pagination.last_page)
     } catch (error) {
       const text = errorText(error, '评论列表加载失败，请稍后重试。')
       setLoadError(text)
-      messageApi.error(text)
+      if (!silent) messageApi.error(text)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [appliedFilters, messageApi, page, pageSize])
 
@@ -94,6 +101,7 @@ export function CommentManagePage() {
     setSelectedRowKeys([])
     void load()
   }, [load])
+  useAutoRefresh(load)
 
   const applyFilters = () => {
     setAppliedFilters({ ...filters, keyword: filters.keyword.trim() })

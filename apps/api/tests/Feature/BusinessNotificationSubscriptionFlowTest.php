@@ -157,7 +157,36 @@ class BusinessNotificationSubscriptionFlowTest extends TestCase
 
         $this->assertDatabaseHas('notifications', ['user_id' => $user->id, 'scene_code' => 'post_published']);
         $this->assertDatabaseMissing('notifications', ['user_id' => $user->id, 'scene_code' => 'post_review_approved']);
-        $this->assertDatabaseMissing('notification_deliveries', ['channel' => 'wechat_mini']);
+        // 发布成功场景也会创建微信渠道投递，但没有订阅授权时应跳过，且不消耗审核场景的授权。
+        $this->assertDatabaseHas('notification_deliveries', ['channel' => 'wechat_mini', 'status' => 'skipped']);
+        $this->assertDatabaseCount('wechat_subscription_grants', 0);
+    }
+
+    public function test_community_interaction_scenes_are_configurable_for_wechat_channels(): void
+    {
+        $registry = app(\App\Modules\Notification\Services\NotificationSceneRegistry::class);
+
+        foreach (['community_post_commented', 'community_comment_replied'] as $sceneCode) {
+            $this->assertTrue($registry->has($sceneCode));
+            $scene = $registry->get($sceneCode);
+            $this->assertSame('community', $scene['domain']);
+            $this->assertContains('wechat_mini', $scene['default_channels']);
+            $this->assertContains('wechat_oa', $scene['default_channels']);
+            $this->assertContains('comment_author', $scene['allowed_variables']);
+            $this->assertContains('comment_excerpt', $scene['allowed_variables']);
+            $this->assertSame('pages/community-detail/index?id={{post_id}}', $scene['deep_link']);
+        }
+    }
+
+    public function test_post_publish_and_review_approved_scenes_support_wechat_channels(): void
+    {
+        $registry = app(\App\Modules\Notification\Services\NotificationSceneRegistry::class);
+
+        foreach (['post_published', 'post_review_approved'] as $sceneCode) {
+            $scene = $registry->get($sceneCode);
+            $this->assertContains('wechat_mini', $scene['default_channels']);
+            $this->assertContains('wechat_oa', $scene['default_channels']);
+        }
     }
 
     public function test_wechat_subscription_grant_is_reserved_once_and_delivery_calls_official_api_with_frozen_template_payload(): void

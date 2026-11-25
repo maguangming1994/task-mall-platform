@@ -414,6 +414,10 @@
       "style": { "navigationBarTitleText": "校园动态" }
     },
     {
+      "path": "pages/user-profile/index",
+      "style": { "navigationBarTitleText": "个人主页", "navigationStyle": "custom" }
+    },
+    {
       "path": "pages/publisher-task-detail/index",
       "style": { "navigationBarTitleText": "发布任务详情" }
     },
@@ -432,6 +436,10 @@
     {
       "path": "pages/notifications/index",
       "style": { "navigationBarTitleText": "消息中心", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/wechat-subscribe/index",
+      "style": { "navigationBarTitleText": "订阅消息提醒" }
     },
     {
       "path": "pages/addresses/index",

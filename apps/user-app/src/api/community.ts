@@ -27,9 +27,6 @@ export const DEFAULT_COMMUNITY_PUBLISHING_RULES: CommunityPublishingRules = {
   comment: { min_length: 2, max_length: 500 },
 }
 
-/** 发帖审核通过奖励积分的兜底值，与服务端 points.source_reward_amounts.post 默认值保持一致 */
-export const DEFAULT_POST_REWARD_POINTS = 10
-
 export interface CommunityCategoriesResult {
   items: CommunityCategory[]
   publishing_rules: CommunityPublishingRules
@@ -54,6 +51,7 @@ export interface CommunityPostVersion {
 }
 
 export type CommunityFeed = 'discover' | 'following' | 'nearby' | 'featured'
+export type CommunityVisibility = 'public' | 'followers' | 'anonymous'
 
 export interface CommunityPostAuthor {
   id: string | null
@@ -73,6 +71,9 @@ export interface CommunityPost {
   category_code: CommunityCategory['code']
   category_label: string
   location_name: string | null
+  visibility: CommunityVisibility
+  location_latitude: number | null
+  location_longitude: number | null
   status: 'pending_review' | 'published' | 'rejected' | 'hidden' | 'deleted'
   current_version_no: number
   published_version_no: number | null
@@ -94,6 +95,72 @@ export interface CommunitySocialStats {
   follower_count: number
   following_count: number
   is_followed: boolean
+}
+
+export type CommunityUserContentType = 'posts' | 'second_hand' | 'activities' | 'tasks' | 'claims' | 'impressions'
+
+export interface CommunityUserProfile {
+  id: string
+  uid: string
+  nickname: string
+  avatar_url: string | null
+  bio: string
+  school_name: string | null
+  campus_name: string | null
+  college: string | null
+  grade_year: number | null
+  major: string | null
+  verified: boolean
+  is_self: boolean
+  is_followed: boolean
+  is_blocked: boolean
+  can_message: boolean
+  follower_count: number
+  following_count: number
+  visitor_count: number
+  recent_visitors: Array<{ id: string; nickname: string; avatar_url: string | null; visited_at: string | null }>
+  rating_average: number | null
+  rating_count: number
+  content_counts: Record<CommunityUserContentType, number>
+}
+
+export interface CommunityUserContentItem {
+  id: string
+  task_id?: string | null
+  title?: string
+  content?: string | null
+  description?: string | null
+  details?: string | null
+  category_code?: string
+  category_label?: string
+  location_name?: string | null
+  location?: string | null
+  like_count?: number
+  comment_count?: number
+  attachments?: CommunityAttachment[]
+  price?: number
+  condition?: string
+  condition_label?: string
+  cover?: string | null
+  category?: { id: string; name: string } | null
+  starts_at?: string | null
+  participant_count?: number
+  participant_limit?: number
+  task_type?: string | null
+  status?: string
+  approved_at?: string | null
+  published_at?: string | null
+  created_at?: string | null
+  score?: number
+  images?: string[]
+  reply_content?: string | null
+  rater?: { id: string; nickname: string; avatar_url: string | null } | null
+}
+
+export interface CommunityUserContentResult {
+  type: CommunityUserContentType
+  items: CommunityUserContentItem[]
+  pagination: { page: number; page_size: number; total: number; has_more: boolean }
 }
 
 export interface CommunityHomeBanner {
@@ -216,7 +283,10 @@ export interface CommunityPostPayload {
   title: string
   content: string
   category_code: CommunityCategory['code']
-  location_name?: string
+  location_name?: string | null
+  visibility?: CommunityVisibility
+  location_latitude?: number | null
+  location_longitude?: number | null
   image_file_ids?: string[]
 }
 
@@ -250,16 +320,16 @@ export function listCommunityPosts(
   return apiRequest<PaginatedPosts>({ path: `/community/posts?${query}`, accessToken: token })
 }
 
-export function getCommunityPost(id: string) {
-  return apiRequest<CommunityPost>({ path: `/community/posts/${id}` })
+export function getCommunityPost(id: string, token?: string) {
+  return apiRequest<CommunityPost>({ path: `/community/posts/${id}`, accessToken: token })
 }
 
 export function listMyCommunityPosts(token: string, page = 1, pageSize = 20) {
   return apiRequest<PaginatedPosts>({ path: `/community/my-posts?page=${page}&page_size=${pageSize}`, accessToken: token })
 }
 
-export function listCommunityComments(postId: string) {
-  return apiRequest<{ items: CommunityComment[] }>({ path: `/community/posts/${postId}/comments` })
+export function listCommunityComments(postId: string, token?: string) {
+  return apiRequest<{ items: CommunityComment[] }>({ path: `/community/posts/${postId}/comments`, accessToken: token })
 }
 
 export function createCommunityRequestKey(scope: 'post' | 'comment') {
@@ -285,7 +355,8 @@ export function deleteCommunityPost(token: string, postId: string) {
 }
 
 export function communityAttachmentUrl(attachment: CommunityAttachment) {
-  return attachment.url ? apiUrl(attachment.url) : ''
+  if (!attachment.url) return ''
+  return /^(https?:|data:|blob:)/i.test(attachment.url) ? attachment.url : apiUrl(attachment.url)
 }
 
 export function createCommunityComment(token: string, postId: string, content: string, parentId?: string, idempotencyKey = createCommunityRequestKey('comment')) {
@@ -333,6 +404,28 @@ export function unfollowCommunityUser(token: string, userId: string) {
 
 export function getCommunitySocialStats(token: string) {
   return apiRequest<CommunitySocialStats>({ path: '/community/social/stats', accessToken: token })
+}
+
+export function getCommunityUserProfile(userId: string, token?: string) {
+  return apiRequest<CommunityUserProfile>({ path: `/community/users/${userId}/profile`, accessToken: token })
+}
+
+export function listCommunityUserContent(userId: string, type: CommunityUserContentType, page = 1, pageSize = 10, token?: string) {
+  const query = buildQueryString({ type, page, page_size: pageSize })
+  return apiRequest<CommunityUserContentResult>({ path: `/community/users/${userId}/content?${query}`, accessToken: token })
+}
+
+export function blockCommunityUser(token: string, userId: string) {
+  return apiRequest<{ user_id: string; is_blocked: boolean; is_followed: boolean }>({
+    path: `/community/users/${userId}/block`, method: 'POST', accessToken: token,
+    headers: { 'Idempotency-Key': `community-block-${userId}-${Date.now()}` },
+  })
+}
+
+export function unblockCommunityUser(token: string, userId: string) {
+  return apiRequest<{ user_id: string; is_blocked: boolean; is_followed: boolean }>({
+    path: `/community/users/${userId}/block`, method: 'DELETE', accessToken: token,
+  })
 }
 
 export function listCommunityActivityCategories() {

@@ -8,6 +8,7 @@ use App\Modules\Auth\Models\UserIdentity;
 use App\Modules\Auth\Models\UserSession;
 use App\Modules\Notification\Models\Notification;
 use App\Modules\Notification\Models\NotificationPreference;
+use App\Modules\Notification\Services\NotificationSceneConfigService;
 use App\Modules\Notification\Services\NotificationService;
 use App\Modules\Notification\Services\WechatSubscriptionGrantService;
 use Illuminate\Http\JsonResponse;
@@ -99,6 +100,13 @@ class NotificationController extends Controller
         ]);
 
         return ApiResponse::success($service->record($this->wechatIdentity($request), $data['results'], $data['request_id']));
+    }
+
+    public function wechatOfficialAccountTemplates(NotificationSceneConfigService $configs): JsonResponse
+    {
+        $templates = $configs->wechatOfficialAccountTemplates();
+
+        return ApiResponse::success(['configured' => $templates !== [], 'templates' => $templates]);
     }
 
     private function wechatIdentity(Request $request): UserIdentity

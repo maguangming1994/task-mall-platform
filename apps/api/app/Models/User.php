@@ -36,6 +36,7 @@ class User extends Authenticatable
         'major',
         'college',
         'nickname',
+        'bio',
         'avatar_file_id',
         'phone',
         'phone_hash',

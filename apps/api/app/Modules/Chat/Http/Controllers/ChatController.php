@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Chat\Models\ChatConversation;
 use App\Modules\Chat\Models\ChatMessage;
+use App\Modules\Community\Models\UserBlock;
 use App\Modules\SecondHand\Models\SecondHandItem;
 use App\Modules\SecondHand\Models\SecondHandOrder;
 use Illuminate\Http\JsonResponse;
@@ -56,8 +57,9 @@ class ChatController extends Controller
             'order_id' => ['nullable', 'string'],
         ]);
         $me = $request->user();
-        $other = User::where('public_id', $data['user_id'])->firstOrFail();
+        $other = User::query()->withoutGlobalScope('admin_campus')->where('public_id', $data['user_id'])->firstOrFail();
         abort_unless($other->id !== $me->id, 400, '不能与自己发起会话');
+        abort_if(UserBlock::existsBetween($me, $other->id), 403, '拉黑状态下不能发送私信。');
 
         $itemId = null;
         if (! empty($data['item_id'])) {
@@ -109,6 +111,8 @@ class ChatController extends Controller
     {
         $userId = $request->user()->id;
         abort_unless($conversation->user_a_id === $userId || $conversation->user_b_id === $userId, 404);
+        $otherId = $conversation->user_a_id === $userId ? $conversation->user_b_id : $conversation->user_a_id;
+        abort_if(UserBlock::existsBetween($request->user(), $otherId), 403, '拉黑状态下不能发送私信。');
 
         $data = $request->validate([
             'type' => ['nullable', 'in:text,image'],

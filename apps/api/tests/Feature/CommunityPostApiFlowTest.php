@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Community\Models\CommunityContentSecuritySetting;
 use App\Modules\Community\Models\CommunityPost;
+use App\Modules\Community\Models\UserFollow;
 use App\Modules\Community\Services\CommunityContentService;
 use App\Modules\Settings\Models\SystemSettingDefinition;
 use App\Modules\Settings\Models\SystemSettingVersion;
@@ -94,21 +95,46 @@ class CommunityPostApiFlowTest extends TestCase
 
     public function test_categories_post_reward_points_follow_the_latest_published_settings(): void
     {
-        $definition = SystemSettingDefinition::query()->where('setting_key', 'points.source_reward_amounts')->firstOrFail();
-        SystemSettingVersion::query()->create([
-            'setting_definition_id' => $definition->id,
-            'version' => 1,
-            'value' => ['sign_in' => 5, 'post' => 8, 'comment' => 2, 'profile' => 100, 'referral' => 500],
-            'source' => 'publish',
-            'reason' => '验证发帖奖励文案读取真实配置。',
-            'published_at' => now(),
-        ]);
-        Cache::forget('system-setting:active:points.source_reward_amounts');
-        Cache::forget('system-setting:last-good:points.source_reward_amounts');
+        $this->publishPostRewardPoints(8);
 
         $this->getJson('/api/v1/community/categories')
             ->assertOk()
             ->assertJsonPath('data.post_reward_points', 8);
+    }
+
+    public function test_post_review_grants_the_latest_published_reward_amount(): void
+    {
+        $this->publishPostRewardPoints(8);
+        $user = User::factory()->create(['status' => 'active']);
+        $admin = AdminUser::query()->create(['account' => 'community-custom-reward-reviewer', 'display_name' => '积分审核员', 'password' => 'AdminPassword12345!']);
+        $service = app(CommunityContentService::class);
+        $post = $service->createPost($user, [
+            'title' => '验证自定义发帖奖励',
+            'content' => '这是一段用于验证最新发帖积分配置会真实入账的社区正文。',
+        ], 'community-custom-reward-post');
+
+        $published = $service->reviewPost($admin, $post, ['decision' => 'approve', 'note' => '内容符合社区规范。']);
+
+        $this->assertTrue($published->reward_granted);
+        $this->assertSame(8, $user->assetAccount()->firstOrFail()->points_available);
+        $this->assertDatabaseCount('point_transactions', 1);
+    }
+
+    public function test_zero_post_reward_disables_points_grant(): void
+    {
+        $this->publishPostRewardPoints(0);
+        $user = User::factory()->create(['status' => 'active']);
+        $admin = AdminUser::query()->create(['account' => 'community-zero-reward-reviewer', 'display_name' => '积分审核员', 'password' => 'AdminPassword12345!']);
+        $service = app(CommunityContentService::class);
+        $post = $service->createPost($user, [
+            'title' => '验证关闭发帖奖励',
+            'content' => '这是一段用于验证发帖奖励配置为零时不产生积分交易的社区正文。',
+        ], 'community-zero-reward-post');
+
+        $service->reviewPost($admin, $post, ['decision' => 'approve', 'note' => '内容符合社区规范。']);
+
+        $this->getJson('/api/v1/community/categories')->assertOk()->assertJsonPath('data.post_reward_points', 0);
+        $this->assertDatabaseCount('point_transactions', 0);
     }
 
     public function test_emoji_post_and_comment_complete_the_authenticated_http_flow(): void
@@ -204,6 +230,164 @@ class CommunityPostApiFlowTest extends TestCase
         $this->assertTrue((bool) $edited->json('data.latest_version'));
     }
 
+    public function test_location_coordinates_and_visibility_are_saved_and_cleared_through_the_api(): void
+    {
+        CommunityContentSecuritySetting::query()->updateOrCreate(['name' => 'default'], ['enabled' => false]);
+        [$token, $user] = $this->phoneLoginWithCommunityConsent('13800138123');
+        $admin = AdminUser::query()->create(['account' => 'community-location-reviewer', 'display_name' => '位置审核员', 'password' => 'AdminPassword12345!']);
+
+        $created = $this->withToken($token)->withHeaders(['Idempotency-Key' => 'community-location-post'])
+            ->postJson('/api/v1/community/posts', [
+                'title' => '地图选点位置保存测试',
+                'content' => '这是一段用于验证地图选点经纬度与可见范围能够真实保存的完整帖子正文。',
+                'category_code' => 'experience',
+                'location_name' => '图书馆三楼研讨区',
+                'location_latitude' => 30.1234567,
+                'location_longitude' => 120.7654321,
+                'visibility' => 'public',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.location_name', '图书馆三楼研讨区')
+            ->assertJsonPath('data.visibility', 'public')
+            ->assertJsonPath('data.location_latitude', 30.1234567)
+            ->assertJsonPath('data.location_longitude', 120.7654321);
+
+        $post = CommunityPost::query()->where('public_id', $created->json('data.id'))->firstOrFail();
+        app(CommunityContentService::class)->reviewPost($admin, $post, ['decision' => 'approve', 'note' => '位置字段测试审核通过。']);
+
+        $this->withToken($token)->putJson("/api/v1/community/posts/{$post->public_id}", [
+            'title' => '修改位置与可见范围测试',
+            'content' => '这是一段用于验证编辑时可以清除位置并切换为关注者可见的完整帖子正文。',
+            'category_code' => 'experience',
+            'location_name' => null,
+            'location_latitude' => null,
+            'location_longitude' => null,
+            'visibility' => 'followers',
+            'image_file_ids' => [],
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.location_name', null)
+            ->assertJsonPath('data.location_latitude', null)
+            ->assertJsonPath('data.location_longitude', null)
+            ->assertJsonPath('data.visibility', 'followers');
+
+        $this->assertDatabaseHas('community_posts', [
+            'id' => $post->id,
+            'visibility' => 'followers',
+            'location_name' => null,
+            'location_latitude' => null,
+            'location_longitude' => null,
+        ]);
+        $this->withToken($token)->withHeaders(['Idempotency-Key' => 'community-invalid-visibility'])
+            ->postJson('/api/v1/community/posts', [
+                'title' => '无效可见范围测试',
+                'content' => '这是一段用于验证非法可见范围会被接口拒绝的完整帖子正文内容。',
+                'visibility' => 'private',
+            ])->assertUnprocessable();
+        $this->withToken($token)->withHeaders(['Idempotency-Key' => 'community-invalid-coordinates'])
+            ->postJson('/api/v1/community/posts', [
+                'title' => '缺失经度参数测试',
+                'content' => '这是一段用于验证经纬度必须成对提交的完整帖子正文内容。',
+                'location_latitude' => 30.1,
+            ])->assertUnprocessable();
+    }
+
+    public function test_followers_only_post_is_enforced_across_feed_detail_comments_engagement_and_media(): void
+    {
+        CommunityContentSecuritySetting::query()->updateOrCreate(['name' => 'default'], ['enabled' => false]);
+        [$authorToken, $author] = $this->phoneLoginWithCommunityConsent('13800138124');
+        [$followerToken, $follower] = $this->phoneLoginWithCommunityConsent('13800138125');
+        [$otherToken] = $this->phoneLoginWithCommunityConsent('13800138126');
+        $admin = AdminUser::query()->create(['account' => 'community-followers-reviewer', 'display_name' => '关注可见审核员', 'password' => 'AdminPassword12345!']);
+        $file = $this->cleanCommunityImage($author, 'community-followers.png');
+        $service = app(CommunityContentService::class);
+        $post = $service->createPost($author, [
+            'title' => '仅关注者可见的帖子',
+            'content' => '这是一段用于验证关注者可见范围覆盖列表详情评论互动与图片的完整正文。',
+            'category_code' => 'experience',
+            'visibility' => 'followers',
+            'image_file_ids' => [$file->public_id],
+        ], 'community-followers-only-post');
+        $post->forceFill(['campus_id' => $author->campus_id])->save();
+        $service->reviewPost($admin, $post, ['decision' => 'approve', 'note' => '关注可见测试审核通过。']);
+        UserFollow::query()->create(['follower_id' => $follower->id, 'following_id' => $author->id]);
+
+        $this->getJson('/api/v1/community/posts')->assertOk()->assertJsonPath('data.pagination.total', 0);
+        $this->getJson("/api/v1/community/posts/{$post->public_id}")->assertNotFound();
+        $this->getJson("/api/v1/community/posts/{$post->public_id}/comments")->assertNotFound();
+        $this->get("/api/v1/community/media/{$file->public_id}")->assertNotFound();
+        $this->withToken($otherToken)->getJson('/api/v1/community/posts')->assertOk()->assertJsonPath('data.pagination.total', 0);
+        $this->withToken($otherToken)->getJson("/api/v1/community/posts/{$post->public_id}")->assertNotFound();
+        $this->withToken($otherToken)->getJson("/api/v1/community/posts/{$post->public_id}/comments")->assertNotFound();
+        $this->withToken($otherToken)->postJson("/api/v1/community/posts/{$post->public_id}/like")->assertNotFound();
+        $this->withToken($otherToken)->postJson("/api/v1/community/posts/{$post->public_id}/favorite")->assertNotFound();
+        $this->withToken($otherToken)->withHeaders(['Idempotency-Key' => 'community-followers-other-comment'])
+            ->postJson("/api/v1/community/posts/{$post->public_id}/comments", ['content' => '不应允许评论'])->assertNotFound();
+
+        $this->withToken($authorToken)->getJson("/api/v1/community/posts/{$post->public_id}")->assertOk();
+        $this->withToken($followerToken)->getJson('/api/v1/community/posts')
+            ->assertOk()->assertJsonPath('data.pagination.total', 1)->assertJsonPath('data.items.0.id', $post->public_id);
+        $detail = $this->withToken($followerToken)->getJson("/api/v1/community/posts/{$post->public_id}")
+            ->assertOk()->assertJsonPath('data.visibility', 'followers');
+        $signedMediaUrl = $detail->json('data.attachments.0.url');
+        $this->assertIsString($signedMediaUrl);
+        $this->assertStringContainsString('signature=', $signedMediaUrl);
+        $this->get($signedMediaUrl)->assertOk();
+        $this->withToken($followerToken)->getJson("/api/v1/community/posts/{$post->public_id}/comments")->assertOk();
+        $this->withToken($followerToken)->postJson("/api/v1/community/posts/{$post->public_id}/like")
+            ->assertOk()->assertJsonPath('data.liked_by_me', true);
+        $this->withToken($followerToken)->postJson("/api/v1/community/posts/{$post->public_id}/favorite")
+            ->assertOk()->assertJsonPath('data.favorited_by_me', true);
+        $this->withToken($followerToken)->withHeaders(['Idempotency-Key' => 'community-followers-comment'])
+            ->postJson("/api/v1/community/posts/{$post->public_id}/comments", ['content' => '关注者可以评论'])
+            ->assertCreated();
+
+        UserFollow::query()->where('follower_id', $follower->id)->where('following_id', $author->id)->delete();
+        $this->withToken($followerToken)->getJson("/api/v1/community/posts/{$post->public_id}")->assertNotFound();
+    }
+
+    public function test_anonymous_post_hides_author_from_readers_but_not_from_the_author(): void
+    {
+        CommunityContentSecuritySetting::query()->updateOrCreate(['name' => 'default'], ['enabled' => false]);
+        [$authorToken, $author] = $this->phoneLoginWithCommunityConsent('13800138127');
+        [$otherToken] = $this->phoneLoginWithCommunityConsent('13800138128');
+        $author->forceFill(['nickname' => '匿名背后的真实作者'])->save();
+        $admin = AdminUser::query()->create(['account' => 'community-anonymous-reviewer', 'display_name' => '匿名审核员', 'password' => 'AdminPassword12345!']);
+        $service = app(CommunityContentService::class);
+        $post = $service->createPost($author, [
+            'title' => '匿名发布作者脱敏测试',
+            'content' => '这是一段用于验证匿名帖子对普通读者隐藏作者身份且本人仍可查看的完整正文。',
+            'category_code' => 'experience',
+            'visibility' => 'anonymous',
+        ], 'community-anonymous-post');
+        $post->forceFill(['campus_id' => $author->campus_id])->save();
+        $service->reviewPost($admin, $post, ['decision' => 'approve', 'note' => '匿名测试审核通过。']);
+
+        foreach ([null, $otherToken] as $viewerToken) {
+            $request = $viewerToken === null ? $this : $this->withToken($viewerToken);
+            $request->getJson("/api/v1/community/posts/{$post->public_id}")
+                ->assertOk()
+                ->assertJsonPath('data.visibility', 'anonymous')
+                ->assertJsonPath('data.author.id', null)
+                ->assertJsonPath('data.author.nickname', '匿名用户')
+                ->assertJsonPath('data.author.avatar_url', null)
+                ->assertJsonPath('data.author.campus_name', null)
+                ->assertJsonPath('data.author.verified', false)
+                ->assertJsonPath('data.author.is_followed', false)
+                ->assertJsonPath('data.author.is_self', false);
+        }
+
+        $this->withToken($authorToken)->getJson("/api/v1/community/posts/{$post->public_id}")
+            ->assertOk()
+            ->assertJsonPath('data.author.id', $author->public_id)
+            ->assertJsonPath('data.author.nickname', '匿名背后的真实作者')
+            ->assertJsonPath('data.author.is_self', true);
+        $this->withToken($authorToken)->getJson('/api/v1/community/my-posts')
+            ->assertOk()
+            ->assertJsonPath('data.items.0.author.id', $author->public_id)
+            ->assertJsonPath('data.items.0.visibility', 'anonymous');
+    }
+
     private function cleanCommunityImage(User $user, string $name): UploadedFile
     {
         $path = 'quarantine/community/'.$name;
@@ -228,6 +412,21 @@ class CommunityPostApiFlowTest extends TestCase
             'uploaded_at' => now(),
             'scanned_at' => now(),
         ]);
+    }
+
+    private function publishPostRewardPoints(int $points): void
+    {
+        $definition = SystemSettingDefinition::query()->where('setting_key', 'points.source_reward_amounts')->firstOrFail();
+        SystemSettingVersion::query()->create([
+            'setting_definition_id' => $definition->id,
+            'version' => 1,
+            'value' => ['sign_in' => 5, 'post' => $points, 'comment' => 2, 'profile' => 100, 'referral' => 500],
+            'source' => 'publish',
+            'reason' => '验证发帖奖励读取并执行最新配置。',
+            'published_at' => now(),
+        ]);
+        Cache::forget('system-setting:active:points.source_reward_amounts');
+        Cache::forget('system-setting:last-good:points.source_reward_amounts');
     }
 
     private function publishSetting(string $key, int $value): void

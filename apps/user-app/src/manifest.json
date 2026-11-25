@@ -59,10 +59,10 @@
         },
         "permission" : {
             "scope.userLocation" : {
-                "desc" : "用于推荐距离您较近的学校"
+                "desc" : "用于推荐附近学校，并在发布帖子时选择位置"
             }
         },
-        "requiredPrivateInfos" : [ "getLocation" ],
+        "requiredPrivateInfos" : [ "getLocation", "chooseLocation" ],
         "usingComponents" : true
     },
     "mp-alipay" : {

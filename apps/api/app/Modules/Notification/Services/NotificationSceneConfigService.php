@@ -150,6 +150,32 @@ class NotificationSceneConfigService
         return true;
     }
 
+    /**
+     * 汇总已启用场景下可直接用于公众号订阅通知的模板，供 H5 订阅页拉起微信订阅组件。
+     *
+     * @return array<int,array{template_id:string,label:string,scenes:array<int,string>}>
+     */
+    public function wechatOfficialAccountTemplates(): array
+    {
+        $configs = NotificationSceneConfig::query()->where('enabled', true)->get()->keyBy('scene_code');
+        $templates = [];
+        foreach ($this->registry->all() as $sceneCode => $definition) {
+            $config = $configs->get($sceneCode);
+            if ($config === null || ! in_array('wechat_oa', $config->channels, true)) {
+                continue;
+            }
+            $template = $this->publishedTemplate($sceneCode, 'wechat_oa');
+            if (! $this->templateReady('wechat_oa', $template)) {
+                continue;
+            }
+            $templateId = (string) $template['provider_template_id'];
+            $templates[$templateId] ??= ['template_id' => $templateId, 'label' => $definition['domain_name'], 'scenes' => []];
+            $templates[$templateId]['scenes'][] = $sceneCode;
+        }
+
+        return array_values($templates);
+    }
+
     /** @param array<string,mixed> $definition */
     private function createDefault(string $sceneCode, array $definition): NotificationSceneConfig
     {

@@ -36,8 +36,10 @@ class NotificationSceneRegistry
             'order_refunded' => $this->scene('order', '全部退款', '订单退款完成', '订单 {{order_no}} 本次已退回 {{refund_summary}}，订单已全部退款。', ['in_app', 'wechat_mini'], 80, true),
 
             'post_review_pending' => $this->scene('community', '等待审核', '帖子已提交审核', '“{{post_title}}”已提交，审核完成后会通知你。', ['in_app'], 10, false, 'pages/community/index?view=mine'),
-            'post_published' => $this->scene('community', '发布成功', '帖子发布成功', '“{{post_title}}”已公开发布。', ['in_app'], 15),
-            'post_review_approved' => $this->scene('community', '审核通过', '帖子审核通过', '“{{post_title}}”已通过审核并公开发布。', ['in_app', 'wechat_mini'], 20),
+            'post_published' => $this->scene('community', '发布成功', '帖子发布成功', '“{{post_title}}”已公开发布。', ['in_app', 'wechat_mini', 'wechat_oa'], 15),
+            'community_post_commented' => $this->scene('community', '收到评论', '帖子收到新评论', '{{comment_author}} 评论了你的帖子“{{post_title}}”：{{comment_excerpt}}', ['in_app', 'wechat_mini', 'wechat_oa'], 12, false, 'pages/community-detail/index?id={{post_id}}'),
+            'community_comment_replied' => $this->scene('community', '收到回复', '评论收到新回复', '{{comment_author}} 回复了你在“{{post_title}}”下的评论：{{comment_excerpt}}', ['in_app', 'wechat_mini', 'wechat_oa'], 14, false, 'pages/community-detail/index?id={{post_id}}'),
+            'post_review_approved' => $this->scene('community', '审核通过', '帖子审核通过', '“{{post_title}}”已通过审核并公开发布。', ['in_app', 'wechat_mini', 'wechat_oa'], 20),
             'post_review_rejected' => $this->scene('community', '审核未通过', '帖子审核未通过', '“{{post_title}}”暂未通过：{{review_note}}', ['in_app', 'wechat_mini'], 30, false, 'pages/community/index?view=mine'),
             'post_warning' => $this->scene('community', '内容警告', '帖子收到平台警告', '“{{post_title}}”收到平台警告：{{review_note}}', ['in_app', 'wechat_mini'], 35, true),
             'post_hidden' => $this->scene('community', '内容已隐藏', '帖子已被隐藏', '“{{post_title}}”已被隐藏：{{review_note}}', ['in_app', 'wechat_mini'], 40, true, 'pages/community/index?view=mine'),
@@ -92,12 +94,12 @@ class NotificationSceneRegistry
             'order' => ['order_no', 'status_text', 'order_id', 'amount', 'refund_amount', 'refunded_points', 'refund_summary', 'tracking_text', 'occurred_at'],
             'second_hand' => ['item_title', 'item_id', 'order_id', 'amount', 'score', 'review_note', 'occurred_at'],
             'material' => ['material_title', 'material_id', 'report_id', 'review_note', 'occurred_at'],
-            default => ['post_title', 'status_text', 'post_id', 'review_note', 'occurred_at'],
+            default => ['post_title', 'status_text', 'post_id', 'review_note', 'comment_author', 'comment_excerpt', 'occurred_at'],
         };
 
         return [
             'domain' => $domain,
-            'domain_name' => ['task' => '任务进度', 'order' => '订单状态', 'community' => '帖子发布', 'second_hand' => '闲置交易', 'material' => '资料共享'][$domain],
+            'domain_name' => ['task' => '任务进度', 'order' => '订单状态', 'community' => '社区互动', 'second_hand' => '闲置交易', 'material' => '资料共享'][$domain],
             'name' => $name,
             'category' => $domain === 'community' ? 'community' : $domain,
             'default_subject' => $subject,
