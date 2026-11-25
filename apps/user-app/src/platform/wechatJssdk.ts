@@ -25,6 +25,7 @@ interface WechatJsSdk {
   config: (options: Record<string, unknown>) => void
   ready: (callback: () => void) => void
   error: (callback: (result: unknown) => void) => void
+  checkJsApi?: (options: Record<string, unknown>) => void
   updateAppMessageShareData?: (options: Record<string, unknown>) => void
   updateTimelineShareData?: (options: Record<string, unknown>) => void
   onMenuShareAppMessage?: (options: Record<string, unknown>) => void
@@ -148,6 +149,35 @@ function signaturePath(url: string): string {
   return `/wechat/jssdk-signature?url=${encodeURIComponent(url)}`
 }
 
+/** 在 wx.ready 内调用，微信要求分享接口必须处于 ready 上下文才生效。 */
+function applyShareData(sdk: WechatJsSdk, shareData: Record<string, unknown>) {
+  const timeline = {
+    title: String(shareData.title || ''),
+    link: String(shareData.link || ''),
+    imgUrl: String(shareData.imgUrl || ''),
+  }
+  const withCallbacks = {
+    ...shareData,
+    fail: (result: unknown) =>
+      logDiag(`share-fail=${(result as { errMsg?: string } | undefined)?.errMsg || 'unknown'}`),
+  }
+  logDiag(
+    `share-set title=${String(shareData.title || '')} link=${String(shareData.link || '')} img=${String(shareData.imgUrl || '')}`,
+  )
+  sdk.checkJsApi?.({
+    jsApiList: ['updateAppMessageShareData', 'updateTimelineShareData'],
+    success: (result: unknown) =>
+      logDiag(`checkJsApi=${JSON.stringify((result as { checkResult?: unknown })?.checkResult || {})}`),
+    fail: (result: unknown) =>
+      logDiag(`checkJsApi-fail=${(result as { errMsg?: string } | undefined)?.errMsg || 'unknown'}`),
+  })
+  sdk.updateAppMessageShareData?.(withCallbacks)
+  sdk.updateTimelineShareData?.({ ...timeline, fail: withCallbacks.fail })
+  // 兼容未支持新接口的旧版微信客户端。
+  sdk.onMenuShareAppMessage?.(withCallbacks)
+  sdk.onMenuShareTimeline?.({ ...timeline, fail: withCallbacks.fail })
+}
+
 /**
  * 配置公众号分享卡片。失败时静默降级（复制链接仍然可用），不影响页面。
  */
@@ -173,6 +203,15 @@ export async function enableWechatShare(options: WechatShareOptions): Promise<vo
       return
     }
     const sdk = loaded as WechatJsSdk
+
+    const link = toWechatShareLink(options.link)
+    const imgUrl = absoluteAsset(options.imageUrl || DEFAULT_WECHAT_SHARE_IMAGE)
+    const shareData = {
+      title: options.title,
+      desc: options.desc || options.title,
+      link,
+      imgUrl,
+    }
 
     // 签名必须基于当前页面地址（不含 #），且每个地址只 config 一次。
     const pageUrl = signatureUrl()
@@ -207,25 +246,16 @@ export async function enableWechatShare(options: WechatShareOptions): Promise<vo
         sdk.ready(() => {
           clearTimeout(timer)
           logDiag('config-ok')
+          // 分享接口必须在 ready 上下文内调用，否则微信会忽略。
+          applyShareData(sdk, shareData)
           resolve()
         })
       })
       configuredSignature = pageUrl
+      return
     }
 
-    const link = toWechatShareLink(options.link)
-    const imgUrl = absoluteAsset(options.imageUrl || DEFAULT_WECHAT_SHARE_IMAGE)
-    const shareData = {
-      title: options.title,
-      desc: options.desc || options.title,
-      link,
-      imgUrl,
-    }
-    sdk.updateAppMessageShareData?.(shareData)
-    sdk.updateTimelineShareData?.({ title: shareData.title, link, imgUrl })
-    // 兼容未支持新接口的旧版微信客户端。
-    sdk.onMenuShareAppMessage?.(shareData)
-    sdk.onMenuShareTimeline?.({ title: shareData.title, link, imgUrl })
+    applyShareData(sdk, shareData)
   } catch (error) {
     console.warn('[wechat-share] 分享配置失败，已降级为复制链接。', error)
     // 每个会话只提示一次，便于定位签名/域名问题。
