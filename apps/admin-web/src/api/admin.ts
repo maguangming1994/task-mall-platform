@@ -1017,11 +1017,18 @@ export interface ManagedTaskPublishingPermission {
   publisher_id: string | null
   updated_at: string | null
 }
+export interface ManagedWechatChannel {
+  provider: string; label: string
+  openid_masked: string | null; unionid_masked: string | null
+  nickname: string | null; avatar_url: string | null
+  bound_at: string | null; last_login_at: string | null
+}
 export interface ManagedEndUser {
   id: string; nickname: string; phone_masked: string | null; status: string; level: { code: string; name: string }
   assets: { points_available: number; points_frozen: number; wallet_available_cents: number; wallet_frozen_cents: number; coupons_available: number }
   task_metrics: { claimed: number; approved: number }; cash_order_count: number; referral_count: number
   verification: { phone: boolean; profile: boolean; wechat: boolean }; created_at: string; last_login_at: string | null
+  wechat?: { bound: boolean; channels: ManagedWechatChannel[] }
   task_publishing_permission: ManagedTaskPublishingPermission
   campus: { id: string; name: string; isolation_mode: 'legacy' | 'strict' } | null
   campus_profile: { grade_year: number | null; major: string | null; college: string | null }

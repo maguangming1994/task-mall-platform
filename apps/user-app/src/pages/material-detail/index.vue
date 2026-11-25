@@ -94,6 +94,7 @@ import {
   type MaterialMeta,
 } from '@/api/material'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { DEFAULT_WECHAT_SHARE_IMAGE, enableWechatShare } from '@/platform/wechatJssdk'
 import { useAuthStore } from '@/stores/auth'
 import { useModulesStore } from '@/stores/modules'
 
@@ -132,6 +133,12 @@ async function load() {
   try {
     material.value = await getMaterial(auth.accessToken || undefined, materialId.value)
     meta.value = await getMaterialMeta(auth.accessToken || undefined)
+    void enableWechatShare({
+      title: material.value.title || '校园资料共享',
+      desc: material.value.description || '校园资料互助，学习资料免费获取。',
+      link: `/pages/material-detail/index?id=${encodeURIComponent(material.value.id)}`,
+      imageUrl: DEFAULT_WECHAT_SHARE_IMAGE,
+    })
     if (material.value.is_owner && material.value.share_url) {
       link.value = material.value.share_url
       extractCode.value = material.value.extract_code ?? ''

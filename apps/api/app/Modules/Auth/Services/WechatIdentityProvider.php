@@ -24,7 +24,7 @@ class WechatIdentityProvider
 
     public function __construct(private readonly WechatProviderSettingsService $settings) {}
 
-    /** @return array{openid:string,unionid:?string,app_id_hash:string} */
+    /** @return array{openid:string,unionid:?string,app_id_hash:string,profile:?array<string,mixed>} */
     public function exchange(string $channel, string $code): array
     {
         $provider = $this->providerName($channel);
@@ -39,7 +39,11 @@ class WechatIdentityProvider
                 ? $this->exchangeMiniCode($code, $configuration)
                 : $this->exchangeOfficialAccountCode($code, $configuration));
 
-        return [...$identity, 'app_id_hash' => hash('sha256', (string) $configuration['app_id'])];
+        return [
+            ...$identity,
+            'app_id_hash' => hash('sha256', (string) $configuration['app_id']),
+            'profile' => $identity['profile'] ?? null,
+        ];
     }
 
     public function available(string $channel): bool
@@ -119,7 +123,7 @@ class WechatIdentityProvider
     }
 
     /** @param array<string,mixed> $configuration
-     * @return array{openid:string,unionid:?string}
+     * @return array{openid:string,unionid:?string,profile:?array<string,mixed>}
      */
     private function exchangeOfficialAccountCode(string $code, array $configuration): array
     {
@@ -136,7 +140,74 @@ class WechatIdentityProvider
             throw new AuthException('WECHAT_PROVIDER_UNAVAILABLE', '微信登录服务暂时不可用。', 503);
         }
 
-        return $this->validatedPayload($response->json(), 'official_account');
+        $payload = $response->json();
+        $identity = $this->validatedPayload($payload, 'official_account');
+        $accessToken = is_array($payload) && is_string($payload['access_token'] ?? null)
+            ? $payload['access_token']
+            : null;
+
+        return [
+            ...$identity,
+            'profile' => $accessToken === null
+                ? null
+                : $this->fetchOfficialAccountProfile($accessToken, $identity['openid'], $configuration),
+        ];
+    }
+
+    /**
+     * 拉取公众号用户昵称/头像。失败只降级为「仅 openid 登录」，不阻断登录，
+     * 避免因 userinfo 接口异常导致用户完全无法进入 H5。
+     *
+     * @param array<string,mixed> $configuration
+     * @return array<string,mixed>|null
+     */
+    private function fetchOfficialAccountProfile(string $accessToken, string $openid, array $configuration): ?array
+    {
+        try {
+            $response = Http::acceptJson()->timeout($configuration['timeout_seconds'])
+                ->get('https://api.weixin.qq.com/sns/userinfo', [
+                    'access_token' => $accessToken,
+                    'openid' => $openid,
+                    'lang' => 'zh_CN',
+                ]);
+        } catch (ConnectionException) {
+            Log::warning('公众号用户资料获取失败：连接异常，已降级为仅 openid 登录。', [
+                'openid' => $this->maskValue($openid),
+            ]);
+
+            return null;
+        }
+
+        $payload = $response->json();
+        if ($response->serverError() || ! is_array($payload) || ! is_string($payload['openid'] ?? null)) {
+            Log::warning('公众号用户资料获取失败，已降级为仅 openid 登录。', [
+                'openid' => $this->maskValue($openid),
+                'wechat_errcode' => is_array($payload) ? ($payload['errcode'] ?? null) : null,
+                'wechat_errmsg' => is_array($payload) ? ($payload['errmsg'] ?? null) : null,
+            ]);
+
+            return null;
+        }
+
+        return [
+            'nickname' => is_string($payload['nickname'] ?? null) ? $payload['nickname'] : null,
+            'headimgurl' => is_string($payload['headimgurl'] ?? null) ? $payload['headimgurl'] : null,
+            'sex' => is_numeric($payload['sex'] ?? null) ? (int) $payload['sex'] : null,
+            'city' => is_string($payload['city'] ?? null) ? $payload['city'] : null,
+            'province' => is_string($payload['province'] ?? null) ? $payload['province'] : null,
+            'country' => is_string($payload['country'] ?? null) ? $payload['country'] : null,
+        ];
+    }
+
+    /** 日志中不落原始 openid，保留前 4 后 4 位。 */
+    private function maskValue(string $value): string
+    {
+        $length = mb_strlen($value);
+        if ($length <= 8) {
+            return str_repeat('*', max($length, 1));
+        }
+
+        return mb_substr($value, 0, 4).'****'.mb_substr($value, -4);
     }
 
     /** @param array<string,mixed>|null $payload

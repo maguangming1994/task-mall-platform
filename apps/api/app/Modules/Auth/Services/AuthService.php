@@ -91,6 +91,9 @@ class AuthService
             $deviceId,
             $deviceName,
         ): array {
+            $profile = $external['profile'] ?? null;
+            $wechatNickname = $this->normalizeWechatNickname($profile['nickname'] ?? null);
+
             $user = $exactIdentity?->user;
             if ($user === null && $unionUserIds->count() === 1) {
                 $user = User::query()->find($unionUserIds->first());
@@ -98,9 +101,12 @@ class AuthService
             if ($user === null) {
                 $this->assertSelfRegistrationEnabled();
                 $user = User::query()->create([
-                    'nickname' => '微信用户'.strtoupper(substr($providerHash, 0, 6)),
+                    'nickname' => $wechatNickname ?? '微信用户'.strtoupper(substr($providerHash, 0, 6)),
                     'status' => 'active',
                 ]);
+            } elseif ($wechatNickname !== null && preg_match('/^微信用户[0-9A-F]{6}$/', (string) $user->nickname) === 1) {
+                // 仅补全系统占位昵称，不覆盖用户自行修改过的昵称。
+                $user->forceFill(['nickname' => $wechatNickname])->save();
             }
             $this->cancellations->withdrawOnLogin($user);
             if ($user->status !== 'active') {
@@ -114,7 +120,11 @@ class AuthService
                     'provider_user_value' => $external['openid'],
                     'union_id' => $unionHash,
                     'union_value' => $external['unionid'],
-                    'metadata' => ['source' => 'wechat_code_exchange', 'app_id_hash' => $external['app_id_hash']],
+                    'metadata' => array_filter([
+                        'source' => 'wechat_code_exchange',
+                        'app_id_hash' => $external['app_id_hash'],
+                        'wechat_profile' => $profile,
+                    ], fn ($value) => $value !== null),
                     'last_login_at' => now(),
                 ],
             );
@@ -123,6 +133,14 @@ class AuthService
 
             return $this->issueTokenPair($user, $device, $identity->id);
         });
+    }
+
+    /** 微信昵称清洗：去空白、截断到 users.nickname 上限 80，空值返回 null 回退占位昵称。 */
+    private function normalizeWechatNickname(?string $nickname): ?string
+    {
+        $value = trim((string) $nickname);
+
+        return $value === '' ? null : mb_substr($value, 0, 80);
     }
 
     /** @return array<string, mixed> */

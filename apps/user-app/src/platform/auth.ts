@@ -55,7 +55,7 @@ function h5LoginCode(configuredAppId?: string | null): string | null {
   const state = Array.from(stateBytes, value => value.toString(16).padStart(2, '0')).join('')
   uni.setStorageSync(oauthStateKey, state)
   window.location.replace(
-    `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${encodeURIComponent(appId)}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_base&state=${state}#wechat_redirect`,
+    `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${encodeURIComponent(appId)}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_userinfo&state=${state}#wechat_redirect`,
   )
 
   return null

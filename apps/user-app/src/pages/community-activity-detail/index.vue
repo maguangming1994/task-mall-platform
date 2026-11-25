@@ -54,6 +54,7 @@ import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import { useModulesStore } from '@/stores/modules'
+import { DEFAULT_WECHAT_SHARE_IMAGE, enableWechatShare } from '@/platform/wechatJssdk'
 
 const modules=useModulesStore()
 const moduleEnabled=computed(()=>modules.isEnabled('module_community'))
@@ -70,12 +71,20 @@ const statusTone=computed(()=>({approved:'open',pending_review:'pending',rejecte
 const joinLabel=computed(()=>activity.value?.remaining_slots===0?'已经满员':activity.value?.status!=='approved'?'暂不可报名':'立即报名')
 
 onLoad(async (options?:Record<string,string|undefined>)=>{await modules.ensureReady();if(!moduleEnabled.value){loading.value=false;return}id.value=options?.id||'';void load()})
-async function load(){if(!id.value){error.value='缺少组团编号';loading.value=false;return}loading.value=true;error.value='';try{activity.value=await getCommunityActivity(id.value,auth.accessToken||undefined)}catch(cause){error.value=message(cause)}finally{loading.value=false}}
+async function load(){if(!id.value){error.value='缺少组团编号';loading.value=false;return}loading.value=true;error.value='';try{activity.value=await getCommunityActivity(id.value,auth.accessToken||undefined);if(activity.value)void enableWechatShare({title:activity.value.title||'校园组团',desc:activity.value.details||'一起参加校园组团，名额有限。',link:`/pages/community-activity-detail/index?id=${encodeURIComponent(activity.value.id)}`,imageUrl:firstImage.value||DEFAULT_WECHAT_SHARE_IMAGE})}catch(cause){error.value=message(cause)}finally{loading.value=false}}
 function ensureAuth(){if(auth.isAuthenticated)return true;uni.showModal({title:'登录后报名',content:'登录后即可参加校园组团并接收活动消息。',confirmText:'去登录',success:result=>{if(result.confirm)navigateToLogin()}});return false}
 async function join(){if(!ensureAuth()||!auth.accessToken||!activity.value?.can_join)return;submitting.value=true;try{activity.value=await joinCommunityActivity(auth.accessToken,id.value);uni.showToast({title:'报名成功',icon:'success'})}catch(cause){toast(cause)}finally{submitting.value=false}}
 async function leave(){if(!auth.accessToken||!activity.value)return;const result=await uni.showModal({title:'退出这个组团？',content:'退出后名额会释放给其他同学。',confirmText:'确认退出'});if(!result.confirm)return;submitting.value=true;try{activity.value=await leaveCommunityActivity(auth.accessToken,id.value);uni.showToast({title:'已退出组团',icon:'success'})}catch(cause){toast(cause)}finally{submitting.value=false}}
 function preview(current:number){if(!activity.value)return;const urls=activity.value.images.map(communityActivityImageUrl).filter(Boolean);if(urls.length)uni.previewImage({urls,current:urls[current]})}
-function share(){uni.showModal({title:'分享组团',content:'微信小程序发布后可直接分享卡片；当前预览可复制页面链接邀请同学。',showCancel:false})}
+function share(){
+  // #ifdef H5
+  if (typeof navigator !== 'undefined' && /MicroMessenger/i.test(navigator.userAgent)) {
+    uni.showModal({ title: '分享组团', content: '请点击右上角「···」，选择「发送给朋友」或「分享到朋友圈」。', showCancel: false })
+    return
+  }
+  // #endif
+  uni.showModal({ title: '分享组团', content: '当前环境暂不支持直接分享卡片，可复制页面链接邀请同学。', showCancel: false })
+}
 function goBack(){const pages=getCurrentPages();pages.length>1?uni.navigateBack():uni.redirectTo({url:'/pages/community-activities/index'})}
 function avatarText(value:string){return(value||'同').slice(0,1)}
 function message(value:unknown){return value instanceof Error?value.message:'操作失败，请稍后重试'}

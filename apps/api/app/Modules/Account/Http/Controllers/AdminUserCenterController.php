@@ -479,9 +479,64 @@ class AdminUserCenterController extends Controller
                 'profile' => $user->profile_completed_at !== null,
                 'wechat' => $user->identities->contains(fn ($identity) => $identity->isWechat()),
             ],
+            'wechat' => $this->presentWechatIdentities($user),
             'created_at' => $user->created_at?->toIso8601String(),
             'last_login_at' => $user->getAttribute('last_login_at'),
         ];
+    }
+
+    /**
+     * 后台展示用的微信身份摘要：只暴露掩码后的 openid/unionid，
+     * 昵称头像取自登录时（snsapi_userinfo）写入 identity.metadata.wechat_profile。
+     *
+     * @return array{bound:bool,channels:array<int,array<string,mixed>>}
+     */
+    private function presentWechatIdentities(User $user): array
+    {
+        $channels = $user->identities
+            ->filter(fn ($identity) => $identity->isWechat())
+            ->map(function ($identity): array {
+                $profile = is_array($identity->metadata) ? ($identity->metadata['wechat_profile'] ?? null) : null;
+                $profile = is_array($profile) ? $profile : [];
+
+                return [
+                    'provider' => $identity->provider,
+                    'label' => $this->wechatProviderLabel((string) $identity->provider),
+                    'openid_masked' => $this->maskIdentifier($identity->provider_user_value),
+                    'unionid_masked' => $this->maskIdentifier($identity->union_value),
+                    'nickname' => is_string($profile['nickname'] ?? null) ? $profile['nickname'] : null,
+                    'avatar_url' => is_string($profile['headimgurl'] ?? null) ? $profile['headimgurl'] : null,
+                    'bound_at' => $identity->created_at?->toIso8601String(),
+                    'last_login_at' => $identity->last_login_at?->toIso8601String(),
+                ];
+            })
+            ->values()
+            ->all();
+
+        return ['bound' => $channels !== [], 'channels' => $channels];
+    }
+
+    private function wechatProviderLabel(string $provider): string
+    {
+        return match ($provider) {
+            'wechat_oa', 'wechat_official_account' => '公众号',
+            'wechat_mini', 'wechat_miniprogram' => '小程序',
+            default => '微信',
+        };
+    }
+
+    private function maskIdentifier(mixed $value): ?string
+    {
+        $value = (string) $value;
+        $length = mb_strlen($value);
+        if ($length === 0) {
+            return null;
+        }
+        if ($length <= 8) {
+            return str_repeat('*', $length);
+        }
+
+        return mb_substr($value, 0, 4).'****'.mb_substr($value, -4);
     }
 
     private function presentReferralUser(?User $user): array

@@ -157,6 +157,14 @@ export function UsersPage() {
     { title: '用户ID', dataIndex: 'id' },
     { title: '用户信息', render: (_, r) => <UCell name={r.nickname} sub={r.level?.name ?? '普通用户'} /> },
     { title: '手机号', render: (_, r) => r.phone_masked ?? '—' },
+    {
+      title: '来源',
+      render: (_, r) => {
+        const labels = Array.from(new Set((r.wechat?.channels ?? []).map((c) => c.label)))
+        if (labels.length === 0) return <Pill tone="gray">手机号</Pill>
+        return <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>{labels.map((l) => <Pill key={l} tone="green">{l}</Pill>)}</div>
+      },
+    },
     { title: '注册时间', render: (_, r) => fmtDate(r.created_at) },
     { title: '积分余额', render: (_, r) => r.assets.points_available.toLocaleString() },
     { title: '状态', render: (_, r) => { const p = statusPills[r.status] ?? { tone: 'gray' as PillTone, label: r.status }; return <Pill tone={p.tone}>{p.label}</Pill> } },
@@ -306,25 +314,47 @@ export function UsersPage() {
 
       <Modal title="用户详情" open={!!detail} footer={null} onCancel={() => setDetail(null)} width={560}>
         {detail && (
-          <Descriptions
-            column={1}
-            size="small"
-            bordered
-            items={[
-              { key: 'id', label: '用户ID', children: detail.id },
-              { key: 'nick', label: '昵称', children: detail.nickname },
-              { key: 'level', label: '角色等级', children: detail.level?.name ?? '普通用户' },
-              { key: 'phone', label: '手机号', children: detail.phone_masked ?? '—' },
-              { key: 'status', label: '状态', children: statusPills[detail.status]?.label ?? detail.status },
-              { key: 'points', label: '积分', children: `可用 ${detail.assets.points_available.toLocaleString()} / 冻结 ${detail.assets.points_frozen.toLocaleString()}` },
-              { key: 'wallet', label: '钱包', children: `可用 ¥${(detail.assets.wallet_available_cents / 100).toFixed(2)} / 冻结 ¥${(detail.assets.wallet_frozen_cents / 100).toFixed(2)}` },
-              { key: 'coupon', label: '可用优惠券', children: detail.assets.coupons_available },
-              { key: 'task', label: '任务数据', children: `领取 ${detail.task_metrics.claimed} 次 / 通过 ${detail.task_metrics.approved} 次` },
-              { key: 'verify', label: '认证情况', children: `手机 ${detail.verification.phone ? '已验证' : '未验证'} / 资料 ${detail.verification.profile ? '已完善' : '未完善'} / 微信 ${detail.verification.wechat ? '已绑定' : '未绑定'}` },
-              { key: 'created', label: '注册时间', children: fmtTime(detail.created_at) },
-              { key: 'login', label: '最近登录', children: fmtTime(detail.last_login_at) },
-            ]}
-          />
+          <>
+            <Descriptions
+              column={1}
+              size="small"
+              bordered
+              items={[
+                { key: 'id', label: '用户ID', children: detail.id },
+                { key: 'nick', label: '昵称', children: detail.nickname },
+                { key: 'level', label: '角色等级', children: detail.level?.name ?? '普通用户' },
+                { key: 'phone', label: '手机号', children: detail.phone_masked ?? '—' },
+                { key: 'status', label: '状态', children: statusPills[detail.status]?.label ?? detail.status },
+                { key: 'points', label: '积分', children: `可用 ${detail.assets.points_available.toLocaleString()} / 冻结 ${detail.assets.points_frozen.toLocaleString()}` },
+                { key: 'wallet', label: '钱包', children: `可用 ¥${(detail.assets.wallet_available_cents / 100).toFixed(2)} / 冻结 ¥${(detail.assets.wallet_frozen_cents / 100).toFixed(2)}` },
+                { key: 'coupon', label: '可用优惠券', children: detail.assets.coupons_available },
+                { key: 'task', label: '任务数据', children: `领取 ${detail.task_metrics.claimed} 次 / 通过 ${detail.task_metrics.approved} 次` },
+                { key: 'verify', label: '认证情况', children: `手机 ${detail.verification.phone ? '已验证' : '未验证'} / 资料 ${detail.verification.profile ? '已完善' : '未完善'} / 微信 ${detail.verification.wechat ? '已绑定' : '未绑定'}` },
+                { key: 'created', label: '注册时间', children: fmtTime(detail.created_at) },
+                { key: 'login', label: '最近登录', children: fmtTime(detail.last_login_at) },
+              ]}
+            />
+            {detail.wechat && detail.wechat.channels.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>微信身份</div>
+                {detail.wechat.channels.map((ch) => (
+                  <div
+                    key={`${ch.provider}-${ch.openid_masked ?? ''}`}
+                    style={{ display: 'flex', gap: 10, padding: '10px 0', borderTop: '1px solid #f0f0f0' }}
+                  >
+                    {ch.avatar_url
+                      ? <img src={ch.avatar_url} alt="" width={40} height={40} referrerPolicy="no-referrer" style={{ borderRadius: 20, objectFit: 'cover', flex: '0 0 40px' }} />
+                      : <div style={{ width: 40, height: 40, borderRadius: 20, background: '#e8f5ec', color: '#2f9e44', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 40px' }}>{ch.label.slice(0, 1)}</div>}
+                    <div style={{ fontSize: 12, lineHeight: 1.7, wordBreak: 'break-all' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{ch.label} · {ch.nickname ?? '未获取昵称'}</div>
+                      <div style={{ color: '#8c8c8c' }}>OpenID {ch.openid_masked ?? '—'} · UnionID {ch.unionid_masked ?? '—'}</div>
+                      <div style={{ color: '#8c8c8c' }}>绑定 {fmtTime(ch.bound_at)} · 最近登录 {fmtTime(ch.last_login_at)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </Modal>
     </div>
