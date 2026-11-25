@@ -158,7 +158,7 @@ class WechatIdentityProvider
      * 拉取公众号用户昵称/头像。失败只降级为「仅 openid 登录」，不阻断登录，
      * 避免因 userinfo 接口异常导致用户完全无法进入 H5。
      *
-     * @param array<string,mixed> $configuration
+     * @param  array<string,mixed>  $configuration
      * @return array<string,mixed>|null
      */
     private function fetchOfficialAccountProfile(string $accessToken, string $openid, array $configuration): ?array
