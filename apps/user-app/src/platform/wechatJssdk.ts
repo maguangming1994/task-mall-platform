@@ -171,7 +171,7 @@ export async function enableWechatShare(options: WechatShareOptions): Promise<vo
     // 每个会话只提示一次，便于定位签名/域名问题。
     if (!shareErrorReported) {
       shareErrorReported = true
-      const message = error instanceof Error ? error.message : '微信分享初始化失败'
+      const message = (error as Error)?.message || '微信分享初始化失败'
       uni.showToast({ title: message, icon: 'none', duration: 5000 })
     }
   }
