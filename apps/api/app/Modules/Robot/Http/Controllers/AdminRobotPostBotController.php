@@ -5,6 +5,7 @@ namespace App\Modules\Robot\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Campus\Models\Campus;
 use App\Modules\Community\Models\CommunityPost;
+use App\Modules\Robot\Http\Controllers\Concerns\RestrictsRobotCampusAccess;
 use App\Modules\Robot\Models\RobotPostBot;
 use App\Modules\Robot\Models\RobotPostTemplate;
 use App\Modules\Robot\Services\RobotPostBotService;
@@ -15,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 class AdminRobotPostBotController extends Controller
 {
+    use RestrictsRobotCampusAccess;
+
     public function __construct(private readonly RobotPostBotService $service) {}
 
     public function index(Request $request): JsonResponse
@@ -158,6 +161,9 @@ class AdminRobotPostBotController extends Controller
         $campus = Campus::query()->where('public_id', $data['campus_id'])->where('status', 'active')->first();
         if ($campus === null) {
             throw ValidationException::withMessages(['campus_id' => '所选学校无效或已停用。']);
+        }
+        if ($this->isCampusAgent($request) && ! $this->agentCampusIds($request)->contains($campus->id)) {
+            throw ValidationException::withMessages(['campus_id' => '学校代理只能管理自己负责学校的发帖机器人。']);
         }
         $data['campus_id'] = $campus->id;
         $data['posts_per_run'] = $data['posts_per_run'] ?? 1;

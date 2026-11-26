@@ -25,6 +25,7 @@ import {
   type XpRobotSchoolOption,
   type XpRobotTaskCategory,
 } from '../../api/admin'
+import { useAdminAuth } from '../auth/AdminAuthContext'
 import { robotAccountName, robotAccountStatusLabel, robotAccountTypeLabel, robotDeviceName, robotGroupName } from './robotUtils'
 import { useRobotRecentVerification } from './useRobotRecentVerification'
 
@@ -173,6 +174,8 @@ interface Props {
 
 export function ForwardConfigWizard({ open, config, configured, requiresMfa, onClose, onSaved }: Props) {
   const [form] = Form.useForm<XpRobotForwardConfigInput>()
+  const { admin } = useAdminAuth()
+  const isCampusAgent = Boolean(admin?.roles.includes('campus_agent') && !admin.roles.includes('super_admin'))
   const [messageApi, messageContext] = message.useMessage()
   const { runWrite, verificationContext } = useRobotRecentVerification(requiresMfa)
   const [current, setCurrent] = useState(0)
@@ -533,14 +536,18 @@ export function ForwardConfigWizard({ open, config, configured, requiresMfa, onC
             <Form.Item name={['filter_rules', 'platforms']} label="平台筛选" extra="输入后回车，可添加多个；留空表示不限。">
               <Select mode="tags" open={false} tokenSeparators={[',', '，']} placeholder="例如：抖音、小红书" />
             </Form.Item>
-            <Form.Item name={['filter_rules', 'campus_id']} label="学校筛选" extra="留空表示不限；选择学校后可筛选该校论坛分类。">
+            <Form.Item
+              name={['filter_rules', 'campus_id']}
+              label="学校筛选"
+              extra={isCampusAgent ? '学校代理只能选择自己负责的学校，并且必须选择一所。' : '留空表示不限；选择学校后可筛选该校论坛分类。'}
+            >
               <Select
-                allowClear
+                allowClear={!isCampusAgent}
                 showSearch
                 optionFilterProp="label"
                 loading={filterOptionsLoading}
                 options={schoolOptions}
-                placeholder="选择系统学校"
+                placeholder={isCampusAgent ? '选择负责的学校' : '选择系统学校'}
                 onChange={selectSchool}
                 onOpenChange={(isOpen) => { if (isOpen && schools.length === 0 && !filterOptionsLoading) void loadFilterOptions(watchedCampusId ?? null) }}
               />

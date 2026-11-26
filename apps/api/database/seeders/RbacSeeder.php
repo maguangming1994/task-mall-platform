@@ -56,7 +56,7 @@ class RbacSeeder extends Seeder
             'super_admin' => array_column($permissions, 'code'),
             'platform_admin' => ['user.view_masked', 'identity.review', 'privacy.manage', 'legal.manage', 'task.view', 'task.manage', 'task.frontend_publish', 'push.view', 'push.review', 'audit.view_own'],
             'operations_admin' => ['user.view_masked', 'task.view', 'task.manage', 'product.manage', 'operations.manage', 'material.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.rule_manage', 'push.task_manage', 'push.review', 'robot.view', 'robot.settings_manage', 'audit.view_own'],
-            'campus_agent' => ['user.view_masked', 'identity.review', 'task.view', 'task.manage', 'task.review', 'community.review', 'material.manage', 'product.manage', 'campus.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.task_manage', 'push.review', 'audit.view_own'],
+            'campus_agent' => ['user.view_masked', 'identity.review', 'task.view', 'task.manage', 'task.review', 'community.review', 'material.manage', 'product.manage', 'campus.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.task_manage', 'push.review', 'robot.view', 'robot.settings_manage', 'audit.view_own'],
             'task_reviewer' => ['user.view_masked', 'task.view', 'task.review', 'after_sale.review', 'push.view', 'push.review', 'audit.view_own'],
             'community_reviewer' => ['user.view_masked', 'community.review', 'audit.view_own'],
             'customer_service' => ['user.view_masked', 'identity.review', 'privacy.manage', 'task.view', 'after_sale.review', 'push.view', 'audit.view_own'],

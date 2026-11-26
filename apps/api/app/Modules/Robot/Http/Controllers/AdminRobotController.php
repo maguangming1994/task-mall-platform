@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Robot\Exceptions\XpRobotException;
+use App\Modules\Robot\Http\Controllers\Concerns\RestrictsRobotCampusAccess;
 use App\Modules\Robot\Models\RobotMessageRequest;
 use App\Modules\Robot\Services\RobotMessageService;
 use App\Modules\Robot\Services\XpRobotClient;
@@ -18,6 +19,8 @@ use Illuminate\Validation\ValidationException;
 
 class AdminRobotController extends Controller
 {
+    use RestrictsRobotCampusAccess;
+
     public function settings(XpRobotSettingsService $settings): JsonResponse
     {
         return ApiResponse::success($settings->snapshot());
@@ -28,6 +31,9 @@ class AdminRobotController extends Controller
         XpRobotSettingsService $settings,
         AuditLogger $audit,
     ): JsonResponse {
+        if ($this->isCampusAgent($request)) {
+            throw ValidationException::withMessages(['settings' => '学校代理无权修改机器人全局设置。']);
+        }
         $data = $request->validate([
             'api_key' => ['sometimes', 'nullable', 'string', 'max:500'],
             'clear_api_key' => ['sometimes', 'boolean'],

@@ -8,6 +8,7 @@ use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Campus\Models\Campus;
 use App\Modules\Community\Models\CommunityPost;
+use App\Modules\Robot\Http\Controllers\Concerns\RestrictsRobotCampusAccess;
 use App\Modules\Robot\Models\RobotForwardConfig;
 use App\Modules\Robot\Models\RobotMessageRequest;
 use App\Modules\Robot\Services\RobotForwardConfigService;
@@ -20,6 +21,8 @@ use Illuminate\Validation\ValidationException;
 
 class AdminRobotForwardController extends Controller
 {
+    use RestrictsRobotCampusAccess;
+
     public function filterOptions(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -30,8 +33,11 @@ class AdminRobotForwardController extends Controller
         if ($campusId && $campus === null) {
             throw ValidationException::withMessages(['campus_id' => '所选学校不存在或已停用，请重新选择。']);
         }
-        $schools = Campus::query()
-            ->where('status', 'active')
+        $schoolsQuery = Campus::query()->where('status', 'active');
+        if ($this->isCampusAgent($request)) {
+            $schoolsQuery->whereIn('id', $this->agentCampusIds($request));
+        }
+        $schools = $schoolsQuery
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get(['public_id', 'name', 'province', 'city'])
@@ -254,6 +260,10 @@ class AdminRobotForwardController extends Controller
         $campus = $campusId ? Campus::query()->where('public_id', $campusId)->where('status', 'active')->first() : null;
         if ($campusId && $campus === null) {
             throw ValidationException::withMessages(['filter_rules.campus_id' => '所选学校不存在或已停用，请重新选择。']);
+        }
+        if ($this->isCampusAgent($request)
+            && ($campus === null || ! $this->agentCampusIds($request)->contains($campus->id))) {
+            throw ValidationException::withMessages(['filter_rules.campus_id' => '学校代理只能配置自己负责学校的转发任务。']);
         }
         if ($campus === null && count($data['filter_rules']['categories'] ?? []) > 0) {
             throw ValidationException::withMessages(['filter_rules.categories' => '请先选择学校，再选择该学校论坛的分类。']);
