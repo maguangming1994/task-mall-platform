@@ -34,7 +34,7 @@ class ModuleRegistry
         'module_material_request' => ['name' => '求资料', 'parent' => 'module_material', 'group' => 'material'],
         // 以下为暂未上线能力：全局默认关闭，后台开启后热生效。
         'module_membership' => ['name' => '校园 PLUS 会员', 'parent' => null, 'group' => 'membership'],
-        'module_follow' => ['name' => '关注作者', 'parent' => null, 'group' => 'community'],
+        'module_follow' => ['name' => '关注作者', 'parent' => 'module_community', 'group' => 'community'],
         'module_identity_verification' => ['name' => '实名认证', 'parent' => null, 'group' => 'membership'],
         'module_feedback' => ['name' => '意见反馈', 'parent' => null, 'group' => 'membership'],
     ];

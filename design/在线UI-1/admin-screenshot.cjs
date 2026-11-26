@@ -65,6 +65,9 @@ const jobs = [
   { screen: 'ci-a3',                   name: 'a40-ci-a3' },
   { screen: 'ci-a4',                   name: 'a41-ci-a4' },
   { screen: 'admin-poster',            name: 'a42-poster' },
+  { screen: 'admin-robot-forward',     name: 'a43-robot-forward' },
+  { screen: 'admin-release-review',    name: 'a44-release-review' },
+  { screen: 'admin-account-menu',      name: 'a45-account-menu' },
 ];
 
 (async () => {

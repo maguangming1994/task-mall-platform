@@ -4844,6 +4844,189 @@ body.shot .pt-switch{display:none}
   </div>
 </section>
 
+<style>
+body[data-screen="post-compose"] .screen[data-screen="post-compose"],
+body[data-screen="post-profile"] .screen[data-screen="post-profile"],
+body[data-screen="bind-school"] .screen[data-screen="bind-school"],
+body[data-screen="login-phone"] .screen[data-screen="login-phone"]{display:block}
+</style>
+
+<section class="screen has-bar" data-kind="新增" data-title="发布动态 · 订阅授权" data-screen="post-compose">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>发布动态</h1>
+    <div class="right"><span style="font-size:12px;color:var(--t3)">存草稿</span></div>
+  </div>
+
+  <div class="card" style="padding:14px">
+    <textarea rows="4" style="width:100%;border:0;outline:0;resize:none;font-family:inherit;font-size:16px;line-height:1.7;color:var(--t1)">新生入学实用攻略：校园卡与选课全流程，附领取地点与常见问题。</textarea>
+    <div class="upload-grid" style="grid-template-columns:repeat(4,1fr)">
+      <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=200&h=200&fit=crop&auto=format&q=70" style="border-radius:10px">
+      <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=200&h=200&fit=crop&auto=format&q=70" style="border-radius:10px">
+      <div class="upload-add" style="aspect-ratio:1;border-radius:10px"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>2/9</span></div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="frow">
+      <i style="width:30px;color:var(--orange-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M4 9h16M4 15h10M10 3L4 9l6 6"/></svg></i>
+      <span class="v" style="color:var(--green-deep);font-weight:600">#经验分享</span>
+      <span class="v placeholder">添加话题</span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="frow">
+      <i style="width:30px;color:var(--green-deep)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></i>
+      <span class="v">滨江校区</span>
+      <span class="sp"></span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="frow">
+      <i style="width:30px;color:#3B82F6"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></i>
+      <span class="v">所有人可见 · 公开主页可跨校区查看</span>
+      <span class="sp"></span>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <div class="card" style="padding:14px">
+    <div style="display:flex;gap:10px;align-items:center">
+      <i style="width:34px;height:34px;border-radius:10px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;color:var(--green-deep)"><svg class="ic" style="width:17px;height:17px" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10 21a2 2 0 0 0 4 0"/></svg></i>
+      <div style="flex:1">
+        <b style="font-size:13px;color:var(--t1)">订阅审核结果通知</b>
+        <p style="font-size:11.5px;color:var(--t2);line-height:1.6;margin-top:3px">开启后帖子审核通过/驳回会推送订阅消息，仅用于审核与互动提醒</p>
+      </div>
+      <span style="width:44px;height:26px;border-radius:999px;background:var(--green);position:relative;flex-shrink:0"><i style="position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff"></i></span>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="ab-main">发布</button>
+  </div>
+</section>
+
+<section class="screen" data-kind="新增" data-title="个人主页 · 公开主页" data-screen="post-profile">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>TA 的主页</h1>
+    <div class="right"><svg class="ic" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></div>
+  </div>
+
+  <div class="card" style="padding:16px 14px">
+    <div style="display:flex;gap:12px;align-items:center">
+      <img class="av" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=140&h=140&fit=crop&crop=faces&auto=format&q=70" style="width:62px;height:62px">
+      <div style="flex:1">
+        <div class="nm" style="font-size:17px">一只橘座 <span class="tag tag-orange" style="margin:0">校园认证</span></div>
+        <div class="sub">UID 10234 · 滨江校区</div>
+        <div class="sub" style="margin-top:3px">记录校园日常，偶尔投喂楼下的猫</div>
+      </div>
+      <button class="btn-follow" style="height:30px;background:#F0F5F1;color:var(--green-deep)">已关注</button>
+    </div>
+    <div style="display:flex;text-align:center;margin-top:16px;padding-top:14px;border-top:1px solid #F5F6F6">
+      <div style="flex:1"><b style="font-size:17px;color:var(--t1)">28</b><div class="sub">动态</div></div>
+      <div style="flex:1"><b style="font-size:17px;color:var(--t1)">36</b><div class="sub">关注</div></div>
+      <div style="flex:1"><b style="font-size:17px;color:var(--t1)">512</b><div class="sub">粉丝</div></div>
+      <div style="flex:1"><b style="font-size:17px;color:var(--t1)">1.2k</b><div class="sub">获赞</div></div>
+    </div>
+  </div>
+
+  <div style="margin:10px 12px 0;background:#F0F8F2;border:1px solid #DCEAE0;border-radius:12px;padding:10px 12px;font-size:11px;line-height:1.7;color:#5E7A68">
+    公开主页：跨校区也能查看 TA 已发布的动态与详情，关注后新内容会刷新到你的关注页；未发布/已下线内容不对外展示。
+  </div>
+
+  <div class="card" style="margin-top:12px;padding:14px">
+    <div class="nm" style="font-size:14px">新生入学实用攻略：校园卡与选课全流程</div>
+    <p class="post-body" style="font-size:13px;margin-top:6px">校园卡领取地点、充值方式与选课时间轴整理，附常见问题。</p>
+    <div class="post-meta"><span>2026-11-25</span><span>328 赞 · 45 评论</span></div>
+  </div>
+  <div class="card" style="margin-top:10px;padding:14px">
+    <div class="nm" style="font-size:14px">宿舍楼下的橘座又来巡逻了</div>
+    <p class="post-body" style="font-size:13px;margin-top:6px">今天心情好像不错，主动蹭了我三次。</p>
+    <div class="post-meta"><span>2026-11-24</span><span>126 赞 · 18 评论</span></div>
+  </div>
+</section>
+
+<section class="screen has-bar" data-kind="新增" data-title="绑校 · 校徽与本校专业" data-screen="bind-school">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div class="subnav">
+    <div class="back"><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <h1>选择学校</h1>
+    <div class="right"></div>
+  </div>
+
+  <div class="card" style="padding:12px 14px">
+    <div style="display:flex;align-items:center;gap:8px;background:#F4F6F5;border-radius:10px;padding:9px 12px;color:var(--t3);font-size:13px">
+      <svg class="ic" style="width:16px;height:16px" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>搜索学校名称
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;font-size:12px">
+      <span class="tag" style="background:var(--green);color:#fff;margin:0">浙江</span>
+      <span class="tag" style="margin:0">江苏</span>
+      <span class="tag" style="margin:0">广东</span>
+      <span class="tag" style="margin:0">更多省份</span>
+    </div>
+    <p style="font-size:11px;color:var(--t3);margin-top:10px">点省份只筛选列表，不会关闭弹窗；列表可滚动，不会滑动到底层页面</p>
+  </div>
+
+  <div class="card" style="margin-top:10px;padding:6px 14px">
+    <div style="display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid #F5F6F6">
+      <i style="width:38px;height:38px;border-radius:50%;background:var(--green-soft);color:var(--green-deep);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:14px">浙</i>
+      <div style="flex:1"><b style="font-size:14px;color:var(--t1)">浙江中医药大学</b><div class="sub">浙江 杭州 · 滨江校区</div></div>
+      <svg class="ic" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid #F5F6F6">
+      <i style="width:38px;height:38px;border-radius:50%;background:#EAF1FB;color:#3B82F6;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:14px">浙</i>
+      <div style="flex:1"><b style="font-size:14px;color:var(--t1)">浙江大学</b><div class="sub">浙江 杭州 · 紫金港校区</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:12px 0">
+      <i style="width:38px;height:38px;border-radius:50%;background:#FDF0E7;color:var(--orange-deep);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:14px">杭</i>
+      <div style="flex:1"><b style="font-size:14px;color:var(--t1)">杭州电子科技大学</b><div class="sub">浙江 杭州 · 下沙校区</div></div>
+    </div>
+  </div>
+
+  <div class="form-card" style="margin-top:10px">
+    <div class="frow"><span class="k">年级</span><span class="v">2024 级</span><span class="sp"></span><svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+    <div class="frow"><span class="k">专业</span><span class="v">针灸推拿学</span><span class="sp"></span><svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+  </div>
+  <p style="margin:10px 14px 0;font-size:11px;color:var(--t3);line-height:1.7">专业来自学校-专业对照数据，仅展示本校开设专业；可选针灸推拿学 / 中医学 / 护理学等。</p>
+
+  <div class="action-bar">
+    <button class="ab-main">完成绑校</button>
+  </div>
+</section>
+
+<section class="screen" data-kind="新增" data-title="手机号快捷登录" data-screen="login-phone">
+  <div class="status"><span>9:41</span><span class="s-ic">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="22" height="11" viewBox="0 0 25 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+  </span></div>
+  <div style="padding:52px 24px 0;text-align:center">
+    <div style="width:74px;height:74px;border-radius:22px;background:var(--green);margin:0 auto;display:flex;align-items:center;justify-content:center;color:#fff;font-size:30px;font-weight:800">校</div>
+    <h1 style="font-size:24px;margin-top:18px;color:var(--t1)">校圈</h1>
+    <p style="font-size:13px;color:var(--t2);margin-top:8px">校园互助任务 · 积分商城 · 校园社区</p>
+  </div>
+
+  <div style="padding:34px 24px 0">
+    <button class="ab-main" style="width:100%;height:48px;border-radius:14px;font-size:16px">手机号快捷登录</button>
+    <p style="text-align:center;font-size:11.5px;color:var(--t3);margin-top:12px">一键授权本机手机号，验证后即可使用</p>
+    <button style="width:100%;height:46px;border-radius:14px;margin-top:16px;background:#fff;border:1px solid var(--line);color:var(--t1);font-size:15px;font-weight:600">账号密码登录</button>
+  </div>
+
+  <div style="padding:26px 24px 0;display:flex;gap:8px;align-items:flex-start">
+    <i style="width:16px;height:16px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px"><svg class="ic" style="width:11px;height:11px;color:#fff" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></i>
+    <p style="font-size:11.5px;color:var(--t2);line-height:1.7">已阅读并同意 <span style="color:var(--green-deep)">《用户协议》</span> 与 <span style="color:var(--green-deep)">《隐私政策》</span>，未绑校账号登录后需先完成选校</p>
+  </div>
+</section>
+
 </div>
 </body>
 </html>

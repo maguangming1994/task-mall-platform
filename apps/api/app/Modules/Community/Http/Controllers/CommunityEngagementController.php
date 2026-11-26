@@ -9,15 +9,18 @@ use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Community\Models\CommunityPostFavorite;
 use App\Modules\Community\Models\CommunityPostLike;
 use App\Modules\Notification\Services\NotificationService;
+use App\Modules\Operations\Services\ModuleGateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CommunityEngagementController extends Controller
 {
+    public function __construct(private readonly ModuleGateService $modules) {}
+
     public function like(Request $request, CommunityPost $post, NotificationService $notifications): JsonResponse
     {
-        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user()), 404);
+        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user(), $this->modules->effectiveForRequest($request, 'module_follow')), 404);
         $created = DB::transaction(function () use ($request, $post): bool {
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
             $like = CommunityPostLike::query()->firstOrCreate([
@@ -51,7 +54,7 @@ class CommunityEngagementController extends Controller
 
     public function unlike(Request $request, CommunityPost $post): JsonResponse
     {
-        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user()), 404);
+        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user(), $this->modules->effectiveForRequest($request, 'module_follow')), 404);
         DB::transaction(function () use ($request, $post): void {
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
             $deleted = CommunityPostLike::query()
@@ -68,7 +71,7 @@ class CommunityEngagementController extends Controller
 
     public function favorite(Request $request, CommunityPost $post): JsonResponse
     {
-        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user()), 404);
+        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user(), $this->modules->effectiveForRequest($request, 'module_follow')), 404);
         DB::transaction(function () use ($request, $post): void {
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
             $favorite = CommunityPostFavorite::query()->firstOrCreate([
@@ -85,7 +88,7 @@ class CommunityEngagementController extends Controller
 
     public function unfavorite(Request $request, CommunityPost $post): JsonResponse
     {
-        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user()), 404);
+        abort_unless($post->status === 'published' && $post->isVisibleTo($request->user(), $this->modules->effectiveForRequest($request, 'module_follow')), 404);
         DB::transaction(function () use ($request, $post): void {
             $locked = CommunityPost::query()->lockForUpdate()->findOrFail($post->id);
             $deleted = CommunityPostFavorite::query()

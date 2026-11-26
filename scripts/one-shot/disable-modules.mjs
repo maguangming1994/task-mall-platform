@@ -3,7 +3,7 @@
  *
  * 与 enable-modules.mjs 互为镜像：
  *   - review_in_progress → enabled（打开审核总开关，前端隐藏钱包/充值/提现，文案切回「积分」）
- *   - 8 个业务模块 → disabled（社区/资料/关注/实名 等）
+ *   - 其余 8 个业务/实验开关 → disabled（社区/资料/关注/实名/外部通知 等，共 9 个目标）
  *   - module_withdraw 不用手动改，审核总开关 enabled 后会被动态关闭
  *
  * 全程走 admin API，保留审计日志和版本号校验。
@@ -29,6 +29,7 @@ const TARGETS = [
   { code: 'module_material_request', mode: 'disabled', rollout_percentage: 0 },
   { code: 'module_follow', mode: 'disabled', rollout_percentage: 0 },
   { code: 'module_identity_verification', mode: 'disabled', rollout_percentage: 0 },
+  { code: 'external_notifications', mode: 'disabled', rollout_percentage: 0 },
 ];
 
 // ---------- 工具函数 ----------
@@ -183,7 +184,7 @@ async function main() {
   const verifyJson = await verify.json();
   const data = verifyJson.data ?? {};
   console.log(`   review_status: ${data.review_status} (期望: reviewing)`);
-  const watchList = TARGETS.map((t) => t.code).filter((c) => c.startsWith('module_'));
+  const watchList = TARGETS.map((t) => t.code).filter((c) => c.startsWith('module_') || c === 'external_notifications');
   watchList.push('module_withdraw'); // 提现应被动态关
   for (const code of watchList) {
     const v = data.feature_flags?.[code];

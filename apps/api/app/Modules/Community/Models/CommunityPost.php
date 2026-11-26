@@ -34,15 +34,16 @@ class CommunityPost extends Model
         return ['current_version_no' => 'integer', 'published_version_no' => 'integer', 'comment_count' => 'integer', 'like_count' => 'integer', 'favorite_count' => 'integer', 'location_latitude' => 'float', 'location_longitude' => 'float', 'reward_granted' => 'boolean', 'published_at' => 'datetime'];
     }
 
-    public function scopeVisibleTo($query, ?User $viewer)
+    public function scopeVisibleTo($query, ?User $viewer, bool $followEnabled = true)
     {
-        return $query->where(function ($query) use ($viewer): void {
+        return $query->where(function ($query) use ($viewer, $followEnabled): void {
             $query->whereIn('visibility', ['public', 'anonymous']);
             if ($viewer === null) {
                 return;
             }
-            $query->orWhere('user_id', $viewer->id)
-                ->orWhere(function ($query) use ($viewer): void {
+            $query->orWhere('user_id', $viewer->id);
+            if ($followEnabled) {
+                $query->orWhere(function ($query) use ($viewer): void {
                     $query->where('visibility', 'followers')
                         ->whereExists(function ($follows) use ($viewer): void {
                             $follows->selectRaw('1')->from('user_follows')
@@ -50,10 +51,11 @@ class CommunityPost extends Model
                                 ->where('user_follows.follower_id', $viewer->id);
                         });
                 });
+            }
         });
     }
 
-    public function isVisibleTo(?User $viewer): bool
+    public function isVisibleTo(?User $viewer, bool $followEnabled = true): bool
     {
         if (in_array($this->visibility, ['public', 'anonymous'], true)) {
             return true;
@@ -61,8 +63,11 @@ class CommunityPost extends Model
         if ($this->visibility !== 'followers' || $viewer === null) {
             return false;
         }
+        if ($this->user_id === $viewer->id) {
+            return true;
+        }
 
-        return $this->user_id === $viewer->id || UserFollow::query()
+        return $followEnabled && UserFollow::query()
             ->where('follower_id', $viewer->id)
             ->where('following_id', $this->user_id)
             ->exists();

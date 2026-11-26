@@ -9,6 +9,7 @@ use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\Community\Models\CommunityComment;
 use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Community\Services\CommunityContentService;
+use App\Modules\Operations\Services\ModuleGateService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,10 +18,12 @@ use Illuminate\Validation\ValidationException;
 
 class CommunityCommentController extends Controller
 {
+    public function __construct(private readonly ModuleGateService $modules) {}
+
     public function index(Request $request, string $post): JsonResponse
     {
         $model = CommunityPost::query()->withoutGlobalScope('campus_context')->where('public_id', $post)->first();
-        abort_unless($model !== null && $model->status === 'published' && $model->isVisibleTo($request->user()), 404);
+        abort_unless($model !== null && $model->status === 'published' && $model->isVisibleTo($request->user(), $this->modules->effectiveForRequest($request, 'module_follow')), 404);
 
         return ApiResponse::success(['items' => CommunityComment::query()->where('community_post_id', $model->id)->where('status', 'published')->oldest()->get()->map(fn (CommunityComment $comment) => $this->data($comment))]);
     }
@@ -31,7 +34,7 @@ class CommunityCommentController extends Controller
         $key = (string) $request->header('Idempotency-Key');
         abort_unless(strlen($key) >= 12, 422);
 
-        return ApiResponse::success($this->data($service->createComment($request->user(), $post, $data, $key)), 201);
+        return ApiResponse::success($this->data($service->createComment($request->user(), $post, $data, $key, $this->modules->effectiveForRequest($request, 'module_follow'))), 201);
     }
 
     public function adminIndex(Request $request): JsonResponse

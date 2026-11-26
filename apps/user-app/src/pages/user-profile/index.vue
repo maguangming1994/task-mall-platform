@@ -1,6 +1,7 @@
 <template>
   <view class="page">
-    <view v-if="loading" class="loading-page">
+    <ModulePlaceholder v-if="modules.resolved && !communityEnabled" code="module_community" />
+    <view v-else-if="loading" class="loading-page">
       <view class="loading-hero tm-skeleton" />
       <view class="loading-card tm-skeleton" />
       <view class="loading-list tm-skeleton" />
@@ -56,10 +57,10 @@
         <text class="bio">{{ profile.bio || '这个人很真诚，简介还在酝酿中。' }}</text>
 
         <view class="social-row">
-          <view class="social-item"><text class="social-number">{{ profile.following_count }}</text><text class="social-label">关注</text></view>
-          <view class="social-item"><text class="social-number">{{ profile.follower_count }}</text><text class="social-label">粉丝</text></view>
+          <view v-if="followEnabled" class="social-item"><text class="social-number">{{ profile.following_count }}</text><text class="social-label">关注</text></view>
+          <view v-if="followEnabled" class="social-item"><text class="social-number">{{ profile.follower_count }}</text><text class="social-label">粉丝</text></view>
           <view class="social-item"><text class="social-number">{{ profile.content_counts.posts }}</text><text class="social-label">动态</text></view>
-          <view v-if="profile.rating_average !== null" class="rating-chip">★ {{ profile.rating_average }} 信用印象</view>
+          <view v-if="secondHandEnabled && profile.rating_average !== null" class="rating-chip">★ {{ profile.rating_average }} 信用印象</view>
         </view>
       </view>
 
@@ -72,7 +73,7 @@
           <button class="action-btn unblock-btn" :disabled="actionLoading" @click="unblockUser">解除拉黑</button>
         </template>
         <template v-else>
-          <button :class="['action-btn', 'follow-action', { followed: profile.is_followed }]" :disabled="actionLoading" @click="toggleFollow">{{ profile.is_followed ? '已关注' : '＋ 关注' }}</button>
+          <button v-if="followEnabled" :class="['action-btn', 'follow-action', { followed: profile.is_followed }]" :disabled="actionLoading" @click="toggleFollow">{{ profile.is_followed ? '已关注' : '＋ 关注' }}</button>
           <button class="action-btn message-action" :disabled="actionLoading" @click="contact">私信</button>
         </template>
       </view>
@@ -199,16 +200,24 @@ import { ApiError, resolveApiAssetUrl } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 import { formatDateTime } from '@/utils/dateTime'
+import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import { useModulesStore } from '@/stores/modules'
+import type { ModuleCode } from '@/platform/modules'
 
-const tabs: Array<{ code: CommunityUserContentType; label: string }> = [
-  { code: 'posts', label: '帖子' },
-  { code: 'second_hand', label: '闲置' },
-  { code: 'activities', label: '攒局' },
-  { code: 'tasks', label: '任务' },
-  { code: 'claims', label: '接单' },
-  { code: 'impressions', label: '印象' },
+const tabDefinitions: Array<{ code: CommunityUserContentType; label: string; module: ModuleCode }> = [
+  { code: 'posts', label: '帖子', module: 'module_community' },
+  { code: 'second_hand', label: '闲置', module: 'module_second_hand' },
+  { code: 'activities', label: '攒局', module: 'module_community' },
+  { code: 'tasks', label: '任务', module: 'module_tasks' },
+  { code: 'claims', label: '接单', module: 'module_tasks' },
+  { code: 'impressions', label: '印象', module: 'module_second_hand' },
 ]
 
+const modules = useModulesStore()
+const communityEnabled = computed(() => modules.isEnabled('module_community'))
+const followEnabled = computed(() => modules.isLaunched('module_follow'))
+const secondHandEnabled = computed(() => modules.isEnabled('module_second_hand'))
+const tabs = computed(() => tabDefinitions.filter(tab => modules.isEnabled(tab.module)))
 const auth = useAuthStore()
 const userId = ref('')
 const profile = ref<CommunityUserProfile | null>(null)
@@ -235,14 +244,19 @@ const emptyContent = computed(() => {
   return values[activeTab.value]
 })
 
-onLoad((query) => {
+onLoad(async (query) => {
   userId.value = String(query?.id || '')
+  await modules.ensureReady()
+  if (!communityEnabled.value) {
+    loading.value = false
+    return
+  }
   if (!userId.value) {
     loading.value = false
     loadError.value = '用户链接无效，请从校园动态重新进入。'
     return
   }
-  initialize()
+  await initialize()
 })
 
 onReachBottom(() => {
@@ -250,12 +264,15 @@ onReachBottom(() => {
 })
 
 async function initialize() {
-  if (!userId.value) return
+  if (!userId.value || !communityEnabled.value) {
+    loading.value = false
+    return
+  }
   loading.value = true
   loadError.value = ''
   try {
     profile.value = await getCommunityUserProfile(userId.value, auth.accessToken || undefined)
-    activeTab.value = 'posts'
+    activeTab.value = tabs.value[0]?.code || 'posts'
     await loadContent(true)
   } catch (error) {
     loadError.value = errorMessage(error, '请稍后重试。')
@@ -265,7 +282,7 @@ async function initialize() {
 }
 
 async function loadContent(reset = false) {
-  if (!userId.value || contentLoading.value || profile.value?.is_blocked) return
+  if (!userId.value || contentLoading.value || profile.value?.is_blocked || !tabs.value.some(tab => tab.code === activeTab.value)) return
   if (reset) {
     page.value = 1
     items.value = []
@@ -294,7 +311,7 @@ function switchTab(type: CommunityUserContentType) {
 }
 
 async function toggleFollow() {
-  if (!profile.value || actionLoading.value) return
+  if (!followEnabled.value || !profile.value || actionLoading.value) return
   if (!requireLogin()) return
   actionLoading.value = true
   try {

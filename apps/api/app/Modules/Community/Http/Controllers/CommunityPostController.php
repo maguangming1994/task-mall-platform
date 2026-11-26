@@ -15,6 +15,7 @@ use App\Modules\Community\Models\UserBlock;
 use App\Modules\Community\Models\UserFollow;
 use App\Modules\Community\Services\CommunityContentService;
 use App\Modules\Identity\Models\UserIdentityVerification;
+use App\Modules\Operations\Services\ModuleGateService;
 use App\Modules\Robot\Models\RobotPostForwardLog;
 use App\Modules\Robot\Services\RobotForwardDispatchService;
 use App\Modules\Upload\Models\UploadedFile;
@@ -33,6 +34,8 @@ class CommunityPostController extends Controller
 {
     private const FEEDS = ['discover', 'following', 'nearby', 'featured'];
 
+    public function __construct(private readonly ModuleGateService $modules) {}
+
     public function index(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -45,8 +48,12 @@ class CommunityPostController extends Controller
         $size = $data['page_size'] ?? 20;
         $feed = $data['feed'] ?? 'discover';
         $viewer = $request->user();
+        $followEnabled = $this->followEnabled($request);
+        if ($feed === 'following' && ! $followEnabled) {
+            return $this->followDisabled();
+        }
 
-        $query = CommunityPost::query()->where('status', 'published')->visibleTo($viewer)
+        $query = CommunityPost::query()->where('status', 'published')->visibleTo($viewer, $followEnabled)
             ->when($data['category'] ?? null, fn ($query, $category) => $query->where('category_code', $category));
         $query = UserBlock::excludeFromQuery($query, $viewer, 'community_posts.user_id');
 
@@ -75,7 +82,7 @@ class CommunityPostController extends Controller
 
         $total = $query->count();
         $posts = $query->forPage($page, $size)->get();
-        $meta = $this->viewerMeta($request, $posts);
+        $meta = $this->viewerMeta($request, $posts, $followEnabled);
 
         return ApiResponse::success([
             'items' => $posts->map(fn (CommunityPost $post) => $this->data($post, meta: $meta)),
@@ -86,11 +93,12 @@ class CommunityPostController extends Controller
     public function show(Request $request, string $post): JsonResponse
     {
         // 分享/短链详情：已发布帖子允许跨校区直接阅读；列表与互动仍按校区隔离。
+        $followEnabled = $this->followEnabled($request);
         $model = CommunityPost::query()->withoutGlobalScope('campus_context')->where('public_id', $post)->first();
-        abort_unless($model !== null && $model->status === 'published' && $model->isVisibleTo($request->user()), 404);
+        abort_unless($model !== null && $model->status === 'published' && $model->isVisibleTo($request->user(), $followEnabled), 404);
         abort_if(UserBlock::existsBetween($request->user(), $model->user_id), 404);
 
-        return ApiResponse::success($this->data($model, meta: $this->viewerMeta($request, collect([$model]))));
+        return ApiResponse::success($this->data($model, meta: $this->viewerMeta($request, collect([$model]), $followEnabled)));
     }
 
     public function categories(CommunityContentService $service): JsonResponse
@@ -135,13 +143,21 @@ class CommunityPostController extends Controller
     public function store(Request $request, CommunityContentService $service): JsonResponse
     {
         $data = $this->input($request);
+        if (($data['visibility'] ?? null) === 'followers' && ! $this->followEnabled($request)) {
+            return $this->followDisabled();
+        }
 
         return ApiResponse::success($this->data($service->createPost($request->user(), $data, $this->key($request)), true, true), 201);
     }
 
     public function update(Request $request, CommunityPost $post, CommunityContentService $service): JsonResponse
     {
-        return ApiResponse::success($this->data($service->editPost($request->user(), $post, $this->input($request)), true, true));
+        $data = $this->input($request);
+        if (($data['visibility'] ?? $post->visibility) === 'followers' && ! $this->followEnabled($request)) {
+            return $this->followDisabled();
+        }
+
+        return ApiResponse::success($this->data($service->editPost($request->user(), $post, $data), true, true));
     }
 
     public function destroy(Request $request, CommunityPost $post, CommunityContentService $service): JsonResponse
@@ -460,6 +476,16 @@ class CommunityPostController extends Controller
         }
     }
 
+    private function followEnabled(Request $request): bool
+    {
+        return $this->modules->effectiveForRequest($request, 'module_follow');
+    }
+
+    private function followDisabled(): JsonResponse
+    {
+        return ApiResponse::error('MODULE_DISABLED', '关注作者当前未开放，敬请期待。', 403, ['module' => 'module_follow']);
+    }
+
     private function input(Request $request): array
     {
         return $request->validate([
@@ -490,7 +516,7 @@ class CommunityPostController extends Controller
      * @param  Collection<int,CommunityPost>  $posts
      * @return array{liked:array<int,bool>,favorited:array<int,bool>,authors:array<int,array<string,mixed>>}
      */
-    private function viewerMeta(Request $request, $posts): array
+    private function viewerMeta(Request $request, $posts, bool $followEnabled = true): array
     {
         $viewer = $request->user();
         $postIds = $posts->pluck('id')->all();
@@ -506,9 +532,11 @@ class CommunityPostController extends Controller
             $favorited = CommunityPostFavorite::query()
                 ->where('user_id', $viewer->id)->whereIn('community_post_id', $postIds)
                 ->pluck('community_post_id')->mapWithKeys(fn ($id) => [(int) $id => true])->all();
-            $followedIds = UserFollow::query()
-                ->where('follower_id', $viewer->id)->whereIn('following_id', $userIds)
-                ->pluck('following_id')->all();
+            if ($followEnabled) {
+                $followedIds = UserFollow::query()
+                    ->where('follower_id', $viewer->id)->whereIn('following_id', $userIds)
+                    ->pluck('following_id')->all();
+            }
         }
 
         $users = User::query()->whereIn('id', $userIds)->get(['id', 'public_id', 'nickname', 'avatar_file_id', 'campus_id']);

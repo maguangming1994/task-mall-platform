@@ -2872,5 +2872,291 @@ body.shot .pt-switch{display:none}
 </div>
 </div>
 
+<style>
+/* ============ 机器人推广、灰度发布与账号菜单（新增） ============ */
+body[data-screen="admin-robot-forward"] .screen[data-screen="admin-robot-forward"],
+body[data-screen="admin-release-review"] .screen[data-screen="admin-release-review"],
+body[data-screen="admin-account-menu"] .screen[data-screen="admin-account-menu"]{display:block}
+.adx .btn{height:34px;padding:0 16px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--t1);font-size:13px;cursor:pointer}
+.adx .btn.primary{background:var(--green-grad);color:#fff;border:0;font-weight:700}
+.adx .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--t1)}
+.adx .tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap}
+.adx .tag.green{background:var(--green-soft);color:var(--green-deep)}
+.adx .tag.blue{background:var(--blue-soft);color:var(--blue)}
+.adx .tag.orange{background:var(--orange-soft);color:var(--orange-deep)}
+.adx .tag.red{background:var(--red-soft);color:var(--red)}
+.adx .tag.gray{background:#F2F3F5;color:var(--t2)}
+.adx .input,.adx .select{height:32px;border:1px solid var(--line);border-radius:6px;padding:0 10px;font-size:12.5px;background:#fff;font-family:inherit;color:var(--t1);min-width:0}
+.adx .radio{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;border:1px solid var(--line);border-radius:6px;padding:0 12px;font-size:12.5px;color:var(--t2);background:#fff;white-space:nowrap}
+.adx .radio::before{content:"";width:12px;height:12px;border:1px solid #C8CECA;border-radius:50%;background:#fff;flex:none}
+.adx .radio.on{border-color:var(--green);background:var(--green-soft);color:var(--green-deep);font-weight:700}
+.adx .radio.on::before{border:4px solid var(--green)}
+.adx .field-label{width:76px;flex:none;font-size:12px;color:var(--t2);font-weight:600}
+.adx .hint{font-size:11px;color:var(--t3);line-height:1.6}
+.adx .code{font-family:Consolas,Menlo,monospace;font-size:11.5px;color:#475569}
+</style>
+
+<!-- ================= 机器人推广：转发配置 ================= -->
+<div class="screen adx" data-screen="admin-robot-forward" data-kind="新增" data-title="机器人转发配置">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">工</span> 工作台</div>
+      <div class="sb-item"><span class="ic">用</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">任</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">商</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">单</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">财</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">区</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">宣</span> 运营与消息</div>
+      <div class="sb-item on"><span class="ic">机</span> 机器人推广</div>
+      <div class="sb-item"><span class="ic">配</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">权</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0 · 机器人服务正常</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="bread">首页 / 机器人推广 <b>/ 转发配置</b></div>
+      <div class="tbr"><div class="icon">通知</div><div class="user"><span class="av">A</span> 超级管理员</div></div>
+    </div>
+    <div class="content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div>
+          <div class="page-title" style="margin:0">机器人转发配置</div>
+          <div class="hint" style="margin-top:4px">将社区帖子与校园任务自动转发至目标微信群</div>
+        </div>
+        <div style="display:flex;gap:10px"><button class="btn ghost">保存配置</button><button class="btn primary">手动转发</button></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="pcard" style="padding:14px">
+          <h3>内容源与任务筛选</h3>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span class="field-label">内容源类型</span>
+            <span class="radio">社区帖子</span><span class="radio on">校园任务</span>
+            <span class="hint" style="margin-left:auto">切换后使用对应内容字段</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="field-label">任务源筛选</span>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1.35fr;gap:8px;flex:1">
+              <select class="select"><option>分类：跑腿代办</option><option>全部分类</option><option>问答互助</option></select>
+              <select class="select"><option>状态：进行中</option><option>待审核</option><option>已完成</option></select>
+              <input class="input" value="关键词：快递、答疑">
+            </div>
+          </div>
+          <div style="margin-top:10px;background:#FAFBFA;border:1px solid var(--line);border-radius:8px;padding:8px 10px" class="hint">
+            分类、状态与关键词按“且”关系过滤；仅转发已通过审核且仍在进行中的任务，命中后写入游标避免重复。
+          </div>
+        </div>
+
+        <div class="pcard" style="padding:14px">
+          <h3>机器人与自动调度</h3>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+            <span class="field-label">转发机器人</span><select class="select" style="flex:1"><option>校圈小助手 01 · 在线</option><option>校圈小助手 02 · 在线</option></select><span class="tag green">在线</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+            <span class="field-label">目标微信群</span>
+            <div style="display:flex;gap:6px;flex:1"><span class="tag green">东湖任务互助群</span><span class="tag blue">南苑校园生活群</span><span class="tag gray">+ 2</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span class="field-label">转发频率</span><select class="select" style="width:150px"><option>每 30 分钟</option><option>每 1 小时</option></select><span class="hint">单次最多 5 条</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:18px;border-top:1px solid var(--line);padding-top:10px">
+            <span style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="sw on"></span>自动调度</span>
+            <span style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="sw on"></span>游标续跑</span>
+            <span class="hint" style="margin-left:auto">下次 10:30</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pcard" style="padding:14px;margin-bottom:14px">
+        <h3>转发文案与短链</h3>
+        <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:18px">
+          <div>
+            <div style="font-size:12px;color:var(--t2);font-weight:600;margin-bottom:6px">转发文案模板</div>
+            <textarea style="width:100%;height:64px;resize:none;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;line-height:1.55;font-family:inherit">【校园任务】{{标题}}
+发布：{{作者}}｜任务奖励：{{任务奖励}} 积分
+立即参与：{{链接}}</textarea>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap">
+              <span class="hint">可用变量</span><span class="tag green">{{标题}}</span><span class="tag green">{{作者}}</span><span class="tag orange">{{任务奖励}}</span><span class="tag blue">{{链接}}</span><span class="tag gray">{{分类}}</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--t2);font-weight:600;margin-bottom:6px">短链方式（二选一，自动降级）</div>
+            <div style="display:grid;gap:7px">
+              <span class="radio on" style="justify-content:flex-start">小程序 URL Link（优先）</span>
+              <span class="radio" style="justify-content:flex-start">Short Link（回退 H5）</span>
+            </div>
+            <div class="hint" style="margin-top:7px">URL Link 生成失败或过期时自动回退 Short Link，并在日志标记短链类型。</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3 style="font-size:14px">转发日志</h3>
+        <div style="display:flex;align-items:center;gap:10px"><span class="hint">今日成功 42 条 · 回退 3 条 · 失败 1 条</span><button class="btn ghost" style="height:30px">查看全部</button></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tr><th>内容类型</th><th>标题</th><th>目标微信群</th><th>短链</th><th>状态</th><th>时间</th></tr>
+          <tr><td><span class="tag orange">校园任务</span></td><td><b>帮忙取快递到 3 号楼</b><br><span class="hint">奖励 50 积分 · 跑腿代办</span></td><td>东湖任务互助群</td><td class="code">URL Link · urllink.cn/8f3a</td><td><span class="tag green">成功</span></td><td>2026-11-26 10:00</td></tr>
+          <tr><td><span class="tag blue">社区帖子</span></td><td><b>图书馆座位互助经验</b><br><span class="hint">作者：林同学</span></td><td>南苑校园生活群</td><td class="code">Short Link · s.xq.cn/8Kd2</td><td><span class="tag orange">已回退</span></td><td>2026-11-26 09:30</td></tr>
+          <tr><td><span class="tag orange">校园任务</span></td><td><b>毕业照摄影跟拍</b><br><span class="hint">奖励 300 积分 · 技能服务</span></td><td>南苑校园生活群</td><td class="code">待生成</td><td><span class="tag gray">待发送</span></td><td>2026-11-26 08:30</td></tr>
+          <tr><td><span class="tag blue">社区帖子</span></td><td><b>二手教材转让合集</b><br><span class="hint">作者：周同学</span></td><td>东湖任务互助群</td><td class="code">—</td><td><span class="tag red">失败</span></td><td>2026-11-26 08:00</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ================= 配置中心：灰度发布与审核模式 ================= -->
+<div class="screen adx" data-screen="admin-release-review" data-kind="新增" data-title="灰度发布 · 审核模式">
+<div class="pc-wrap">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item"><span class="ic">工</span> 工作台</div>
+      <div class="sb-item"><span class="ic">用</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">任</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">商</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">单</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">财</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">区</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">宣</span> 运营与消息</div>
+      <div class="sb-item on"><span class="ic">配</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">权</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0 · 配置实时生效</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="bread">首页 / 配置中心 <b>/ 灰度发布</b></div>
+      <div class="tbr"><div class="icon">通知</div><div class="user"><span class="av">A</span> 超级管理员</div></div>
+    </div>
+    <div class="content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div>
+          <div class="page-title" style="margin:0">功能灰度发布</div>
+          <div class="hint" style="margin-top:4px">按功能与端控制发布范围，审核模式优先级高于普通功能开关</div>
+        </div>
+        <button class="btn ghost">发布记录</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:340px 1fr;gap:24px;background:linear-gradient(135deg,#0A3D23,#126B44);border-radius:14px;padding:22px 24px;color:#fff;margin-bottom:16px;box-shadow:0 8px 24px rgba(10,61,35,.14)">
+        <div style="border-right:1px solid rgba(255,255,255,.16);padding-right:24px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="font-size:18px;font-weight:800">审核模式</span><span style="background:var(--orange);color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:800">当前：审核中</span></div>
+          <div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.8">上次状态：已恢复 · 2026-11-25 18:20<br>本次开启：2026-11-26 09:30 · 超级管理员</div>
+          <button class="btn" style="margin-top:14px;width:100%;height:38px;border:0;color:var(--green-dark);font-weight:800">一键切换审核模式</button>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><b style="font-size:14px">影响范围说明</b><span style="font-size:11px;color:rgba(255,255,255,.66)">全校区 · 小程序端优先生效</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:11px 13px;font-size:12px;line-height:1.65"><b>模块关闭时静默处理</b><br><span style="color:rgba(255,255,255,.72)">审核期功能模块关闭时，小程序静默处理并隐藏对应入口，不展示异常报错。</span></div>
+            <div style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:11px 13px;font-size:12px;line-height:1.65"><b>钱包与提现保护</b><br><span style="color:rgba(255,255,255,.72)">自动隐藏钱包内容、余额及资产明细，提现入口统一提示「提现已关闭」。</span></div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,.62)">切换后约 30 秒内生效；恢复时按下方全局模式及 H5 / 小程序覆盖配置还原。</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="tabs" style="margin:0"><span class="tab on">功能开关</span><span class="tab">灰度策略</span><span class="tab">变更记录</span></div>
+        <span class="hint">端覆盖留空即跟随全局 · 最近保存 10:12</span>
+      </div>
+      <div class="table-wrap" style="margin-bottom:16px">
+        <table>
+          <tr><th>功能模块</th><th>全局模式</th><th>H5 覆盖</th><th>小程序覆盖</th><th>审核期处理</th><th>更新时间</th><th>操作</th></tr>
+          <tr><td><b>校园社区</b><br><span class="hint">community</span></td><td><div style="display:flex;align-items:center;gap:8px"><span class="sw on"></span><span>开放</span></div></td><td><select class="select" style="width:116px"><option>跟随全局</option><option>开放</option><option>关闭</option></select></td><td><select class="select" style="width:116px"><option>关闭</option><option>跟随全局</option><option>开放</option></select></td><td><span class="tag orange">静默隐藏入口</span></td><td>11-26 10:12</td><td class="act"><a>配置</a></td></tr>
+          <tr><td><b>任务大厅</b><br><span class="hint">task-hall</span></td><td><div style="display:flex;align-items:center;gap:8px"><span class="sw on"></span><span>开放</span></div></td><td><select class="select" style="width:116px"><option>跟随全局</option><option>开放</option><option>关闭</option></select></td><td><select class="select" style="width:116px"><option>跟随全局</option><option>开放</option><option>关闭</option></select></td><td><span class="tag green">正常开放</span></td><td>11-26 09:48</td><td class="act"><a>配置</a></td></tr>
+          <tr><td><b>积分商城</b><br><span class="hint">points-mall</span></td><td><div style="display:flex;align-items:center;gap:8px"><span class="sw"></span><span>关闭</span></div></td><td><select class="select" style="width:116px"><option>开放</option><option>跟随全局</option><option>关闭</option></select></td><td><select class="select" style="width:116px"><option>关闭</option><option>跟随全局</option><option>开放</option></select></td><td><span class="tag blue">H5 开放覆盖</span></td><td>11-26 09:35</td><td class="act"><a>配置</a></td></tr>
+          <tr><td><b>钱包资产</b><br><span class="hint">wallet</span></td><td><div style="display:flex;align-items:center;gap:8px"><span class="sw on"></span><span>开放</span></div></td><td><select class="select" style="width:116px"><option>跟随全局</option><option>开放</option><option>关闭</option></select></td><td><select class="select" style="width:116px"><option>审核隐藏</option><option>跟随全局</option><option>关闭</option></select></td><td><span class="tag red">隐藏钱包 · 提现已关闭</span></td><td>11-26 09:30</td><td class="act"><a>配置</a></td></tr>
+        </table>
+      </div>
+
+      <div class="row" style="margin-bottom:0">
+        <div class="pcard" style="flex:1;padding:14px 16px"><h3>当前灰度批次</h3><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:20px">GR-20261126-03</b><span class="tag green">发布中</span></div><div class="hint" style="margin-top:6px">东湖、南苑校区 · 覆盖 20% 活跃用户</div></div>
+        <div class="pcard" style="flex:1;padding:14px 16px"><h3>生效端</h3><div style="display:flex;gap:8px"><span class="tag blue">H5</span><span class="tag green">微信小程序</span></div><div class="hint" style="margin-top:10px">配置版本 v3.2.0-review.4</div></div>
+        <div class="pcard" style="flex:1.25;padding:14px 16px"><h3>安全确认</h3><div style="font-size:12px">双人复核已通过 · 操作全程写入审计日志</div><div class="hint" style="margin-top:7px">复核人：运营管理员 / 超级管理员</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ================= 账号菜单：修改密码与退出 ================= -->
+<div class="screen adx" data-screen="admin-account-menu" data-kind="新增" data-title="账号菜单 · 修改密码与退出">
+<div class="pc-wrap" style="position:relative">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="logo">校</span> 校圈 Admin</div>
+    <div class="sb-menu">
+      <div class="sb-item on"><span class="ic">工</span> 工作台</div>
+      <div class="sb-item"><span class="ic">用</span> 用户中心</div>
+      <div class="sb-item"><span class="ic">任</span> 任务中心</div>
+      <div class="sb-item"><span class="ic">商</span> 商城中心</div>
+      <div class="sb-item"><span class="ic">单</span> 订单与售后</div>
+      <div class="sb-item"><span class="ic">财</span> 资产与财务</div>
+      <div class="sb-item"><span class="ic">区</span> 社区内容</div>
+      <div class="sb-item"><span class="ic">宣</span> 运营与消息</div>
+      <div class="sb-item"><span class="ic">配</span> 配置中心</div>
+      <div class="sb-item"><span class="ic">权</span> 权限与审计</div>
+    </div>
+    <div class="sb-foot">校圈 v3.2.0 · PC 管理端</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="bread">首页 <b>/ 数据看板</b></div>
+      <div class="tbr"><div class="icon">通知</div><div class="user" style="height:38px;padding:0 10px;background:var(--green-soft);border-radius:8px"><span class="av">A</span> 超级管理员 <span style="font-size:10px;color:var(--green-deep)">展开</span></div></div>
+    </div>
+    <div class="content">
+      <div class="page-title">数据看板</div>
+      <div class="row">
+        <div class="stat-card"><div class="lab">今日新增任务</div><div class="num">128</div><div class="chg up">↑ 12% 较昨日</div></div>
+        <div class="stat-card"><div class="lab">待审核事项</div><div class="num" style="color:var(--orange-deep)">23</div><div class="chg down">任务与社区</div></div>
+        <div class="stat-card"><div class="lab">今日订单金额</div><div class="num">¥3,420</div><div class="chg up">↑ 8% 较昨日</div></div>
+        <div class="stat-card"><div class="lab">待处理售后</div><div class="num" style="color:var(--red)">5</div><div class="chg down">需尽快处理</div></div>
+      </div>
+      <div class="row">
+        <div class="pcard" style="flex:2">
+          <h3>近 7 天任务与订单趋势</h3>
+          <div class="chart-h" style="height:190px">
+            <div class="bar" style="height:35%" data-v="120"></div><div class="bar on" style="height:55%" data-v="186"></div><div class="bar" style="height:45%" data-v="152"></div><div class="bar on" style="height:70%" data-v="238"></div><div class="bar" style="height:60%" data-v="204"></div><div class="bar on" style="height:85%" data-v="290"></div><div class="bar" style="height:78%" data-v="265"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3)"><span>11-20</span><span>11-21</span><span>11-22</span><span>11-23</span><span>11-24</span><span>11-25</span><span>11-26</span></div>
+        </div>
+        <div class="pcard" style="flex:1"><h3>待办事项</h3><div class="list-item"><span class="dot"></span>任务审核待处理<b style="margin-left:auto;color:var(--orange-deep)">12</b></div><div class="list-item"><span class="dot orange"></span>社区内容待审核<b style="margin-left:auto;color:var(--orange-deep)">6</b></div><div class="list-item"><span class="dot red"></span>提现申请待审<b style="margin-left:auto;color:var(--red)">3</b></div><div class="list-item"><span class="dot"></span>售后工单待处理<b style="margin-left:auto">5</b></div></div>
+      </div>
+      <div class="table-wrap"><table><tr><th>最新动态</th><th>操作人</th><th>模块</th><th>时间</th><th>状态</th></tr><tr><td>审核模式配置已复核</td><td>超级管理员</td><td>配置中心</td><td>2026-11-26 10:12</td><td><span class="tag green">已生效</span></td></tr><tr><td>机器人转发配置已更新</td><td>运营管理员</td><td>机器人推广</td><td>2026-11-26 10:06</td><td><span class="tag green">已生效</span></td></tr></table></div>
+    </div>
+  </div>
+
+  <div style="position:absolute;top:50px;right:24px;width:220px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 38px rgba(15,23,42,.2);z-index:80;overflow:hidden">
+    <div style="padding:13px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px"><span class="av" style="width:30px;height:30px;border-radius:8px;background:var(--green-soft);color:var(--green-deep);display:flex;align-items:center;justify-content:center;font-weight:800">A</span><div><b style="font-size:13px">超级管理员</b><div class="hint">UID：10001</div></div></div>
+    <div style="padding:6px"><div style="padding:10px 11px;border-radius:7px;background:var(--green-soft);color:var(--green-deep);font-size:13px;font-weight:700">修改密码</div><div style="padding:10px 11px;color:var(--red);font-size:13px">退出登录</div></div>
+  </div>
+
+  <div style="position:absolute;top:78px;right:262px;width:250px;background:#fff;border:1px solid #CBEFD9;border-radius:10px;padding:12px 14px;box-shadow:0 8px 24px rgba(15,23,42,.12);z-index:80">
+    <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:var(--green-deep);margin-bottom:9px"><span style="width:7px;height:7px;background:var(--green);border-radius:50%"></span>移动端与 PC 导航配色统一</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;margin:6px 0"><span style="width:18px;height:18px;border-radius:5px;background:var(--green-dark)"></span><span>移动端抽屉导航</span><b class="code" style="margin-left:auto">#0A3D23</b></div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;margin:6px 0"><span style="width:18px;height:18px;border-radius:5px;background:var(--green-dark)"></span><span>PC 侧栏</span><b class="code" style="margin-left:auto">#0A3D23</b></div>
+    <div class="hint" style="border-top:1px solid var(--line);padding-top:7px;margin-top:8px">选中态统一使用品牌绿 #0BBF63</div>
+  </div>
+
+  <div style="position:absolute;inset:56px 0 0 220px;background:rgba(15,23,42,.48);z-index:40;display:flex;align-items:center;justify-content:center">
+    <div style="width:430px;background:#fff;border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.28);overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:17px 20px;border-bottom:1px solid var(--line)"><b style="font-size:16px">修改密码</b><span style="color:var(--t3);font-size:18px">×</span></div>
+      <div style="padding:18px 20px 4px">
+        <div style="background:var(--blue-soft);color:var(--blue);border-radius:8px;padding:9px 11px;font-size:11.5px;line-height:1.6;margin-bottom:15px">修改后需重新登录；新密码至少 8 位，并包含字母与数字。</div>
+        <div class="lf"><label>旧密码</label><input type="password" value="old-password" style="height:38px"></div>
+        <div class="lf"><label>新密码</label><input type="password" value="new-password" style="height:38px"><div class="hint" style="margin-top:5px">密码强度：中等</div></div>
+        <div class="lf"><label>确认新密码</label><input type="password" value="new-password" style="height:38px"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)"><button class="btn ghost">取消</button><button class="btn primary">确认修改</button></div>
+    </div>
+  </div>
+</div>
+</div>
+
 </body>
 </html>

@@ -93,7 +93,7 @@
             </view>
             <view class="head-right">
               <button
-                v-if="!post.author.is_self && post.author.id"
+                v-if="followEnabled && !post.author.is_self && post.author.id"
                 :class="['follow-btn', { followed: post.author.is_followed }]"
                 :disabled="followLoadingId === post.id"
                 @click="toggleFollow(post)"
@@ -235,15 +235,19 @@ const topSafeAreaStyle = createTopSafeAreaStyle()
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_community'))
+const followEnabled = computed(() => modules.isLaunched('module_follow'))
 const campusProfile = useCampusProfileStore()
 const strictCampus = computed(() => campusProfile.isStrict)
 
-const feedTabs: Array<{ code: CommunityFeed; label: string }> = [
-  { code: 'following', label: '关注' },
-  { code: 'discover', label: '发现' },
-  { code: 'nearby', label: '附近' },
-  { code: 'featured', label: '精选' },
-]
+const feedTabs = computed(() => {
+  const tabs: Array<{ code: CommunityFeed; label: string }> = [
+    { code: 'discover', label: '发现' },
+    { code: 'nearby', label: '附近' },
+    { code: 'featured', label: '精选' },
+  ]
+  if (followEnabled.value) tabs.unshift({ code: 'following', label: '关注' })
+  return tabs
+})
 
 const fallbackCategories: CommunityCategory[] = [
   { code: 'experience', label: '校园动态' }, { code: 'guide', label: '学习攻略' },
@@ -340,7 +344,7 @@ const visiblePosts = computed(() => {
 
 onLoad((options) => {
   const feed = typeof options?.feed === 'string' ? options.feed : ''
-  if ((feedTabs.map(item => item.code) as string[]).includes(feed)) activeFeed.value = feed as CommunityFeed
+  if (['following', 'discover', 'nearby', 'featured'].includes(feed)) activeFeed.value = feed as CommunityFeed
   const category = typeof options?.category === 'string' ? options.category : ''
   if (category && fallbackCategories.some(item => item.code === category)) activeCategory.value = category as CommunityCategory['code']
   if (options?.view === 'mine' && ensureAuth()) activeView.value = 'mine'
@@ -350,6 +354,7 @@ onShow(async () => {
   void campusProfile.ensure()
   await modules.ensureReady()
   if (!moduleEnabled.value) return
+  if (!followEnabled.value && activeFeed.value === 'following') activeFeed.value = 'discover'
   if (activeView.value === 'mine' && auth.isAuthenticated) await loadMine()
   else await refreshSquare()
   await Promise.all([loadHomeConfig(), loadCategories()])
@@ -380,6 +385,7 @@ async function loadMore() { if (loadingMore.value || !hasMore.value) return; loa
 async function loadMine() { if (!auth.accessToken) return; loadingMine.value = true; mineError.value = ''; try { myPosts.value = (await listMyCommunityPosts(auth.accessToken)).items } catch (error) { mineError.value = errorMessage(error) } finally { loadingMine.value = false } }
 async function switchView(view: 'square' | 'mine') { if (view === 'mine' && !ensureAuth()) return; activeView.value = view; if (view === 'mine') await loadMine(); else await refreshSquare() }
 async function switchFeed(feed: CommunityFeed) {
+  if (feed === 'following' && !followEnabled.value) feed = 'discover'
   if ((feed === 'following' || feed === 'nearby') && !ensureAuth()) return
   activeView.value = 'square'
   keyword.value = ''
@@ -441,7 +447,7 @@ async function toggleFavorite(post: CommunityPost) {
   }
 }
 async function toggleFollow(post: CommunityPost) {
-  if (!ensureAuth() || !auth.accessToken || !post.author.id || followLoadingId.value) return
+  if (!followEnabled.value || !ensureAuth() || !auth.accessToken || !post.author.id || followLoadingId.value) return
   if (post.author.is_followed) {
     const result = await uni.showModal({ title: '取消关注？', content: `取消后将不再优先看到「${post.author.nickname}」的动态。`, confirmText: '取消关注', confirmColor: '#e93f4f' })
     if (!result.confirm) return

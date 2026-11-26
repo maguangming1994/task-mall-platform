@@ -110,6 +110,10 @@ const jobs = [
   { file: sub,  screen: 'ci-m5',             name: '83-ci-m5' },
   { file: sub,  screen: 'ci-m6',             name: '84-ci-m6' },
   { file: sub,  screen: 'mt-fetches',        name: '85-material-fetches' },
+  { file: sub,  screen: 'post-compose',      name: '86-post-compose' },
+  { file: sub,  screen: 'post-profile',      name: '87-post-profile' },
+  { file: sub,  screen: 'bind-school',       name: '88-bind-school' },
+  { file: sub,  screen: 'login-phone',       name: '89-login-phone' },
 ];
 
 (async () => {

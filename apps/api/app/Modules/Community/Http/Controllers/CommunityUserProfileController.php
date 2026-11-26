@@ -11,6 +11,8 @@ use App\Modules\Community\Models\UserBlock;
 use App\Modules\Community\Models\UserFollow;
 use App\Modules\Community\Models\UserProfileVisit;
 use App\Modules\Identity\Models\UserIdentityVerification;
+use App\Modules\Operations\Services\ModuleGateService;
+use App\Modules\Operations\Support\ModuleRegistry;
 use App\Modules\SecondHand\Models\SecondHandItem;
 use App\Modules\SecondHand\Models\SecondHandRating;
 use App\Modules\Task\Models\Task;
@@ -29,6 +31,15 @@ class CommunityUserProfileController extends Controller
 {
     private const CONTENT_TYPES = ['posts', 'second_hand', 'activities', 'tasks', 'claims', 'impressions'];
 
+    private const CONTENT_MODULES = [
+        'posts' => 'module_community',
+        'second_hand' => 'module_second_hand',
+        'activities' => 'module_community',
+        'tasks' => 'module_tasks',
+        'claims' => 'module_tasks',
+        'impressions' => 'module_second_hand',
+    ];
+
     private const CONDITIONS = [
         'new' => '全新',
         'like_new' => '几乎全新',
@@ -36,6 +47,11 @@ class CommunityUserProfileController extends Controller
         'good' => '正常使用',
         'fair' => '明显使用',
     ];
+
+    public function __construct(
+        private readonly ModuleGateService $modules,
+        private readonly ModuleRegistry $registry,
+    ) {}
 
     public function show(Request $request, string $userId): JsonResponse
     {
@@ -46,15 +62,17 @@ class CommunityUserProfileController extends Controller
         $blocksMe = $this->blocksViewer($viewer, $target);
         abort_if($blocksMe && ! $isBlocked, 404);
         $hasBlock = $isBlocked || $blocksMe;
+        $followEnabled = $this->modules->effectiveForRequest($request, 'module_follow');
+        $contentModules = $this->contentModuleStates($request);
 
         if ($viewer !== null && ! $isSelf && ! $hasBlock) {
             $this->recordVisit($target, $viewer);
         }
 
-        $canSeeFollowers = ! $hasBlock && ($isSelf || ($viewer !== null && UserFollow::query()
+        $canSeeFollowers = ! $hasBlock && ($isSelf || ($followEnabled && $viewer !== null && UserFollow::query()
             ->where('follower_id', $viewer->id)->where('following_id', $target->id)->exists()));
         $ratingQuery = SecondHandRating::query()->where('ratee_user_id', $target->id);
-        $ratingCount = $hasBlock ? 0 : (clone $ratingQuery)->count();
+        $ratingCount = $hasBlock || ! $contentModules['module_second_hand'] ? 0 : (clone $ratingQuery)->count();
 
         return ApiResponse::success([
             'id' => $target->public_id,
@@ -69,16 +87,16 @@ class CommunityUserProfileController extends Controller
             'major' => $target->major,
             'verified' => UserIdentityVerification::query()->where('user_id', $target->id)->where('status', 'verified')->exists(),
             'is_self' => $isSelf,
-            'is_followed' => ! $hasBlock && $viewer !== null && UserFollow::query()->where('follower_id', $viewer->id)->where('following_id', $target->id)->exists(),
+            'is_followed' => $followEnabled && ! $hasBlock && $viewer !== null && UserFollow::query()->where('follower_id', $viewer->id)->where('following_id', $target->id)->exists(),
             'is_blocked' => $isBlocked,
             'can_message' => $viewer !== null && ! $isSelf && ! $hasBlock,
-            'follower_count' => UserFollow::query()->where('following_id', $target->id)->count(),
-            'following_count' => UserFollow::query()->where('follower_id', $target->id)->count(),
+            'follower_count' => $followEnabled ? UserFollow::query()->where('following_id', $target->id)->count() : 0,
+            'following_count' => $followEnabled ? UserFollow::query()->where('follower_id', $target->id)->count() : 0,
             'visitor_count' => UserProfileVisit::query()->where('profile_user_id', $target->id)->count(),
             'recent_visitors' => $this->recentVisitors($target),
             'rating_average' => $ratingCount > 0 ? round((float) (clone $ratingQuery)->avg('score'), 1) : null,
             'rating_count' => $ratingCount,
-            'content_counts' => $hasBlock ? $this->emptyCounts() : $this->contentCounts($target, $canSeeFollowers),
+            'content_counts' => $hasBlock ? $this->emptyCounts() : $this->contentCounts($target, $canSeeFollowers, $contentModules),
         ]);
     }
 
@@ -90,6 +108,10 @@ class CommunityUserProfileController extends Controller
             'page_size' => ['nullable', 'integer', 'min:1', 'max:30'],
         ]);
         $type = $data['type'] ?? 'posts';
+        $module = self::CONTENT_MODULES[$type];
+        if (! $this->modules->effectiveForRequest($request, $module)) {
+            return $this->moduleDisabled($module);
+        }
         $page = $data['page'] ?? 1;
         $size = $data['page_size'] ?? 10;
         $target = $this->resolveUser($userId);
@@ -101,7 +123,8 @@ class CommunityUserProfileController extends Controller
             return ApiResponse::success(['type' => $type, 'items' => [], 'pagination' => $this->pagination($page, $size, 0)]);
         }
 
-        $canSeeFollowers = $viewer?->id === $target->id || ($viewer !== null && UserFollow::query()
+        $followEnabled = $this->modules->effectiveForRequest($request, 'module_follow');
+        $canSeeFollowers = $viewer?->id === $target->id || ($followEnabled && $viewer !== null && UserFollow::query()
             ->where('follower_id', $viewer->id)->where('following_id', $target->id)->exists());
 
         return match ($type) {
@@ -202,16 +225,36 @@ class CommunityUserProfileController extends Controller
         return array_fill_keys(self::CONTENT_TYPES, 0);
     }
 
-    private function contentCounts(User $target, bool $canSeeFollowers): array
+    private function contentCounts(User $target, bool $canSeeFollowers, array $contentModules): array
     {
         return [
-            'posts' => $this->postsQuery($target, $canSeeFollowers)->count(),
-            'second_hand' => $this->secondHandQuery($target)->count(),
-            'activities' => $this->activitiesQuery($target)->count(),
-            'tasks' => $this->tasksQuery($target)->count(),
-            'claims' => $this->claimsQuery($target)->count(),
-            'impressions' => $this->impressionsQuery($target)->count(),
+            'posts' => $contentModules['module_community'] ? $this->postsQuery($target, $canSeeFollowers)->count() : 0,
+            'second_hand' => $contentModules['module_second_hand'] ? $this->secondHandQuery($target)->count() : 0,
+            'activities' => $contentModules['module_community'] ? $this->activitiesQuery($target)->count() : 0,
+            'tasks' => $contentModules['module_tasks'] ? $this->tasksQuery($target)->count() : 0,
+            'claims' => $contentModules['module_tasks'] ? $this->claimsQuery($target)->count() : 0,
+            'impressions' => $contentModules['module_second_hand'] ? $this->impressionsQuery($target)->count() : 0,
         ];
+    }
+
+    private function contentModuleStates(Request $request): array
+    {
+        $states = [];
+        foreach (array_unique(self::CONTENT_MODULES) as $code) {
+            $states[$code] = $this->modules->effectiveForRequest($request, $code);
+        }
+
+        return $states;
+    }
+
+    private function moduleDisabled(string $code): JsonResponse
+    {
+        return ApiResponse::error(
+            'MODULE_DISABLED',
+            ($this->registry->name($code) ?: '该功能').'当前未开放，敬请期待。',
+            403,
+            ['module' => $code],
+        );
     }
 
     private function postsQuery(User $target, bool $canSeeFollowers): Builder

@@ -10,6 +10,7 @@ use App\Modules\Notification\Models\Notification;
 use App\Modules\Notification\Models\NotificationCampaign;
 use App\Modules\Notification\Models\NotificationPreference;
 use App\Modules\Notification\Models\NotificationTemplate;
+use App\Modules\Operations\Services\ReleaseControlService;
 use App\Modules\Settings\Services\SystemSettingService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,7 @@ class NotificationService
         private readonly WechatOfficialAccountSubscriptionSender $wechatOa,
         private readonly NotificationSceneRegistry $sceneRegistry,
         private readonly WechatMiniTemplateData $wechatTemplates,
+        private readonly ReleaseControlService $releases,
     ) {}
 
     public function create(User $user, string $category, string $scene, string $title, string $body, string $eventKey, bool $essential = false, array $channels = ['in_app'], array $data = [], array $channelPayloads = []): Notification
@@ -36,7 +38,10 @@ class NotificationService
             return $notification;
         }
 
-        return DB::transaction(function () use ($user, $category, $scene, $title, $body, $hash, $essential, $channels, $data, $channelPayloads) {
+        $releaseContext = $this->externalNotificationContext();
+        $externalNotificationsEnabled = $this->releases->enabled('external_notifications', $releaseContext['subject'], $releaseContext['platform']);
+
+        return DB::transaction(function () use ($user, $category, $scene, $title, $body, $hash, $essential, $channels, $data, $channelPayloads, $releaseContext, $externalNotificationsEnabled) {
             $preference = $this->preference($user);
             $notification = Notification::query()->firstOrCreate(
                 ['event_key_hash' => $hash],
@@ -48,10 +53,18 @@ class NotificationService
             foreach (array_unique(['in_app', ...$channels]) as $channel) {
                 $channelPayload = $channelPayloads[$channel] ?? [];
                 $payload = ['scene' => $scene, 'title' => $title, 'body' => $body, 'data' => $data, ...$channelPayload];
+                if ($channel !== 'in_app') {
+                    $payload['_external_notification_subject'] = $releaseContext['subject'];
+                    $payload['_external_notification_platform'] = $releaseContext['platform'];
+                }
                 $wechatReservation = null;
                 $errorCode = null;
                 $errorMessage = null;
-                if (! $this->channelEnabled($channel, $preference)) {
+                if ($channel !== 'in_app' && ! $externalNotificationsEnabled) {
+                    $status = 'skipped';
+                    $errorCode = 'EXTERNAL_NOTIFICATIONS_DISABLED';
+                    $errorMessage = '外部通知当前未开放，本次投递已终止。';
+                } elseif (! $this->channelEnabled($channel, $preference)) {
                     $status = 'skipped';
                     $errorCode = 'CHANNEL_DISABLED';
                     $errorMessage = '用户已关闭该外部通知渠道。';
@@ -235,6 +248,14 @@ class NotificationService
 
         try {
             $payload = json_decode($delivery->payload_snapshot, true) ?: [];
+            $releaseContext = $this->externalNotificationContext(
+                isset($payload['_external_notification_subject']) ? (string) $payload['_external_notification_subject'] : null,
+                isset($payload['_external_notification_platform']) ? (string) $payload['_external_notification_platform'] : null,
+            );
+            if ($delivery->channel !== 'in_app' && ! $this->releases->enabled('external_notifications', $releaseContext['subject'], $releaseContext['platform'])) {
+                throw new SkippedNotificationDeliveryException('EXTERNAL_NOTIFICATIONS_DISABLED', '外部通知当前未开放，本次投递已终止。');
+            }
+            unset($payload['_external_notification_subject'], $payload['_external_notification_platform']);
             $notification = Notification::query()->findOrFail($delivery->notification_id);
             if ($delivery->channel === 'wechat_mini' && ($payload['provider'] ?? null) === 'wechat_mini_subscription') {
                 $providerId = $this->wechatMini->send(User::query()->findOrFail($notification->user_id), $payload);
@@ -272,6 +293,16 @@ class NotificationService
 
             return false;
         }
+    }
+
+    private function externalNotificationContext(?string $subject = null, ?string $platform = null): array
+    {
+        $request = app('request');
+
+        return [
+            'subject' => $subject ?? (string) ($request->header('X-Device-Id') ?: 'anonymous'),
+            'platform' => $platform ?? $request->header('X-Client-Platform'),
+        ];
     }
 
     private function channelEnabled(string $channel, NotificationPreference $preference): bool

@@ -11,9 +11,9 @@
 
     <view v-if="showSettings && preference" class="settings-card">
       <view class="settings-head"><view class="settings-icon">🔔</view><view><text>通知偏好</text><text>外部渠道可关闭，站内关键记录始终保留</text></view></view>
-      <view class="setting-row"><view class="setting-copy"><text>服务通知</text><text>接收任务、订单与资产提醒</text></view><switch color="#0BBF63" :checked="preference.wechat_enabled" :disabled="savingPreference" @change="changePreference('wechat_enabled', $event)" /></view>
+      <view v-if="externalNotificationsEnabled" class="setting-row"><view class="setting-copy"><text>服务通知</text><text>接收任务、订单与资产提醒</text></view><switch color="#0BBF63" :checked="preference.wechat_enabled" :disabled="savingPreference" @change="changePreference('wechat_enabled', $event)" /></view>
       <!-- #ifdef MP-WEIXIN -->
-      <view v-if="wechatSubscriptions?.configured" class="subscription-section">
+      <view v-if="externalNotificationsEnabled && wechatSubscriptions?.configured" class="subscription-section">
         <view class="subscription-heading"><text>小程序订阅提醒</text><text>一次授权对应一次后续服务通知</text></view>
         <view class="subscription-actions">
           <button v-for="group in wechatSubscriptions.groups" :key="group.context" class="subscription-button" :loading="subscribingContext === group.context" :disabled="Boolean(subscribingContext)" @click="subscribeWechat(group)">
@@ -23,12 +23,12 @@
       </view>
       <!-- #endif -->
       <!-- #ifdef H5 -->
-      <view class="setting-row" @click="openOfficialAccountSubscription">
+      <view v-if="externalNotificationsEnabled" class="setting-row" @click="openOfficialAccountSubscription">
         <view class="setting-copy"><text>公众号订阅提醒</text><text>订阅后评论与回复消息推送到公众号</text></view>
         <text class="right-action">去订阅 ›</text>
       </view>
       <!-- #endif -->
-      <view class="setting-row"><view class="setting-copy"><text>短信通知</text><text>用于重要状态及安全验证</text></view><switch color="#0BBF63" :checked="preference.sms_enabled" :disabled="savingPreference" @change="changePreference('sms_enabled', $event)" /></view>
+      <view v-if="externalNotificationsEnabled" class="setting-row"><view class="setting-copy"><text>短信通知</text><text>用于重要状态及安全验证</text></view><switch color="#0BBF63" :checked="preference.sms_enabled" :disabled="savingPreference" @change="changePreference('sms_enabled', $event)" /></view>
       <view class="setting-row"><view class="setting-copy"><text>营销订阅</text><text>接收校园活动与优惠推荐</text></view><switch color="#0BBF63" :checked="preference.marketing_subscribed" :disabled="savingPreference" @change="changePreference('marketing_subscribed', $event)" /></view>
       <view class="quiet-row">
         <view class="setting-copy"><text>免打扰时间</text><text>非关键消息将在此时段静默</text></view>
@@ -150,6 +150,7 @@ interface PendingWechatSubscriptionResults { request_id: string; results: Wechat
 
 const auth = useAuthStore()
 const modules = useModulesStore()
+const externalNotificationsEnabled = computed(() => modules.externalNotifications)
 const items = ref<AppNotification[]>([])
 const preference = ref<NotificationPreference | null>(null)
 const wechatSubscriptions = ref<WechatSubscriptionOptions | null>(null)
@@ -226,7 +227,8 @@ async function initialize() {
   await modules.ensureReady()
   if (!communityEnabled.value && activeCategory.value === 'community') activeCategory.value = ''
   if (!materialEnabled.value && activeCategory.value === 'material') activeCategory.value = ''
-  await Promise.all([loadNotifications(true), loadPreference(), loadWechatSubscriptions()])
+  if (!externalNotificationsEnabled.value) wechatSubscriptions.value = null
+  await Promise.all([loadNotifications(true), loadPreference(), externalNotificationsEnabled.value ? loadWechatSubscriptions() : Promise.resolve()])
 }
 
 async function loadPreference() {
@@ -239,7 +241,7 @@ async function loadWechatSubscriptions() {
   // #ifndef MP-WEIXIN
   return
   // #endif
-  if (!auth.accessToken || loadingWechatSubscriptions.value) return
+  if (!externalNotificationsEnabled.value || !auth.accessToken || loadingWechatSubscriptions.value) return
   loadingWechatSubscriptions.value = true
   try {
     const pendingStatus = await syncPendingWechatSubscriptionResults()
@@ -255,7 +257,7 @@ async function loadWechatSubscriptions() {
 }
 
 async function subscribeWechat(group: WechatSubscriptionGroup) {
-  if (!auth.accessToken || subscribingContext.value || !group.template_ids.length) return
+  if (!externalNotificationsEnabled.value || !auth.accessToken || subscribingContext.value || !group.template_ids.length) return
   subscribingContext.value = group.context
   try {
     // #ifdef MP-WEIXIN
@@ -326,6 +328,7 @@ function pendingWechatSubscriptionResults(): PendingWechatSubscriptionResults | 
 }
 
 async function syncPendingWechatSubscriptionResults(): Promise<'none' | 'synced' | 'discarded' | 'pending'> {
+  if (!externalNotificationsEnabled.value) return 'none'
   const pending = pendingWechatSubscriptionResults()
   if (!pending || !auth.accessToken) return 'none'
   try {
@@ -559,6 +562,7 @@ function goBack() {
 }
 
 function openOfficialAccountSubscription() {
+  if (!externalNotificationsEnabled.value) return
   uni.navigateTo({ url: '/pages/wechat-subscribe/index' })
 }
 </script>

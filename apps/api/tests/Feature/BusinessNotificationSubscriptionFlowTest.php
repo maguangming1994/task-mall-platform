@@ -14,6 +14,7 @@ use App\Modules\Notification\Services\NotificationSceneConfigService;
 use App\Modules\Notification\Services\NotificationSceneRegistry;
 use App\Modules\Notification\Services\NotificationService;
 use App\Modules\Notification\Services\WechatSubscriptionGrantService;
+use App\Modules\Operations\Models\FeatureFlag;
 use App\Modules\Task\Models\Task;
 use App\Modules\Task\Models\TaskClaim;
 use App\Modules\Task\Models\TaskVersion;
@@ -35,6 +36,7 @@ class BusinessNotificationSubscriptionFlowTest extends TestCase
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
+        FeatureFlag::query()->where('code', 'external_notifications')->update(['mode' => 'enabled', 'rollout_percentage' => 100]);
     }
 
     public function test_business_scene_uses_published_template_is_idempotent_and_rolls_back_with_business_transaction(): void
@@ -188,6 +190,80 @@ class BusinessNotificationSubscriptionFlowTest extends TestCase
             $this->assertContains('wechat_mini', $scene['default_channels']);
             $this->assertContains('wechat_oa', $scene['default_channels']);
         }
+    }
+
+    public function test_post_review_approved_oa_template_is_listed_and_delivered(): void
+    {
+        config()->set('wechat_auth.driver', 'wechat');
+        config()->set('wechat_auth.official_account.app_id', 'wxoa1234567890abcd');
+        config()->set('wechat_auth.official_account.app_secret', 'test-oa-secret');
+        config()->set('app.url', 'https://rwsc.example.cn');
+        Cache::clear();
+        Http::fake([
+            'api.weixin.qq.com/cgi-bin/token*' => Http::response(['access_token' => 'oa-access-token', 'expires_in' => 7200]),
+            'api.weixin.qq.com/cgi-bin/message/subscribe/bizsend*' => Http::response(['errcode' => 0, 'errmsg' => 'ok', 'msgid' => 'oa-message-002']),
+        ]);
+        $user = User::factory()->create(['status' => 'active']);
+        UserIdentity::query()->create([
+            'user_id' => $user->id,
+            'provider' => 'wechat_oa',
+            'provider_user_id' => hash('sha256', 'oa-openid-002'),
+            'provider_user_value' => 'oa-openid-002',
+            'metadata' => ['app_id_hash' => hash('sha256', 'wxoa1234567890abcd')],
+        ]);
+        $admin = AdminUser::query()->create(['account' => 'oa-post-template-owner', 'display_name' => '公众号帖子模板管理员', 'password' => 'AdminPassword12345!']);
+        $notifications = app(NotificationService::class);
+        $notifications->preference($user)->update(['wechat_enabled' => true, 'quiet_hours_start' => '00:00', 'quiet_hours_end' => '00:00']);
+        $notifications->saveTemplate($admin, [
+            'scene_code' => 'post_review_approved',
+            'channel' => 'wechat_oa',
+            'subject' => '帖子审核通过',
+            'body' => '{"thing1":"{{post_title}}","phrase2":"{{status_text}}"}',
+            'allowed_variables' => ['post_title', 'status_text'],
+            'provider_template_id' => 'OA_POST_REVIEW_APPROVED',
+            'publish' => true,
+        ]);
+
+        // 公众号 H5 订阅页读取的模板列表必须包含刚发布的模板。
+        $templates = app(NotificationSceneConfigService::class)->wechatOfficialAccountTemplates();
+        $this->assertTrue(collect($templates)->contains(fn (array $template): bool => $template['template_id'] === 'OA_POST_REVIEW_APPROVED'
+            && in_array('post_review_approved', $template['scenes'], true)));
+
+        $post = CommunityPost::query()->create([
+            'user_id' => $user->id,
+            'title' => '需要审核的帖子',
+            'content' => '等待管理员审核。',
+            'category_code' => 'help',
+            'status' => 'pending_review',
+            'idempotency_key_hash' => hash('sha256', 'post-oa-review-approved'),
+        ]);
+        $version = CommunityPostVersion::query()->create([
+            'community_post_id' => $post->id,
+            'version_no' => 1,
+            'title' => $post->title,
+            'content' => $post->content,
+            'category_code' => 'help',
+            'review_status' => 'pending',
+            'rule_snapshot' => [],
+        ]);
+        $version->update(['review_status' => 'approved', 'reviewed_at' => now()]);
+
+        $this->assertDatabaseHas('notifications', ['user_id' => $user->id, 'scene_code' => 'post_review_approved']);
+        $this->assertDatabaseHas('notification_deliveries', ['channel' => 'wechat_oa', 'status' => 'pending']);
+        $this->assertSame(1, $notifications->deliverPending());
+        $this->assertDatabaseHas('notification_deliveries', [
+            'channel' => 'wechat_oa',
+            'status' => 'sent',
+            'provider_message_id' => 'oa-message-002',
+        ]);
+
+        $sent = Http::recorded(fn (Request $request): bool => str_starts_with($request->url(), 'https://api.weixin.qq.com/cgi-bin/message/subscribe/bizsend'))->first();
+        $this->assertNotNull($sent);
+        /** @var Request $messageRequest */
+        $messageRequest = $sent[0];
+        $this->assertSame('oa-openid-002', $messageRequest['touser']);
+        $this->assertSame('OA_POST_REVIEW_APPROVED', $messageRequest['template_id']);
+        $this->assertStringContainsString('/pages/community-detail/index?id=', $messageRequest['url']);
     }
 
     public function test_wechat_subscription_grant_is_reserved_once_and_delivery_calls_official_api_with_frozen_template_payload(): void

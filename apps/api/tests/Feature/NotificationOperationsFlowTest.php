@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Notification\Services\NotificationService;
+use App\Modules\Operations\Models\FeatureFlag;
 use App\Modules\Operations\Services\OperationsDashboardService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,6 +20,7 @@ class NotificationOperationsFlowTest extends TestCase
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
+        FeatureFlag::query()->where('code', 'external_notifications')->update(['mode' => 'enabled', 'rollout_percentage' => 100]);
     }
 
     public function test_business_event_is_idempotent_in_app_first_quiet_hours_delay_external_and_essential_bypasses_delay(): void
@@ -38,6 +40,68 @@ class NotificationOperationsFlowTest extends TestCase
         $this->assertDatabaseHas('notification_deliveries', ['notification_id' => $essential->id, 'channel' => 'wechat', 'status' => 'pending']);
         $this->assertSame(1, $service->deliverPending());
         $this->assertDatabaseHas('notification_deliveries', ['notification_id' => $essential->id, 'channel' => 'wechat', 'status' => 'sent']);
+    }
+
+    public function test_external_notification_flag_skips_new_and_queued_deliveries_without_affecting_in_app(): void
+    {
+        FeatureFlag::query()->where('code', 'external_notifications')->update([
+            'mode' => 'disabled',
+            'rollout_percentage' => 0,
+            'platform_modes' => ['wechat-mini' => 'inherit', 'h5' => 'inherit'],
+        ]);
+        $user = User::factory()->create(['status' => 'active']);
+        $service = app(NotificationService::class);
+        $service->preference($user)->update(['wechat_enabled' => true, 'sms_enabled' => true, 'quiet_hours_start' => '00:00', 'quiet_hours_end' => '00:00']);
+
+        $disabled = $service->create($user, 'order', 'payment_succeeded', '外部开关关闭', '站内记录仍应正常生成。', 'external-flag-disabled-create', false, ['wechat', 'sms']);
+        $this->assertDatabaseHas('notification_deliveries', ['notification_id' => $disabled->id, 'channel' => 'in_app', 'status' => 'sent']);
+        foreach (['wechat', 'sms'] as $channel) {
+            $this->assertDatabaseHas('notification_deliveries', [
+                'notification_id' => $disabled->id,
+                'channel' => $channel,
+                'status' => 'skipped',
+                'error_code' => 'EXTERNAL_NOTIFICATIONS_DISABLED',
+            ]);
+        }
+
+        FeatureFlag::query()->where('code', 'external_notifications')->update(['mode' => 'enabled', 'rollout_percentage' => 100]);
+        $queued = $service->create($user, 'order', 'payment_succeeded', '等待外部投递', '关闭开关后不得继续发送。', 'external-flag-queued-create', false, ['wechat']);
+        $this->assertDatabaseHas('notification_deliveries', ['notification_id' => $queued->id, 'channel' => 'wechat', 'status' => 'pending']);
+        FeatureFlag::query()->where('code', 'external_notifications')->update(['mode' => 'disabled', 'rollout_percentage' => 0]);
+
+        $this->assertSame(0, $service->deliverPending());
+        $this->assertDatabaseHas('notification_deliveries', [
+            'notification_id' => $queued->id,
+            'channel' => 'wechat',
+            'status' => 'skipped',
+            'error_code' => 'EXTERNAL_NOTIFICATIONS_DISABLED',
+            'next_retry_at' => null,
+        ]);
+        FeatureFlag::query()->where('code', 'external_notifications')->update(['mode' => 'enabled', 'rollout_percentage' => 100]);
+        $this->assertSame(0, $service->deliverPending());
+        $this->assertDatabaseHas('notification_deliveries', ['notification_id' => $queued->id, 'channel' => 'wechat', 'status' => 'skipped']);
+    }
+
+    public function test_external_subscription_endpoints_fail_close_while_notification_center_stays_available(): void
+    {
+        [, $token] = $this->loginAndConsent('13800002003');
+        FeatureFlag::query()->where('code', 'external_notifications')->update([
+            'mode' => 'disabled',
+            'rollout_percentage' => 0,
+            'platform_modes' => ['wechat-mini' => 'inherit', 'h5' => 'inherit'],
+        ]);
+        $headers = ['X-Client-Platform' => 'wechat-mini', 'X-Device-Id' => 'external-subscription-gate'];
+
+        $this->withToken($token)->withHeaders($headers)->getJson('/api/v1/notification-subscriptions/wechat')
+            ->assertForbidden()->assertJsonPath('code', 'EXTERNAL_NOTIFICATIONS_DISABLED');
+        $this->withToken($token)->postJson('/api/v1/notification-subscriptions/wechat', [
+            'request_id' => 'external-gate-request',
+            'results' => [['template_id' => 'TEMPLATE_ID', 'status' => 'accept']],
+        ])->assertForbidden()->assertJsonPath('code', 'EXTERNAL_NOTIFICATIONS_DISABLED');
+        $this->withToken($token)->getJson('/api/v1/notification-subscriptions/official-account')
+            ->assertForbidden()->assertJsonPath('code', 'EXTERNAL_NOTIFICATIONS_DISABLED');
+        $this->withToken($token)->getJson('/api/v1/notifications')->assertOk();
+        $this->withToken($token)->getJson('/api/v1/notification-preferences')->assertOk();
     }
 
     public function test_user_notification_list_is_scoped_filterable_paginated_and_returns_unread_summary_with_payload(): void

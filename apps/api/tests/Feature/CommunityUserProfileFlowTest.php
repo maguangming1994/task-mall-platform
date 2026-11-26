@@ -10,6 +10,7 @@ use App\Modules\Community\Models\CommunityActivity;
 use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Community\Models\UserBlock;
 use App\Modules\Community\Models\UserFollow;
+use App\Modules\Operations\Models\FeatureFlag;
 use App\Modules\SecondHand\Models\SecondHandItem;
 use App\Modules\SecondHand\Models\SecondHandOrder;
 use App\Modules\SecondHand\Models\SecondHandRating;
@@ -29,6 +30,7 @@ class CommunityUserProfileFlowTest extends TestCase
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
+        FeatureFlag::query()->where('code', 'module_follow')->update(['mode' => 'enabled', 'rollout_percentage' => 100]);
     }
 
     public function test_public_profile_supports_cross_campus_visits_and_all_safe_content_types(): void
@@ -135,6 +137,32 @@ class CommunityUserProfileFlowTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.pagination.total', 2)
             ->assertJsonMissing(['title' => '匿名帖子不应关联主页']);
+
+        FeatureFlag::query()->whereIn('code', ['module_second_hand', 'module_tasks', 'module_follow'])->update([
+            'mode' => 'disabled',
+            'rollout_percentage' => 0,
+            'platform_modes' => ['wechat-mini' => 'inherit', 'h5' => 'inherit'],
+        ]);
+        $this->withToken($viewerToken)->getJson($profileUrl)
+            ->assertOk()
+            ->assertJsonPath('data.is_followed', false)
+            ->assertJsonPath('data.follower_count', 0)
+            ->assertJsonPath('data.following_count', 0)
+            ->assertJsonPath('data.rating_count', 0)
+            ->assertJsonPath('data.content_counts.posts', 1)
+            ->assertJsonPath('data.content_counts.second_hand', 0)
+            ->assertJsonPath('data.content_counts.activities', 1)
+            ->assertJsonPath('data.content_counts.tasks', 0)
+            ->assertJsonPath('data.content_counts.claims', 0)
+            ->assertJsonPath('data.content_counts.impressions', 0);
+        foreach (['second_hand' => 'module_second_hand', 'impressions' => 'module_second_hand', 'tasks' => 'module_tasks', 'claims' => 'module_tasks'] as $type => $module) {
+            $this->withToken($viewerToken)->getJson("/api/v1/community/users/{$target->public_id}/content?type={$type}")
+                ->assertForbidden()->assertJsonPath('code', 'MODULE_DISABLED')->assertJsonPath('details.module', $module);
+        }
+        $this->withToken($viewerToken)->getJson("/api/v1/community/users/{$target->public_id}/content?type=posts")
+            ->assertOk()->assertJsonPath('data.pagination.total', 1)->assertJsonPath('data.items.0.id', $publicPost->public_id);
+        $this->withToken($viewerToken)->getJson("/api/v1/community/users/{$target->public_id}/content?type=activities")
+            ->assertOk()->assertJsonPath('data.pagination.total', 1)->assertJsonPath('data.items.0.id', $activity->public_id);
     }
 
     public function test_block_removes_follows_and_enforces_content_chat_and_feed_restrictions(): void

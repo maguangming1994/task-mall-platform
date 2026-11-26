@@ -61,6 +61,7 @@ const REVIEW_MODULES = [
   'module_material_request',
   'module_follow',
   'module_identity_verification',
+  'external_notifications',
 ]
 interface ReviewTarget { code: string; enabled: boolean }
 function reviewTargets(reviewing: boolean): ReviewTarget[] {
@@ -367,7 +368,7 @@ export function OperationsPage() {
   const reviewFlag = featureFlags.find((f) => f.code === 'review_in_progress')
   // 当前线上运行版本：release-control 已按 created_at 倒序，取第一条 status=deployed 即最新已部署
   const currentRelease = releases.find((r) => r.status === 'deployed') ?? null
-  // 一致性判定：所有 8 个目标开关都已到位才认为模式就绪；否则视为「配置不一致」
+  // 一致性判定：所有 9 个目标开关都已到位才认为模式就绪；否则视为「配置不一致」
   const reviewModeReady = (reviewing: boolean): boolean =>
     reviewTargets(reviewing).every((target) => {
       const flag = featureFlags.find((item) => item.code === target.code)
@@ -388,6 +389,7 @@ export function OperationsPage() {
           <ul style={{ paddingLeft: 20, margin: '8px 0 0' }}>
             {targets.map((t) => <li key={t.code}><Typography.Text code>{t.code}</Typography.Text> → {t.enabled ? '开启 100%' : '关闭 0%'}</li>)}
           </ul>
+          {!reviewing && <Typography.Text type="warning">恢复外部通知前，请确认订阅模板、渠道配置与生产发送意愿；已终止的投递不会补发。</Typography.Text>}
         </Space>
       ),
       okText: '确认执行',
@@ -492,9 +494,9 @@ export function OperationsPage() {
     {canDeploy && <Card bordered={false} title="功能灰度发布" style={{ marginTop: 16 }} extra={reviewFlag && <Space>
       <Typography.Text type="secondary">当前状态：</Typography.Text>
       {reviewModeReady(true)
-        ? <Tag color="gold">审核模式 8/8</Tag>
+        ? <Tag color="gold">审核模式 9/9</Tag>
         : reviewModeReady(false)
-          ? <Tag color="green">正常模式 8/8</Tag>
+          ? <Tag color="green">正常模式 9/9</Tag>
           : <Tag color="red">配置不一致，请重试</Tag>}
       <Button size="small" type="primary" loading={reviewSwitching === true} disabled={reviewSwitching !== null || reviewModeReady(true)} onClick={() => applyReviewMode(true)}>一键进入审核模式</Button>
       <Button size="small" type="primary" loading={reviewSwitching === false} disabled={reviewSwitching !== null || reviewModeReady(false)} onClick={() => applyReviewMode(false)}>一键退出审核模式</Button>

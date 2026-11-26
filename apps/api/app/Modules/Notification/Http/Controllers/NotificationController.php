@@ -11,6 +11,7 @@ use App\Modules\Notification\Models\NotificationPreference;
 use App\Modules\Notification\Services\NotificationSceneConfigService;
 use App\Modules\Notification\Services\NotificationService;
 use App\Modules\Notification\Services\WechatSubscriptionGrantService;
+use App\Modules\Operations\Services\ReleaseControlService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -18,6 +19,8 @@ use Illuminate\Validation\ValidationException;
 class NotificationController extends Controller
 {
     private const CATEGORIES = ['task', 'asset', 'order', 'after_sale', 'community', 'system', 'second_hand', 'material'];
+
+    public function __construct(private readonly ReleaseControlService $releases) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -87,11 +90,18 @@ class NotificationController extends Controller
 
     public function wechatSubscriptionOptions(Request $request, WechatSubscriptionGrantService $service): JsonResponse
     {
+        if (! $this->externalNotificationsEnabled($request)) {
+            return $this->externalNotificationsDisabled();
+        }
+
         return ApiResponse::success($service->options($this->wechatIdentity($request)));
     }
 
     public function recordWechatSubscriptions(Request $request, WechatSubscriptionGrantService $service): JsonResponse
     {
+        if (! $this->externalNotificationsEnabled($request)) {
+            return $this->externalNotificationsDisabled();
+        }
         $data = $request->validate([
             'request_id' => ['required', 'string', 'min:8', 'max:100', 'regex:/^[A-Za-z0-9:_-]+$/'],
             'results' => ['required', 'array', 'min:1', 'max:3'],
@@ -102,11 +112,28 @@ class NotificationController extends Controller
         return ApiResponse::success($service->record($this->wechatIdentity($request), $data['results'], $data['request_id']));
     }
 
-    public function wechatOfficialAccountTemplates(NotificationSceneConfigService $configs): JsonResponse
+    public function wechatOfficialAccountTemplates(Request $request, NotificationSceneConfigService $configs): JsonResponse
     {
+        if (! $this->externalNotificationsEnabled($request)) {
+            return $this->externalNotificationsDisabled();
+        }
         $templates = $configs->wechatOfficialAccountTemplates();
 
         return ApiResponse::success(['configured' => $templates !== [], 'templates' => $templates]);
+    }
+
+    private function externalNotificationsEnabled(Request $request): bool
+    {
+        return $this->releases->enabled(
+            'external_notifications',
+            (string) ($request->header('X-Device-Id') ?: 'anonymous'),
+            $request->header('X-Client-Platform'),
+        );
+    }
+
+    private function externalNotificationsDisabled(): JsonResponse
+    {
+        return ApiResponse::error('EXTERNAL_NOTIFICATIONS_DISABLED', '外部通知当前未开放，敬请期待。', 403, ['feature' => 'external_notifications']);
     }
 
     private function wechatIdentity(Request $request): UserIdentity

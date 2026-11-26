@@ -12,6 +12,8 @@ interface StoredFlags {
   placeholders: Partial<Record<ModuleCode, ModulePlaceholderCopy>>
   /** 小程序审核中：钱包相关文案与入口需按积分呈现 */
   reviewing?: boolean
+  /** 外部订阅与投递；缺值时保持关闭 */
+  externalNotifications?: boolean
   savedAt: number
 }
 
@@ -38,6 +40,7 @@ export const useModulesStore = defineStore('app-modules', {
     flags: {} as Partial<Record<ModuleCode, boolean>>,
     placeholders: {} as Partial<Record<ModuleCode, ModulePlaceholderCopy>>,
     reviewing: false,
+    externalNotifications: false,
     resolved: false,
     loadedAt: 0,
     loading: false,
@@ -55,6 +58,7 @@ export const useModulesStore = defineStore('app-modules', {
           this.flags = raw.flags
           this.placeholders = raw.placeholders || {}
           this.reviewing = raw.reviewing === true
+          this.externalNotifications = raw.externalNotifications === true
           this.campusId = raw.campusId
           this.resolved = true
         }
@@ -71,6 +75,7 @@ export const useModulesStore = defineStore('app-modules', {
       this.flags = {}
       this.placeholders = {}
       this.reviewing = false
+      this.externalNotifications = false
       this.loadedAt = 0
       this.pending = null
       void this.load(true)
@@ -109,10 +114,11 @@ export const useModulesStore = defineStore('app-modules', {
         this.flags = next
         this.placeholders = caps.module_placeholders || {}
         this.reviewing = caps.review_status === 'reviewing'
+        this.externalNotifications = incoming.external_notifications === true
         const campusId = caps.campus_id ?? currentCampusId()
         this.campusId = campusId ?? ''
         try {
-          uni.setStorageSync(STORAGE_KEY, { campusId: this.campusId, flags: next, placeholders: this.placeholders, reviewing: this.reviewing, savedAt: Date.now() })
+          uni.setStorageSync(STORAGE_KEY, { campusId: this.campusId, flags: next, placeholders: this.placeholders, reviewing: this.reviewing, externalNotifications: this.externalNotifications, savedAt: Date.now() })
         } catch {
           // ignore storage errors
         }

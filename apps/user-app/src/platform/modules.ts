@@ -50,7 +50,7 @@ export const MODULE_REGISTRY: Record<ModuleCode, ModuleDefinition> = {
   module_material_post: { code: 'module_material_post', name: '投喂资料', parent: 'module_material', icon: '/static/icons/module-community-post.svg' },
   module_material_request: { code: 'module_material_request', name: '求资料', parent: 'module_material', icon: '/static/icons/service-support.svg' },
   module_membership: { code: 'module_membership', name: '校园 PLUS 会员', parent: null, icon: '/static/icons/module-referrals.svg' },
-  module_follow: { code: 'module_follow', name: '关注作者', parent: null, icon: '/static/icons/module-community.svg' },
+  module_follow: { code: 'module_follow', name: '关注作者', parent: 'module_community', icon: '/static/icons/module-community.svg' },
   module_identity_verification: { code: 'module_identity_verification', name: '实名认证', parent: null, icon: '/static/icons/service-verify.svg' },
   module_feedback: { code: 'module_feedback', name: '意见反馈', parent: null, icon: '/static/icons/service-support.svg' },
 }

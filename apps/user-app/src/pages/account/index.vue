@@ -51,8 +51,8 @@
         </view>
       </view>
       <view class="acc-stats">
-        <view class="st"><b>{{ followingCount }}</b><span>关注</span></view>
-        <view class="st"><b>{{ followerCount }}</b><span>粉丝</span></view>
+        <view v-if="followEnabled" class="st"><b>{{ followingCount }}</b><span>关注</span></view>
+        <view v-if="followEnabled" class="st"><b>{{ followerCount }}</b><span>粉丝</span></view>
         <view class="st"><b>0</b><span>信用分</span></view>
         <view class="st"><b>{{ assets?.points.available ?? 0 }}</b><span>总积分</span></view>
       </view>
@@ -161,6 +161,7 @@ declare const wx: { canIUse(schema: string): boolean }
 const auth = useAuthStore()
 const admin = useAdminStore()
 const modules = useModulesStore()
+const followEnabled = computed(() => modules.isLaunched('module_follow'))
 const icons = useIconConfigStore()
 const nickname = ref(auth.user?.nickname ?? '')
 const avatarFileId = ref(auth.user?.avatar_file_id ?? '')
@@ -306,9 +307,9 @@ async function load() {
     avatarPreviewUrl.value = ''
     avatarLoadFailed.value = false
     assets.value = await loadAssetOverview(auth.accessToken)
-    // 社区模块关闭时不请求社交统计，避免触发 MODULE_DISABLED 弹出「开发中」提示（审核期间关闭功能需静默）
+    // 关注未上线或父级社区关闭时不请求社交统计，避免触发 MODULE_DISABLED 提示。
     await modules.ensureReady()
-    if (modules.isEnabled('module_community')) {
+    if (modules.isLaunched('module_follow')) {
       try {
         const stats = await getCommunitySocialStats(auth.accessToken)
         followingCount.value = stats.following_count

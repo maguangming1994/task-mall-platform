@@ -8,6 +8,7 @@ use App\Modules\Community\Models\CommunityContentSecuritySetting;
 use App\Modules\Community\Models\CommunityPost;
 use App\Modules\Community\Models\UserFollow;
 use App\Modules\Community\Services\CommunityContentService;
+use App\Modules\Operations\Models\FeatureFlag;
 use App\Modules\Settings\Models\SystemSettingDefinition;
 use App\Modules\Settings\Models\SystemSettingVersion;
 use App\Modules\Upload\Models\UploadedFile;
@@ -25,6 +26,7 @@ class CommunityPostApiFlowTest extends TestCase
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
+        FeatureFlag::query()->where('code', 'module_follow')->update(['mode' => 'enabled', 'rollout_percentage' => 100]);
         Storage::fake('s3');
     }
 
@@ -344,6 +346,70 @@ class CommunityPostApiFlowTest extends TestCase
 
         UserFollow::query()->where('follower_id', $follower->id)->where('following_id', $author->id)->delete();
         $this->withToken($followerToken)->getJson("/api/v1/community/posts/{$post->public_id}")->assertNotFound();
+    }
+
+    public function test_disabled_follow_module_blocks_social_writes_following_feed_and_historical_follower_content(): void
+    {
+        CommunityContentSecuritySetting::query()->updateOrCreate(['name' => 'default'], ['enabled' => false]);
+        [$authorToken, $author] = $this->phoneLoginWithCommunityConsent('13800138129');
+        [$followerToken, $follower] = $this->phoneLoginWithCommunityConsent('13800138130');
+        $admin = AdminUser::query()->create(['account' => 'community-follow-gate-reviewer', 'display_name' => '关注开关审核员', 'password' => 'AdminPassword12345!']);
+        $service = app(CommunityContentService::class);
+        $publicPost = $service->createPost($author, [
+            'title' => '关注关闭后仍公开',
+            'content' => '这是一段用于验证关注开关不会影响公开帖子正常阅读的完整正文。',
+            'visibility' => 'public',
+        ], 'community-follow-gate-public');
+        $followersPost = $service->createPost($author, [
+            'title' => '关注关闭后不再开放',
+            'content' => '这是一段用于验证历史关注关系不能绕过功能开关的完整正文。',
+            'visibility' => 'followers',
+        ], 'community-follow-gate-followers');
+        foreach ([$publicPost, $followersPost] as $post) {
+            $post->forceFill(['campus_id' => $author->campus_id])->save();
+            $service->reviewPost($admin, $post, ['decision' => 'approve', 'note' => '关注开关测试审核通过。']);
+        }
+        UserFollow::query()->create(['follower_id' => $follower->id, 'following_id' => $author->id]);
+        FeatureFlag::query()->where('code', 'module_follow')->update([
+            'mode' => 'disabled',
+            'rollout_percentage' => 0,
+            'platform_modes' => ['wechat-mini' => 'inherit', 'h5' => 'inherit'],
+        ]);
+        $headers = ['X-Client-Platform' => 'wechat-mini', 'X-Device-Id' => 'community-follow-gate'];
+
+        $this->withToken($followerToken)->withHeaders($headers)->getJson('/api/v1/community/social/stats')
+            ->assertForbidden()->assertJsonPath('code', 'MODULE_DISABLED')->assertJsonPath('details.module', 'module_follow');
+        $this->withToken($followerToken)->postJson("/api/v1/community/users/{$author->public_id}/follow")
+            ->assertForbidden()->assertJsonPath('code', 'MODULE_DISABLED');
+        $this->withToken($followerToken)->getJson('/api/v1/community/posts?feed=following')
+            ->assertForbidden()->assertJsonPath('code', 'MODULE_DISABLED');
+        $this->withToken($followerToken)->withHeaders(['Idempotency-Key' => 'community-follow-gate-create'])
+            ->postJson('/api/v1/community/posts', [
+                'title' => '关闭后不能发关注帖',
+                'content' => '这是一段用于验证关闭关注后不能新增关注者可见帖子的完整正文。',
+                'visibility' => 'followers',
+            ])->assertForbidden()->assertJsonPath('code', 'MODULE_DISABLED');
+
+        $this->withToken($followerToken)->getJson("/api/v1/community/posts/{$followersPost->public_id}")->assertNotFound();
+        $this->withToken($followerToken)->getJson("/api/v1/community/posts/{$followersPost->public_id}/comments")->assertNotFound();
+        $this->withToken($followerToken)->postJson("/api/v1/community/posts/{$followersPost->public_id}/like")->assertNotFound();
+        $this->withToken($followerToken)->getJson('/api/v1/community/posts')
+            ->assertOk()
+            ->assertJsonPath('data.pagination.total', 1)
+            ->assertJsonPath('data.items.0.id', $publicPost->public_id)
+            ->assertJsonPath('data.items.0.author.is_followed', false);
+        $this->withToken($followerToken)->getJson("/api/v1/community/posts/{$publicPost->public_id}")
+            ->assertOk()->assertJsonPath('data.author.is_followed', false);
+        $this->withToken($authorToken)->getJson("/api/v1/community/posts/{$followersPost->public_id}")->assertOk();
+        $this->withToken($authorToken)->putJson("/api/v1/community/posts/{$followersPost->public_id}", [
+            'title' => '关闭后仍不能保持关注可见',
+            'content' => '这是一段用于验证编辑历史关注帖时不能绕过功能开关的完整正文。',
+        ])->assertForbidden()->assertJsonPath('code', 'MODULE_DISABLED');
+        $this->withToken($authorToken)->putJson("/api/v1/community/posts/{$followersPost->public_id}", [
+            'title' => '关闭后可以改为公开',
+            'content' => '这是一段用于验证作者可以主动把历史关注帖改为公开可见的完整正文。',
+            'visibility' => 'public',
+        ])->assertOk()->assertJsonPath('data.visibility', 'public');
     }
 
     public function test_anonymous_post_hides_author_from_readers_but_not_from_the_author(): void

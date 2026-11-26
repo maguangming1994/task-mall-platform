@@ -4,27 +4,30 @@
       <text class="title">公众号订阅提醒</text>
       <text class="desc">订阅后，帖子收到评论、评论收到回复等消息会通过公众号推送给你。一次订阅对应一次通知，可随时再次订阅。</text>
 
-      <!-- #ifdef H5 -->
-      <view v-if="loading" class="hint">正在读取可用模板…</view>
-      <view v-else-if="!inWechat" class="hint">请在微信中打开本页面完成订阅。</view>
-      <view v-else-if="!templates.length" class="hint">公众号订阅模板尚未配置，请联系管理员。</view>
-      <view v-else class="subscribe-area">
-        <wx-open-subscribe
-          v-if="sdkReady"
-          :template="templateIds"
-          @success="onSubscribed"
-          @error="onFailed"
-        >
-          <button class="subscribe-btn">一键订阅提醒</button>
-        </wx-open-subscribe>
-        <view v-else class="hint">微信订阅组件加载中…</view>
-        <text v-if="message" class="message">{{ message }}</text>
-      </view>
-      <!-- #endif -->
+      <view v-if="!externalNotificationsEnabled" class="hint">外部订阅提醒当前未开放，站内消息仍会正常保留。</view>
+      <template v-else>
+        <!-- #ifdef H5 -->
+        <view v-if="loading" class="hint">正在读取可用模板…</view>
+        <view v-else-if="!inWechat" class="hint">请在微信中打开本页面完成订阅。</view>
+        <view v-else-if="!templates.length" class="hint">公众号订阅模板尚未配置，请联系管理员。</view>
+        <view v-else class="subscribe-area">
+          <wx-open-subscribe
+            v-if="sdkReady"
+            :template="templateIds"
+            @success="onSubscribed"
+            @error="onFailed"
+          >
+            <button class="subscribe-btn">一键订阅提醒</button>
+          </wx-open-subscribe>
+          <view v-else class="hint">微信订阅组件加载中…</view>
+          <text v-if="message" class="message">{{ message }}</text>
+        </view>
+        <!-- #endif -->
 
-      <!-- #ifndef H5 -->
-      <view class="hint">请在微信公众号内打开本页面完成订阅。</view>
-      <!-- #endif -->
+        <!-- #ifndef H5 -->
+        <view class="hint">请在微信公众号内打开本页面完成订阅。</view>
+        <!-- #endif -->
+      </template>
     </view>
   </view>
 </template>
@@ -36,7 +39,10 @@ import { getWechatOaSubscriptionTemplates, type WechatOaSubscriptionTemplate } f
 import { configureWechatOpenTag } from '@/platform/wechatJssdk'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
+import { useModulesStore } from '@/stores/modules'
 
+const modules = useModulesStore()
+const externalNotificationsEnabled = computed(() => modules.externalNotifications)
 const auth = useAuthStore()
 const loading = ref(true)
 const sdkReady = ref(false)
@@ -46,6 +52,11 @@ const inWechat = typeof navigator !== 'undefined' && /MicroMessenger/i.test(navi
 const templateIds = computed(() => templates.value.map((item) => item.template_id).join(','))
 
 onLoad(async () => {
+  await modules.ensureReady()
+  if (!externalNotificationsEnabled.value) {
+    loading.value = false
+    return
+  }
   // #ifndef H5
   loading.value = false
   return

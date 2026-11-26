@@ -121,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import EmojiPicker from '@/components/EmojiPicker.vue'
 import {
@@ -147,6 +147,7 @@ import { useModulesStore } from '@/stores/modules'
 
 const modules = useModulesStore()
 const moduleEnabled = computed(() => modules.isEnabled('module_community_post'))
+const followEnabled = computed(() => modules.isLaunched('module_follow'))
 
 interface EditableImage { fileId: string; previewUrl: string }
 interface SavedDraft {
@@ -166,11 +167,14 @@ const fallbackCategories: CommunityCategory[] = [
   { code: 'experience', label: '经验分享' }, { code: 'guide', label: '实用攻略' },
   { code: 'question', label: '互助问答' }, { code: 'showcase', label: '成果展示' },
 ]
-const visibilityOptions: Array<{ value: CommunityVisibility; label: string; hint: string }> = [
-  { value: 'public', label: '所有人可见', hint: '公开帖子，展示你的作者信息' },
-  { value: 'followers', label: '关注者可见', hint: '仅你和关注你的用户可以查看' },
-  { value: 'anonymous', label: '匿名发布', hint: '内容公开，其他读者看不到作者身份' },
-]
+const visibilityOptions = computed(() => {
+  const options: Array<{ value: CommunityVisibility; label: string; hint: string }> = [
+    { value: 'public', label: '所有人可见', hint: '公开帖子，展示你的作者信息' },
+    { value: 'anonymous', label: '匿名发布', hint: '内容公开，其他读者看不到作者身份' },
+  ]
+  if (followEnabled.value) options.splice(1, 0, { value: 'followers', label: '关注者可见', hint: '仅你和关注你的用户可以查看' })
+  return options
+})
 const auth = useAuthStore()
 const editingId = ref('')
 const title = ref('')
@@ -183,6 +187,9 @@ const locationLatitude = ref<number | null>(null)
 const locationLongitude = ref<number | null>(null)
 const locationEditing = ref(false)
 const visibility = ref<CommunityVisibility>('public')
+watch(followEnabled, (enabled) => {
+  if (!enabled && visibility.value === 'followers') visibility.value = 'public'
+}, { immediate: true })
 const categories = ref<CommunityCategory[]>(fallbackCategories)
 const publishingRules = ref<CommunityPublishingRules>(DEFAULT_COMMUNITY_PUBLISHING_RULES)
 const postRewardPoints = ref(0)
@@ -197,7 +204,7 @@ const uploadError = ref('')
 const submitError = ref('')
 const submitRequestKey = ref(createCommunityRequestKey('post'))
 const selectedCategoryLabel = computed(() => categories.value.find(item => item.code === categoryCode.value)?.label || '经验分享')
-const currentVisibility = computed(() => visibilityOptions.find(item => item.value === visibility.value) || visibilityOptions[0]!)
+const currentVisibility = computed(() => visibilityOptions.value.find(item => item.value === visibility.value) || visibilityOptions.value[0]!)
 const submitLabel = computed(() => editingId.value ? (reviewNote.value ? '修改并重新提交' : '提交新版本') : '发布')
 
 onLoad(async (options?: Record<string, string | undefined>) => {
@@ -219,6 +226,7 @@ onLoad(async (options?: Record<string, string | undefined>) => {
   }
   if (editingId.value) await loadEditing()
   else restoreDraft()
+  if (!followEnabled.value && visibility.value === 'followers') visibility.value = 'public'
   if (requestedCategory && categories.value.some(item => item.code === requestedCategory)) categoryCode.value = requestedCategory as CommunityCategory['code']
 })
 
@@ -340,9 +348,9 @@ function clearLocationCoordinates() {
   locationLongitude.value = null
 }
 async function selectVisibility() {
-  const action = await uni.showActionSheet({ itemList: visibilityOptions.map(item => item.label) }).catch(() => null)
+  const action = await uni.showActionSheet({ itemList: visibilityOptions.value.map(item => item.label) }).catch(() => null)
   if (!action) return
-  visibility.value = visibilityOptions[action.tapIndex]?.value || 'public'
+  visibility.value = visibilityOptions.value[action.tapIndex]?.value || 'public'
 }
 async function addImage() {
   if (!auth.accessToken || uploading.value || images.value.length >= 9) return

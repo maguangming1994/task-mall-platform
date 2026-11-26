@@ -295,13 +295,15 @@ Route::middleware('auth.access')->group(function () {
         Route::delete('/community/posts/{post}/like', [CommunityEngagementController::class, 'unlike'])->middleware(['legal.consent:community', 'throttle:120,1']);
         Route::post('/community/posts/{post}/favorite', [CommunityEngagementController::class, 'favorite'])->middleware(['legal.consent:community', 'throttle:120,1']);
         Route::delete('/community/posts/{post}/favorite', [CommunityEngagementController::class, 'unfavorite'])->middleware(['legal.consent:community', 'throttle:120,1']);
-        Route::get('/community/social/stats', [CommunitySocialController::class, 'stats'])->middleware('legal.consent:community');
-        Route::post('/community/users/{userId}/follow', [CommunitySocialController::class, 'follow'])->middleware(['legal.consent:community', 'throttle:120,1']);
-        Route::delete('/community/users/{userId}/follow', [CommunitySocialController::class, 'unfollow'])->middleware(['legal.consent:community', 'throttle:120,1']);
         Route::post('/community/activities', [CommunityActivityController::class, 'store'])->middleware(['campus.bound', 'legal.consent:community', 'throttle:10,1']);
         Route::post('/community/activities/{activity}/join', [CommunityActivityController::class, 'join'])->middleware(['legal.consent:community', 'throttle:30,1']);
         Route::delete('/community/activities/{activity}/join', [CommunityActivityController::class, 'leave'])->middleware(['legal.consent:community', 'throttle:30,1']);
         Route::get('/community/my-activities', [CommunityActivityController::class, 'mine'])->middleware('legal.consent:community');
+    });
+    Route::middleware('module.gate:module_follow')->group(function () {
+        Route::get('/community/social/stats', [CommunitySocialController::class, 'stats'])->middleware('legal.consent:community');
+        Route::post('/community/users/{userId}/follow', [CommunitySocialController::class, 'follow'])->middleware(['legal.consent:community', 'throttle:120,1']);
+        Route::delete('/community/users/{userId}/follow', [CommunitySocialController::class, 'unfollow'])->middleware(['legal.consent:community', 'throttle:120,1']);
     });
     Route::post('/community/users/{userId}/block', [CommunityUserProfileController::class, 'block'])->middleware(['legal.consent:community', 'throttle:60,1']);
     Route::delete('/community/users/{userId}/block', [CommunityUserProfileController::class, 'unblock'])->middleware(['legal.consent:community', 'throttle:60,1']);

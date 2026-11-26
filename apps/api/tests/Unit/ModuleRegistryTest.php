@@ -62,7 +62,7 @@ class ModuleRegistryTest extends TestCase
             'module_material_post' => 'module_material',
             'module_material_request' => 'module_material',
             'module_membership' => null,
-            'module_follow' => null,
+            'module_follow' => 'module_community',
             'module_identity_verification' => null,
             'module_feedback' => null,
         ];
@@ -80,6 +80,7 @@ class ModuleRegistryTest extends TestCase
         $this->assertSame(['module_mall'], $registry->ancestors('module_mall_trade'));
         $this->assertSame(['module_mall_trade', 'module_mall'], $registry->ancestors('module_after_sale'));
         $this->assertSame(['module_community'], $registry->ancestors('module_community_post'));
+        $this->assertSame(['module_community'], $registry->ancestors('module_follow'));
     }
 
     public function test_names_and_groups_are_present_for_every_module(): void

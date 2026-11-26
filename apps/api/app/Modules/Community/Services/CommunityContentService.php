@@ -215,10 +215,10 @@ class CommunityContentService
         });
     }
 
-    public function createComment(User $user, CommunityPost $post, array $data, string $key): CommunityComment
+    public function createComment(User $user, CommunityPost $post, array $data, string $key, bool $followEnabled = true): CommunityComment
     {
         $this->assertAllowed($user, 'comment');
-        abort_unless($post->status === 'published' && $post->isVisibleTo($user), 404);
+        abort_unless($post->status === 'published' && $post->isVisibleTo($user, $followEnabled), 404);
         $hash = hash('sha256', $key);
         if ($comment = CommunityComment::withTrashed()->where('idempotency_key_hash', $hash)->first()) {
             abort_unless($comment->user_id === $user->id, 404);

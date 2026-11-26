@@ -69,6 +69,7 @@ class ClientCapabilitiesModuleGateTest extends TestCase
 
     public function test_campus_overrides_change_module_flags_and_parent_chain(): void
     {
+        FeatureFlag::query()->where('code', 'module_follow')->update(['mode' => 'enabled', 'rollout_percentage' => 100]);
         $mallOff = Campus::query()->create(['code' => 'cap-campus-a', 'name' => '关商城校', 'status' => 'active']);
         $communityOff = Campus::query()->create(['code' => 'cap-campus-b', 'name' => '关社区校', 'status' => 'active']);
         CampusFeatureFlag::query()->create(['campus_id' => $mallOff->id, 'code' => 'module_mall', 'status' => 'disabled']);
@@ -86,8 +87,9 @@ class ClientCapabilitiesModuleGateTest extends TestCase
         $this->assertTrue($a['module_tasks']);
         $this->assertTrue($a['module_community']);
 
-        // B 校：社区关、商城开 —— 两校区同模块结果相反
+        // B 校：社区关，子级关注即使全局开启也必须同步关闭；商城不受影响。
         $this->assertFalse($b['module_community']);
+        $this->assertFalse($b['module_follow']);
         $this->assertTrue($b['module_mall']);
     }
 

@@ -18,7 +18,7 @@ import { stdin as input, stdout as output } from 'node:process';
 const BASE_URL = process.env.TASK_MALL_BASE_URL ?? 'https://rwsc.jxgxnxs.cn';
 const REASON = '小程序审核通过，恢复审核期间关闭的功能';
 
-// 目标开关清单：mode=enabled 表示强制开启，rollout_percentage 必须 100。
+// 目标开关清单（共 9 个）：mode=enabled 表示强制开启，rollout_percentage 必须 100。
 // review_in_progress 是审核总开关，关掉它前端会自动恢复钱包文案 + 提现。
 const TARGETS = [
   { code: 'review_in_progress', mode: 'disabled', rollout_percentage: 0 },
@@ -29,6 +29,7 @@ const TARGETS = [
   { code: 'module_material_request', mode: 'enabled', rollout_percentage: 100 },
   { code: 'module_follow', mode: 'enabled', rollout_percentage: 100 },
   { code: 'module_identity_verification', mode: 'enabled', rollout_percentage: 100 },
+  { code: 'external_notifications', mode: 'enabled', rollout_percentage: 100 },
 ];
 
 // ---------- 工具函数 ----------
@@ -186,7 +187,7 @@ async function main() {
   const verifyJson = await verify.json();
   const data = verifyJson.data ?? {};
   console.log(`   review_status: ${data.review_status}`);
-  const watchList = TARGETS.map((t) => t.code).filter((c) => c.startsWith('module_'));
+  const watchList = TARGETS.map((t) => t.code).filter((c) => c.startsWith('module_') || c === 'external_notifications');
   watchList.push('module_withdraw'); // 提现是被审核总开关动态关的，应该自动开
   for (const code of watchList) {
     const v = data.feature_flags?.[code];
@@ -205,6 +206,7 @@ async function main() {
     process.exit(2);
   }
   console.log('\n🎉 全部完成');
+  console.log('💡 外部通知已恢复：生产发送前请核对订阅模板、渠道配置与发送意愿；已终止的投递不会补发。');
 }
 
 main().catch((err) => fail('未捕获异常', { message: err.message, stack: err.stack }));
