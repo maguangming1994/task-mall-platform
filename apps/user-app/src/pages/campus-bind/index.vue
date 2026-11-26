@@ -140,7 +140,7 @@
           <text class="bind-field-label">专业<text class="bind-required">*</text></text>
           <text class="bind-field-count">{{ major.length }}/30</text>
         </view>
-        <MajorSelector v-model="major" />
+        <MajorSelector v-model="major" :campus-id="selectedCampus?.id" />
       </view>
 
       <view class="bind-field">

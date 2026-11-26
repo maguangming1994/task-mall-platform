@@ -18,14 +18,17 @@
     <view v-if="open" class="major-dropdown" @touchmove.stop>
       <view v-if="loading" class="major-state">正在搜索…</view>
       <view v-else-if="suggestions.length" class="major-list">
+        <view v-if="source === 'campus' && campusName" class="major-hint">
+          仅显示 {{ campusName }} 开设的专业
+        </view>
         <view
           v-for="item in suggestions"
-          :key="item.code"
+          :key="item.code + item.name"
           class="major-item"
           @click="pick(item)"
         >
           <text class="major-item-name">{{ item.name }}</text>
-          <text class="major-item-cat">{{ item.category }}</text>
+          <text v-if="item.category" class="major-item-cat">{{ item.category }}</text>
         </view>
       </view>
       <view v-else class="major-state major-state-empty">
@@ -43,9 +46,12 @@ const props = withDefaults(defineProps<{
   modelValue: string
   placeholder?: string
   maxlength?: number
+  /** 已选学校，用于把该校相关门类排到前面 */
+  campusId?: string
 }>(), {
   placeholder: '如 计算机科学与技术',
   maxlength: 30,
+  campusId: undefined,
 })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
@@ -56,6 +62,8 @@ const open = ref(false)
 const loading = ref(false)
 const suggestions = ref<Major[]>([])
 const cachedSuggestions = ref<Major[] | null>(null)
+const source = ref<'campus' | 'catalog'>('catalog')
+const campusName = ref('')
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 let blurTimer: ReturnType<typeof setTimeout> | null = null
@@ -63,6 +71,18 @@ let blurTimer: ReturnType<typeof setTimeout> | null = null
 watch(() => props.modelValue, (value) => {
   if (value !== inputValue.value) inputValue.value = value
 })
+
+watch(() => props.campusId, () => {
+  cachedSuggestions.value = null
+  suggestions.value = []
+  source.value = 'catalog'
+  campusName.value = ''
+  if (open.value && !inputValue.value.trim()) void loadSuggestions()
+})
+
+function campusParams(): { campus_id?: string } {
+  return typeof props.campusId === 'string' && props.campusId ? { campus_id: props.campusId } : {}
+}
 
 function emitValue(value: string) {
   inputValue.value = value
@@ -87,9 +107,11 @@ function scheduleSearch(value: string) {
   loading.value = true
   open.value = true
   searchTimer = setTimeout(() => {
-    void fetchMajors({ keyword, limit: 20 })
+    void fetchMajors({ keyword, limit: 20, ...campusParams() })
       .then((result) => {
         suggestions.value = Array.isArray(result.items) ? result.items : []
+        source.value = result.source === 'campus' ? 'campus' : 'catalog'
+        campusName.value = result.campus_name || ''
       })
       .catch(() => {
         suggestions.value = []
@@ -107,10 +129,12 @@ async function loadSuggestions() {
   }
   loading.value = true
   try {
-    const result = await fetchMajors({ limit: 24 })
+    const result = await fetchMajors({ limit: 500, ...campusParams() })
     const items = Array.isArray(result.items) ? result.items : []
     cachedSuggestions.value = items
     suggestions.value = items
+    source.value = result.source === 'campus' ? 'campus' : 'catalog'
+    campusName.value = result.campus_name || ''
   } catch {
     suggestions.value = []
   } finally {
@@ -163,6 +187,7 @@ function closeDropdown() {
 .major-placeholder { color: #AEB3BB; }
 .major-dropdown { position: absolute; z-index: 50; top: calc(100% + 8rpx); left: 0; right: 0; max-height: 440rpx; overflow-y: auto; box-sizing: border-box; padding: 10rpx; border: 1rpx solid #E3E8E4; border-radius: 18rpx; background: #fff; box-shadow: 0 12rpx 32rpx rgba(23, 26, 23, .12); }
 .major-list { display: flex; flex-direction: column; }
+.major-hint { padding: 10rpx 16rpx 12rpx; color: #08A152; font-size: 21rpx; font-weight: 600; border-bottom: 1rpx solid #F1F4F2; }
 .major-item { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; min-height: 76rpx; padding: 14rpx 16rpx; border-radius: 14rpx; }
 .major-item:active { background: #F4FDF8; }
 .major-item-name { min-width: 0; flex: 1; overflow: hidden; color: #191B1F; font-size: 26rpx; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }

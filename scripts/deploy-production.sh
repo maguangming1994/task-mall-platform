@@ -98,6 +98,11 @@ compose run --rm --no-deps api php artisan db:seed --class=MajorSeeder --force
 echo "[6e/14] 首页装修（幂等：按 marker 判重，版本已含则跳过）"
 compose run --rm --no-deps api php artisan db:seed --class=HomeShowcaseSeeder --force
 
+if [ -f "$ROOT_DIR/apps/api/database/data/campus_majors.json" ]; then
+  echo "[6f/14] 学校—专业对照数据（同一数据快照只导入一次，限时 900 秒）"
+  compose run --rm --no-deps api timeout 900 php artisan campus:majors:import --once
+fi
+
 echo "[7/14] 启用人工实名认证（幂等：目标状态已满足则跳过）"
 compose run --rm --no-deps api php artisan db:seed --class=ProductionEnableIdentityVerificationSeeder --force
 
