@@ -204,6 +204,18 @@ class SystemSettingDefinitionSeeder extends Seeder
             ['accounts.growth_core_task_count', 'accounts', '核心用户任务达标数', 'integer', '个', 5, ['min' => 0, 'max' => 100000], 'normal'],
             ['accounts.growth_core_cash_order_count', 'accounts', '核心用户现金订单达标数', 'integer', '单', 3, ['min' => 0, 'max' => 100000], 'normal'],
             ['accounts.cancellation_cooling_days', 'accounts', '账号注销冷静期', 'integer', '天', 7, ['min' => 0, 'max' => 90], 'high'],
+            ['decoration.pages', 'decoration', '页面装修', 'object', null, [
+                'schema_version' => 1,
+                'pages' => [
+                    'home' => ['background_url' => '', 'sections' => []],
+                    'community' => ['background_url' => '', 'sections' => []],
+                    'mall' => ['background_url' => '', 'sections' => []],
+                    'account' => ['background_url' => '', 'sections' => []],
+                ],
+            ], ['required_keys' => ['schema_version', 'pages'], 'properties' => [
+                'schema_version' => ['type' => 'integer', 'min' => 1],
+                'pages' => ['type' => 'object'],
+            ]], 'normal'],
         ];
 
         foreach ($definitions as $definition) {
@@ -217,7 +229,9 @@ class SystemSettingDefinitionSeeder extends Seeder
                         ? '由配置中心的“首页装修”分类维护，发布后立即更新用户端首页。图片字段支持本地上传或 HTTPS 图片网址导入。'
                         : (str_starts_with($key, 'navigation.')
                             ? '维护 H5 与小程序共用的底部导航文字、图标、位置、显示状态与跳转目标；发布后用户端自动刷新。'
-                            : '由配置中心统一维护；发布后仅影响新产生的业务事实。'),
+                            : ($key === 'decoration.pages'
+                                ? '由装修中心维护首页、社区、商城与我的页面的区块；保存草稿不影响线上，发布后用户端自动刷新。'
+                                : '由配置中心统一维护；发布后仅影响新产生的业务事实。')),
                     'value_type' => $type,
                     'unit' => $unit,
                     'options' => $options,

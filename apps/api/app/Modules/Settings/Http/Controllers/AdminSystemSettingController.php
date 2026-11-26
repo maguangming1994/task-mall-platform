@@ -13,6 +13,7 @@ use App\Modules\Payment\Services\WechatPaymentSettingsService;
 use App\Modules\Settings\Models\SystemSettingDefinition;
 use App\Modules\Settings\Models\SystemSettingDraft;
 use App\Modules\Settings\Models\SystemSettingVersion;
+use App\Modules\Settings\Services\PageDecorationService;
 use App\Modules\Settings\Services\SystemSettingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ class AdminSystemSettingController extends Controller
         ]);
         $definitions = SystemSettingDefinition::query()
             ->where('enabled', true)
-            ->whereNotIn('setting_key', $this->specializedSettingKeys())
+            ->whereNotIn('setting_key', [...$this->specializedSettingKeys(), PageDecorationService::SETTING_KEY])
             ->when(isset($data['group']), fn ($query) => $query->where('group_code', $data['group']))
             ->when(isset($data['keyword']), function ($query) use ($data): void {
                 $keyword = '%'.$data['keyword'].'%';
@@ -264,6 +265,13 @@ class AdminSystemSettingController extends Controller
 
     private function rejectSpecializedSetting(string $settingKey): ?JsonResponse
     {
+        if ($settingKey === PageDecorationService::SETTING_KEY) {
+            return ApiResponse::error(
+                'SETTING_SPECIALIZED_ENDPOINT',
+                '页面装修配置请通过装修中心管理。',
+                409,
+            );
+        }
         if (! in_array($settingKey, $this->specializedSettingKeys(), true)) {
             return null;
         }

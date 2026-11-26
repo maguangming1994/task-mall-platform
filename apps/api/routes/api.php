@@ -104,10 +104,12 @@ use App\Modules\SecondHand\Http\Controllers\SecondHandItemController;
 use App\Modules\SecondHand\Http\Controllers\SecondHandOrderController;
 use App\Modules\SecondHand\Http\Controllers\SecondHandRatingController;
 use App\Modules\SecondHand\Http\Controllers\SecondHandRefundController;
+use App\Modules\Settings\Http\Controllers\AdminPageDecorationController;
 use App\Modules\Settings\Http\Controllers\AdminSystemSettingController;
 use App\Modules\Settings\Http\Controllers\AppearanceContentController;
 use App\Modules\Settings\Http\Controllers\AppNavigationController;
 use App\Modules\Settings\Http\Controllers\HomeContentController;
+use App\Modules\Settings\Http\Controllers\PageDecorationController;
 use App\Modules\Share\Http\Controllers\ShareQrCodeController;
 use App\Modules\Support\Http\Controllers\AdminSupportTicketController;
 use App\Modules\Support\Http\Controllers\SupportTicketController;
@@ -145,6 +147,7 @@ Route::post('/campuses/nearby', [CampusController::class, 'nearby'])->middleware
 // 专业目录：绑校/换校流程联想选择，公开接口（未登录也能浏览），兼容自由输入
 Route::get('/majors', [MajorController::class, 'index'])->middleware('throttle:60,1');
 Route::get('/home-content', [HomeContentController::class, 'show']);
+Route::get('/page-decoration', [PageDecorationController::class, 'show'])->middleware('throttle:60,1');
 Route::get('/appearance-content', [AppearanceContentController::class, 'show']);
 Route::get('/app-navigation', [AppNavigationController::class, 'show']);
 Route::get('/icon-configs', [IconConfigController::class, 'index']);
@@ -692,6 +695,17 @@ Route::prefix('admin')->group(function () {
             ->middleware(['admin.permission:privacy.manage', 'admin.recent_verification']);
         Route::get('/settings', [AdminSystemSettingController::class, 'index'])
             ->middleware('admin.permission:settings.manage');
+        // 页面装修中心：草稿、发布、回滚沿用系统设置版本体系，写操作要求近期核验
+        Route::get('/page-decoration', [AdminPageDecorationController::class, 'index'])
+            ->middleware('admin.permission:settings.manage');
+        Route::put('/page-decoration/draft', [AdminPageDecorationController::class, 'saveDraft'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::post('/page-decoration/publish', [AdminPageDecorationController::class, 'publish'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::get('/page-decoration/versions', [AdminPageDecorationController::class, 'versions'])
+            ->middleware('admin.permission:settings.manage');
+        Route::post('/page-decoration/rollback', [AdminPageDecorationController::class, 'rollback'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
         // 海报模板管理（与运营配置同级，平台管理员可调整所有业务场景的分享海报）
         Route::get('/poster-templates', [AdminPosterTemplateController::class, 'index'])
             ->middleware('admin.permission:settings.manage');

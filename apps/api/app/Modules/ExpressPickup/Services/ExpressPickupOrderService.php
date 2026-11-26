@@ -248,7 +248,7 @@ class ExpressPickupOrderService
     {
         $count = 0;
         ExpressPickupOrder::query()
-            ->where('status', self::STATUS_PENDING_PAYMENT)
+            ->where('status', ExpressPickupOrder::STATUS_PENDING_PAYMENT)
             ->where('created_at', '<=', now()->subMinutes(self::UNPAID_TIMEOUT_MINUTES))
             ->orderBy('id')
             ->limit($limit)
@@ -257,7 +257,7 @@ class ExpressPickupOrderService
                 try {
                     $cancelled = DB::transaction(function () use ($order): ?ExpressPickupOrder {
                         $locked = ExpressPickupOrder::query()->lockForUpdate()->findOrFail($order->id);
-                        if ($locked->status !== self::STATUS_PENDING_PAYMENT) {
+                        if ($locked->status !== ExpressPickupOrder::STATUS_PENDING_PAYMENT) {
                             return null;
                         }
                         $this->cancelLocked($locked, 'system', null, '支付超时自动取消');
@@ -283,7 +283,7 @@ class ExpressPickupOrderService
     {
         $count = 0;
         ExpressPickupOrder::query()
-            ->where('status', self::STATUS_PENDING_ACCEPT)
+            ->where('status', ExpressPickupOrder::STATUS_PENDING_ACCEPT)
             ->whereNotNull('paid_at')
             ->where('paid_at', '<=', now()->subMinutes(self::PENDING_ACCEPT_TIMEOUT_MINUTES))
             ->orderBy('id')
@@ -293,7 +293,7 @@ class ExpressPickupOrderService
                 try {
                     $cancelled = DB::transaction(function () use ($order): ?ExpressPickupOrder {
                         $locked = ExpressPickupOrder::query()->lockForUpdate()->findOrFail($order->id);
-                        if ($locked->status !== self::STATUS_PENDING_ACCEPT) {
+                        if ($locked->status !== ExpressPickupOrder::STATUS_PENDING_ACCEPT) {
                             return null;
                         }
                         $this->cancelLocked($locked, 'system', null, '超时无人接单，系统自动取消并退款。');
@@ -319,7 +319,7 @@ class ExpressPickupOrderService
     {
         $count = 0;
         ExpressPickupOrder::query()
-            ->where('status', self::STATUS_DELIVERED)
+            ->where('status', ExpressPickupOrder::STATUS_DELIVERED)
             ->whereNotNull('delivered_at')
             ->where('delivered_at', '<=', now()->subHours(self::DELIVERED_AUTO_CONFIRM_HOURS))
             ->orderBy('id')
@@ -329,11 +329,11 @@ class ExpressPickupOrderService
                 try {
                     $completed = DB::transaction(function () use ($order): bool {
                         $locked = ExpressPickupOrder::query()->lockForUpdate()->findOrFail($order->id);
-                        if ($locked->status !== self::STATUS_DELIVERED) {
+                        if ($locked->status !== ExpressPickupOrder::STATUS_DELIVERED) {
                             return false;
                         }
-                        $this->transition($locked, self::STATUS_COMPLETED, 'auto_completed', 'system', null, '送达超过 24 小时未确认，系统自动完成。');
-                        $locked->forceFill(['status' => self::STATUS_COMPLETED, 'completed_at' => now()])->save();
+                        $this->transition($locked, ExpressPickupOrder::STATUS_COMPLETED, 'auto_completed', 'system', null, '送达超过 24 小时未确认，系统自动完成。');
+                        $locked->forceFill(['status' => ExpressPickupOrder::STATUS_COMPLETED, 'completed_at' => now()])->save();
 
                         return true;
                     });

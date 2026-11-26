@@ -30,9 +30,6 @@ class ExpressPickupMaintenanceTest extends TestCase
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
         $this->campus = Campus::query()->firstOrFail();
-        Http::fake([
-            'https://api.feieyun.cn/Api/Open/' => Http::response(['ret' => 0, 'msg' => 'ok', 'data' => 'ok']),
-        ]);
     }
 
     public function test_unpaid_orders_expire_after_fifteen_minutes(): void
@@ -143,7 +140,16 @@ class ExpressPickupMaintenanceTest extends TestCase
 
     public function test_failed_print_job_is_retried(): void
     {
-        Http::fake(['https://api.feieyun.cn/Api/Open/' => Http::response(['ret' => 1001, 'msg' => '打印机离线'], 200)]);
+        $calls = 0;
+        Http::fake([
+            'https://api.feieyun.cn/Api/Open/' => function () use (&$calls) {
+                $calls++;
+
+                return $calls === 1
+                    ? Http::response(['ret' => 1001, 'msg' => '打印机离线'], 200)
+                    : Http::response(['ret' => 0, 'msg' => 'ok', 'data' => 'ok']);
+            },
+        ]);
         $this->printer();
         $owner = $this->userWithWallet('13900005001', 10000);
         $token = $this->userToken($owner);
@@ -154,7 +160,6 @@ class ExpressPickupMaintenanceTest extends TestCase
             ->assertOk();
         $this->assertSame('failed', PrinterPrintJob::query()->where('business_id', $orderId)->value('status'));
 
-        Http::fake(['https://api.feieyun.cn/Api/Open/' => Http::response(['ret' => 0, 'msg' => 'ok', 'data' => 'ok'])]);
         $this->artisan('express-pickup:retry-prints')->assertSuccessful();
 
         $job = PrinterPrintJob::query()->where('business_id', $orderId)->firstOrFail();
