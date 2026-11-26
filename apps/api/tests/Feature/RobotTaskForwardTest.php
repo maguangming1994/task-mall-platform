@@ -136,7 +136,7 @@ class RobotTaskForwardTest extends TestCase
         $this->configureWechatMini();
         Http::fake([
             'https://api.weixin.qq.com/cgi-bin/token*' => Http::response(['access_token' => 'token-sl', 'expires_in' => 7200]),
-            'https://api.weixin.qq.com/wxa/generateshortlink*' => Http::response(['errcode' => 0, 'link' => '#小程序://鱼泡校园圈/pages/task-detail/index/TaskTicket123']),
+            'https://api.weixin.qq.com/wxa/genwxashortlink*' => Http::response(['errcode' => 0, 'link' => '#小程序://鱼泡校园圈/pages/task-detail/index/TaskTicket123']),
         ]);
 
         $config = $this->config($admin, $campus, ['aggregate_interval' => 1, 'min_messages' => 1, 'max_messages' => 10]);
@@ -144,6 +144,23 @@ class RobotTaskForwardTest extends TestCase
 
         $message = app(RobotForwardConfigService::class)->renderPosts($config->fresh(), collect([$task]));
         $this->assertStringContainsString('mp://TaskTicket123', $message);
+    }
+
+    public function test_short_link_falls_back_to_url_link_when_wechat_rejects(): void
+    {
+        $admin = $this->admin();
+        $campus = $this->campus();
+        $task = $this->createTask($admin, $campus, '短链回退任务', now());
+        $this->configureWechatMini();
+        Http::fake([
+            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response(['access_token' => 'token-fb', 'expires_in' => 7200]),
+            'https://api.weixin.qq.com/wxa/genwxashortlink*' => Http::response(['errcode' => 40066, 'errmsg' => 'invalid url']),
+            'https://api.weixin.qq.com/wxa/generate_urllink*' => Http::response(['errcode' => 0, 'url_link' => 'https://wxmpurl.cn/Fallback999']),
+        ]);
+
+        $link = app(WechatMiniUrlLinkService::class)->forTask($task, 'short_link');
+
+        $this->assertSame('https://wxmpurl.cn/Fallback999', $link);
     }
 
     private function admin(): AdminUser

@@ -101,6 +101,14 @@ class WechatMiniUrlLinkService
     /**
      * 生成并缓存微信小程序链接（URL Link 或 Short Link）；小程序不可用时回退 H5。
      *
+     * 短链形式选择策略：
+     * - 请求 short_link 成功 → 返回 mp:// 形式 Short Link
+     * - 请求 short_link 失败（errcode 40066「未发布/无权限」最常见）→ 自动回退 URL Link（https://wxaurl.cn/...）
+     * - URL Link 也失败 → 再回退 H5 短链
+     * - 请求 url_link 时保持原逻辑
+     *
+     * 所有失败路径都记一条 warning 日志，带上 errcode 和 errmsg，方便运维一眼识别是"小程序未发布"还是网络抖动。
+     *
      * @param  array<string, string>  $query
      */
     private function generateUrlLink(string $cacheSeed, string $path, array $query, string $fallback, string $format = 'url_link', string $pageTitle = ''): string
@@ -120,15 +128,46 @@ class WechatMiniUrlLinkService
             return $fallback;
         }
 
+        $meta = [];
         try {
             $link = $format === 'short_link'
-                ? $this->requestShortLink($configuration, $path, $query, $pageTitle, false)
-                : $this->request($configuration, $path, $query, false);
-        } catch (Throwable) {
+                ? $this->requestShortLink($configuration, $path, $query, $pageTitle, false, $meta)
+                : $this->request($configuration, $path, $query, false, $meta);
+        } catch (Throwable $e) {
             $link = null;
+            $meta['exception'] = $e->getMessage();
         }
+
+        // 用户选了 short_link 但失败 → 优先回退 URL Link 而不是直接掉 H5 短链
+        if ($link === null && $format === 'short_link') {
+            $urlMeta = [];
+            try {
+                $link = $this->request($configuration, $path, $query, false, $urlMeta);
+                if ($link !== null) {
+                    logger()->warning('[robot] Short Link 回退为 URL Link', [
+                        'path' => $path,
+                        'sl_reason' => $meta['reason'] ?? ($meta['exception'] ?? 'unknown'),
+                        'sl_errcode' => $meta['errcode'] ?? null,
+                    ]);
+                }
+            } catch (Throwable $e2) {
+                $link = null;
+                logger()->warning('[robot] Short Link 和 URL Link 均失败，回退 H5', [
+                    'path' => $path,
+                    'sl_reason' => $meta['reason'] ?? ($meta['exception'] ?? 'unknown'),
+                    'url_reason' => $urlMeta['reason'] ?? $e2->getMessage(),
+                ]);
+            }
+        }
+
         if ($link === null) {
             Cache::put($cacheKey.':unavailable', true, now()->addMinutes(self::UNAVAILABLE_MINUTES));
+            logger()->warning('[robot] 小程序链接生成失败，最终回退 H5', [
+                'path' => $path,
+                'format' => $format,
+                'reason' => $meta['reason'] ?? ($meta['exception'] ?? 'unknown'),
+                'errcode' => $meta['errcode'] ?? null,
+            ]);
 
             return $fallback;
         }
@@ -140,8 +179,9 @@ class WechatMiniUrlLinkService
     /**
      * @param  array{timeout_seconds:int}  $configuration
      * @param  array<string, string>  $query
+     * @param  array<string, mixed>  $meta  引用回传错误诊断（errcode/errmsg/exception）
      */
-    private function request(array $configuration, string $path, array $query, bool $refreshed): ?string
+    private function request(array $configuration, string $path, array $query, bool $refreshed, array &$meta = []): ?string
     {
         $response = null;
         // 跨境网络偶发超时：重试一次，避免小程序仍在线却因瞬时抖动降级为 H5 短链
@@ -157,7 +197,8 @@ class WechatMiniUrlLinkService
                         'env_version' => 'release',
                     ]);
                 break;
-            } catch (ConnectionException) {
+            } catch (ConnectionException $e) {
+                $meta['exception'] = $e->getMessage();
                 if ($attempt === 2) {
                     return null;
                 }
@@ -165,6 +206,8 @@ class WechatMiniUrlLinkService
             }
         }
         if ($response === null) {
+            $meta['reason'] = $meta['exception'] ?? 'http_timeout';
+
             return null;
         }
         $payload = $response->json();
@@ -175,8 +218,10 @@ class WechatMiniUrlLinkService
             return is_string($link) && $link !== '' ? $link : null;
         }
         if (! $refreshed && in_array($code, [40001, 40014, 42001], true)) {
-            return $this->request($configuration, $path, $query, true);
+            return $this->request($configuration, $path, $query, true, $meta);
         }
+        $meta['errcode'] = $code;
+        $meta['reason'] = is_array($payload) ? ($payload['errmsg'] ?? "wechat_errcode_$code") : "wechat_errcode_$code";
 
         return null;
     }
@@ -186,8 +231,9 @@ class WechatMiniUrlLinkService
      *
      * @param  array{timeout_seconds:int}  $configuration
      * @param  array<string, string>  $query
+     * @param  array<string, mixed>  $meta  引用回传错误诊断（errcode/errmsg/exception）
      */
-    private function requestShortLink(array $configuration, string $path, array $query, string $pageTitle, bool $refreshed): ?string
+    private function requestShortLink(array $configuration, string $path, array $query, string $pageTitle, bool $refreshed, array &$meta = []): ?string
     {
         $fullPath = $query === [] ? $path : $path.'?'.http_build_query($query);
         $response = null;
@@ -195,13 +241,14 @@ class WechatMiniUrlLinkService
             try {
                 $response = Http::acceptJson()->timeout($configuration['timeout_seconds'])
                     ->withQueryParameters(['access_token' => $this->tokens->token('mini', $refreshed)])
-                    ->post('https://api.weixin.qq.com/wxa/generateshortlink', [
-                        'path' => $fullPath,
+                    ->post('https://api.weixin.qq.com/wxa/genwxashortlink', [
+                        'page_url' => $fullPath,
                         'page_title' => $pageTitle !== '' ? $pageTitle : '校园内容',
                         'is_permanent' => false,
                     ]);
                 break;
-            } catch (ConnectionException) {
+            } catch (ConnectionException $e) {
+                $meta['exception'] = $e->getMessage();
                 if ($attempt === 2) {
                     return null;
                 }
@@ -209,6 +256,8 @@ class WechatMiniUrlLinkService
             }
         }
         if ($response === null) {
+            $meta['reason'] = $meta['exception'] ?? 'http_timeout';
+
             return null;
         }
         $payload = $response->json();
@@ -219,8 +268,10 @@ class WechatMiniUrlLinkService
             return is_string($link) ? $this->shortLinkToMp($link) : null;
         }
         if (! $refreshed && in_array($code, [40001, 40014, 42001], true)) {
-            return $this->requestShortLink($configuration, $path, $query, $pageTitle, true);
+            return $this->requestShortLink($configuration, $path, $query, $pageTitle, true, $meta);
         }
+        $meta['errcode'] = $code;
+        $meta['reason'] = is_array($payload) ? ($payload['errmsg'] ?? "wechat_errcode_$code") : "wechat_errcode_$code";
 
         return null;
     }
