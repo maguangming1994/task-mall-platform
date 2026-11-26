@@ -73,5 +73,6 @@ export const HOME_LINK_MODULE: Partial<Record<HomeLinkType, ModuleCode>> = {
   assets: 'module_wallet',
   second_hand: 'module_second_hand',
   material: 'module_material',
+  express_pickup: 'module_express_pickup',
   push: 'module_tasks', // 地推暂无独立 feature flag，跟随任务大厅门禁
 }

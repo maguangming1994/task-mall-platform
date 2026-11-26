@@ -11,10 +11,20 @@ use App\Modules\ExpressPickup\Models\ExpressPickupRunner;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class ExpressPickupOrderService
 {
-    public function __construct(private readonly ReceiptPrintService $receipts) {}
+    private const UNPAID_TIMEOUT_MINUTES = 15;
+
+    private const PENDING_ACCEPT_TIMEOUT_MINUTES = 30;
+
+    private const DELIVERED_AUTO_CONFIRM_HOURS = 24;
+
+    public function __construct(
+        private readonly ReceiptPrintService $receipts,
+        private readonly ExpressPickupRefundService $refunds,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -142,6 +152,9 @@ class ExpressPickupOrderService
             return $locked;
         });
 
+        $this->refunds->dispatch($cancelled);
+        $this->refunds->closePendingPayments($cancelled);
+
         return $cancelled->fresh();
     }
 
@@ -156,6 +169,9 @@ class ExpressPickupOrderService
 
             return $locked;
         });
+
+        $this->refunds->dispatch($cancelled);
+        $this->refunds->closePendingPayments($cancelled);
 
         return $cancelled->fresh();
     }
@@ -226,6 +242,113 @@ class ExpressPickupOrderService
     }
 
     /**
+     * 待支付超时：取消订单并关闭在途微信支付。
+     */
+    public function expireUnpaid(int $limit = 100): int
+    {
+        $count = 0;
+        ExpressPickupOrder::query()
+            ->where('status', self::STATUS_PENDING_PAYMENT)
+            ->where('created_at', '<=', now()->subMinutes(self::UNPAID_TIMEOUT_MINUTES))
+            ->orderBy('id')
+            ->limit($limit)
+            ->get()
+            ->each(function (ExpressPickupOrder $order) use (&$count): void {
+                try {
+                    $cancelled = DB::transaction(function () use ($order): ?ExpressPickupOrder {
+                        $locked = ExpressPickupOrder::query()->lockForUpdate()->findOrFail($order->id);
+                        if ($locked->status !== self::STATUS_PENDING_PAYMENT) {
+                            return null;
+                        }
+                        $this->cancelLocked($locked, 'system', null, '支付超时自动取消');
+
+                        return $locked;
+                    });
+                    if ($cancelled !== null) {
+                        $this->refunds->closePendingPayments($cancelled);
+                        $count++;
+                    }
+                } catch (Throwable $exception) {
+                    report($exception);
+                }
+            });
+
+        return $count;
+    }
+
+    /**
+     * 已支付但长时间无人接单：取消订单并原路退款。
+     */
+    public function cancelStalePendingAccept(int $limit = 100): int
+    {
+        $count = 0;
+        ExpressPickupOrder::query()
+            ->where('status', self::STATUS_PENDING_ACCEPT)
+            ->whereNotNull('paid_at')
+            ->where('paid_at', '<=', now()->subMinutes(self::PENDING_ACCEPT_TIMEOUT_MINUTES))
+            ->orderBy('id')
+            ->limit($limit)
+            ->get()
+            ->each(function (ExpressPickupOrder $order) use (&$count): void {
+                try {
+                    $cancelled = DB::transaction(function () use ($order): ?ExpressPickupOrder {
+                        $locked = ExpressPickupOrder::query()->lockForUpdate()->findOrFail($order->id);
+                        if ($locked->status !== self::STATUS_PENDING_ACCEPT) {
+                            return null;
+                        }
+                        $this->cancelLocked($locked, 'system', null, '超时无人接单，系统自动取消并退款。');
+
+                        return $locked;
+                    });
+                    if ($cancelled !== null) {
+                        $this->refunds->dispatch($cancelled);
+                        $count++;
+                    }
+                } catch (Throwable $exception) {
+                    report($exception);
+                }
+            });
+
+        return $count;
+    }
+
+    /**
+     * 送达超过 24 小时用户未确认：自动完成，进入跑腿结算。
+     */
+    public function autoConfirmDelivered(int $limit = 100): int
+    {
+        $count = 0;
+        ExpressPickupOrder::query()
+            ->where('status', self::STATUS_DELIVERED)
+            ->whereNotNull('delivered_at')
+            ->where('delivered_at', '<=', now()->subHours(self::DELIVERED_AUTO_CONFIRM_HOURS))
+            ->orderBy('id')
+            ->limit($limit)
+            ->get()
+            ->each(function (ExpressPickupOrder $order) use (&$count): void {
+                try {
+                    $completed = DB::transaction(function () use ($order): bool {
+                        $locked = ExpressPickupOrder::query()->lockForUpdate()->findOrFail($order->id);
+                        if ($locked->status !== self::STATUS_DELIVERED) {
+                            return false;
+                        }
+                        $this->transition($locked, self::STATUS_COMPLETED, 'auto_completed', 'system', null, '送达超过 24 小时未确认，系统自动完成。');
+                        $locked->forceFill(['status' => self::STATUS_COMPLETED, 'completed_at' => now()])->save();
+
+                        return true;
+                    });
+                    if ($completed) {
+                        $count++;
+                    }
+                } catch (Throwable $exception) {
+                    report($exception);
+                }
+            });
+
+        return $count;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function present(ExpressPickupOrder $order, bool $maskSensitive = true): array
@@ -257,6 +380,8 @@ class ExpressPickupOrderService
             'completed_at' => $order->completed_at?->toIso8601String(),
             'cancelled_at' => $order->cancelled_at?->toIso8601String(),
             'cancel_reason' => $order->cancel_reason,
+            'refund_status' => $order->refund_status,
+            'refunded_at' => $order->refunded_at?->toIso8601String(),
             'print_status' => $order->print_status,
             'printed_at' => $order->printed_at?->toIso8601String(),
             'created_at' => $order->created_at?->toIso8601String(),
@@ -287,7 +412,11 @@ class ExpressPickupOrderService
         $this->log($locked, $from, ExpressPickupOrder::STATUS_CANCELLED, 'cancelled', $actorType, $actorId, $reason);
 
         if ($locked->paid_at !== null && $locked->refunded_at === null) {
-            $this->refundLocked($locked);
+            if ($locked->payment_method === 'wechat') {
+                $this->refunds->prepareWechatRefundLocked($locked);
+            } else {
+                $this->refundLocked($locked);
+            }
         }
     }
 
@@ -318,6 +447,9 @@ class ExpressPickupOrderService
     private function transition(ExpressPickupOrder $order, string $to, string $event, string $actorType, ?int $actorId, ?string $reason = null): void
     {
         $this->log($order, $order->status, $to, $event, $actorType, $actorId, $reason);
+        if ($order->status !== $to) {
+            $order->forceFill(['status' => $to])->save();
+        }
     }
 
     private function log(ExpressPickupOrder $order, ?string $from, string $to, string $event, string $actorType, ?int $actorId, ?string $reason = null): void

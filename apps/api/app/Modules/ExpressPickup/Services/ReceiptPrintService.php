@@ -63,6 +63,35 @@ class ReceiptPrintService
     }
 
     /**
+     * 定时重试失败的小票任务：只重试已支付订单，每单最多重试 3 次。
+     */
+    public function retryFailed(int $limit = 50): int
+    {
+        $count = 0;
+        PrinterPrintJob::query()
+            ->where('business_type', self::BUSINESS_TYPE)
+            ->where('status', 'failed')
+            ->where('attempts', '<', 3)
+            ->orderBy('id')
+            ->limit($limit)
+            ->get()
+            ->each(function (PrinterPrintJob $job) use (&$count): void {
+                try {
+                    if ($this->retry($job)) {
+                        $count++;
+                    }
+                } catch (Throwable $exception) {
+                    Log::warning('快递代取小票重试失败', [
+                        'job' => $job->public_id,
+                        'error' => $exception->getMessage(),
+                    ]);
+                }
+            });
+
+        return $count;
+    }
+
+    /**
      * 后台手动补打：失败需要向上抛错，便于操作者看到原因。
      */
     public function reprint(ExpressPickupOrder $order): PrinterPrintJob
@@ -109,6 +138,49 @@ class ReceiptPrintService
             $this->orderVariables($order),
             $printer->paper_width,
         );
+    }
+
+    private function retry(PrinterPrintJob $job): bool
+    {
+        $order = ExpressPickupOrder::query()->where('public_id', $job->business_id)->first();
+        if ($order === null || $order->status === ExpressPickupOrder::STATUS_CANCELLED) {
+            return false;
+        }
+
+        $printer = $job->printer_id !== null ? CampusPrinter::query()->find($job->printer_id) : null;
+        if ($printer === null || $printer->status !== 'enabled') {
+            $job->forceFill([
+                'attempts' => $job->attempts + 1,
+                'error_message' => '小票机不存在或已停用，暂不能重试。',
+            ])->save();
+
+            return false;
+        }
+
+        try {
+            // 复用支付时的渲染内容，避免模板变更导致重打内容与原始小票不一致。
+            $this->printers->driver($printer->vendor)->print($printer, $job->content);
+            $job->forceFill([
+                'status' => 'printed',
+                'attempts' => $job->attempts + 1,
+                'error_message' => null,
+                'printed_at' => now(),
+            ])->save();
+            $order->forceFill([
+                'print_status' => ExpressPickupOrder::PRINT_STATUS_PRINTED,
+                'printed_at' => now(),
+            ])->save();
+
+            return true;
+        } catch (Throwable $exception) {
+            $job->forceFill([
+                'attempts' => $job->attempts + 1,
+                'error_message' => mb_substr($exception->getMessage(), 0, 480),
+            ])->save();
+            $order->forceFill(['print_status' => ExpressPickupOrder::PRINT_STATUS_FAILED])->save();
+
+            return false;
+        }
     }
 
     private function dispatch(CampusPrinter $printer, ExpressPickupOrder $order, bool $force): PrinterPrintJob

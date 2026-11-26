@@ -127,7 +127,7 @@ class PaymentService
     /** @return array<string,mixed> */
     public function present(Payment $payment): array
     {
-        return ['id' => $payment->public_id, 'payment_no' => $payment->payment_no, 'order_id' => $payment->order?->public_id ?? $payment->order()->value('public_id'), 'wallet_recharge_id' => $payment->walletRecharge?->public_id ?? $payment->walletRecharge()->value('public_id'), 'second_hand_order_id' => $payment->secondHandOrder?->public_id ?? $payment->secondHandOrder()->value('public_id'), 'express_pickup_order_id' => $payment->expressPickupOrder?->public_id ?? $payment->expressPickupOrder()->value('public_id'), 'channel' => $payment->channel, 'scene' => $payment->scene, 'cash_amount' => $payment->cash_amount, 'status' => $payment->status, 'client_payload' => $payment->client_payload, 'expires_at' => $payment->expires_at->toIso8601String(), 'succeeded_at' => $payment->succeeded_at?->toIso8601String(), 'created_at' => $payment->created_at->toIso8601String()];
+        return ['id' => $payment->public_id, 'payment_no' => $payment->payment_no, 'order_id' => $payment->order?->public_id ?? $payment->order()->value('public_id'), 'wallet_recharge_id' => $payment->walletRecharge?->public_id ?? $payment->walletRecharge()->value('public_id'), 'second_hand_order_id' => $payment->secondHandOrder?->public_id ?? $payment->secondHandOrder()->value('public_id'), 'express_pickup_order_id' => $payment->expressPickupOrder?->public_id ?? $payment->expressPickupOrder()->value('public_id'), 'channel' => $payment->channel, 'scene' => $payment->scene, 'cash_amount' => $payment->cash_amount, 'status' => $payment->status, 'client_payload' => $payment->client_payload, 'expires_at' => $payment->expires_at?->toIso8601String(), 'succeeded_at' => $payment->succeeded_at?->toIso8601String(), 'created_at' => $payment->created_at->toIso8601String()];
     }
 
     public function createSecondHandPayment(SecondHandOrder $order, User $user, string $scene, string $idempotencyKey): Payment
@@ -236,6 +236,7 @@ class PaymentService
                 'cash_amount' => $lockedOrder->total_cents,
                 'status' => 'pending',
                 'idempotency_key_hash' => $hash,
+                'expires_at' => now()->addMinutes(15),
             ]);
 
             try {

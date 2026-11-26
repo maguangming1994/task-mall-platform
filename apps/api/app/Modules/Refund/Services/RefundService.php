@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Assets\Models\UserCoupon;
 use App\Modules\Assets\Services\AssetLedgerService;
+use App\Modules\ExpressPickup\Services\ExpressPickupRefundService;
 use App\Modules\Order\Models\Order;
 use App\Modules\Payment\Contracts\WechatPaymentGateway;
 use App\Modules\Payment\Models\Payment;
@@ -379,6 +380,10 @@ class RefundService
         }
         $refund = Refund::query()->where('refund_no', (string) ($result['refund_no'] ?? ''))->first();
         if ($refund === null) {
+            // 快递代取退款不落 refunds 表，按退款单号在代取单上兜底处理。
+            if (app(ExpressPickupRefundService::class)->handleProviderResult($result)) {
+                return;
+            }
             throw ValidationException::withMessages(['refund' => '退款渠道结果对应的退款单不存在。']);
         }
         $event = [

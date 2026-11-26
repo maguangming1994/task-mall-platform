@@ -25,6 +25,11 @@ class ExpressPickupOrder extends Model
     public const PRINT_STATUS_PRINTED = 'printed';
     public const PRINT_STATUS_FAILED = 'failed';
 
+    public const REFUND_STATUS_PENDING = 'pending';
+    public const REFUND_STATUS_PROCESSING = 'processing';
+    public const REFUND_STATUS_REFUNDED = 'refunded';
+    public const REFUND_STATUS_FAILED = 'failed';
+
     protected $fillable = [
         'public_id', 'order_no', 'campus_id', 'user_id', 'runner_user_id', 'status',
         'pickup_site', 'pickup_code', 'package_info', 'package_count',
@@ -32,8 +37,8 @@ class ExpressPickupOrder extends Model
         'reward_cents', 'total_cents', 'payment_method', 'paid_at', 'paid_amount_cents',
         'expected_at', 'remark', 'idempotency_key_hash',
         'accepted_at', 'picked_up_at', 'delivered_at', 'completed_at',
-        'cancelled_at', 'cancel_reason', 'refunded_at', 'settled_at', 'settlement_id',
-        'printed_at', 'print_status',
+        'cancelled_at', 'cancel_reason', 'refunded_at', 'refund_no', 'refund_status',
+        'settled_at', 'settlement_id', 'printed_at', 'print_status',
     ];
 
     protected static function booted(): void

@@ -300,6 +300,7 @@ function createDefaultHome(): HomeContent {
         { id: 'cat-errand', label: '跑腿代办', note: '取件带饭', mark: '跑', tone: 'green', icon_url: '/static/icons/cat-errand.svg', link_type: 'tasks:errand' },
         { id: 'cat-study', label: '学习助力', note: '答疑打印', mark: '学', tone: 'blue', icon_url: '/static/icons/cat-study.svg', link_type: 'tasks:study' },
         { id: 'cat-secondhand', label: '二手闲置', note: '淘好物', mark: '闲', tone: 'orange', icon_url: '/static/icons/cat-secondhand.svg', link_type: 'secondhand' },
+        { id: 'cat-express', label: '快递代取', note: '代取包裹', mark: '取', tone: 'cyan', icon_url: '', link_type: 'express_pickup' },
         { id: 'cat-skill', label: '技能服务', note: '修电脑修车', mark: '技', tone: 'violet', icon_url: '/static/icons/cat-skill.svg', link_type: 'tasks:skill' },
         { id: 'cat-lost', label: '失物招领', note: '寻物启事', mark: '失', tone: 'pink', icon_url: '/static/icons/cat-lost.svg', link_type: 'tasks:lost_found' },
         { id: 'cat-teamup', label: '组队拼单', note: '搭子拼团', mark: '队', tone: 'cyan', icon_url: '/static/icons/cat-teamup.svg', link_type: 'tasks:teamup' },
@@ -362,15 +363,31 @@ function linkAvailable(linkType: HomeLinkType) {
   if (!code) return true
   return linkType === 'material' ? modules.isLaunched(code) : modules.isEnabled(code)
 }
-const quickEntries = computed(() => home.value.modules.quick_entries
-  .filter((item) => linkAvailable(item.link_type as HomeLinkType))
-  .slice(0, 8)
-  .map((item) => ({
-    ...item,
-    action: () => handleKingLink(item.link_type, item.id),
-    iconSrc: icons.resolve(categoryIconMap[item.id] || item.icon_url),
-    displayLabel: icons.label(item.label, categoryIconMap[item.id] || item.icon_url),
-  })))
+const quickEntries = computed(() => {
+  // 后端首页配置可能仍是旧版本（不含快递代取），模块开启时兜底注入一个入口。
+  const entries = [...home.value.modules.quick_entries]
+  if (modules.isEnabled('module_express_pickup') && !entries.some((item) => item.link_type === 'express_pickup')) {
+    entries.splice(Math.min(2, entries.length), 0, {
+      id: 'cat-express',
+      label: '快递代取',
+      note: '代取包裹',
+      mark: '取',
+      tone: 'cyan',
+      icon_url: '',
+      link_type: 'express_pickup',
+    })
+  }
+
+  return entries
+    .filter((item) => linkAvailable(item.link_type as HomeLinkType))
+    .slice(0, 8)
+    .map((item) => ({
+      ...item,
+      action: () => handleKingLink(item.link_type, item.id),
+      iconSrc: icons.resolve(categoryIconMap[item.id] || item.icon_url),
+      displayLabel: icons.label(item.label, categoryIconMap[item.id] || item.icon_url),
+    }))
+})
 const pageStyle = computed(() => ({
   ...backgroundStyle(home.value.modules.page_background_url),
   ...topSafeAreaStyle,
@@ -747,6 +764,7 @@ function openCommunity() { openPrimaryNavigation('community') }
 function openOrders() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/orders/index' }) : openLogin() }
 function openSecondHand() { uni.navigateTo({ url: '/pages/second-hand/index' }) }
 function openMaterial() { uni.navigateTo({ url: '/pages/material/index' }) }
+function openExpressPickup() { uni.navigateTo({ url: '/pages-express/index' }) }
 function openNotifications() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/notifications/index' }) : openLogin() }
 function openAssets() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/assets/index' }) : openLogin() }
 function openPushCenter() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/push-center/index' }) : openLogin() }
@@ -769,12 +787,14 @@ function navigateHomeLink(link: HomeLinkType) {
   if (link === 'push') return openPushCenter()
   if (link === 'second_hand' || link === 'secondhand') return openSecondHand()
   if (link === 'material') return openMaterial()
+  if (link === 'express_pickup') return openExpressPickup()
 }
 
 // 金刚区跳转：支持 tasks:<category> 直达大厅指定分类。
 function handleKingLink(link: string, id: string) {
   if (link === 'secondhand' || id === 'cat-secondhand') return openSecondHand()
   if (link === 'material' || id === 'cat-material') return openMaterial()
+  if (link === 'express_pickup' || id === 'cat-express') return openExpressPickup()
   if (link === 'push' || id === 'pt-center') return openPushCenter()
   if (link.startsWith('tasks:')) {
     const categoryValue = link.slice('tasks:'.length)

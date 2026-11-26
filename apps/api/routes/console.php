@@ -165,6 +165,8 @@ Schedule::command('tasks:retry-reward-deliveries')->everyFiveMinutes()->withoutO
 Schedule::command('tasks:expire-appeal-windows')->hourly()->withoutOverlapping();
 Schedule::command('payments:sync-pending --limit=100')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('orders:close-expired-payments --limit=100')->everyMinute()->withoutOverlapping();
+Schedule::command('express-pickup:expire-orders --limit=100')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('express-pickup:retry-prints --limit=50')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('growth:scan-first-cash-orders --limit=500')->everyTenMinutes()->withoutOverlapping();
 Schedule::command('after-sales:close-expired --limit=500')->hourly()->withoutOverlapping();
 Schedule::command('refunds:sync-provider --limit=100')->everyFiveMinutes()->withoutOverlapping();
