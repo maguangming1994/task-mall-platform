@@ -19,6 +19,12 @@
         <input v-model="keyword" confirm-type="search" placeholder="搜索商品，如「柠檬茶」「键盘」" :focus="searchFocused" @blur="searchFocused = false" />
       </view>
 
+      <DecorationRenderer
+        v-if="decoration.sections.length"
+        :sections="decoration.sections"
+        @navigate="handleDecorationLink"
+      />
+
       <view class="coupons">
         <view class="coupon">
           <view class="c-val"><text class="c-symbol">¥</text>5</view>
@@ -163,6 +169,8 @@ import { listProductCategories, listProducts, type MallProduct, type ProductCate
 import { useAuthStore } from '@/stores/auth'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import DecorationRenderer from '@/components/decoration/DecorationRenderer.vue'
+import { loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
 import { useModulesStore } from '@/stores/modules'
 
 const modules = useModulesStore()
@@ -170,6 +178,7 @@ const moduleEnabled = computed(() => modules.isEnabled('module_mall'))
 
 const topSafeAreaStyle = createTopSafeAreaStyle()
 const products = ref<MallProduct[]>([])
+const decoration = ref<DecorationPageConfig>({ background_url: '', sections: [] })
 const categories = ref<ProductCategory[]>([])
 const loading = ref(false)
 const loadError = ref('')
@@ -237,15 +246,17 @@ async function load() {
   loading.value = true
   loadError.value = ''
   try {
-    const [productResult, categoryResult, appearanceResult, cartResult] = await Promise.all([
+    const [productResult, categoryResult, appearanceResult, cartResult, decorationResult] = await Promise.all([
       listProducts(categoryId.value || undefined),
       listProductCategories(),
       loadAppearanceContent().catch(() => null),
       auth.isAuthenticated ? getCart(auth.accessToken).catch(() => null) : Promise.resolve(null),
+      loadPageDecoration(),
     ])
     products.value = productResult.items
     categories.value = categoryResult.items
     if (appearanceResult) mallAppearance.value = appearanceResult.mall
+    decoration.value = decorationResult.pages.mall
     cartItemCount.value = cartResult?.items.reduce((count, item) => count + item.quantity, 0) || 0
   }
   catch (error) { loadError.value = error instanceof Error ? error.message : '请稍后重试。'; uni.showToast({ title: loadError.value, icon: 'none' }) }
@@ -288,6 +299,28 @@ function purchaseModesText(product: MallProduct) {
   return modes.length ? modes.join(' / ') : '暂无可购买方式'
 }
 function openProduct(id: string) { uni.navigateTo({ url: `/pages/product-detail/index?id=${encodeURIComponent(id)}` }) }
+function handleDecorationLink(link: string) {
+  if (link.startsWith('tasks:')) {
+    const categoryValue = link.slice('tasks:'.length)
+    if (categoryValue) uni.setStorageSync('task_mall_hall_category', categoryValue)
+    return uni.navigateTo({ url: '/pages/tasks/index' })
+  }
+  const routes: Record<string, string> = {
+    tasks: '/pages/tasks/index',
+    products: '/pages/products/index',
+    community: '/pages/community/index',
+    notifications: '/pages/notifications/index',
+    orders: '/pages/orders/index',
+    assets: '/pages/assets/index',
+    push: '/pages/push-center/index',
+    second_hand: '/pages/second-hand/index',
+    secondhand: '/pages/second-hand/index',
+    material: '/pages/material/index',
+    express_pickup: '/pages-express/index',
+  }
+  const url = routes[link]
+  if (url) uni.navigateTo({ url })
+}
 function openCart() { uni.navigateTo({ url: '/pages/cart/index' }) }
 function scrollToProducts() { uni.pageScrollTo({ selector: '#product-list', duration: 260 }) }
 

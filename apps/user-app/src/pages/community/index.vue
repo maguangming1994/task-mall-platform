@@ -59,6 +59,12 @@
       </view>
     </scroll-view>
 
+    <DecorationRenderer
+      v-if="decoration.sections.length"
+      :sections="decoration.sections"
+      @navigate="handleDecorationLink"
+    />
+
     <template v-if="activeView === 'square'">
       <view class="feed-heading">
         <view class="feed-heading-left">
@@ -228,6 +234,8 @@ import { buildQueryString } from '@/utils/query'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
 import { unicodeLength } from '@/utils/textInput'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
+import DecorationRenderer from '@/components/decoration/DecorationRenderer.vue'
+import { loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
 import { useModulesStore } from '@/stores/modules'
 import { useCampusProfileStore } from '@/stores/campusProfile'
 
@@ -272,6 +280,7 @@ const fallbackHome: CommunityHomeConfig = {
 
 const auth = useAuthStore()
 const home = ref<CommunityHomeConfig>(fallbackHome)
+const decoration = ref<DecorationPageConfig>({ background_url: '', sections: [] })
 const categories = ref<CommunityCategory[]>(fallbackCategories)
 const publishingRules = ref<CommunityPublishingRules>(DEFAULT_COMMUNITY_PUBLISHING_RULES)
 const posts = ref<CommunityPost[]>([])
@@ -357,9 +366,9 @@ onShow(async () => {
   if (!followEnabled.value && activeFeed.value === 'following') activeFeed.value = 'discover'
   if (activeView.value === 'mine' && auth.isAuthenticated) await loadMine()
   else await refreshSquare()
-  await Promise.all([loadHomeConfig(), loadCategories()])
+  await Promise.all([loadHomeConfig(), loadCategories(), loadDecoration()])
 })
-onPullDownRefresh(async () => { try { await modules.ensureReady(); if (!moduleEnabled.value) return; await Promise.all([activeView.value === 'mine' ? loadMine() : refreshSquare(), loadHomeConfig(), loadCategories()]) } finally { uni.stopPullDownRefresh() } })
+onPullDownRefresh(async () => { try { await modules.ensureReady(); if (!moduleEnabled.value) return; await Promise.all([activeView.value === 'mine' ? loadMine() : refreshSquare(), loadHomeConfig(), loadCategories(), loadDecoration()]) } finally { uni.stopPullDownRefresh() } })
 
 onShareAppMessage(() => {
   const post = posts.value.find(item => item.id === openedPostId.value)
@@ -370,6 +379,29 @@ onShareAppMessage(() => {
 })
 
 async function loadHomeConfig() { try { const value = await loadCommunityHome(); home.value = { ...fallbackHome, ...value, brand: { ...fallbackHome.brand, ...(value.brand || {}) }, banner: value.banner?.title ? value.banner : fallbackHome.banner, quick_entries: value.quick_entries?.length ? value.quick_entries : fallbackHome.quick_entries, hot_topics: value.hot_topics?.length ? value.hot_topics : fallbackHome.hot_topics } } catch { home.value = fallbackHome } }
+async function loadDecoration() { decoration.value = (await loadPageDecoration()).pages.community }
+function handleDecorationLink(link: string) {
+  if (link.startsWith('tasks:')) {
+    const categoryValue = link.slice('tasks:'.length)
+    if (categoryValue) uni.setStorageSync('task_mall_hall_category', categoryValue)
+    return uni.navigateTo({ url: '/pages/tasks/index' })
+  }
+  const routes: Record<string, string> = {
+    tasks: '/pages/tasks/index',
+    products: '/pages/products/index',
+    community: '/pages/community/index',
+    notifications: '/pages/notifications/index?category=community',
+    orders: '/pages/orders/index',
+    assets: '/pages/assets/index',
+    push: '/pages/push-center/index',
+    second_hand: '/pages/second-hand/index',
+    secondhand: '/pages/second-hand/index',
+    material: '/pages/material/index',
+    express_pickup: '/pages-express/index',
+  }
+  const url = routes[link]
+  if (url) uni.navigateTo({ url })
+}
 async function loadCategories() {
   try {
     const value = await listCommunityCategories()

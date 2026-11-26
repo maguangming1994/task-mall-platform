@@ -58,6 +58,12 @@
       </view>
     </view>
 
+    <DecorationRenderer
+      v-if="decoration.sections.length"
+      :sections="decoration.sections"
+      @navigate="handleDecorationLink"
+    />
+
     <view v-if="modules.isLaunched('module_membership')" class="vip-card" @click="openVip">
       <view class="vip-main">
         <text class="vip-title">👑 校园 PLUS 会员</text>
@@ -144,6 +150,8 @@
 import { onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import AppTabBar from '@/components/AppTabBar.vue'
+import DecorationRenderer from '@/components/decoration/DecorationRenderer.vue'
+import { loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
 import { loadAssetOverview, updateProfile, type AssetOverview } from '@/api/account'
 import { getCommunitySocialStats } from '@/api/community'
 import { loadAppearanceContent, type AccountAppearance } from '@/api/appearance'
@@ -174,6 +182,7 @@ const savingNickname = ref(false)
 const uploading = ref(false)
 const accountAppearance = ref<AccountAppearance>({ profile_icon_url: '', service_icons: [] })
 const resolvingAccount = ref(Boolean(auth.accessToken))
+const decoration = ref<DecorationPageConfig>({ background_url: '', sections: [] })
 // 微信小程序原生胶囊（右上角 ••• ⊙）不可遮挡、不可覆盖触摸；
 // 用胶囊矩形把自定义图标行定位到胶囊左侧，并让头部内容下移避开。
 const headStyle = ref<Record<string, string>>({})
@@ -289,7 +298,32 @@ const communityServices = computed(() => [
 onShow(() => {
   initCapsuleInset()
   void load()
+  void loadDecoration()
 })
+
+async function loadDecoration() { decoration.value = (await loadPageDecoration()).pages.account }
+function handleDecorationLink(link: string) {
+  if (link.startsWith('tasks:')) {
+    const categoryValue = link.slice('tasks:'.length)
+    if (categoryValue) uni.setStorageSync('task_mall_hall_category', categoryValue)
+    return uni.navigateTo({ url: '/pages/tasks/index' })
+  }
+  const routes: Record<string, string> = {
+    tasks: '/pages/tasks/index',
+    products: '/pages/products/index',
+    community: '/pages/community/index',
+    notifications: '/pages/notifications/index',
+    orders: '/pages/orders/index',
+    assets: '/pages/assets/index',
+    push: '/pages/push-center/index',
+    second_hand: '/pages/second-hand/index',
+    secondhand: '/pages/second-hand/index',
+    material: '/pages/material/index',
+    express_pickup: '/pages-express/index',
+  }
+  const url = routes[link]
+  if (url) uni.navigateTo({ url })
+}
 
 async function load() {
   void modules.ensureReady()

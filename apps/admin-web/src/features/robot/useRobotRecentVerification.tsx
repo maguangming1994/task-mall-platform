@@ -13,7 +13,7 @@ interface PendingAction {
 }
 
 /** 高敏写操作收到近期核验要求时，核验身份并使用原操作（含原幂等键）重试。 */
-export function useRobotRecentVerification(requiresMfa: boolean) {
+export function useRobotRecentVerification(requiresMfa: boolean, alertMessage = '该操作会修改机器人配置或提交测试消息，请输入当前管理员密码以继续。') {
   const [messageApi, messageContext] = message.useMessage()
   const [verifyForm] = Form.useForm<VerifyFormValues>()
   const [verifyOpen, setVerifyOpen] = useState(false)
@@ -95,7 +95,7 @@ export function useRobotRecentVerification(requiresMfa: boolean) {
       cancelText="取消"
       destroyOnHidden
     >
-      <Alert showIcon type="warning" message="该操作会修改机器人配置或提交测试消息，请输入当前管理员密码以继续。" style={{ marginBottom: 16 }} />
+      <Alert showIcon type="warning" message={alertMessage} style={{ marginBottom: 16 }} />
       <Form<VerifyFormValues> form={verifyForm} layout="vertical" onFinish={(values) => void confirmVerify(values)}>
         <Form.Item name="current_password" label="当前管理员密码" rules={[{ required: true, message: '请输入当前管理员密码。' }]}>
           <Input.Password autoComplete="current-password" />

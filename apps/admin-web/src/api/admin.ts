@@ -190,6 +190,33 @@ export interface SettingVersion {
   published_at: string
 }
 
+export type DecorationPageKey = 'home' | 'community' | 'mall' | 'account'
+
+export interface DecorationSection {
+  id: string
+  type: string
+  enabled: boolean
+  props: Record<string, unknown>
+}
+
+export interface DecorationPageConfig {
+  background_url: string
+  sections: DecorationSection[]
+}
+
+export interface PageDecorationConfig {
+  schema_version: number
+  pages: Record<DecorationPageKey, DecorationPageConfig>
+  version: number | null
+}
+
+export interface PageDecorationOverview {
+  config: PageDecorationConfig
+  current_version: number | null
+  draft: SettingDraft | null
+  versions: SettingVersion[]
+}
+
 export interface PrivacyRequestItem {
   id: string
   request_type: 'access' | 'copy' | 'correction' | 'deletion' | 'withdraw_consent'
@@ -1569,6 +1596,39 @@ export async function listSettingVersions(settingKey: string): Promise<{ items: 
 
 export async function createSettingRollback(settingKey: string, targetVersion: number, reason: string): Promise<SettingDraft> {
   return request(`/admin/settings/${encodeURIComponent(settingKey)}/rollback`, {
+    method: 'POST',
+    body: JSON.stringify({ target_version: targetVersion, reason }),
+  })
+}
+
+export async function getPageDecoration(): Promise<PageDecorationOverview> {
+  return request('/admin/page-decoration')
+}
+
+export async function savePageDecorationDraft(
+  value: PageDecorationConfig,
+  reason: string,
+  expectedLockVersion?: number,
+): Promise<SettingDraft> {
+  return request('/admin/page-decoration/draft', {
+    method: 'PUT',
+    body: JSON.stringify({ value, reason, expected_lock_version: expectedLockVersion }),
+  })
+}
+
+export async function publishPageDecoration(): Promise<SettingVersion> {
+  return request('/admin/page-decoration/publish', {
+    method: 'POST',
+    body: JSON.stringify({ confirm_publish: true }),
+  })
+}
+
+export async function listPageDecorationVersions(): Promise<{ items: SettingVersion[] }> {
+  return request('/admin/page-decoration/versions')
+}
+
+export async function rollbackPageDecoration(targetVersion: number, reason: string): Promise<SettingDraft> {
+  return request('/admin/page-decoration/rollback', {
     method: 'POST',
     body: JSON.stringify({ target_version: targetVersion, reason }),
   })

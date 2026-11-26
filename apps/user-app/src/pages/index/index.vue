@@ -62,6 +62,13 @@
       </view>
     </view>
 
+    <!-- 装修区块：未配置时不渲染，保持页面原样 -->
+    <DecorationRenderer
+      v-if="homeDecoration.sections.length"
+      :sections="homeDecoration.sections"
+      @navigate="handleDecorationLink"
+    />
+
     <!-- 金刚区 -->
     <view class="home-v13-king">
       <view
@@ -194,6 +201,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { onLoad, onShareAppMessage, onShareTimeline, onShow } from '@dcloudio/uni-app'
 import { loadHomeContent, type HomeCarouselItem, type HomeContent, type HomeLinkType } from '@/api/home'
+import { loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
 import { loadPendingLegalDocuments } from '@/api/legal'
 import { openPrimaryNavigation } from '@/api/navigation'
 import { listProducts, type MallProduct } from '@/api/products'
@@ -206,6 +214,7 @@ import { formatRelativeTime } from '@/utils/dateTime'
 import { ensureCampusBinding } from '@/utils/campusBindingGuard'
 import AppTabBar from '@/components/AppTabBar.vue'
 import CampusSelector from '@/components/CampusSelector.vue'
+import DecorationRenderer from '@/components/decoration/DecorationRenderer.vue'
 import type { Campus } from '@/api/campuses'
 import { useAuthStore } from '@/stores/auth'
 import { useCampusStore } from '@/stores/campus'
@@ -231,6 +240,7 @@ const popupVisible = ref(false)
 const homeLoading = ref(false)
 const homeLoaded = ref(false)
 const homeError = ref('')
+const homeDecoration = ref<DecorationPageConfig>({ background_url: '', sections: [] })
 const activeHeroIndex = ref(0)
 const activeInfoTab = ref<InfoTab>('announcement')
 const failedHeroImages = ref<Record<string, boolean>>({})
@@ -600,7 +610,9 @@ async function loadHome() {
   homeError.value = ''
   failedHeroImages.value = {}
   try {
-    home.value = normalizeHomeContent(await loadHomeContent())
+    const [content, decoration] = await Promise.all([loadHomeContent(), loadPageDecoration()])
+    home.value = normalizeHomeContent(content)
+    homeDecoration.value = decoration.pages.home
     const preferredHeroIndex = home.value.carousel.items.findIndex((item) => item.image_url)
     activeHeroIndex.value = preferredHeroIndex >= 0 ? preferredHeroIndex : 0
     void enableWechatShare({ title: homeShareTitle(), desc: home.value.brand.caption || '校园任务互助 · 积分换好物', link: '/pages/index/index', imageUrl: homeShareImage() })
@@ -772,6 +784,15 @@ function openReferrals() { auth.isAuthenticated ? uni.navigateTo({ url: '/pages/
 function openFloatingSupport() { uni.navigateTo({ url: '/pages/support/index' }) }
 function goCheckIn() { uni.navigateTo({ url: '/pages/check-in/index' }) }
 function openTaskDetail(id: string) { uni.navigateTo({ url: `/pages/task-detail/index?id=${id}` }) }
+
+function handleDecorationLink(link: string) {
+  if (link.startsWith('tasks:')) {
+    const categoryValue = link.slice('tasks:'.length)
+    if (categoryValue) uni.setStorageSync('task_mall_hall_category', categoryValue)
+    return openTasks()
+  }
+  navigateHomeLink(link as HomeLinkType)
+}
 
 function navigateHomeLink(link: HomeLinkType) {
   if (!linkAvailable(link)) {

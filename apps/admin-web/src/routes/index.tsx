@@ -70,6 +70,7 @@ const MaterialAuditPage = lazyOf(() => import('../features/material/MaterialAudi
 const MaterialCategoryPage = lazyOf(() => import('../features/material/MaterialCategoryPage'), 'MaterialCategoryPage')
 const MaterialRequestPage = lazyOf(() => import('../features/material/MaterialRequestPage'), 'MaterialRequestPage')
 const PosterTemplatePage = lazyOf(() => import('../features/settings/PosterTemplatePage'), 'PosterTemplatePage')
+const DecorationPage = lazyOf(() => import('../features/decoration/DecorationPage'), 'DecorationPage')
 const RobotPage = lazyOf(() => import('../features/robot/RobotPage'), 'RobotPage')
 const ExpressPickupPage = lazyOf(() => import('../features/express-pickup/ExpressPickupPage'), 'ExpressPickupPage')
 const PostManagePage = lazyOf(() => import('../features/content-audit/PostManagePage'), 'PostManagePage')
@@ -141,6 +142,7 @@ export const ADMIN_GROUPS: AdminGroupDef[] = [
   ] },
   { key: 'config', label: '配置中心', icon: <SettingOutlined />, pages: [
     { path: '/config', title: '配置中心', navCode: 'settings', element: SettingsPage },
+    { path: '/decoration', title: '装修中心', navCode: 'settings', element: DecorationPage },
     { path: '/support/tickets', title: '工单客服', navCode: 'support', element: SupportPage },
     { path: '/config/privacy', title: '隐私与合规', navCode: 'privacy', element: PrivacyPage },
     { path: '/config/readiness', title: '上线检查', navCode: 'readiness', element: ReadinessPage },
