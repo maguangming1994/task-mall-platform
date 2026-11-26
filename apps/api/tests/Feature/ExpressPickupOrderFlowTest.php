@@ -14,6 +14,7 @@ use App\Modules\ExpressPickup\Models\ExpressPickupRunner;
 use App\Modules\ExpressPickup\Models\PrinterPrintJob;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -28,13 +29,15 @@ class ExpressPickupOrderFlowTest extends TestCase
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
         $this->campus = Campus::query()->firstOrFail();
-        Http::fake([
-            'https://api.feieyun.cn/Api/Open/' => Http::response(['ret' => 0, 'msg' => 'ok', 'data' => 'ok']),
-        ]);
+        // 全流程用例的 POST 次数会耗尽限流桶，测试内关闭限流中间件。
+        $this->withoutMiddleware(ThrottleRequests::class);
     }
 
     public function test_full_flow_payment_print_accept_deliver_confirm_and_settle(): void
     {
+        Http::fake([
+            'https://api.feieyun.cn/Api/Open/' => Http::response(['ret' => 0, 'msg' => 'ok', 'data' => 'ok']),
+        ]);
         $this->printer();
         $owner = $this->userWithWallet('13800001001', 10000);
         $ownerToken = $this->userToken($owner);
@@ -152,13 +155,14 @@ class ExpressPickupOrderFlowTest extends TestCase
     public function test_runner_requires_approved_qualification_to_accept(): void
     {
         $owner = $this->userWithWallet('13800004001', 10000);
-        $orderId = $this->withToken($this->userToken($owner))->withHeader('Idempotency-Key', 'ep-qualify-0001')
+        $token = $this->userToken($owner);
+        $orderId = $this->withToken($token)->withHeader('Idempotency-Key', 'ep-qualify-0001')
             ->postJson('/api/v1/express-pickup/orders', [
                 'pickup_site' => '驿站 C', 'pickup_code' => '3-3-3',
                 'deliver_building' => '3 号楼', 'deliver_address' => '303',
                 'contact_name' => '赵同学', 'contact_phone' => '13800004001', 'reward_cents' => 400,
             ])->assertCreated()->json('data.id');
-        $this->withToken($this->userToken($owner))->withHeader('Idempotency-Key', 'ep-qualify-pay-01')
+        $this->withToken($token)->withHeader('Idempotency-Key', 'ep-qualify-pay-01')
             ->postJson("/api/v1/express-pickup/orders/{$orderId}/payments", ['method' => 'wallet'])->assertOk();
 
         $stranger = $this->user('13800004002');
