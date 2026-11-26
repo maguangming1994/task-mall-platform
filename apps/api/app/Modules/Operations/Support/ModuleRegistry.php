@@ -28,6 +28,8 @@ class ModuleRegistry
         'module_referrals' => ['name' => '邀请推荐', 'parent' => null, 'group' => 'growth'],
         'module_checkin' => ['name' => '每日签到', 'parent' => null, 'group' => 'growth'],
         'module_second_hand' => ['name' => '校园闲置', 'parent' => null, 'group' => 'second_hand'],
+        // 快递代取：校园跑腿接单与结算，独立于任务大厅。
+        'module_express_pickup' => ['name' => '快递代取', 'parent' => null, 'group' => 'express'],
         // 资料共享：父级为浏览，投喂与求资料可独立关闭。
         'module_material' => ['name' => '资料共享', 'parent' => null, 'group' => 'material'],
         'module_material_post' => ['name' => '投喂资料', 'parent' => 'module_material', 'group' => 'material'],
@@ -51,6 +53,7 @@ class ModuleRegistry
         'wallet' => '资产钱包',
         'growth' => '增长工具',
         'second_hand' => '校园闲置',
+        'express' => '快递代取',
         'material' => '资料共享',
         'membership' => '会员与账户',
     ];

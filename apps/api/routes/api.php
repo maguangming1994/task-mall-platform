@@ -34,6 +34,13 @@ use App\Modules\Campus\Http\Controllers\AdminCampusController;
 use App\Modules\Campus\Http\Controllers\CampusController;
 use App\Modules\Cart\Http\Controllers\CartController;
 use App\Modules\Chat\Http\Controllers\ChatController;
+use App\Modules\ExpressPickup\Http\Controllers\AdminCampusPrinterController;
+use App\Modules\ExpressPickup\Http\Controllers\AdminExpressPickupOrderController;
+use App\Modules\ExpressPickup\Http\Controllers\AdminExpressPickupRunnerController;
+use App\Modules\ExpressPickup\Http\Controllers\AdminExpressPickupSettlementController;
+use App\Modules\ExpressPickup\Http\Controllers\ExpressPickupOrderController;
+use App\Modules\ExpressPickup\Http\Controllers\ExpressPickupPaymentController;
+use App\Modules\ExpressPickup\Http\Controllers\ExpressPickupRunnerController;
 use App\Modules\Community\Http\Controllers\AdminCommunityContentSecurityController;
 use App\Modules\Community\Http\Controllers\CommunityActivityController;
 use App\Modules\Community\Http\Controllers\CommunityCommentController;
@@ -425,6 +432,24 @@ Route::middleware('auth.access')->group(function () {
         Route::post('/material-requests', [MaterialRequestController::class, 'store'])->middleware(['campus.bound', 'legal.consent:account', 'throttle:10,1']);
     });
 
+    // 快递代取：下单、支付、跑腿抢单与确认完成
+    Route::prefix('express-pickup')->middleware('module.gate:module_express_pickup')->group(function () {
+        Route::get('/orders', [ExpressPickupOrderController::class, 'index']);
+        Route::post('/orders', [ExpressPickupOrderController::class, 'store'])->middleware(['campus.bound', 'throttle:20,1']);
+        Route::get('/orders/{order}', [ExpressPickupOrderController::class, 'show']);
+        Route::post('/orders/{order}/cancel', [ExpressPickupOrderController::class, 'cancel'])->middleware('throttle:20,1');
+        Route::post('/orders/{order}/confirm', [ExpressPickupOrderController::class, 'confirm'])->middleware('throttle:20,1');
+        Route::post('/orders/{order}/payments', [ExpressPickupPaymentController::class, 'store'])->middleware('throttle:20,1');
+
+        Route::get('/runners/me', [ExpressPickupRunnerController::class, 'profile']);
+        Route::post('/runners/apply', [ExpressPickupRunnerController::class, 'apply'])->middleware('throttle:5,1');
+        Route::get('/runner/orders', [ExpressPickupRunnerController::class, 'hall']);
+        Route::get('/runner/mine', [ExpressPickupRunnerController::class, 'mine']);
+        Route::post('/runner/orders/{order}/accept', [ExpressPickupRunnerController::class, 'accept'])->middleware('throttle:20,1');
+        Route::post('/runner/orders/{order}/pickup', [ExpressPickupRunnerController::class, 'pickup'])->middleware('throttle:20,1');
+        Route::post('/runner/orders/{order}/deliver', [ExpressPickupRunnerController::class, 'deliver'])->middleware('throttle:20,1');
+    });
+
     // 地推：团队、推广任务、推广位、交单与收益（独立于任务积分口径）
     Route::prefix('push')->group(function () {
         Route::get('/center', [UserPushController::class, 'center']);
@@ -494,6 +519,28 @@ Route::prefix('admin')->group(function () {
         Route::put('/material-requests/{materialRequest:public_id}', [AdminMaterialController::class, 'updateRequest'])->middleware('admin.permission:material.manage');
         Route::get('/material-reports', [AdminMaterialController::class, 'reports'])->middleware('admin.permission:material.manage');
         Route::post('/material-reports/{materialReport:public_id}/handle', [AdminMaterialController::class, 'handleReport'])->middleware('admin.permission:material.manage');
+        // 快递代取：订单处理、跑腿审核、结算批次与校区小票机
+        Route::prefix('express-pickup')->group(function () {
+            Route::get('/orders', [AdminExpressPickupOrderController::class, 'index'])->middleware('admin.permission:express_pickup.view');
+            Route::get('/orders/{order}', [AdminExpressPickupOrderController::class, 'show'])->middleware('admin.permission:express_pickup.view');
+            Route::post('/orders/{order}/cancel', [AdminExpressPickupOrderController::class, 'cancel'])->middleware(['admin.permission:express_pickup.manage', 'throttle:30,1']);
+            Route::post('/orders/{order}/reprint', [AdminExpressPickupOrderController::class, 'reprint'])->middleware(['admin.permission:express_pickup.manage', 'throttle:30,1']);
+
+            Route::get('/runners', [AdminExpressPickupRunnerController::class, 'index'])->middleware('admin.permission:express_pickup.view');
+            Route::post('/runners/{runner}/review', [AdminExpressPickupRunnerController::class, 'review'])->middleware(['admin.permission:express_pickup.manage', 'throttle:30,1']);
+
+            Route::get('/settlements', [AdminExpressPickupSettlementController::class, 'index'])->middleware('admin.permission:express_pickup.view');
+            Route::post('/settlements', [AdminExpressPickupSettlementController::class, 'store'])->middleware(['admin.permission:express_pickup.settle', 'throttle:20,1']);
+            Route::post('/settlements/{settlement}/confirm', [AdminExpressPickupSettlementController::class, 'confirm'])->middleware(['admin.permission:express_pickup.settle', 'throttle:20,1']);
+            Route::post('/settlements/{settlement}/pay', [AdminExpressPickupSettlementController::class, 'pay'])->middleware(['admin.permission:express_pickup.settle', 'throttle:10,1']);
+
+            Route::get('/printers', [AdminCampusPrinterController::class, 'index'])->middleware('admin.permission:express_pickup.printer_manage');
+            Route::post('/printers/preview', [AdminCampusPrinterController::class, 'preview'])->middleware('admin.permission:express_pickup.printer_manage');
+            Route::post('/printers', [AdminCampusPrinterController::class, 'store'])->middleware(['admin.permission:express_pickup.printer_manage', 'throttle:30,1']);
+            Route::put('/printers/{printer}', [AdminCampusPrinterController::class, 'update'])->middleware(['admin.permission:express_pickup.printer_manage', 'throttle:30,1']);
+            Route::delete('/printers/{printer}', [AdminCampusPrinterController::class, 'destroy'])->middleware(['admin.permission:express_pickup.printer_manage', 'throttle:30,1']);
+            Route::post('/printers/{printer}/test', [AdminCampusPrinterController::class, 'test'])->middleware(['admin.permission:express_pickup.printer_manage', 'throttle:10,1']);
+        });
         // 地推运营：团队/成员/等级规则/推广任务/申请与交单/结算批次
         Route::prefix('push')->group(function () {
             Route::get('/teams', [AdminPushController::class, 'teams'])->middleware('admin.permission:push.view');

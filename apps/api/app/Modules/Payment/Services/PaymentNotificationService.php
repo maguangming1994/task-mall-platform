@@ -4,6 +4,8 @@ namespace App\Modules\Payment\Services;
 
 use App\Models\User;
 use App\Modules\Assets\Services\WalletRechargeService;
+use App\Modules\ExpressPickup\Models\ExpressPickupOrder;
+use App\Modules\ExpressPickup\Services\ExpressPickupOrderService;
 use App\Modules\Payment\Contracts\WechatPaymentGateway;
 use App\Modules\Payment\Models\Payment;
 use App\Modules\SecondHand\Models\SecondHandOrder;
@@ -13,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 class PaymentNotificationService
 {
-    public function __construct(private readonly WechatPaymentGateway $gateway, private readonly OrderSettlementService $settlement, private readonly OrderPaymentReleaseService $release, private readonly WalletRechargeService $recharges, private readonly SecondHandNotificationService $secondHandNotify) {}
+    public function __construct(private readonly WechatPaymentGateway $gateway, private readonly OrderSettlementService $settlement, private readonly OrderPaymentReleaseService $release, private readonly WalletRechargeService $recharges, private readonly SecondHandNotificationService $secondHandNotify, private readonly ExpressPickupOrderService $expressPickup) {}
 
     /** @param array<string,string|null> $headers */
     public function handle(array $headers, string $body): void
@@ -45,7 +47,8 @@ class PaymentNotificationService
                 if ((int) ($trade['cash_amount'] ?? 0) !== $payment->cash_amount) {
                     throw ValidationException::withMessages(['payment' => '支付通知金额与支付单不一致。']);
                 }
-                DB::transaction(function () use ($payment, $trade) {
+                $paidExpressPickup = null;
+                DB::transaction(function () use ($payment, $trade, &$paidExpressPickup) {
                     $locked = Payment::query()->lockForUpdate()->findOrFail($payment->id);
                     if ($locked->status === 'succeeded') {
                         return;
@@ -69,11 +72,17 @@ class PaymentNotificationService
                             $shOrder->loadMissing(['item', 'buyer', 'seller']);
                             $this->secondHandNotify->orderPaid($shOrder);
                         }
+                    } elseif ($locked->express_pickup_order_id) {
+                        $epOrder = ExpressPickupOrder::query()->lockForUpdate()->findOrFail($locked->express_pickup_order_id);
+                        $paidExpressPickup = $this->expressPickup->markPaidInTransaction($epOrder, 'wechat', (int) $locked->cash_amount);
                     } else {
                         $this->settlement->settleExternal($locked->order, $user, $locked->cash_amount);
                     }
                     $locked->update(['status' => 'succeeded', 'provider_trade_no' => $trade['provider_trade_no'] ?? null, 'succeeded_at' => $trade['success_time'] ?? now()]);
                 });
+                if ($paidExpressPickup !== null) {
+                    $this->expressPickup->printReceipt($paidExpressPickup);
+                }
             } elseif (in_array($state, ['CLOSED', 'REVOKED', 'PAYERROR'], true)) {
                 DB::transaction(function () use ($payment, $state) {
                     $locked = Payment::query()->lockForUpdate()->findOrFail($payment->id);
@@ -85,6 +94,8 @@ class PaymentNotificationService
                         $this->recharges->closeOnline($locked->walletRecharge, $state === 'PAYERROR' ? 'cancelled' : 'expired');
                     } elseif ($locked->second_hand_order_id) {
                         // 闲置订单支付关闭无需额外操作，买家可重新发起支付
+                    } elseif ($locked->express_pickup_order_id) {
+                        // 代取单支付关闭后保持待支付，用户可重新发起支付
                     } else {
                         $this->release->close($locked->order, 'payment_provider_closed', '微信支付渠道确认交易关闭，释放订单预占资源。');
                     }

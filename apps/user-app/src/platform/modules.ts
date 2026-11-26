@@ -14,6 +14,7 @@ export type ModuleCode =
   | 'module_referrals'
   | 'module_checkin'
   | 'module_second_hand'
+  | 'module_express_pickup'
   | 'module_material'
   | 'module_material_post'
   | 'module_material_request'
@@ -46,6 +47,7 @@ export const MODULE_REGISTRY: Record<ModuleCode, ModuleDefinition> = {
   module_referrals: { code: 'module_referrals', name: '邀请推荐', parent: null, icon: '/static/icons/module-referrals.svg' },
   module_checkin: { code: 'module_checkin', name: '每日签到', parent: null, icon: '/static/icons/module-check-in.svg' },
   module_second_hand: { code: 'module_second_hand', name: '校园闲置', parent: null, icon: '/static/icons/module-mall-trade.svg' },
+  module_express_pickup: { code: 'module_express_pickup', name: '快递代取', parent: null, icon: '/static/icons/service-tasks.svg' },
   module_material: { code: 'module_material', name: '资料共享', parent: null, icon: '/static/icons/service-tasks.svg' },
   module_material_post: { code: 'module_material_post', name: '投喂资料', parent: 'module_material', icon: '/static/icons/module-community-post.svg' },
   module_material_request: { code: 'module_material_request', name: '求资料', parent: 'module_material', icon: '/static/icons/service-support.svg' },

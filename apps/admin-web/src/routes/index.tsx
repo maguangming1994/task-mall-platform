@@ -10,6 +10,7 @@ import {
   RocketOutlined,
   ReadOutlined,
   RobotOutlined,
+  CarOutlined,
   SettingOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
@@ -70,6 +71,7 @@ const MaterialCategoryPage = lazyOf(() => import('../features/material/MaterialC
 const MaterialRequestPage = lazyOf(() => import('../features/material/MaterialRequestPage'), 'MaterialRequestPage')
 const PosterTemplatePage = lazyOf(() => import('../features/settings/PosterTemplatePage'), 'PosterTemplatePage')
 const RobotPage = lazyOf(() => import('../features/robot/RobotPage'), 'RobotPage')
+const ExpressPickupPage = lazyOf(() => import('../features/express-pickup/ExpressPickupPage'), 'ExpressPickupPage')
 const PostManagePage = lazyOf(() => import('../features/content-audit/PostManagePage'), 'PostManagePage')
 const CommentManagePage = lazyOf(() => import('../features/content-audit/CommentManagePage'), 'CommentManagePage')
 const AuditConfigPage = lazyOf(() => import('../features/content-audit/AuditConfigPage'), 'AuditConfigPage')
@@ -124,6 +126,9 @@ export const ADMIN_GROUPS: AdminGroupDef[] = [
     { path: '/push/tasks', title: '推广任务配置', navCode: 'push', element: PushTasksPage },
     { path: '/push/reviews', title: '申请与交单审核', navCode: 'push', element: PushReviewsPage },
     { path: '/push/settlements', title: '结算批次', navCode: 'push', element: PushSettlementsPage },
+  ] },
+  { key: 'express', label: '快递代取', icon: <CarOutlined />, pages: [
+    { path: '/express-pickup', title: '快递代取', navCode: 'express_pickup', element: ExpressPickupPage },
   ] },
   { key: 'robot', label: 'XP 机器人', icon: <RobotOutlined />, pages: [
     { path: '/robot', title: 'XP 机器人', navCode: 'robot', element: RobotPage },

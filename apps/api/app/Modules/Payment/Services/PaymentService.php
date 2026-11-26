@@ -4,6 +4,7 @@ namespace App\Modules\Payment\Services;
 
 use App\Models\User;
 use App\Modules\Assets\Models\WalletRecharge;
+use App\Modules\ExpressPickup\Models\ExpressPickupOrder;
 use App\Modules\Order\Models\Order;
 use App\Modules\Payment\Contracts\WechatPaymentGateway;
 use App\Modules\Payment\Models\Payment;
@@ -126,7 +127,7 @@ class PaymentService
     /** @return array<string,mixed> */
     public function present(Payment $payment): array
     {
-        return ['id' => $payment->public_id, 'payment_no' => $payment->payment_no, 'order_id' => $payment->order?->public_id ?? $payment->order()->value('public_id'), 'wallet_recharge_id' => $payment->walletRecharge?->public_id ?? $payment->walletRecharge()->value('public_id'), 'second_hand_order_id' => $payment->secondHandOrder?->public_id ?? $payment->secondHandOrder()->value('public_id'), 'channel' => $payment->channel, 'scene' => $payment->scene, 'cash_amount' => $payment->cash_amount, 'status' => $payment->status, 'client_payload' => $payment->client_payload, 'expires_at' => $payment->expires_at->toIso8601String(), 'succeeded_at' => $payment->succeeded_at?->toIso8601String(), 'created_at' => $payment->created_at->toIso8601String()];
+        return ['id' => $payment->public_id, 'payment_no' => $payment->payment_no, 'order_id' => $payment->order?->public_id ?? $payment->order()->value('public_id'), 'wallet_recharge_id' => $payment->walletRecharge?->public_id ?? $payment->walletRecharge()->value('public_id'), 'second_hand_order_id' => $payment->secondHandOrder?->public_id ?? $payment->secondHandOrder()->value('public_id'), 'express_pickup_order_id' => $payment->expressPickupOrder?->public_id ?? $payment->expressPickupOrder()->value('public_id'), 'channel' => $payment->channel, 'scene' => $payment->scene, 'cash_amount' => $payment->cash_amount, 'status' => $payment->status, 'client_payload' => $payment->client_payload, 'expires_at' => $payment->expires_at->toIso8601String(), 'succeeded_at' => $payment->succeeded_at?->toIso8601String(), 'created_at' => $payment->created_at->toIso8601String()];
     }
 
     public function createSecondHandPayment(SecondHandOrder $order, User $user, string $scene, string $idempotencyKey): Payment
@@ -178,6 +179,67 @@ class PaymentService
 
             try {
                 $payload = $this->wechat->prepare($payment->load('secondHandOrder'), $user);
+                $payment->update(['client_payload' => $payload]);
+                $this->attempt($payment, 'prepared', ['scene' => $scene, 'amount' => $payment->cash_amount], ['kind' => $payload['kind'] ?? 'unknown']);
+            } catch (Throwable $exception) {
+                $payment->update(['status' => 'failed']);
+                $this->attempt($payment, 'failed', ['scene' => $scene, 'amount' => $payment->cash_amount], null, $exception);
+                throw $exception;
+            }
+
+            return $payment->fresh();
+        });
+    }
+
+    public function createExpressPickupPayment(ExpressPickupOrder $order, User $user, string $scene, string $idempotencyKey): Payment
+    {
+        abort_unless($order->user_id === $user->id, 404);
+        $hash = hash('sha256', 'ep-order-payment:'.$idempotencyKey);
+
+        return DB::transaction(function () use ($order, $user, $scene, $hash): Payment {
+            $lockedOrder = ExpressPickupOrder::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+            $existing = Payment::query()->where('idempotency_key_hash', $hash)->first();
+            if ($existing) {
+                abort_unless($existing->user_id === $user->id && $existing->express_pickup_order_id === $lockedOrder->id, 404);
+
+                return $existing;
+            }
+
+            $active = Payment::query()
+                ->where('express_pickup_order_id', $lockedOrder->id)
+                ->whereIn('status', ['pending', 'processing'])
+                ->latest('id')
+                ->first();
+            if ($active) {
+                if ($active->scene !== $scene) {
+                    throw ValidationException::withMessages(['payment' => '该代取单已有其他终端发起的支付，请返回原终端继续支付或等待结果。']);
+                }
+
+                return $active;
+            }
+
+            if ($lockedOrder->status !== ExpressPickupOrder::STATUS_PENDING_PAYMENT) {
+                throw ValidationException::withMessages(['order' => '代取单当前不可支付。']);
+            }
+
+            $capability = $this->capabilities->forPlatform($scene)['wechat'];
+            if (! $capability['enabled']) {
+                throw ValidationException::withMessages(['payment' => $capability['reason'] ?? '当前线上支付不可用。']);
+            }
+
+            $payment = Payment::query()->create([
+                'payment_no' => 'P'.now()->format('YmdHis').strtoupper(Str::random(10)),
+                'express_pickup_order_id' => $lockedOrder->id,
+                'user_id' => $user->id,
+                'channel' => 'wechat',
+                'scene' => $scene,
+                'cash_amount' => $lockedOrder->total_cents,
+                'status' => 'pending',
+                'idempotency_key_hash' => $hash,
+            ]);
+
+            try {
+                $payload = $this->wechat->prepare($payment->load('expressPickupOrder'), $user);
                 $payment->update(['client_payload' => $payload]);
                 $this->attempt($payment, 'prepared', ['scene' => $scene, 'amount' => $payment->cash_amount], ['kind' => $payload['kind'] ?? 'unknown']);
             } catch (Throwable $exception) {

@@ -23,7 +23,7 @@ class WechatPayV3Gateway implements WechatPaymentGateway
         $appId = $payment->scene === 'wechat-mini' ? $this->value('mini_app_id') : $this->value('official_account_app_id');
         $body = [
             'appid' => $appId, 'mchid' => $this->value('merchant_id'),
-            'description' => $payment->order_id ? '任务商城订单 '.$payment->order->order_no : '任务商城余额充值 '.$payment->walletRecharge->recharge_no,
+            'description' => $this->description($payment),
             'out_trade_no' => $payment->payment_no, 'notify_url' => $this->value('notify_url'),
             'amount' => ['total' => $payment->cash_amount, 'currency' => 'CNY'],
         ];
@@ -255,6 +255,24 @@ class WechatPayV3Gateway implements WechatPaymentGateway
         }
 
         return base64_encode($signature);
+    }
+
+    private function description(Payment $payment): string
+    {
+        if ($payment->order_id) {
+            return '任务商城订单 '.$payment->order->order_no;
+        }
+        if ($payment->wallet_recharge_id) {
+            return '任务商城余额充值 '.$payment->walletRecharge->recharge_no;
+        }
+        if ($payment->express_pickup_order_id) {
+            return '快递代取跑腿费 '.$payment->expressPickupOrder->order_no;
+        }
+        if ($payment->second_hand_order_id) {
+            return '校园闲置订单支付';
+        }
+
+        return '任务商城支付';
     }
 
     private function ensureConfigured(): void

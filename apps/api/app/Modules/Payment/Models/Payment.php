@@ -3,6 +3,7 @@
 namespace App\Modules\Payment\Models;
 
 use App\Modules\Assets\Models\WalletRecharge;
+use App\Modules\ExpressPickup\Models\ExpressPickupOrder;
 use App\Modules\Order\Models\Order;
 use App\Modules\SecondHand\Models\SecondHandOrder;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Support\Str;
 
 class Payment extends Model
 {
-    protected $fillable = ['public_id', 'payment_no', 'order_id', 'wallet_recharge_id', 'second_hand_order_id', 'user_id', 'channel', 'scene', 'cash_amount', 'status', 'provider_trade_no', 'client_payload', 'idempotency_key_hash', 'expires_at', 'succeeded_at', 'closed_at'];
+    protected $fillable = ['public_id', 'payment_no', 'order_id', 'wallet_recharge_id', 'second_hand_order_id', 'express_pickup_order_id', 'user_id', 'channel', 'scene', 'cash_amount', 'status', 'provider_trade_no', 'client_payload', 'idempotency_key_hash', 'expires_at', 'succeeded_at', 'closed_at'];
 
     protected static function booted(): void
     {
@@ -41,5 +42,10 @@ class Payment extends Model
     public function secondHandOrder(): BelongsTo
     {
         return $this->belongsTo(SecondHandOrder::class);
+    }
+
+    public function expressPickupOrder(): BelongsTo
+    {
+        return $this->belongsTo(ExpressPickupOrder::class);
     }
 }

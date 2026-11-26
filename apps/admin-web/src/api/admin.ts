@@ -3138,3 +3138,225 @@ export function getXpRobotAssistantWebhook(id: string): Promise<XpRobotAssistant
 export function testXpRobotAssistantWebhook(id: string): Promise<XpRobotAssistantWebhook> {
   return adminRequest(`/admin/robot/assistants/${encodeURIComponent(id)}/webhook/test`, { method: 'POST', body: JSON.stringify({}) })
 }
+
+// ---------------------------------------------------------------------------
+// 快递代取：订单、跑腿、结算与校区小票机
+// ---------------------------------------------------------------------------
+
+export type ExpressPickupOrderStatus = 'pending_payment' | 'pending_accept' | 'accepted' | 'picked_up' | 'delivered' | 'completed' | 'cancelled'
+
+export const EXPRESS_PICKUP_STATUS_OPTIONS: Array<{ value: ExpressPickupOrderStatus; label: string; color: string }> = [
+  { value: 'pending_payment', label: '待支付', color: 'default' },
+  { value: 'pending_accept', label: '待接单', color: 'processing' },
+  { value: 'accepted', label: '已接单', color: 'blue' },
+  { value: 'picked_up', label: '已取件', color: 'cyan' },
+  { value: 'delivered', label: '已送达', color: 'gold' },
+  { value: 'completed', label: '已完成', color: 'success' },
+  { value: 'cancelled', label: '已取消', color: 'default' },
+]
+
+export interface ExpressPickupOrderEvent {
+  from_status: string | null
+  to_status: string
+  event: string
+  actor_type?: string
+  reason: string | null
+  created_at: string | null
+}
+
+export interface ExpressPickupPrintJob {
+  id: string
+  status: string
+  error_message: string | null
+  printed_at: string | null
+}
+
+export interface ExpressPickupOrderAdmin {
+  id: string
+  order_no: string
+  status: ExpressPickupOrderStatus
+  campus_id: number
+  pickup_site: string
+  pickup_code: string
+  package_info: string | null
+  package_count: number
+  deliver_building: string
+  deliver_address: string
+  contact_name: string
+  contact_phone: string
+  reward_cents: number
+  total_cents: number
+  payment_method: string | null
+  paid_at: string | null
+  expected_at: string | null
+  remark: string | null
+  runner_user_id: string | null
+  runner_name: string | null
+  accepted_at: string | null
+  picked_up_at: string | null
+  delivered_at: string | null
+  completed_at: string | null
+  cancelled_at: string | null
+  cancel_reason: string | null
+  print_status: string | null
+  printed_at: string | null
+  created_at: string | null
+  events?: ExpressPickupOrderEvent[]
+  print_jobs?: ExpressPickupPrintJob[]
+}
+
+export interface ExpressPickupPagination {
+  page: number
+  page_size: number
+  total: number
+  last_page: number
+}
+
+export interface ExpressPickupRunnerAdmin {
+  id: string
+  campus_id: number
+  status: 'pending' | 'active' | 'rejected' | 'suspended'
+  real_name: string
+  phone: string
+  applied_at: string | null
+  reviewed_at: string | null
+  reject_reason: string | null
+  user: { id: string; display_name: string } | null
+  created_at: string | null
+}
+
+export interface ExpressPickupSettlementItemAdmin {
+  id: number
+  runner_user_id: number
+  order_count: number
+  amount_cents: number
+  status: string
+  paid_at: string | null
+}
+
+export interface ExpressPickupSettlementAdmin {
+  id: string
+  batch_no: string
+  campus_id: number | null
+  period_start: string
+  period_end: string
+  status: 'draft' | 'pending' | 'paid'
+  total_cents: number
+  runner_count: number
+  order_count: number
+  confirmed_at: string | null
+  paid_at: string | null
+  created_at: string | null
+  items: ExpressPickupSettlementItemAdmin[]
+}
+
+export interface CampusPrinterVendorOption {
+  code: 'feie' | 'daqu' | 'shangpeng'
+  label: string
+  ready: boolean
+}
+
+export interface CampusPrinterVariable {
+  key: string
+  label: string
+}
+
+export interface CampusPrinter {
+  id: string
+  campus_id: number
+  name: string
+  vendor: 'feie' | 'daqu' | 'shangpeng'
+  vendor_label: string
+  sn: string
+  username: string | null
+  secret_configured: boolean
+  paper_width: number
+  template: string | null
+  status: 'enabled' | 'disabled'
+  last_test_at: string | null
+  last_test_status: string | null
+  last_test_message: string | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface CampusPrinterList {
+  items: CampusPrinter[]
+  vendors: CampusPrinterVendorOption[]
+  variables: CampusPrinterVariable[]
+  default_template: string
+}
+
+export interface CampusPrinterInput {
+  campus_id?: number | null
+  name: string
+  vendor: CampusPrinter['vendor']
+  sn: string
+  username?: string | null
+  secret?: string | null
+  clear_secret?: boolean
+  paper_width?: number
+  template?: string | null
+  status?: CampusPrinter['status']
+}
+
+function expressQuery(filters: Record<string, unknown>): string {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return
+    query.set(key, String(value))
+  })
+  return query.size ? `?${query.toString()}` : ''
+}
+
+export function listExpressPickupOrders(filters: Record<string, unknown> = {}): Promise<{ items: ExpressPickupOrderAdmin[]; pagination: ExpressPickupPagination }> {
+  return adminRequest(`/admin/express-pickup/orders${expressQuery(filters)}`)
+}
+export function getExpressPickupOrder(id: string): Promise<ExpressPickupOrderAdmin> {
+  return adminRequest(`/admin/express-pickup/orders/${encodeURIComponent(id)}`)
+}
+export function cancelExpressPickupOrder(id: string, reason: string): Promise<ExpressPickupOrderAdmin> {
+  return adminRequest(`/admin/express-pickup/orders/${encodeURIComponent(id)}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) })
+}
+export function reprintExpressPickupOrder(id: string): Promise<{ job_id: string; status: string }> {
+  return adminRequest(`/admin/express-pickup/orders/${encodeURIComponent(id)}/reprint`, { method: 'POST', body: JSON.stringify({}) })
+}
+
+export function listExpressPickupRunners(filters: Record<string, unknown> = {}): Promise<{ items: ExpressPickupRunnerAdmin[]; pagination: ExpressPickupPagination }> {
+  return adminRequest(`/admin/express-pickup/runners${expressQuery(filters)}`)
+}
+export function reviewExpressPickupRunner(id: string, input: { status: 'active' | 'rejected' | 'suspended'; reason?: string }): Promise<ExpressPickupRunnerAdmin> {
+  return adminRequest(`/admin/express-pickup/runners/${encodeURIComponent(id)}/review`, { method: 'POST', body: JSON.stringify(input) })
+}
+
+export function listExpressPickupSettlements(filters: Record<string, unknown> = {}): Promise<{ items: ExpressPickupSettlementAdmin[] }> {
+  return adminRequest(`/admin/express-pickup/settlements${expressQuery(filters)}`)
+}
+export function createExpressPickupSettlement(input: { period_start: string; period_end: string }): Promise<ExpressPickupSettlementAdmin> {
+  return adminRequest('/admin/express-pickup/settlements', { method: 'POST', body: JSON.stringify(input) })
+}
+export function confirmExpressPickupSettlement(id: string): Promise<ExpressPickupSettlementAdmin> {
+  return adminRequest(`/admin/express-pickup/settlements/${encodeURIComponent(id)}/confirm`, { method: 'POST', body: JSON.stringify({}) })
+}
+export function payExpressPickupSettlement(id: string): Promise<ExpressPickupSettlementAdmin> {
+  return adminRequest(`/admin/express-pickup/settlements/${encodeURIComponent(id)}/pay`, { method: 'POST', body: JSON.stringify({}) })
+}
+
+export function listCampusPrinters(campusId?: number | null): Promise<CampusPrinterList> {
+  return adminRequest(`/admin/express-pickup/printers${expressQuery({ campus_id: campusId ?? '' })}`)
+}
+export function createCampusPrinter(input: CampusPrinterInput): Promise<CampusPrinter> {
+  return adminRequest('/admin/express-pickup/printers', { method: 'POST', body: JSON.stringify(input) })
+}
+export function updateCampusPrinter(id: string, input: CampusPrinterInput): Promise<CampusPrinter> {
+  return adminRequest(`/admin/express-pickup/printers/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+export function deleteCampusPrinter(id: string): Promise<{ id: string }> {
+  return adminRequest(`/admin/express-pickup/printers/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+export function testCampusPrinter(id: string): Promise<{ ok: boolean; message: string; printer: CampusPrinter }> {
+  return adminRequest(`/admin/express-pickup/printers/${encodeURIComponent(id)}/test`, { method: 'POST', body: JSON.stringify({}) })
+}
+export function previewCampusPrinter(input: { template?: string | null; paper_width?: number; campus_id?: number | null }): Promise<{ content: string }> {
+  return adminRequest('/admin/express-pickup/printers/preview', { method: 'POST', body: JSON.stringify(input) })
+}

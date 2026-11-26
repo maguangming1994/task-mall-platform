@@ -625,6 +625,49 @@
           }
         }
       ]
+    },
+    {
+      "root": "pages-express",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "快递代取"
+          }
+        },
+        {
+          "path": "create",
+          "style": {
+            "navigationBarTitleText": "发布代取"
+          }
+        },
+        {
+          "path": "detail",
+          "style": {
+            "navigationBarTitleText": "代取详情"
+          }
+        },
+        {
+          "path": "runner-hall",
+          "style": {
+            "navigationBarTitleText": "跑腿大厅",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "runner-apply",
+          "style": {
+            "navigationBarTitleText": "申请跑腿"
+          }
+        },
+        {
+          "path": "runner-center",
+          "style": {
+            "navigationBarTitleText": "我的跑腿",
+            "enablePullDownRefresh": true
+          }
+        }
+      ]
     }
   ]
 }

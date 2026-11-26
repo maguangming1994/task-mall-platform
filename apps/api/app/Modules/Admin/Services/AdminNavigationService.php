@@ -30,6 +30,7 @@ class AdminNavigationService
             ['code' => 'operations', 'label' => '运营与消息', 'icon' => 'NotificationOutlined', 'path' => '/operations', 'permissions' => ['operations.manage']],
             ['code' => 'robot', 'label' => 'XP 机器人', 'icon' => 'RobotOutlined', 'path' => '/robot', 'permissions' => ['robot.view', 'robot.settings_manage', 'robot.message_send']],
             ['code' => 'push', 'label' => '地推运营', 'icon' => 'RocketOutlined', 'path' => '/push', 'permissions' => ['push.view', 'push.team_manage', 'push.settle']],
+            ['code' => 'express_pickup', 'label' => '快递代取', 'icon' => 'CarOutlined', 'path' => '/express-pickup', 'permissions' => ['express_pickup.view', 'express_pickup.manage', 'express_pickup.settle', 'express_pickup.printer_manage']],
             ['code' => 'data_board', 'label' => '数据看板', 'icon' => 'BarChartOutlined', 'path' => '/data-board', 'permissions' => ['operations.manage']],
             ['code' => 'settings', 'label' => '配置中心', 'icon' => 'SettingOutlined', 'path' => '/settings', 'permissions' => ['settings.manage']],
             ['code' => 'readiness', 'label' => '上线准备', 'icon' => 'SafetyCertificateOutlined', 'path' => '/readiness', 'permissions' => ['settings.manage']],
