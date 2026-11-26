@@ -317,7 +317,9 @@ class ExpressPickupOrderService
 
     private function transition(ExpressPickupOrder $order, string $to, string $event, string $actorType, ?int $actorId, ?string $reason = null): void
     {
-        $this->log($order, $order->status, $to, $event, $actorType, $actorId, $reason);
+        $from = $order->status;
+        $order->forceFill(['status' => $to])->save();
+        $this->log($order, $from, $to, $event, $actorType, $actorId, $reason);
     }
 
     private function log(ExpressPickupOrder $order, ?string $from, string $to, string $event, string $actorType, ?int $actorId, ?string $reason = null): void
