@@ -250,6 +250,7 @@ class SystemSettingValidator
             $page = $pages[$pageKey] ?? null;
             if ($page === null) {
                 $normalizedPages[$pageKey] = ['background_url' => '', 'sections' => []];
+
                 continue;
             }
             if (! is_array($page) || array_is_list($page)) {
@@ -335,7 +336,7 @@ class SystemSettingValidator
         $boolean = fn (string $key, bool $default) => is_bool($props[$key] ?? null) ? $props[$key] : $default;
 
         return match ($type) {
-            'banner' => (function () use ($definition, $props, $label, $url, $link, $linkValue, $integer, $boolean): array {
+            'banner' => (function () use ($definition, $props, $label, $integer, $boolean): array {
                 $rawItems = $props['items'] ?? [];
                 if (! is_array($rawItems) || ! array_is_list($rawItems)) {
                     $this->fail($definition, "{$label} 的轮播项必须为数组。");
@@ -372,7 +373,7 @@ class SystemSettingValidator
                 'link_type' => $link('link_type'),
                 'link_value' => $linkValue(),
             ],
-            'quick_grid' => (function () use ($definition, $props, $label, $url, $link, $integer): array {
+            'quick_grid' => (function () use ($definition, $props, $label, $integer): array {
                 $rawItems = $props['items'] ?? [];
                 if (! is_array($rawItems) || ! array_is_list($rawItems)) {
                     $this->fail($definition, "{$label} 的入口必须为数组。");
