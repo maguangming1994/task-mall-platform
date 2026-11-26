@@ -426,9 +426,38 @@ function roundedRect(ctx: UniApp.CanvasContext, x: number, y: number, width: num
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + width - r, y); ctx.arcTo(x + width, y, x + width, y + r, r); ctx.lineTo(x + width, y + height - r); ctx.arcTo(x + width, y + height, x + width - r, y + height, r); ctx.lineTo(x + r, y + height); ctx.arcTo(x, y + height, x, y + height - r, r); ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r); ctx.closePath()
 }
 
-function splitPosterText(value: string, limit = 13) {
-  const chars = Array.from(value)
-  return [chars.slice(0, limit).join(''), chars.slice(limit, limit * 2).join('')].filter(Boolean)
+function splitPosterText(ctx: UniApp.CanvasContext, value: string, maxWidth: number, fontSize: number, maxLines = 2) {
+  const chars = Array.from(value.trim())
+  const measure = (text: string) => {
+    try {
+      const width = ctx.measureText(text)?.width
+      if (typeof width === 'number' && width > 0) return width
+    } catch {
+      // 旧基础库不支持测量时按字符宽度估算
+    }
+    return Array.from(text).reduce((sum, char) => sum + (/^[\u0000-\u00ff]$/.test(char) ? fontSize * 0.55 : fontSize), 0)
+  }
+
+  const lines: string[] = []
+  let line = ''
+  for (const char of chars) {
+    const next = line + char
+    if (line && measure(next) > maxWidth) {
+      lines.push(line)
+      line = char
+    } else {
+      line = next
+    }
+  }
+  if (line) lines.push(line)
+
+  if (lines.length > maxLines) {
+    let last = lines.slice(maxLines - 1).join('')
+    lines.length = maxLines
+    while (last && measure(`${last}…`) > maxWidth) last = Array.from(last).slice(0, -1).join('')
+    lines[maxLines - 1] = `${last}…`
+  }
+  return lines
 }
 
 function drawTaskPoster() {
@@ -446,7 +475,8 @@ function drawTaskPoster() {
   ctx.setFillStyle('#073764'); ctx.setFontSize(px(11)); ctx.setTextAlign('center'); ctx.fillText('CAMPUS TASK', px(68), px(39)); ctx.setTextAlign('left')
   ctx.setFillStyle('#ffffff'); ctx.setFontSize(px(15)); ctx.fillText('值得完成的校园任务', px(22), px(75))
   ctx.setFontSize(px(26))
-  splitPosterText(task.value.title).forEach((line, index) => ctx.fillText(line, px(22), px(116 + index * 35)))
+  const titleMaxWidth = width - px(44)
+  splitPosterText(ctx, task.value.title, titleMaxWidth, px(26)).forEach((line, index) => ctx.fillText(line, px(22), px(116 + index * 35), titleMaxWidth))
 
   ctx.setFillStyle('rgba(255,255,255,.96)'); roundedRect(ctx, px(18), px(188), px(294), px(296), px(24)); ctx.fill()
   ctx.setFillStyle('#60798d'); ctx.setFontSize(px(12)); ctx.fillText(`${categoryLabel(task.value.category)} · ${taskTypeLabel(task.value.task_type)}`, px(38), px(220))
