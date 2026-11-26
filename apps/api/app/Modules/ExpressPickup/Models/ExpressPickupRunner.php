@@ -2,6 +2,7 @@
 
 namespace App\Modules\ExpressPickup\Models;
 
+use App\Models\User;
 use App\Modules\Campus\Models\Concerns\BelongsToCampus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +37,6 @@ class ExpressPickupRunner extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->belongsTo(User::class);
     }
 }

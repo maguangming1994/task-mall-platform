@@ -14,6 +14,7 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AdminExpressPickupManagementTest extends TestCase
@@ -175,7 +176,7 @@ class AdminExpressPickupManagementTest extends TestCase
     private function user(string $phone): User
     {
         return User::query()->create([
-            'public_id' => (string) \Illuminate\Support\Str::ulid(),
+            'public_id' => (string) Str::ulid(),
             'nickname' => '用户'.$phone,
             'phone' => $phone,
             'phone_hash' => hash('sha256', $phone),

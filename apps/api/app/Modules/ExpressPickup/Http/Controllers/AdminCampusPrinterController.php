@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Audit\Services\AuditLogger;
 use App\Modules\ExpressPickup\Models\CampusPrinter;
-use App\Modules\ExpressPickup\Printers\PrinterManager;
 use App\Modules\ExpressPickup\Services\ReceiptPrintService;
 use App\Modules\ExpressPickup\Support\ReceiptTemplateRenderer;
 use Illuminate\Http\JsonResponse;

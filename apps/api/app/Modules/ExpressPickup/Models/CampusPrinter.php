@@ -4,6 +4,7 @@ namespace App\Modules\ExpressPickup\Models;
 
 use App\Modules\Campus\Models\Concerns\BelongsToCampus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 
 class CampusPrinter extends Model
@@ -11,7 +12,9 @@ class CampusPrinter extends Model
     use BelongsToCampus;
 
     public const VENDOR_FEIE = 'feie';
+
     public const VENDOR_DAQU = 'daqu';
+
     public const VENDOR_SHANGPENG = 'shangpeng';
 
     public const VENDORS = [
@@ -52,7 +55,7 @@ class CampusPrinter extends Model
             return null;
         }
         try {
-            return \Illuminate\Support\Facades\Crypt::decryptString($this->secret_encrypted);
+            return Crypt::decryptString($this->secret_encrypted);
         } catch (\Throwable) {
             return null;
         }
@@ -62,6 +65,6 @@ class CampusPrinter extends Model
     {
         $this->secret_encrypted = ($plain === null || $plain === '')
             ? null
-            : \Illuminate\Support\Facades\Crypt::encryptString($plain);
+            : Crypt::encryptString($plain);
     }
 }

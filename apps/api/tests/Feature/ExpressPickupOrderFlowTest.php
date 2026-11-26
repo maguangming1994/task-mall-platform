@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Account\Models\UserAssetAccount;
+use App\Modules\Admin\Models\AdminUser;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Auth\Models\UserDevice;
 use App\Modules\Auth\Models\UserSession;
 use App\Modules\Auth\Services\AccessTokenService;
@@ -16,6 +18,7 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ExpressPickupOrderFlowTest extends TestCase
@@ -24,13 +27,16 @@ class ExpressPickupOrderFlowTest extends TestCase
 
     private Campus $campus;
 
+    /** @var array<string, mixed> 飞鹅打印接口返回，单测可覆盖以模拟离线/失败。 */
+    private array $feieResponse = ['ret' => 0, 'msg' => 'ok', 'data' => 'ok'];
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withoutMiddleware(ThrottleRequests::class);
         $this->seed(DatabaseSeeder::class);
         $this->campus = Campus::query()->firstOrFail();
-        // 全流程用例的 POST 次数会耗尽限流桶，测试内关闭限流中间件。
-        $this->withoutMiddleware(ThrottleRequests::class);
+        Http::fake(fn () => Http::response($this->feieResponse));
     }
 
     public function test_full_flow_payment_print_accept_deliver_confirm_and_settle(): void
@@ -155,14 +161,14 @@ class ExpressPickupOrderFlowTest extends TestCase
     public function test_runner_requires_approved_qualification_to_accept(): void
     {
         $owner = $this->userWithWallet('13800004001', 10000);
-        $token = $this->userToken($owner);
-        $orderId = $this->withToken($token)->withHeader('Idempotency-Key', 'ep-qualify-0001')
+        $ownerToken = $this->userToken($owner);
+        $orderId = $this->withToken($ownerToken)->withHeader('Idempotency-Key', 'ep-qualify-0001')
             ->postJson('/api/v1/express-pickup/orders', [
                 'pickup_site' => '驿站 C', 'pickup_code' => '3-3-3',
                 'deliver_building' => '3 号楼', 'deliver_address' => '303',
                 'contact_name' => '赵同学', 'contact_phone' => '13800004001', 'reward_cents' => 400,
             ])->assertCreated()->json('data.id');
-        $this->withToken($token)->withHeader('Idempotency-Key', 'ep-qualify-pay-01')
+        $this->withToken($ownerToken)->withHeader('Idempotency-Key', 'ep-qualify-pay-01')
             ->postJson("/api/v1/express-pickup/orders/{$orderId}/payments", ['method' => 'wallet'])->assertOk();
 
         $stranger = $this->user('13800004002');
@@ -175,7 +181,7 @@ class ExpressPickupOrderFlowTest extends TestCase
 
     public function test_print_failure_does_not_block_payment(): void
     {
-        Http::fake(['https://api.feieyun.cn/Api/Open/' => Http::response(['ret' => 1001, 'msg' => '打印机离线'], 200)]);
+        $this->feieResponse = ['ret' => 1001, 'msg' => '打印机离线'];
         $this->printer();
         $owner = $this->userWithWallet('13800005001', 10000);
         $token = $this->userToken($owner);
@@ -216,7 +222,7 @@ class ExpressPickupOrderFlowTest extends TestCase
     private function user(string $phone): User
     {
         return User::query()->create([
-            'public_id' => (string) \Illuminate\Support\Str::ulid(),
+            'public_id' => (string) Str::ulid(),
             'nickname' => '用户'.$phone,
             'phone' => $phone,
             'phone_hash' => hash('sha256', $phone),
@@ -281,13 +287,13 @@ class ExpressPickupOrderFlowTest extends TestCase
 
     private function adminToken(string $account): string
     {
-        $admin = \App\Modules\Admin\Models\AdminUser::query()->create([
+        $admin = AdminUser::query()->create([
             'account' => $account,
             'display_name' => $account,
             'password' => 'AdminPassword12345!',
             'status' => 'active',
         ]);
-        $admin->roles()->attach(\App\Modules\Admin\Models\Role::query()->where('code', 'super_admin')->value('id'));
+        $admin->roles()->attach(Role::query()->where('code', 'super_admin')->value('id'));
 
         return $this->postJson('/api/v1/admin/auth/login', [
             'account' => $account,
