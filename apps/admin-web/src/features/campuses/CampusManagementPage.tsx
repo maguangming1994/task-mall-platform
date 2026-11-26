@@ -12,6 +12,7 @@ import {
   PlusOutlined,
   StopOutlined,
   TeamOutlined,
+  ThunderboltOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import {
@@ -77,6 +78,9 @@ type CampusFilters = {
   page_size: number
 }
 type AgentFilters = { keyword: string; status: string; assignment: string; page: number; page_size: number }
+type QuickAgentCredential = { account: string; display_name: string; password: string }
+type QuickAgentVerifyForm = { current_password: string; mfa_code?: string }
+type QuickAgentResult = { campus_name: string; account: string; password: string; assigned: boolean }
 
 const emptyCampus: CampusForm = {
   code: '', name: '', province: '', city: '', district: '', address: '',
@@ -90,6 +94,23 @@ const initialAgentFilters: AgentFilters = { keyword: '', status: '', assignment:
 
 function formatTime(value: string | null) {
   return value ? new Date(value).toLocaleString() : '尚无记录'
+}
+
+// 一键建代理使用：随机后缀只取易辨识字符，避免 0/O、1/l 在人工转交时看错。
+function randomChars(length: number) {
+  const alphabet = 'abcdefghijkmnpqrstuvwxyz23456789'
+  const values = new Uint32Array(length)
+  crypto.getRandomValues(values)
+  return Array.from(values, (value) => alphabet[value % alphabet.length]).join('')
+}
+
+function quickAgentCredential(campus: ManagedCampus): QuickAgentCredential {
+  const slug = campus.code.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'campus'
+  return {
+    account: `agent-${slug}-${randomChars(6)}`,
+    display_name: `${campus.name} · 代理测试`.slice(0, 80),
+    password: `Ag${randomChars(9)}!${randomChars(4)}`,
+  }
 }
 
 function catalogTypeLabel(value: ManagedCampus['catalog_type']) {
@@ -179,10 +200,16 @@ export function CampusManagementPage() {
   const [moduleCampus, setModuleCampus] = useState<ManagedCampus | null>(null)
   const [creatingAgent, setCreatingAgent] = useState(false)
   const [agentStatusTarget, setAgentStatusTarget] = useState<ManagedCampusAgentList['items'][number] | null>(null)
+  const [quickAgentTarget, setQuickAgentTarget] = useState<ManagedCampus | null>(null)
+  const [quickAgentCredentialValue, setQuickAgentCredentialValue] = useState<QuickAgentCredential | null>(null)
+  const [quickAgentVerifyOpen, setQuickAgentVerifyOpen] = useState(false)
+  const [quickAgentBusy, setQuickAgentBusy] = useState(false)
+  const [quickAgentResult, setQuickAgentResult] = useState<QuickAgentResult | null>(null)
   const [campusForm] = Form.useForm<CampusForm>()
   const [agentForm] = Form.useForm<AgentForm>()
   const [newAgentForm] = Form.useForm<NewAgentForm>()
   const [agentStatusForm] = Form.useForm<AgentStatusForm>()
+  const [quickAgentForm] = Form.useForm<QuickAgentVerifyForm>()
   const selectedAgentIds = Form.useWatch('admin_user_ids', agentForm) ?? []
   const [messageApi, contextHolder] = message.useMessage()
 
@@ -357,6 +384,76 @@ export function CampusManagementPage() {
     }
   }
 
+  // 生成随机账号后直接创建并分配到该校；若会话未在有效期内完成二次核验，再弹出密码核验。
+  const createQuickAgent = async (campus: ManagedCampus, credential: QuickAgentCredential) => {
+    const created = await createManagedAdmin({
+      account: credential.account,
+      display_name: credential.display_name,
+      password: credential.password,
+      role_codes: ['campus_agent'],
+    })
+    const agentIds = campus.agents.map((agent) => agent.id).filter((id) => id !== created.id)
+    const primaryId = campus.agents.find((agent) => agent.is_primary)?.id
+    let assigned = true
+    try {
+      await updateManagedCampusAgents(campus.id, [...agentIds, created.id], primaryId ?? created.id)
+      messageApi.success(`已为「${campus.name}」创建并分配代理测试账号。`)
+    } catch {
+      assigned = false
+      messageApi.warning(`账号 ${created.account} 已创建，但自动分配学校失败，请使用「分配代理」手动关联。`)
+    }
+    setQuickAgentResult({ campus_name: campus.name, account: created.account, password: credential.password, assigned })
+    await refreshAfterWrite()
+  }
+
+  const startQuickAgent = async (campus: ManagedCampus) => {
+    if (!canGovernAgents || quickAgentBusy) return
+    const credential = quickAgentCredential(campus)
+    setQuickAgentTarget(campus)
+    setQuickAgentCredentialValue(credential)
+    setQuickAgentBusy(true)
+    try {
+      await createQuickAgent(campus, credential)
+      setQuickAgentTarget(null)
+      setQuickAgentCredentialValue(null)
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'ADMIN_RECENT_VERIFICATION_REQUIRED') {
+        quickAgentForm.resetFields()
+        setQuickAgentVerifyOpen(true)
+        return
+      }
+      setQuickAgentTarget(null)
+      setQuickAgentCredentialValue(null)
+      messageApi.error(error instanceof ApiError ? error.message : '代理测试账号创建失败。')
+    } finally {
+      setQuickAgentBusy(false)
+    }
+  }
+
+  const confirmQuickAgent = async (values: QuickAgentVerifyForm) => {
+    if (!quickAgentTarget || !quickAgentCredentialValue) return
+    setQuickAgentBusy(true)
+    try {
+      await verifyAdminRecent(values.current_password, values.mfa_code || undefined)
+      await createQuickAgent(quickAgentTarget, quickAgentCredentialValue)
+      setQuickAgentVerifyOpen(false)
+      setQuickAgentTarget(null)
+      setQuickAgentCredentialValue(null)
+      quickAgentForm.resetFields()
+    } catch (error) {
+      messageApi.error(error instanceof ApiError ? error.message : '代理测试账号创建失败。')
+    } finally {
+      setQuickAgentBusy(false)
+    }
+  }
+
+  const cancelQuickAgent = () => {
+    setQuickAgentVerifyOpen(false)
+    setQuickAgentTarget(null)
+    setQuickAgentCredentialValue(null)
+    quickAgentForm.resetFields()
+  }
+
   const changeAgentStatus = async (values: AgentStatusForm) => {
     if (!agentStatusTarget) return
     setSaving(true)
@@ -478,7 +575,7 @@ export function CampusManagementPage() {
           { title: '用户', dataIndex: 'users_count', width: 90, render: (value: number) => `${value} 人` },
           { title: '学校代理', width: 285, render: (_, row) => row.agents.length ? <Space wrap>{row.agents.map((agent) => <Tag key={agent.id} color={agent.is_primary ? 'blue' : undefined}>{agent.display_name}{agent.is_primary ? ' · 主代理' : ''}</Tag>)}</Space> : <Typography.Text type="secondary">尚未分配</Typography.Text> },
           { title: '更新时间', width: 170, render: (_, row) => formatTime(row.updated_at) },
-          { title: '操作', fixed: 'right', width: 252, render: (_, row) => <Space><Button size="small" icon={<AppstoreOutlined />} onClick={() => setModuleCampus(row)}>功能模块</Button>{canManageCampuses && <Button size="small" onClick={() => openEdit(row)}>编辑</Button>}{canGovernAgents && <Button size="small" icon={<TeamOutlined />} onClick={() => openAgents(row)}>分配代理</Button>}</Space> },
+          { title: '操作', fixed: 'right', width: 372, render: (_, row) => <Space><Button size="small" icon={<AppstoreOutlined />} onClick={() => setModuleCampus(row)}>功能模块</Button>{canManageCampuses && <Button size="small" onClick={() => openEdit(row)}>编辑</Button>}{canGovernAgents && <Button size="small" icon={<TeamOutlined />} onClick={() => openAgents(row)}>分配代理</Button>}{canGovernAgents && <Button size="small" icon={<ThunderboltOutlined />} loading={quickAgentBusy && quickAgentTarget?.id === row.id} onClick={() => startQuickAgent(row)}>一键建代理</Button>}</Space> },
         ]}
       />
     </Card>
@@ -618,6 +715,43 @@ export function CampusManagementPage() {
         <Form.Item name="current_password" label="当前管理员密码" rules={[{ required: true }]}><Input.Password autoComplete="current-password" /></Form.Item>
         {admin?.requires_mfa && <Form.Item name="mfa_code" label="动态验证码或恢复码" rules={[{ required: true }]}><Input autoComplete="one-time-code" /></Form.Item>}
       </Form>
+    </Modal>
+
+    <Modal title="核验管理员身份" open={quickAgentVerifyOpen} onCancel={cancelQuickAgent} onOk={() => quickAgentForm.submit()} confirmLoading={quickAgentBusy} okText="验证并创建" width={560} destroyOnHidden>
+      <Alert showIcon type="warning" title="创建后台代理账号属于高风险操作，需要复核当前管理员身份；核验通过后会立即创建账号并分配到该校。" style={{ marginBottom: 16 }} />
+      {quickAgentTarget && quickAgentCredentialValue && <Descriptions column={1} size="small" style={{ marginBottom: 16 }}>
+        <Descriptions.Item label="负责学校">{quickAgentTarget.name}</Descriptions.Item>
+        <Descriptions.Item label="预生成账号">{quickAgentCredentialValue.account}</Descriptions.Item>
+      </Descriptions>}
+      <Form form={quickAgentForm} layout="vertical" onFinish={confirmQuickAgent}>
+        <Form.Item name="current_password" label="当前管理员密码" rules={[{ required: true }]}><Input.Password autoComplete="current-password" /></Form.Item>
+        {admin?.requires_mfa && <Form.Item name="mfa_code" label="动态验证码或恢复码" rules={[{ required: true }]}><Input autoComplete="one-time-code" /></Form.Item>}
+      </Form>
+    </Modal>
+
+    <Modal
+      title="代理测试账号已创建"
+      open={Boolean(quickAgentResult)}
+      onCancel={() => setQuickAgentResult(null)}
+      footer={<Button type="primary" onClick={() => setQuickAgentResult(null)}>我已记录</Button>}
+      width={560}
+      destroyOnHidden
+    >
+      {quickAgentResult && <>
+        <Alert
+          showIcon
+          type={quickAgentResult.assigned ? 'success' : 'warning'}
+          title={quickAgentResult.assigned
+            ? `已加入「${quickAgentResult.campus_name}」代理范围；若该校原本没有主代理，该账号会成为主代理。`
+            : `账号已创建，但未加入「${quickAgentResult.campus_name}」代理范围，请使用「分配代理」手动关联。`}
+          style={{ marginBottom: 16 }}
+        />
+        <Descriptions column={1} size="small" bordered>
+          <Descriptions.Item label="登录账号"><Typography.Text copyable>{quickAgentResult.account}</Typography.Text></Descriptions.Item>
+          <Descriptions.Item label="初始密码"><Typography.Text code copyable>{quickAgentResult.password}</Typography.Text></Descriptions.Item>
+        </Descriptions>
+        <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>初始密码只在此处显示一次，请立即复制转交；账号具备该校真实后台权限，测试结束后请到“代理管理”停用。</Typography.Paragraph>
+      </>}
     </Modal>
 
     <CampusModuleDrawer
