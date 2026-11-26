@@ -79,7 +79,16 @@
             :class="['bind-campus', { active: selectedCampus?.id === item.id }]"
             @click="pickCampus(item)"
           >
-            <view class="bind-campus-mark">{{ initials(item.name) }}</view>
+            <view class="bind-campus-mark">
+              <image
+                v-if="showCampusEmblem(item)"
+                class="bind-campus-image"
+                :src="campusEmblemSource(item)"
+                mode="aspectFit"
+                @error="handleCampusEmblemError(item)"
+              />
+              <text v-else>{{ initials(item.name) }}</text>
+            </view>
             <view class="bind-campus-copy">
               <text class="bind-campus-name">{{ item.name }}</text>
               <text class="bind-campus-loc">{{ locationText(item) }}</text>
@@ -204,6 +213,7 @@ const customYear = ref('')
 const major = ref('')
 const college = ref('')
 const submitting = ref(false)
+const failedEmblems = ref<Record<string, boolean>>({})
 
 const currentYear = new Date().getFullYear()
 const yearOptions = computed(() => {
@@ -407,6 +417,21 @@ function initials(name: string) {
   return Array.from(normalized.split(separators).join('')).slice(0, 2).join('').toUpperCase()
 }
 
+function campusEmblemSource(item: Campus) {
+  return [item.emblem_url?.trim(), item.logo_url?.trim()]
+    .find(source => source && !failedEmblems.value[`${item.id}:${source}`]) || ''
+}
+
+function showCampusEmblem(item: Campus) {
+  return Boolean(campusEmblemSource(item))
+}
+
+function handleCampusEmblemError(item: Campus) {
+  const source = campusEmblemSource(item)
+  if (!source) return
+  failedEmblems.value = { ...failedEmblems.value, [`${item.id}:${source}`]: true }
+}
+
 function locationText(item: Campus) {
   return [item.province, item.city, item.district].filter(Boolean).join(' · ') || item.address || '学校地址待完善'
 }
@@ -449,7 +474,8 @@ function locationText(item: Campus) {
 .bind-campus-list{padding-bottom:4rpx}
 .bind-campus{display:flex;align-items:center;gap:16rpx;margin-top:12rpx;padding:18rpx 20rpx;border:1rpx solid var(--line);border-radius:22rpx;background:#fff}
 .bind-campus.active{border-color:var(--green);background:#F4FDF8}
-.bind-campus-mark{display:flex;width:52rpx;height:52rpx;align-items:center;justify-content:center;flex:none;border-radius:14rpx;background:#EAF2FF;color:#2F6BDE;font-size:20rpx;font-weight:900}
+.bind-campus-mark{display:flex;width:52rpx;height:52rpx;align-items:center;justify-content:center;flex:none;overflow:hidden;box-sizing:border-box;border-radius:14rpx;background:#EAF2FF;color:#2F6BDE;font-size:20rpx;font-weight:900}
+.bind-campus-image{width:100%;height:100%;box-sizing:border-box;padding:3rpx;background:#fff}
 .bind-campus-copy{min-width:0;flex:1}
 .bind-campus-name{display:block;overflow:hidden;color:var(--t1);font-size:26rpx;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
 .bind-campus-loc{display:block;margin-top:6rpx;overflow:hidden;color:var(--t3);font-size:21rpx;text-overflow:ellipsis;white-space:nowrap}
