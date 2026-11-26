@@ -1,147 +1,27 @@
 {
-	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
-		{
-			"path": "pages/index/index",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/login/index",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/admin/login/index",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/admin/review/index",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/admin/second-hand/index",
-			"style": {
-				"navigationBarTitleText": "闲置审核"
-			}
-		},
-		{
-			"path": "pages/admin/second-hand-detail/index",
-			"style": {
-				"navigationBarTitleText": "商品审核详情"
-			}
-		},
-		{
-			"path": "pages/admin/community/index",
-			"style": {
-				"navigationBarTitleText": "社区审核"
-			}
-		},
-		{
-			"path": "pages/admin/tasks/index",
-			"style": {
-				"navigationBarTitleText": "任务审核"
-			}
-		},
-		{
-			"path": "pages/admin/task-detail/index",
-			"style": {
-				"navigationBarTitleText": "提交审核详情"
-			}
-		},
-		{
-			"path": "pages/admin/verify/index",
-			"style": {
-				"navigationBarTitleText": "身份验证"
-			}
-		},
-		{
-			"path": "pages/admin/identity/index",
-			"style": {
-				"navigationBarTitleText": "实名认证审核"
-			}
-		},
-		{
-			"path": "pages/admin/identity-detail/index",
-			"style": {
-				"navigationBarTitleText": "实名认证详情"
-			}
-		},
-		{
-			"path": "pages/admin/materials/index",
-			"style": {
-				"navigationBarTitleText": "资料共享审核"
-			}
-		},
-		{
-			"path": "pages/admin/material-detail/index",
-			"style": {
-				"navigationBarTitleText": "资料详情"
-			}
-		},
-		{
-			"path": "pages/admin/refunds/index",
-			"style": {
-				"navigationBarTitleText": "售后与退款"
-			}
-		},
-		{
-			"path": "pages/admin/refund-detail/index",
-			"style": {
-				"navigationBarTitleText": "售后详情"
-			}
-		},
-		{
-			"path": "pages/admin/task-cases/index",
-			"style": {
-				"navigationBarTitleText": "申诉与风险处置"
-			}
-		},
-		{
-			"path": "pages/admin/activities/index",
-			"style": {
-				"navigationBarTitleText": "组团活动审核"
-			}
-		},
-		{
-			"path": "pages/admin/activity-detail/index",
-			"style": {
-				"navigationBarTitleText": "活动详情"
-			}
-		},
-		{
-			"path": "pages/admin/push-reviews/index",
-			"style": {
-				"navigationBarTitleText": "地推申请与交单"
-			}
-		},
-		{
-			"path": "pages/admin/push-submission-detail/index",
-			"style": {
-				"navigationBarTitleText": "交单详情"
-			}
-		},
-		{
-			"path": "pages/admin/identity-conflicts/index",
-			"style": {
-				"navigationBarTitleText": "身份冲突处理"
-			}
-		},
-		{
-			"path": "pages/legal-consent/index",
-			"style": {
-				"navigationBarTitleText": "协议确认"
-			}
-		},
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/legal-consent/index",
+      "style": {
+        "navigationBarTitleText": "协议确认"
+      }
+    },
     {
       "path": "pages/privacy/index",
-			"style": {
-				"navigationBarTitleText": "隐私与账号"
+      "style": {
+        "navigationBarTitleText": "隐私与账号"
       }
     },
     {
@@ -321,8 +201,8 @@
     {
       "path": "pages/tasks/index",
       "style": {
-				"navigationStyle": "custom",
-				"enablePullDownRefresh": true
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -331,170 +211,420 @@
         "navigationStyle": "custom"
       }
     },
-      {
-        "path": "pages/task-detail/index",
-        "style": {
-          "navigationBarTitleText": "任务详情",
-          "navigationStyle": "custom"
-        }
-      },
-      {
-        "path": "pages/task-claim/index",
-        "style": {
-          "navigationBarTitleText": "任务提交",
-          "navigationStyle": "custom"
-        }
-      },
+    {
+      "path": "pages/task-detail/index",
+      "style": {
+        "navigationBarTitleText": "任务详情",
+        "navigationStyle": "custom"
+      }
+    },
     {
       "path": "pages/referrals/index",
-      "style": { "navigationBarTitleText": "我的推荐" }
+      "style": {
+        "navigationBarTitleText": "我的推荐"
+      }
     },
     {
       "path": "pages/referral-poster/index",
-      "style": { "navigationStyle": "custom" }
+      "style": {
+        "navigationStyle": "custom"
+      }
     },
     {
       "path": "pages/check-in/index",
-      "style": { "navigationBarTitleText": "每日签到" }
-    },
-    {
-      "path": "pages/publisher/index",
-      "style": { "navigationBarTitleText": "任务发布中心" }
+      "style": {
+        "navigationBarTitleText": "每日签到"
+      }
     },
     {
       "path": "pages/products/index",
-      "style": { "navigationStyle": "custom", "enablePullDownRefresh": true }
+      "style": {
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": true
+      }
     },
     {
       "path": "pages/product-detail/index",
-      "style": { "navigationBarTitleText": "商品详情" }
+      "style": {
+        "navigationBarTitleText": "商品详情"
+      }
     },
     {
       "path": "pages/cart/index",
-      "style": { "navigationBarTitleText": "购物车" }
+      "style": {
+        "navigationBarTitleText": "购物车"
+      }
     },
     {
       "path": "pages/checkout/index",
-      "style": { "navigationBarTitleText": "确认订单" }
+      "style": {
+        "navigationBarTitleText": "确认订单"
+      }
     },
     {
       "path": "pages/orders/index",
-      "style": { "navigationBarTitleText": "我的订单" }
+      "style": {
+        "navigationBarTitleText": "我的订单"
+      }
     },
     {
       "path": "pages/order-detail/index",
-      "style": { "navigationBarTitleText": "订单详情" }
+      "style": {
+        "navigationBarTitleText": "订单详情"
+      }
     },
     {
       "path": "pages/payment-result/index",
-      "style": { "navigationBarTitleText": "支付结果" }
+      "style": {
+        "navigationBarTitleText": "支付结果"
+      }
     },
     {
       "path": "pages/after-sales/index",
-      "style": { "navigationBarTitleText": "售后服务" }
+      "style": {
+        "navigationBarTitleText": "售后服务"
+      }
     },
     {
       "path": "pages/after-sale-apply/index",
-      "style": { "navigationBarTitleText": "申请售后" }
+      "style": {
+        "navigationBarTitleText": "申请售后"
+      }
     },
     {
       "path": "pages/after-sale-detail/index",
-      "style": { "navigationBarTitleText": "售后进度" }
-    },
-    {
-      "path": "pages/community/index",
-      "style": { "navigationStyle": "custom", "enablePullDownRefresh": true }
-    },
-    {
-      "path": "pages/community-compose/index",
-      "style": { "navigationBarTitleText": "发布帖子" }
-    },
-    {
-      "path": "pages/community-detail/index",
-      "style": { "navigationBarTitleText": "校园动态" }
+      "style": {
+        "navigationBarTitleText": "售后进度"
+      }
     },
     {
       "path": "pages/user-profile/index",
-      "style": { "navigationBarTitleText": "个人主页", "navigationStyle": "custom" }
-    },
-    {
-      "path": "pages/publisher-task-detail/index",
-      "style": { "navigationBarTitleText": "发布任务详情" }
-    },
-    {
-      "path": "pages/community-activities/index",
-      "style": { "navigationStyle": "custom", "enablePullDownRefresh": true }
-    },
-    {
-      "path": "pages/community-activity-compose/index",
-      "style": { "navigationStyle": "custom" }
-    },
-    {
-      "path": "pages/community-activity-detail/index",
-      "style": { "navigationStyle": "custom" }
+      "style": {
+        "navigationBarTitleText": "个人主页",
+        "navigationStyle": "custom"
+      }
     },
     {
       "path": "pages/notifications/index",
-      "style": { "navigationBarTitleText": "消息中心", "navigationStyle": "custom" }
+      "style": {
+        "navigationBarTitleText": "消息中心",
+        "navigationStyle": "custom"
+      }
     },
     {
       "path": "pages/wechat-subscribe/index",
-      "style": { "navigationBarTitleText": "订阅消息提醒" }
+      "style": {
+        "navigationBarTitleText": "订阅消息提醒"
+      }
     },
     {
       "path": "pages/addresses/index",
-      "style": { "navigationBarTitleText": "收货地址" }
+      "style": {
+        "navigationBarTitleText": "收货地址"
+      }
     },
     {
       "path": "pages/legal/index",
-      "style": { "navigationBarTitleText": "协议与隐私" }
+      "style": {
+        "navigationBarTitleText": "协议与隐私"
+      }
     },
     {
       "path": "pages/support/index",
-      "style": { "navigationBarTitleText": "帮助与反馈", "navigationStyle": "custom" }
+      "style": {
+        "navigationBarTitleText": "帮助与反馈",
+        "navigationStyle": "custom"
+      }
     },
     {
       "path": "pages/second-hand-detail/index",
-      "style": { "navigationBarTitleText": "闲置详情" }
+      "style": {
+        "navigationBarTitleText": "闲置详情"
+      }
     },
     {
       "path": "pages/second-hand-publish/index",
-      "style": { "navigationBarTitleText": "发布闲置" }
+      "style": {
+        "navigationBarTitleText": "发布闲置"
+      }
     },
     {
       "path": "pages/second-hand-orders/index",
-      "style": { "navigationBarTitleText": "闲置订单" }
+      "style": {
+        "navigationBarTitleText": "闲置订单"
+      }
     },
     {
       "path": "pages/second-hand-order-detail/index",
-      "style": { "navigationBarTitleText": "订单详情" }
+      "style": {
+        "navigationBarTitleText": "订单详情"
+      }
     },
     {
       "path": "pages/second-hand-ship/index",
-      "style": { "navigationBarTitleText": "我要发货" }
+      "style": {
+        "navigationBarTitleText": "我要发货"
+      }
     },
     {
       "path": "pages/second-hand-rate/index",
-      "style": { "navigationBarTitleText": "评价订单" }
+      "style": {
+        "navigationBarTitleText": "评价订单"
+      }
     },
     {
       "path": "pages/second-hand-refund/index",
-      "style": { "navigationBarTitleText": "退款/售后" }
+      "style": {
+        "navigationBarTitleText": "退款/售后"
+      }
     },
     {
       "path": "pages/chat/index",
-      "style": { "navigationStyle": "custom" }
+      "style": {
+        "navigationStyle": "custom"
+      }
     },
     {
       "path": "pages/chat-detail/index",
-      "style": { "navigationStyle": "custom" }
+      "style": {
+        "navigationStyle": "custom"
+      }
     }
-	],
-	"globalStyle": {
-		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "任务商城",
-		"navigationBarBackgroundColor": "#FFFFFF",
-		"backgroundColor": "#F6F9F9",
-		"backgroundTextStyle": "dark"
-	}
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "任务商城",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F6F9F9",
+    "backgroundTextStyle": "dark"
+  },
+  "subPackages": [
+    {
+      "root": "pages/admin",
+      "pages": [
+        {
+          "path": "login/index",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        },
+        {
+          "path": "review/index",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        },
+        {
+          "path": "second-hand/index",
+          "style": {
+            "navigationBarTitleText": "闲置审核"
+          }
+        },
+        {
+          "path": "second-hand-detail/index",
+          "style": {
+            "navigationBarTitleText": "商品审核详情"
+          }
+        },
+        {
+          "path": "community/index",
+          "style": {
+            "navigationBarTitleText": "社区审核"
+          }
+        },
+        {
+          "path": "tasks/index",
+          "style": {
+            "navigationBarTitleText": "任务审核"
+          }
+        },
+        {
+          "path": "task-detail/index",
+          "style": {
+            "navigationBarTitleText": "提交审核详情"
+          }
+        },
+        {
+          "path": "verify/index",
+          "style": {
+            "navigationBarTitleText": "身份验证"
+          }
+        },
+        {
+          "path": "identity/index",
+          "style": {
+            "navigationBarTitleText": "实名认证审核"
+          }
+        },
+        {
+          "path": "identity-detail/index",
+          "style": {
+            "navigationBarTitleText": "实名认证详情"
+          }
+        },
+        {
+          "path": "materials/index",
+          "style": {
+            "navigationBarTitleText": "资料共享审核"
+          }
+        },
+        {
+          "path": "material-detail/index",
+          "style": {
+            "navigationBarTitleText": "资料详情"
+          }
+        },
+        {
+          "path": "refunds/index",
+          "style": {
+            "navigationBarTitleText": "售后与退款"
+          }
+        },
+        {
+          "path": "refund-detail/index",
+          "style": {
+            "navigationBarTitleText": "售后详情"
+          }
+        },
+        {
+          "path": "task-cases/index",
+          "style": {
+            "navigationBarTitleText": "申诉与风险处置"
+          }
+        },
+        {
+          "path": "activities/index",
+          "style": {
+            "navigationBarTitleText": "组团活动审核"
+          }
+        },
+        {
+          "path": "activity-detail/index",
+          "style": {
+            "navigationBarTitleText": "活动详情"
+          }
+        },
+        {
+          "path": "push-reviews/index",
+          "style": {
+            "navigationBarTitleText": "地推申请与交单"
+          }
+        },
+        {
+          "path": "push-submission-detail/index",
+          "style": {
+            "navigationBarTitleText": "交单详情"
+          }
+        },
+        {
+          "path": "identity-conflicts/index",
+          "style": {
+            "navigationBarTitleText": "身份冲突处理"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/task-claim",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "任务提交",
+            "navigationStyle": "custom"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/publisher",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "任务发布中心"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/community",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationStyle": "custom",
+            "enablePullDownRefresh": true
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/community-compose",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "发布帖子"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/community-detail",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "校园动态"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/publisher-task-detail",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "发布任务详情"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/community-activities",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationStyle": "custom",
+            "enablePullDownRefresh": true
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/community-activity-compose",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/community-activity-detail",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        }
+      ]
+    }
+  ]
 }
