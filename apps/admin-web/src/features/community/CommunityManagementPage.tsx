@@ -410,8 +410,9 @@ export function CommunityManagementPage() {
               <Button type="primary" icon={<PlusOutlined />} onClick={openAdminPost}>新增帖子</Button>
               <Typography.Text type="secondary">此处只做待审内容的快速处理：可一键通过；驳回、删除与详情统一到「内容审核」处理。</Typography.Text>
             </Space>
-            <Table rowKey="id" loading={loading} dataSource={posts} pagination={false} scroll={{ x: 1100 }} locale={{ emptyText: '当前没有待审核的帖子' }} columns={[
+            <Table rowKey="id" loading={loading} dataSource={posts} pagination={false} scroll={{ x: 1200 }} locale={{ emptyText: '当前没有待审核的帖子' }} columns={[
               { title: '帖子 ID', width: 200, dataIndex: 'id', render: (value: string) => <Typography.Text copyable={{ text: value }}>{value}</Typography.Text> },
+              { title: '学校', width: 140, render: (_: unknown, row: ManagedCommunityPost) => row.campus_name ?? '—' },
               { title: '作者', width: 140, render: (_: unknown, row: ManagedCommunityPost) => row.author.nickname },
               { title: '标题', width: 190, dataIndex: 'title' },
               { title: '正文', dataIndex: 'content', ellipsis: true },
@@ -429,7 +430,8 @@ export function CommunityManagementPage() {
             <Space wrap style={{ marginBottom: 12 }}>
               <Typography.Text type="secondary">此处只做待审评论的快速处理：可一键通过；驳回、删除与详情统一到「内容审核」处理。</Typography.Text>
             </Space>
-            <Table rowKey="id" loading={loading} dataSource={comments} pagination={false} scroll={{ x: 760 }} locale={{ emptyText: '当前没有待审核的评论' }} columns={[
+            <Table rowKey="id" loading={loading} dataSource={comments} pagination={false} scroll={{ x: 900 }} locale={{ emptyText: '当前没有待审核的评论' }} columns={[
+              { title: '学校', width: 140, render: (_: unknown, row: ManagedCommunityComment) => row.campus_name ?? '—' },
               { title: '作者', width: 150, render: (_: unknown, row: ManagedCommunityComment) => row.author.nickname },
               { title: '评论内容', dataIndex: 'content', ellipsis: true },
               { title: '状态', width: 110, render: (_: unknown, row: ManagedCommunityComment) => statusTag(row.status) },

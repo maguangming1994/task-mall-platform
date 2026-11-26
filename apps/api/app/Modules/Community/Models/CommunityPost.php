@@ -3,8 +3,10 @@
 namespace App\Modules\Community\Models;
 
 use App\Models\User;
+use App\Modules\Campus\Models\Campus;
 use App\Modules\Campus\Models\Concerns\BelongsToCampus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
@@ -81,5 +83,10 @@ class CommunityPost extends Model
     public function versions(): HasMany
     {
         return $this->hasMany(CommunityPostVersion::class);
+    }
+
+    public function campus(): BelongsTo
+    {
+        return $this->belongsTo(Campus::class);
     }
 }

@@ -48,7 +48,7 @@ class CommunityCommentController extends Controller
         ]);
         $page = (int) ($data['page'] ?? 1);
         $size = (int) ($data['page_size'] ?? 20);
-        $base = CommunityComment::withTrashed();
+        $base = CommunityComment::with(['post.campus'])->withTrashed();
         $query = clone $base;
         if (! empty($data['id'])) {
             $query->where('public_id', 'like', '%'.$data['id'].'%');
@@ -180,12 +180,13 @@ class CommunityCommentController extends Controller
     private function data(CommunityComment $comment): array
     {
         $author = DB::table('users')->where('id', $comment->user_id)->first();
-        $post = DB::table('community_posts')->where('id', $comment->community_post_id)->first(['public_id', 'title']);
+        $post = $comment->post;
         $parentId = $comment->parent_comment_id ? DB::table('community_comments')->where('id', $comment->parent_comment_id)->value('public_id') : null;
         $status = $comment->trashed() ? 'deleted' : $comment->status;
 
         return [
             'id' => $comment->public_id,
+            'campus_name' => $post?->campus?->name,
             'post_id' => $post?->public_id,
             'post_title' => $post?->title,
             'parent_comment_id' => $parentId,

@@ -642,6 +642,7 @@ export interface CommunityPostForwardResult {
 }
 export interface ManagedCommunityPost {
   id: string
+  campus_name?: string | null
   author: { id: string; nickname: string; campus_name?: string | null }
   title: string
   content: string
@@ -666,6 +667,7 @@ export interface ManagedCommunityPost {
 }
 export interface ManagedCommunityComment {
   id: string
+  campus_name?: string | null
   post_id: string
   post_title: string
   parent_comment_id: string | null

@@ -190,7 +190,7 @@ class CommunityPostController extends Controller
         ]);
         $page = (int) ($data['page'] ?? 1);
         $size = (int) ($data['page_size'] ?? 20);
-        $base = CommunityPost::withTrashed();
+        $base = CommunityPost::with(['campus'])->withTrashed();
         $query = clone $base;
         if (! empty($data['id'])) {
             $query->where('public_id', 'like', '%'.$data['id'].'%');
@@ -602,6 +602,7 @@ class CommunityPostController extends Controller
 
         return [
             'id' => $post->public_id,
+            'campus_name' => $post->campus?->name,
             'author' => $author,
             'title' => $post->title,
             'content' => $post->content,
