@@ -14,15 +14,23 @@ class ExpressPickupOrder extends Model
     use BelongsToCampus;
 
     public const STATUS_PENDING_PAYMENT = 'pending_payment';
+
     public const STATUS_PENDING_ACCEPT = 'pending_accept';
+
     public const STATUS_ACCEPTED = 'accepted';
+
     public const STATUS_PICKED_UP = 'picked_up';
+
     public const STATUS_DELIVERED = 'delivered';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     public const PRINT_STATUS_PENDING = 'pending';
+
     public const PRINT_STATUS_PRINTED = 'printed';
+
     public const PRINT_STATUS_FAILED = 'failed';
 
     protected $fillable = [
