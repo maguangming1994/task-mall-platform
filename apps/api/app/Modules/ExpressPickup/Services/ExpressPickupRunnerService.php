@@ -91,7 +91,7 @@ class ExpressPickupRunnerService
             'reject_reason' => $runner->reject_reason,
             'user' => $runner->user === null ? null : [
                 'id' => $runner->user->public_id,
-                'display_name' => $runner->user->display_name,
+                'display_name' => $runner->user->nickname,
             ],
             'created_at' => $runner->created_at?->toIso8601String(),
         ];

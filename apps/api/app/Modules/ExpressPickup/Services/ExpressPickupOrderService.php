@@ -250,7 +250,7 @@ class ExpressPickupOrderService
             'expected_at' => $order->expected_at?->toIso8601String(),
             'remark' => $order->remark,
             'runner_user_id' => $order->runner?->public_id,
-            'runner_name' => $order->runner?->display_name,
+            'runner_name' => $order->runner?->nickname,
             'accepted_at' => $order->accepted_at?->toIso8601String(),
             'picked_up_at' => $order->picked_up_at?->toIso8601String(),
             'delivered_at' => $order->delivered_at?->toIso8601String(),

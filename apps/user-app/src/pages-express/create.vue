@@ -41,7 +41,14 @@
     <view class="section">
       <view class="field">
         <text class="field-label">期望送达</text>
-        <input v-model="form.expected_at" class="field-input" placeholder="如：今天 18:00 前" maxlength="40" />
+        <view class="field-input field-pickers">
+          <picker mode="date" :value="expectedDate" @change="onExpectedDate">
+            <text :class="expectedDate ? 'picker-value' : 'picker-placeholder'">{{ expectedDate || '选择日期' }}</text>
+          </picker>
+          <picker mode="time" :value="expectedTime" @change="onExpectedTime">
+            <text :class="expectedTime ? 'picker-value' : 'picker-placeholder'">{{ expectedTime || '选择时间' }}</text>
+          </picker>
+        </view>
       </view>
       <view class="field">
         <text class="field-label">跑腿费（元）</text>
@@ -83,6 +90,26 @@ const form = ref<CreateExpressPickupInput>({
 
 const toast = (title: string) => uni.showToast({ title, icon: 'none' })
 
+const expectedDate = ref('')
+const expectedTime = ref('')
+
+const syncExpectedAt = () => {
+  form.value.expected_at = expectedDate.value && expectedTime.value
+    ? `${expectedDate.value} ${expectedTime.value}:00`
+    : null
+}
+
+const onExpectedDate = (event: { detail: { value: string } }) => {
+  expectedDate.value = event.detail.value
+  if (!expectedTime.value) expectedTime.value = '18:00'
+  syncExpectedAt()
+}
+
+const onExpectedTime = (event: { detail: { value: string } }) => {
+  expectedTime.value = event.detail.value
+  syncExpectedAt()
+}
+
 const submit = async () => {
   if (!auth.accessToken) {
     uni.navigateTo({ url: '/pages/login/index' })
@@ -102,7 +129,7 @@ const submit = async () => {
       ...data,
       package_count: Math.max(1, Math.min(20, Number(packageCountText.value) || 1)),
       reward_cents: reward,
-      expected_at: data.expected_at?.trim() || null,
+      expected_at: data.expected_at || null,
       remark: data.remark?.trim() || undefined,
     })
     uni.redirectTo({ url: `/pages-express/detail?id=${order.id}` })
@@ -121,6 +148,9 @@ const submit = async () => {
 .field:last-child { border-bottom: none; }
 .field-label { width: 180rpx; font-size: 26rpx; color: #374151; }
 .field-input { flex: 1; font-size: 26rpx; color: #111827; }
+.field-pickers { display: flex; gap: 24rpx; }
+.picker-value { font-size: 26rpx; color: #111827; }
+.picker-placeholder { font-size: 26rpx; color: #9ca3af; }
 .tip { font-size: 22rpx; color: #9ca3af; line-height: 1.6; padding: 8rpx 8rpx 24rpx; }
 .submit { background: #2f6bff; color: #fff; border-radius: 999rpx; font-size: 30rpx; }
 </style>

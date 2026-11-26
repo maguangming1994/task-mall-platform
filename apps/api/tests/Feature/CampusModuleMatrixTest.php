@@ -165,8 +165,8 @@ class CampusModuleMatrixTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.campus.id', $campus->public_id);
 
-        // 20 行显式覆盖；套餐内开、套餐外（含子模块）关
-        $this->assertSame(20, CampusFeatureFlag::query()->where('campus_id', $campus->id)->count());
+        // 21 行显式覆盖；套餐内开、套餐外（含子模块）关
+        $this->assertSame(21, CampusFeatureFlag::query()->where('campus_id', $campus->id)->count());
         $map = $this->moduleMap($token, $campus);
         $this->assertTrue($map['module_second_hand']['effective']);
         $this->assertTrue($map['module_mall']['effective']);

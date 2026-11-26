@@ -58,6 +58,7 @@ import {
   type ExpressPickupOrderDetail,
 } from '@/api/express-pickup'
 import { useAuthStore } from '@/stores/auth'
+import { invokeWechatJsapiPayment, type WechatJsapiPayParams } from '@/platform/wechatPay'
 
 const auth = useAuthStore()
 const orderId = ref('')
@@ -103,19 +104,26 @@ const pay = async (method: 'wallet' | 'wechat') => {
       await load()
       return
     }
-    const payload = result.payment?.client_payload as unknown as Parameters<typeof uni.requestPayment>[0] | null | undefined
+    const payload = result.payment?.client_payload as unknown as WechatJsapiPayParams | null
     if (!payload) {
       toast('未获取到微信支付参数')
       return
     }
-    uni.requestPayment({
-      ...payload,
-      success: async () => {
-        toast('支付成功')
-        await load()
-      },
-      fail: () => toast('支付未完成，可稍后重试'),
+    // #ifdef MP-WEIXIN
+    await uni.requestPayment({
+      provider: 'wxpay',
+      timeStamp: String(payload.timeStamp ?? ''),
+      nonceStr: String(payload.nonceStr ?? ''),
+      package: String(payload.package ?? ''),
+      signType: 'RSA',
+      paySign: String(payload.paySign ?? ''),
     })
+    // #endif
+    // #ifdef H5
+    await invokeWechatJsapiPayment(payload)
+    // #endif
+    toast('支付结果确认中')
+    await load()
   } catch (error) {
     toast(error instanceof Error ? error.message : '支付失败')
   } finally {

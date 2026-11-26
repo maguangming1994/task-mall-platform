@@ -54,7 +54,7 @@ class ExpressPickupRunnerController extends Controller
             ->get();
 
         return ApiResponse::success([
-            'items' => $items->map(fn (ExpressPickupOrder $order): array => $orders->present($order, false))->all(),
+            'items' => $items->map(fn (ExpressPickupOrder $order): array => $orders->present($order, true))->all(),
         ]);
     }
 

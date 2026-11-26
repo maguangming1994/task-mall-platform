@@ -45,6 +45,9 @@ class ReceiptPrintService
      */
     public function printOrder(ExpressPickupOrder $order): void
     {
+        if ($order->status === ExpressPickupOrder::STATUS_CANCELLED) {
+            return;
+        }
         try {
             $printer = $this->activePrinter((int) $order->campus_id);
             if ($printer === null) {

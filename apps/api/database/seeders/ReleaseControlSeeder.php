@@ -39,6 +39,7 @@ class ReleaseControlSeeder extends Seeder
             ['code' => 'module_referrals', 'name' => '邀请推荐', 'reviewing' => ['功能升级中', '邀请推荐正在升级优化，稍作等待，精彩马上回来。'], 'reviewed' => ['服务维护中', '邀请推荐正在进行服务升级，预计很快恢复，感谢你的耐心等待。']],
             ['code' => 'module_checkin', 'name' => '每日签到', 'reviewing' => ['功能升级中', '每日签到正在升级优化，稍作等待，精彩马上回来。'], 'reviewed' => ['服务维护中', '每日签到正在进行服务升级，预计很快恢复，感谢你的耐心等待。']],
             ['code' => 'module_second_hand', 'name' => '校园闲置', 'reviewing' => ['功能升级中', '校园闲置正在升级优化，稍作等待，精彩马上回来。'], 'reviewed' => ['服务维护中', '校园闲置正在进行服务升级，预计很快恢复，感谢你的耐心等待。']],
+            ['code' => 'module_express_pickup', 'name' => '快递代取', 'reviewing' => ['功能升级中', '快递代取正在升级优化，稍作等待，精彩马上回来。'], 'reviewed' => ['服务维护中', '快递代取正在进行服务升级，预计很快恢复，感谢你的耐心等待。']],
         ];
 
         foreach ($moduleDefaults as $flag) {

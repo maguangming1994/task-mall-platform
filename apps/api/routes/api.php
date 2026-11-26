@@ -435,7 +435,7 @@ Route::middleware('auth.access')->group(function () {
     // 快递代取：下单、支付、跑腿抢单与确认完成
     Route::prefix('express-pickup')->middleware('module.gate:module_express_pickup')->group(function () {
         Route::get('/orders', [ExpressPickupOrderController::class, 'index']);
-        Route::post('/orders', [ExpressPickupOrderController::class, 'store'])->middleware(['campus.bound', 'throttle:20,1']);
+        Route::post('/orders', [ExpressPickupOrderController::class, 'store'])->middleware('throttle:20,1');
         Route::get('/orders/{order}', [ExpressPickupOrderController::class, 'show']);
         Route::post('/orders/{order}/cancel', [ExpressPickupOrderController::class, 'cancel'])->middleware('throttle:20,1');
         Route::post('/orders/{order}/confirm', [ExpressPickupOrderController::class, 'confirm'])->middleware('throttle:20,1');

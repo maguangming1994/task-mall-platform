@@ -60,6 +60,7 @@ class ModulePackage
                 'module_referrals',
                 'module_checkin',
                 'module_second_hand',
+                'module_express_pickup',
                 'module_membership',
                 'module_follow',
                 'module_identity_verification',
