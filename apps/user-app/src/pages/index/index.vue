@@ -162,7 +162,7 @@
       <view class="home-v13-post-foot">
         <text class="home-v13-post-pts">{{ taskRewardText(task) }}</text>
         <text v-if="task.location_text" class="home-v13-post-loc">@ {{ task.location_text }}</text>
-        <button class="home-v13-post-btn" @click.stop="openTaskDetail(task.id)">{{ isTeamTask(task) ? '报名' : '去接单' }}</button>
+        <button class="home-v13-post-btn" :class="{ 'home-v13-post-btn--disabled': !task.can_claim }" :disabled="!task.can_claim" @click.stop="openTaskDetail(task.id)">{{ taskActionLabel(task) }}</button>
       </view>
     </view>
 
@@ -852,6 +852,15 @@ function isTeamTask(task: HallTask) {
   return task.category === 'teamup' || (task.tags || []).some(tag => tag.includes('组队'))
 }
 
+function taskActionLabel(task: HallTask) {
+  if (!task.can_claim) return taskReasonText(task.claim_unavailable_reason)
+  return isTeamTask(task) ? '去报名' : '去接单'
+}
+
+function taskReasonText(reason: string | null) {
+  return ({ not_started: '尚未开始', ended: '已结束', quota_exhausted: '名额已满', ineligible: '系统自动加入' } as Record<string, string>)[reason || ''] || '暂不可领'
+}
+
 function postTags(task: HallTask) {
   return (task.tags || []).filter(tag => tag !== '悬赏' && tag !== '加急').slice(0, 3)
 }
@@ -967,6 +976,7 @@ function kingIconStyle(tone: string) {
 .home-v13-post-loc{font-size:21rpx;color:#9AA0A8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .home-v13-post-btn{margin-left:auto;height:60rpx;padding:0 34rpx;border-radius:30rpx;background:linear-gradient(135deg,#12D978,#08A152);color:#fff;font-size:24rpx;font-weight:600;box-shadow:0 8rpx 20rpx rgba(11,191,99,.28);border:0}
 .home-v13-post-btn::after{display:none}
+.home-v13-post-btn[disabled],.home-v13-post-btn--disabled{background:#E8EAE8;color:#9AA0A8;box-shadow:none}
 
 /* ============ 空态 ============ */
 .home-v13-empty{margin:20rpx 24rpx 0;padding:40rpx;background:#fff;border-radius:32rpx;display:flex;flex-direction:column;align-items:center;gap:10rpx;box-shadow:0 2rpx 4rpx rgba(23,26,23,.03),0 12rpx 40rpx rgba(23,26,23,.05)}
