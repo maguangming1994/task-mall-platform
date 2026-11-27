@@ -29,7 +29,8 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'https://rwsc.jxgxnxs.cn',
+        // 默认连线上环境；本地联调用 VITE_DEV_API_TARGET=http://127.0.0.1:8000 覆盖。
+        target: process.env.VITE_DEV_API_TARGET || 'https://rwsc.jxgxnxs.cn',
         changeOrigin: true,
         secure: true,
       },

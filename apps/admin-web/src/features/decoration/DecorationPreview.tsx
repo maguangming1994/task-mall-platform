@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { PictureOutlined } from '@ant-design/icons'
 import { Empty } from 'antd'
 import type { DecorationPageConfig, DecorationSection } from '../../api/admin'
 import { createDecorationStyle } from './sectionRegistry'
@@ -55,9 +56,23 @@ export function sectionOuterStyle(section: DecorationSection): CSSProperties {
   }
 }
 
-function MediaPlaceholder({ url, height = 96, radius = 10 }: { url: string; height?: number; radius?: number }) {
+function MediaPlaceholder({ url, height = 96, radius = 10, label = '未设置图片' }: { url: string; height?: number; radius?: number; label?: string }) {
   if (url) return <img src={url} alt="" style={{ width: '100%', height, objectFit: 'cover', borderRadius: radius, display: 'block' }} />
-  return <div style={{ width: '100%', height, borderRadius: radius, background: '#EEF2F9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9AA6BC', fontSize: 12 }}>未设置图片</div>
+  return <div style={{
+    width: '100%',
+    height,
+    borderRadius: radius,
+    background: 'linear-gradient(135deg, #E9F0FD 0%, #DEE8F9 48%, #EDF3FF 100%)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    color: '#93A6C6',
+  }}>
+    <PictureOutlined style={{ fontSize: Math.min(20, height / 4) }} />
+    <span style={{ fontSize: 10.5 }}>{label}</span>
+  </div>
 }
 
 export function SectionPreview({ section }: { section: DecorationSection }) {
@@ -81,7 +96,7 @@ export function SectionPreview({ section }: { section: DecorationSection }) {
       const anchor = vertical === 'top' ? { top: 8 } : { bottom: 8 }
       const align = horizontal === 'left' ? { left: 12 } : horizontal === 'center' ? { left: '50%', transform: 'translateX(-50%)' } : { right: 12 }
       return <div style={{ position: 'relative', borderRadius: radius, overflow: 'hidden' }}>
-        <MediaPlaceholder url={stringValue(first, 'image_url')} height={height} radius={radius} />
+        <MediaPlaceholder url={stringValue(first, 'image_url')} height={height} radius={radius} label="主视觉图 · 可在右侧换图" />
         {props.show_title !== false ? <div style={{ position: 'absolute', inset: 0, padding: 14, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', background: 'linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.45))', color: '#fff' }}>
           <div style={{ fontSize: 15, fontWeight: 700 }}>{stringValue(first, 'title') || '轮播标题'}</div>
           <div style={{ fontSize: 11, opacity: .9 }}>{stringValue(first, 'subtitle')}</div>
@@ -144,7 +159,7 @@ export function SectionPreview({ section }: { section: DecorationSection }) {
       </div>
     }
     case 'image_banner':
-      return <MediaPlaceholder url={stringValue(props, 'image_url')} height={numberValue(props, 'height_rpx', 200) / 2.4} radius={12} />
+      return <MediaPlaceholder url={stringValue(props, 'image_url')} height={numberValue(props, 'height_rpx', 200) / 2.4} radius={12} label="横幅图片 · 可在右侧上传" />
     case 'image_text': {
       const rightImage = stringValue(props, 'layout') === 'right'
       return <div style={{ display: 'flex', gap: 10, padding: 10, background: '#fff', borderRadius: 12, flexDirection: rightImage ? 'row-reverse' : 'row' }}>
@@ -187,10 +202,10 @@ export function SectionPreview({ section }: { section: DecorationSection }) {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0,1fr))`, gap: 8 }}>
           {Array.from({ length: limit }).map((_, index) => <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ height: columns === 1 ? 60 : 64, borderRadius: 8, background: '#F4F6FB' }} />
-            <span style={{ fontSize: 10.5, color: '#3C4961' }}>商品 {index + 1}</span>
-            {props.show_price !== false ? <span style={{ fontSize: 11, fontWeight: 700, color: '#F2620A' }}>¥ 9.9</span> : null}
-            {props.show_subtitle !== false ? <span style={{ fontSize: 9.5, color: '#9AA6BC' }}>商品副标题</span> : null}
+            <MediaPlaceholder url="" height={columns === 1 ? 62 : 70} radius={8} label="商品图" />
+            <span style={{ fontSize: 10.5, color: '#3C4961', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>精选商品 {index + 1}</span>
+            {props.show_price !== false ? <span style={{ fontSize: 11, fontWeight: 700, color: '#F2620A' }}>¥ 9.9<span style={{ fontSize: 9, color: '#B4A196', fontWeight: 400 }}> 起</span></span> : null}
+            {props.show_subtitle !== false ? <span style={{ fontSize: 9.5, color: '#9AA6BC', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>校区自提 · 当日送达</span> : null}
             {props.show_category === true ? <span style={{ alignSelf: 'flex-start', fontSize: 9, color: '#2F67DF', background: '#EAF1FF', borderRadius: 4, padding: '0 4px' }}>分类</span> : null}
           </div>)}
         </div>
@@ -205,11 +220,11 @@ export function SectionPreview({ section }: { section: DecorationSection }) {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: listMode ? 6 : 10 }}>
           {Array.from({ length: Math.min(numberValue(props, 'limit', 6), 4) }).map((_, index) => <div key={index} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: listMode ? '4px 8px' : 0 }}>
-            {props.show_avatar !== false ? <span style={{ width: 26, height: 26, borderRadius: 999, background: '#EEF2F9', flexShrink: 0 }} /> : null}
+            {props.show_avatar !== false ? <span style={{ width: 26, height: 26, borderRadius: 999, flexShrink: 0, background: 'linear-gradient(135deg, #DDE8FA, #C9DAF6)', color: '#5B719A', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>同</span> : null}
             <div style={{ minWidth: 0, flex: 1, background: listMode ? 'transparent' : '#F8FAFD', borderRadius: 8, padding: listMode ? 0 : '6px 8px' }}>
-              <div style={{ fontSize: 11.5, fontWeight: 600 }}>社区帖子 {index + 1}</div>
-              {props.show_excerpt === true ? <div style={{ fontSize: 10, color: '#8B95A6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>这里是帖子摘要占位内容</div> : null}
-              {props.show_stats !== false ? <div style={{ fontSize: 9.5, color: '#9AA6BC' }}>同学 · {index + 2} 条评论</div> : null}
+              <div style={{ fontSize: 11.5, fontWeight: 600 }}>校园二手交易经验分享 {index + 1}</div>
+              {props.show_excerpt === true ? <div style={{ fontSize: 10, color: '#8B95A6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>整理了一些实操心得，欢迎一起交流～</div> : null}
+              {props.show_stats !== false ? <div style={{ fontSize: 9.5, color: '#9AA6BC' }}>同学 · {index + 2} 条评论 · {index + 3} 赞</div> : null}
             </div>
           </div>)}
         </div>
@@ -223,7 +238,14 @@ export function SectionPreview({ section }: { section: DecorationSection }) {
           <span style={{ fontSize: 11, color: '#7A859B' }}>查看全部 ›</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {Array.from({ length: Math.min(limit, 4) }).map((_, index) => <div key={index} style={{ height: 30, borderRadius: 8, background: '#F4F6FB', display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: 11, color: '#9AA6BC' }}>任务占位 {index + 1}</div>)}
+          {Array.from({ length: Math.min(limit, 4) }).map((_, index) => <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 8, background: '#F8FAFD', padding: '7px 10px' }}>
+            <span style={{ width: 3, height: 18, borderRadius: 2, background: '#0BBF63' }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#3C4961' }}>代取快递 · 3 号楼 {index + 1}</div>
+              <div style={{ fontSize: 9.5, color: '#9AA6BC' }}>积分 +{5 + index * 5} · 预计 20 分钟</div>
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#0BBF63' }}>去接单</span>
+          </div>)}
         </div>
       </div>
     }

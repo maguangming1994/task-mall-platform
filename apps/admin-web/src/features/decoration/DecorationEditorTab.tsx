@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Empty, Input, Modal, Popconfirm, Space, Table, Tabs, Tag, Typography, message } from 'antd'
+import { Alert, Button, Card, Input, Modal, Popconfirm, Space, Table, Typography, message } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ApiError,
@@ -14,12 +14,10 @@ import {
   type PageDecorationOverview,
   type SettingVersion,
 } from '../../api/admin'
-import { MediaGalleryInput } from '../../components/MediaGalleryInput'
 import { useAdminAuth } from '../auth/AdminAuthContext'
 import { useRobotRecentVerification } from '../robot/useRobotRecentVerification'
-import { SectionCanvas } from './SectionCanvas'
-import { SectionPropertyPanel } from './SectionPropertyPanel'
-import { DECORATION_GROUPS, DECORATION_PAGE_TABS, DECORATION_SECTION_DEFS, createDecorationSection } from './sectionRegistry'
+import { DecorationWorkbench } from './DecorationWorkbench'
+import { DECORATION_PAGE_TABS, createDecorationSection } from './sectionRegistry'
 
 type PagesState = Record<DecorationPageKey, DecorationPageConfig>
 
@@ -52,7 +50,6 @@ export function DecorationEditorTab() {
   const [pages, setPages] = useState<PagesState | null>(null)
   const [activePage, setActivePage] = useState<DecorationPageKey>('home')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [rightTab, setRightTab] = useState('page')
   const [reason, setReason] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -83,7 +80,6 @@ export function DecorationEditorTab() {
 
   const activeTab = DECORATION_PAGE_TABS.find((tab) => tab.key === activePage) ?? DECORATION_PAGE_TABS[0]
   const activeConfig = pages?.[activePage]
-  const selectedSection = activeConfig?.sections.find((section) => section.id === selectedId) ?? null
   const canPublish = Boolean(overview?.draft)
 
   const updatePage = (patch: Partial<DecorationPageConfig>) => {
@@ -93,17 +89,11 @@ export function DecorationEditorTab() {
 
   const updateSections = (sections: DecorationSection[]) => updatePage({ sections })
 
-  const updateSection = (section: DecorationSection) => {
-    if (!activeConfig) return
-    updateSections(activeConfig.sections.map((item) => item.id === section.id ? section : item))
-  }
-
   const addSection = (type: string) => {
     if (!activeConfig) return
     const section = createDecorationSection(type)
     updateSections([...activeConfig.sections, section])
     setSelectedId(section.id)
-    setRightTab('props')
   }
 
   const handleSave = async () => {
@@ -162,7 +152,7 @@ export function DecorationEditorTab() {
       <div>
         <Typography.Text strong>直接编辑线上页面</Typography.Text>
         <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 620 }}>
-          从组件库添加区块、拖拽排序并实时预览；草稿与线上隔离，发布后用户端自动生效。使用「页面方案」时，启用公众号渠道的方案会覆盖这里的线上内容。
+          左侧拖拽组件进手机画布，画布内拖动可调整顺序；草稿与线上隔离，发布后用户端自动生效。使用「页面方案」时，启用公众号渠道的方案会覆盖这里的线上内容。
         </Typography.Paragraph>
       </div>
       <Space wrap>
@@ -190,91 +180,41 @@ export function DecorationEditorTab() {
       style={{ marginBottom: 12 }}
     />
 
-    <Card bordered={false} loading={loading}>
-      <Tabs
-        activeKey={activePage}
-        onChange={(key) => { setActivePage(key as DecorationPageKey); setSelectedId(null); setRightTab('page') }}
-        items={DECORATION_PAGE_TABS.map((tab) => ({ key: tab.key, label: tab.label }))}
-      />
-      <Typography.Text type="secondary">{activeTab.hint}</Typography.Text>
-      <div style={{ display: 'grid', gridTemplateColumns: '220px minmax(300px, 1fr) 380px', gap: 16, marginTop: 12 }}>
-        <Card size="small" title="组件库">
-          <Space direction="vertical" style={{ width: '100%' }} size="small">
-            {DECORATION_GROUPS.map((group) => <div key={group.key}>
-              <Typography.Text type="secondary" style={{ display: 'block', fontSize: 11, fontWeight: 700, margin: '2px 0 6px' }}>{group.label}</Typography.Text>
-              <Space direction="vertical" style={{ width: '100%' }} size={6}>
-                {DECORATION_SECTION_DEFS.filter((definition) => definition.group === group.key).map((definition) => <Button
-                  key={definition.type}
-                  block
-                  style={{ textAlign: 'left', height: 'auto', padding: '8px 10px' }}
-                  onClick={() => addSection(definition.type)}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                    <span style={{ fontWeight: 600 }}>{definition.label}</span>
-                    <span style={{ fontSize: 12, color: '#7A859B', whiteSpace: 'normal' }}>{definition.description}</span>
-                  </div>
-                </Button>)}
-              </Space>
-            </div>)}
-          </Space>
-        </Card>
-
-        <Card size="small" title={`页面画布 · ${activeTab.label}`} extra={<Tag>{activeConfig?.sections.length ?? 0} 个区块</Tag>}>
-          {activeConfig && <SectionCanvas
-            sections={activeConfig.sections}
-            selectedId={selectedId}
-            onSelect={(id) => { setSelectedId(id); setRightTab('props') }}
-            onChange={updateSections}
-          />}
-        </Card>
-
-        <Card size="small">
-          <Tabs
-            activeKey={rightTab}
-            onChange={setRightTab}
-            items={[
-              {
-                key: 'page',
-                label: '页面设置',
-                children: activeConfig ? <Space direction="vertical" style={{ width: '100%' }}>
-                  <Typography.Text type="secondary">页面名称（内部识别）</Typography.Text>
-                  <Input value={activeConfig.name} maxLength={30} placeholder="如：首页装修" onChange={(event) => updatePage({ name: event.target.value })} />
-                  <Typography.Text type="secondary">页面标题</Typography.Text>
-                  <Input value={activeConfig.title} maxLength={40} placeholder="展示在页面顶部的标题，可留空" onChange={(event) => updatePage({ title: event.target.value })} />
-                  <Typography.Text type="secondary">页面介绍</Typography.Text>
-                  <Input.TextArea rows={2} value={activeConfig.description} maxLength={200} placeholder="用于后台识别或活动说明，可留空" onChange={(event) => updatePage({ description: event.target.value })} />
-                  <Typography.Text type="secondary">页面封面</Typography.Text>
-                  <MediaGalleryInput
-                    value={activeConfig.cover_url ? [{ url: activeConfig.cover_url, alt: '页面封面', sort_order: 0 }] : []}
-                    onChange={(images) => updatePage({ cover_url: images[0]?.url ?? '' })}
-                    max={1}
-                    primaryLabel="页面封面"
-                    helperText="用于后台页面列表展示，可留空。"
-                  />
-                  <Typography.Text type="secondary">页面背景色</Typography.Text>
-                  <Input value={activeConfig.background_color} maxLength={7} placeholder="#F5F7FB（留空为默认）" onChange={(event) => updatePage({ background_color: event.target.value })} />
-                  <Typography.Text type="secondary">页面背景图</Typography.Text>
-                  <MediaGalleryInput
-                    value={activeConfig.background_url ? [{ url: activeConfig.background_url, alt: '页面背景', sort_order: 0 }] : []}
-                    onChange={(images) => updatePage({ background_url: images[0]?.url ?? '' })}
-                    max={1}
-                    primaryLabel="页面背景"
-                    helperText="设置后作为装修区域背景；页面背景色优先于默认底色。"
-                  />
-                </Space> : null,
-              },
-              {
-                key: 'props',
-                label: '组件设置',
-                children: selectedSection
-                  ? <SectionPropertyPanel section={selectedSection} onChange={updateSection} />
-                  : <Empty description="在画布中选择一个区块以编辑属性与样式" image={Empty.PRESENTED_IMAGE_SIMPLE} />,
-              },
-            ]}
-          />
-        </Card>
-      </div>
-    </Card>
+    {loading && !activeConfig
+      ? <Card bordered={false} loading />
+      : activeConfig ? <DecorationWorkbench
+        page={activeConfig}
+        pageLabel={activeTab.label}
+        pageHint={activeTab.hint}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        onChangeSections={updateSections}
+        onChangePage={updatePage}
+        onAdd={addSection}
+        coverHint="用于后台页面列表展示，可留空。"
+        backgroundHint="设置后作为页面背景；背景色会铺在背景图下方。"
+        headerLeft={<div style={{ display: 'flex', gap: 4 }}>
+          {DECORATION_PAGE_TABS.map((tab) => {
+            const active = tab.key === activePage
+            return <button
+              key={tab.key}
+              type="button"
+              onClick={() => { setActivePage(tab.key); setSelectedId(null) }}
+              style={{
+                height: 28,
+                padding: '0 12px',
+                borderRadius: 7,
+                fontSize: 12,
+                cursor: 'pointer',
+                border: `1px solid ${active ? '#2F67DF' : '#E6EAF2'}`,
+                background: active ? '#2F67DF' : '#fff',
+                color: active ? '#fff' : '#4A5670',
+                fontWeight: active ? 600 : 400,
+              }}
+            >{tab.label}</button>
+          })}
+        </div>}
+      /> : null}
 
     <Modal title="装修版本历史" open={versionsOpen} footer={null} width={760} onCancel={() => setVersionsOpen(false)}>
       <Table
