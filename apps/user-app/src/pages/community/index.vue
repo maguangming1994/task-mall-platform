@@ -61,7 +61,7 @@
 
     <DecorationRenderer
       v-if="decoration.sections.length"
-      :sections="decoration.sections"
+      :page="decoration"
       @navigate="handleDecorationLink"
     />
 
@@ -235,7 +235,7 @@ import { createTopSafeAreaStyle } from '@/utils/safeArea'
 import { unicodeLength } from '@/utils/textInput'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import DecorationRenderer from '@/components/decoration/DecorationRenderer.vue'
-import { loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
+import { emptyDecorationPage, loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
 import { useModulesStore } from '@/stores/modules'
 import { useCampusProfileStore } from '@/stores/campusProfile'
 
@@ -280,7 +280,7 @@ const fallbackHome: CommunityHomeConfig = {
 
 const auth = useAuthStore()
 const home = ref<CommunityHomeConfig>(fallbackHome)
-const decoration = ref<DecorationPageConfig>({ background_url: '', sections: [] })
+const decoration = ref<DecorationPageConfig>(emptyDecorationPage())
 const categories = ref<CommunityCategory[]>(fallbackCategories)
 const publishingRules = ref<CommunityPublishingRules>(DEFAULT_COMMUNITY_PUBLISHING_RULES)
 const posts = ref<CommunityPost[]>([])

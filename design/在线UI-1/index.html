@@ -167,6 +167,9 @@ details.fold .audit{margin-left:20px;margin-right:20px}
     <a href="#admin">后台端 · 全部页面</a>
     <a href="#flows-main">业务流程 32 条</a>
     <a href="#audit">核对与状态</a>
+    <a href="decoration.html">装修中心 · 页面稿与流程图</a>
+    <a href="decoration-components.html">装修组件使用文档</a>
+    <a href="decoration-capability-analysis.html">装修组件能力分析</a>
   </nav>
 
   <div class="sec-h" id="mobile"><i></i><h2>移动端（C 端 · 小程序 / H5）</h2><span class="sub">按模块归类 · 点击放大 · ← → 键翻页 · 页面稿：<a href="sub-screens.html">C 端 89 屏</a></span></div>
@@ -823,6 +826,7 @@ details.fold .audit{margin-left:20px;margin-right:20px}
   <div class="audit">
     <table style="min-width:1060px">
       <tr><th>更新项</th><th>类型</th><th>说明</th></tr>
+      <tr><td><b>后台页面装修中心</b></td><td><span class="pill ok">新功能</span></td><td>c1e233d · 配置中心新增装修中心（组件库 / 拖拽画布 / 属性面板 / 手机预览 / 草稿发布回滚），用户端首页、社区、商城、我的按固定槽位增量渲染；页面稿与流程图见 <a href="decoration.html" style="color:#08A152;font-weight:700">装修中心专页</a></td></tr>
       <tr><td><b>机器人转发支持任务内容源</b></td><td><span class="pill ok">新功能</span></td><td>f248d73 · 转发配置新增内容类型（社区帖子/校园任务），任务支持分类、状态筛选与关键词过滤，新增任务奖励等模板变量，后台任务列表可手动转发，自动调度按游标聚合新任务</td></tr>
       <tr><td><b>转发短链 URL Link / Short Link 可配置</b></td><td><span class="pill ok">新功能</span></td><td>3c46fee · 任务转发链接优先微信小程序 URL Link，失败回退 H5 短链，后台可配置</td></tr>
       <tr><td><b>分享海报与转发优先小程序码</b></td><td><span class="pill ok">新功能</span></td><td>f31381d · 海报二维码优先小程序码，机器人转发优先小程序短链；分享卡片补齐 og 标签并压缩 hero 图至 27KB，link 去 hash 加时间戳规避 CDN 缓存</td></tr>

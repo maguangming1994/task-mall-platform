@@ -21,7 +21,7 @@
 
       <DecorationRenderer
         v-if="decoration.sections.length"
-        :sections="decoration.sections"
+        :page="decoration"
         @navigate="handleDecorationLink"
       />
 
@@ -170,7 +170,7 @@ import { useAuthStore } from '@/stores/auth'
 import { createTopSafeAreaStyle } from '@/utils/safeArea'
 import ModulePlaceholder from '@/components/ModulePlaceholder.vue'
 import DecorationRenderer from '@/components/decoration/DecorationRenderer.vue'
-import { loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
+import { emptyDecorationPage, loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
 import { useModulesStore } from '@/stores/modules'
 
 const modules = useModulesStore()
@@ -178,7 +178,7 @@ const moduleEnabled = computed(() => modules.isEnabled('module_mall'))
 
 const topSafeAreaStyle = createTopSafeAreaStyle()
 const products = ref<MallProduct[]>([])
-const decoration = ref<DecorationPageConfig>({ background_url: '', sections: [] })
+const decoration = ref<DecorationPageConfig>(emptyDecorationPage())
 const categories = ref<ProductCategory[]>([])
 const loading = ref(false)
 const loadError = ref('')
@@ -238,6 +238,11 @@ const flashCountdown = computed(() => {
 onShow(async () => {
   await modules.ensureReady()
   if (!moduleEnabled.value) return
+  const pendingCategory = uni.getStorageSync('task_mall_products_category')
+  if (pendingCategory) {
+    uni.removeStorageSync('task_mall_products_category')
+    categoryId.value = String(pendingCategory)
+  }
   await load()
 })
 onPullDownRefresh(async () => { try { await modules.ensureReady(); if (!moduleEnabled.value) return; await load() } finally { uni.stopPullDownRefresh() } })

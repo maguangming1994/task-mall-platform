@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校圈 · 后台装修中心 · 页面稿与流程图</title>
+<style>
+:root{
+  --green:#0BBF63; --green-deep:#08A152; --green-grad:linear-gradient(135deg,#12D978,#08A152);
+  --green-soft:#E7F9EF; --green-dark:#0A3D23;
+  --orange:#FF7A1A; --orange-deep:#F2620A; --orange-soft:#FFF2E5;
+  --blue:#3B82F6; --blue-soft:#EAF2FF;
+  --red:#FF3B30; --red-soft:#FFEEEA;
+  --bg:#EEF2EF; --card:#fff;
+  --t1:#191B1F; --t2:#767C85; --t3:#AEB3BB; --line:#EDEFEF;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px 70px}
+
+/* ===== HERO ===== */
+.hero{background:var(--green-grad);border-radius:0 0 32px 32px;padding:48px 0 54px;color:#fff;position:relative;overflow:hidden;margin-bottom:26px}
+.hero::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;background:rgba(255,255,255,.09);top:-200px;right:-80px}
+.hero::after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.07);bottom:-140px;left:8%}
+.hero .wrap{padding-bottom:0}
+.hero .badge{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 13px;border-radius:14px;background:rgba(255,255,255,.18);font-size:12px;font-weight:600;position:relative}
+.hero h1{position:relative;font-size:34px;font-weight:900;margin-top:16px;letter-spacing:.5px}
+.hero p{position:relative;font-size:14px;opacity:.94;margin-top:10px;line-height:1.75;max-width:920px}
+.hero .stats{position:relative;display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+.hero .stat{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:12px 20px;min-width:132px}
+.hero .stat b{font-size:24px;font-weight:800;display:block}
+.hero .stat span{font-size:12px;opacity:.9}
+
+/* ===== NAV ===== */
+.jump{position:sticky;top:0;z-index:30;display:flex;gap:8px;flex-wrap:wrap;padding:12px 0;margin-bottom:10px;background:linear-gradient(180deg,var(--bg) 72%,rgba(238,242,239,0))}
+.jump a{font-size:13px;font-weight:700;color:var(--t2);border:1px solid var(--line);border-radius:999px;padding:7px 16px;background:#fff}
+.jump a:hover{color:var(--green);border-color:var(--green)}
+.jump a.back{margin-left:auto;color:var(--green-deep);border-color:#C9EEDB;background:var(--green-soft)}
+
+/* ===== SECTION ===== */
+.sec-h{display:flex;align-items:center;gap:10px;margin:34px 0 14px}
+.sec-h i{width:6px;height:22px;border-radius:3px;background:var(--green)}
+.sec-h h2{font-size:20px;font-weight:800}
+.sec-h .sub{font-size:12.5px;color:var(--t2);margin-left:4px}
+.card{background:#fff;border-radius:18px;padding:18px;box-shadow:0 1px 2px rgba(23,26,23,.03),0 8px 24px rgba(23,26,23,.05)}
+.card+.card{margin-top:14px}
+.note{font-size:12.5px;color:var(--t2);line-height:1.8}
+.note b{color:var(--t1)}
+.pill{display:inline-block;font-size:10px;font-weight:700;border-radius:8px;padding:2px 8px;white-space:nowrap}
+.pill.ok{background:var(--green-soft);color:var(--green-deep)}
+.pill.warn{background:var(--orange-soft);color:var(--orange-deep)}
+.pill.blue{background:var(--blue-soft);color:#2563EB}
+.pill.na{background:#F2F3F5;color:var(--t2)}
+
+/* ===== 页面结构 ===== */
+.ia{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.ia-col{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#FBFCFB}
+.ia-col h4{font-size:12.5px;font-weight:800;padding:10px 12px;background:var(--green-soft);color:var(--green-deep);border-bottom:1px solid #D9F2E4}
+.ia-col ul{list-style:none;padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.ia-col li{font-size:12px;color:var(--t2);line-height:1.5;padding-left:14px;position:relative}
+.ia-col li::before{content:"";width:5px;height:5px;border-radius:50%;background:#CBD5D0;position:absolute;left:2px;top:7px}
+.ia-col li b{color:var(--t1);font-weight:700}
+
+/* ===== 后台画框 ===== */
+.frame-shell{background:#DDE3DF;border-radius:18px;padding:12px;overflow:hidden}
+.fit{transform-origin:top left}
+.frame{width:1440px;height:900px;background:#F4F6F4;display:flex;box-shadow:0 20px 50px rgba(9,20,15,.18);border-radius:12px;overflow:hidden;font-size:13px}
+.sidebar{width:222px;background:var(--green-dark);color:#fff;display:flex;flex-direction:column;flex:none}
+.sb-brand{height:56px;display:flex;align-items:center;gap:10px;padding:0 18px;font-size:15px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-brand .logo{width:28px;height:28px;border-radius:8px;background:var(--green-grad);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.sb-group{padding:14px 18px 6px;font-size:10.5px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.08em}
+.sb-item{display:flex;align-items:center;gap:9px;padding:9px 18px;font-size:13px;color:rgba(255,255,255,.72);border-left:3px solid transparent}
+.sb-item .dot{width:6px;height:6px;border-radius:2px;background:rgba(255,255,255,.35)}
+.sb-item.on{color:#fff;background:rgba(255,255,255,.08);border-left-color:var(--green);font-weight:700}
+.sb-item.on .dot{background:var(--green)}
+.sb-item.sub{padding-left:34px;font-size:12.5px}
+.sb-foot{margin-top:auto;padding:12px 18px;font-size:11px;color:rgba(255,255,255,.4);border-top:1px solid rgba(255,255,255,.08)}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;flex:none}
+.bread{font-size:12.5px;color:var(--t3)}
+.bread b{color:var(--t1);font-weight:600}
+.tbr{display:flex;align-items:center;gap:14px}
+.tbr .ico{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--t2);font-size:12px}
+.tbr .user{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600}
+.tbr .av{width:30px;height:30px;border-radius:8px;background:var(--green-soft);color:var(--green-deep);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.content{flex:1;padding:18px 20px;display:flex;flex-direction:column;min-height:0}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--green-deep);text-transform:uppercase}
+.page-head h1{font-size:21px;font-weight:800;margin-top:2px}
+.page-head p{font-size:12px;color:var(--t2);margin-top:4px}
+.actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.inp{height:32px;border:1px solid #DDE2DF;border-radius:7px;padding:0 10px;font-size:12.5px;color:var(--t2);display:flex;align-items:center;min-width:210px;background:#fff}
+.btn{height:32px;padding:0 14px;border-radius:7px;border:1px solid #DDE2DF;background:#fff;font-size:12.5px;color:var(--t1);display:inline-flex;align-items:center;gap:6px}
+.btn.primary{background:var(--green-grad);color:#fff;border:0;font-weight:700;box-shadow:0 4px 12px rgba(11,191,99,.25)}
+.alert{display:flex;gap:10px;align-items:flex-start;background:#EFF7FF;border:1px solid #CFE6FB;border-radius:9px;padding:9px 12px;font-size:12px;color:#2B5E86;margin-bottom:10px}
+.alert .ai{width:16px;height:16px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+.work{background:#fff;border-radius:12px;border:1px solid var(--line);flex:1;min-height:0;display:flex;flex-direction:column;padding:12px 14px}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);padding-bottom:8px;font-size:13px;color:var(--t2)}
+.tabs .on{color:var(--green-deep);font-weight:700;position:relative}
+.tabs .on::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:2px;background:var(--green);border-radius:2px}
+.hint{font-size:11px;color:var(--t3);margin:8px 0 10px}
+.cols{display:grid;grid-template-columns:210px minmax(300px,1fr) 356px;gap:12px;flex:1;min-height:0}
+.panel{border:1px solid var(--line);border-radius:10px;background:#fff;display:flex;flex-direction:column;min-height:0}
+.panel-h{font-size:12.5px;font-weight:800;padding:9px 11px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex:none}
+.panel-h .cnt{font-size:10px;font-weight:700;color:var(--green-deep);background:var(--green-soft);border-radius:6px;padding:1px 7px}
+.panel-b{padding:8px;overflow:auto;min-height:0}
+.lib{display:flex;flex-direction:column;gap:6px}
+.lib-item{border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#fff}
+.lib-item b{font-size:12px;display:block}
+.lib-item span{font-size:10px;color:var(--t3);line-height:1.45;display:block;margin-top:2px}
+.lib-item:first-child{border-color:#BFEBD5;background:#F7FDFA}
+.sec-card{border:1px solid #E7EBF2;border-radius:9px;padding:8px 10px;margin-bottom:7px;background:#fff}
+.sec-card.on{border-color:#2F67DF;box-shadow:0 0 0 2px rgba(47,103,223,.1)}
+.sec-row{display:flex;align-items:center;gap:7px}
+.grip{color:#B9C2CE;font-size:12px;letter-spacing:-1px}
+.tag{font-size:10px;font-weight:700;color:#2F67DF;background:#EAF1FF;border-radius:5px;padding:1px 6px}
+.sec-id{font-size:10.5px;color:var(--t3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sw{width:26px;height:15px;border-radius:999px;background:var(--green);position:relative;flex:none}
+.sw::after{content:"";position:absolute;width:11px;height:11px;border-radius:50%;background:#fff;top:2px;right:2px}
+.sw.off{background:#D7DCE3}
+.sw.off::after{right:auto;left:2px}
+.iconbtn{width:20px;height:20px;border-radius:5px;border:1px solid var(--line);color:var(--t3);font-size:10px;display:flex;align-items:center;justify-content:center}
+.iconbtn.danger{color:#D4380D;border-color:#F5D3D0}
+.panel-tabs{display:flex;gap:18px;font-size:12px;border-bottom:1px solid var(--line);padding:9px 11px 8px}
+.panel-tabs .on{color:var(--green-deep);font-weight:700;position:relative}
+.panel-tabs .on::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:2px;background:var(--green)}
+.form{padding:10px 11px;overflow:auto;min-height:0}
+.frow{margin-bottom:9px}
+.flab{font-size:10.5px;color:var(--t2);margin-bottom:4px;display:block}
+.fctrl{height:30px;border:1px solid #DDE2DF;border-radius:6px;padding:0 9px;font-size:12px;display:flex;align-items:center;justify-content:space-between;color:var(--t1);background:#fff}
+.fctrl .ph{color:var(--t3)}
+.frow-inline{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--t2);margin-bottom:9px}
+.imgbox{height:86px;border:1px dashed #C9D6CF;border-radius:8px;background:linear-gradient(135deg,#EFF6F1,#E3F2EA);display:flex;align-items:center;justify-content:center;color:#8FA69B;font-size:11px}
+.itemcard{border:1px solid var(--line);border-radius:8px;padding:8px 9px;margin-bottom:8px}
+.itemcard .ih{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;font-weight:700;margin-bottom:7px}
+.itemcard .ih span{font-size:10px;color:#D4380D;font-weight:600}
+.btn.mini{height:24px;padding:0 9px;font-size:11px;border-radius:5px}
+
+/* ===== 版本弹窗 ===== */
+.modal-wrap{display:grid;grid-template-columns:1.35fr .9fr;gap:16px}
+.modal{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(9,20,15,.16);border:1px solid #E3E8E5}
+.modal-h{padding:13px 16px;border-bottom:1px solid var(--line);font-size:14px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+.modal-h .x{color:var(--t3);font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;font-size:10.5px;color:var(--t3);font-weight:700;padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:#FAFBFA}
+td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr.cur{background:#F7FDFA}
+td .ver{font-weight:800}
+td .mini-btn{font-size:11px;border:1px solid #DDE2DF;border-radius:5px;padding:3px 8px;color:var(--t1);display:inline-block;background:#fff}
+td .mini-btn.dis{color:var(--t3);border-color:#EDEFEF;background:#FAFBFA}
+
+/* ===== 手机预览 ===== */
+.phone{width:320px;border:9px solid #1F2430;border-radius:30px;background:#F5F7FB;padding:10px;display:flex;flex-direction:column;gap:9px;box-shadow:0 18px 36px rgba(15,25,20,.18)}
+.phone .notch{height:16px;width:88px;border-radius:999px;background:rgba(0,0,0,.12);margin:0 auto 2px}
+.ph-banner{height:122px;border-radius:12px;background:linear-gradient(135deg,#0BBF63,#08A152);position:relative;overflow:hidden;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:12px}
+.ph-banner .mask{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.35))}
+.ph-banner b{position:relative;font-size:14px}
+.ph-banner span{position:relative;font-size:10px;opacity:.9}
+.ph-banner .phbtn{position:relative;align-self:flex-start;margin-top:6px;background:#fff;color:#08A152;font-size:10px;font-weight:700;border-radius:999px;padding:3px 10px}
+.ph-ann{display:flex;gap:8px;background:#FFF8E8;border-radius:10px;padding:9px;align-items:flex-start}
+.ph-ann .ic{width:20px;height:20px;border-radius:6px;background:#FFD43B;color:#8A5C00;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.ph-ann b{font-size:11px;color:#5C4300;display:block}
+.ph-ann span{font-size:10px;color:#8A6A1F}
+.ph-grid{background:#fff;border-radius:12px;padding:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.ph-grid .gi{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ph-grid .gi i{width:30px;height:30px;border-radius:9px;background:#EAF1FF;color:#2F67DF;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;font-style:normal}
+.ph-grid .gi span{font-size:9.5px;color:#3C4961}
+.ph-it{background:#fff;border-radius:12px;padding:9px;display:flex;gap:9px;align-items:center}
+.ph-it .im{width:64px;height:64px;border-radius:8px;background:#E8F4EC;flex:none;display:flex;align-items:center;justify-content:center;color:#8FA69B;font-size:10px}
+.ph-it b{font-size:11.5px;display:block}
+.ph-it span{font-size:10px;color:#7A859B}
+.ph-tip{margin-top:auto;font-size:10px;color:#9AA6BC;text-align:center;border-top:1px dashed #DDE4EA;padding-top:8px}
+.phone-cap{text-align:center;font-size:12px;color:var(--t2);margin-top:10px}
+.preview-row{display:flex;gap:18px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+
+/* ===== 流程 ===== */
+.flow{background:#fff;border-radius:18px;padding:18px;box-shadow:0 1px 2px rgba(23,26,23,.03),0 8px 24px rgba(23,26,23,.05)}
+.flow+.flow{margin-top:14px}
+.flow-h{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.flow-h .no{width:26px;height:26px;border-radius:9px;background:var(--green-grad);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.flow-h h3{font-size:15.5px;font-weight:800}
+.flow-h .tagline{font-size:11.5px;color:var(--t2);margin-left:auto}
+.chain{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:4px}
+.node{flex:1;min-width:132px;border:1.5px solid var(--line);border-radius:12px;padding:11px 10px;background:#fff;display:flex;flex-direction:column;gap:5px;text-align:center}
+.node .n{font-size:9.5px;font-weight:800;color:var(--t3);letter-spacing:.06em}
+.node b{font-size:12.5px;font-weight:700;white-space:nowrap}
+.node p{font-size:10px;color:var(--t3);line-height:1.45}
+.node.enter{border-color:var(--green);background:var(--green-soft)}
+.node.enter .n{color:var(--green-deep)}
+.node.warn{border-color:#FFD9C2;background:#FFF8F2}
+.node.warn .n{color:var(--orange-deep)}
+.node.done{border-color:#BFE8D2;background:#F5FCF8}
+.node.done .n{color:var(--green-deep)}
+.arw{display:flex;align-items:center;padding:0 5px;color:#C3CBC7;flex:none;font-size:15px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:var(--t2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* state machine */
+.states{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.state{border:1.5px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+.state .st{font-size:10px;font-weight:800;color:var(--t3);letter-spacing:.06em}
+.state b{display:block;font-size:13px;margin-top:3px}
+.state p{font-size:10.5px;color:var(--t2);line-height:1.5;margin-top:4px}
+.state.draft{border-color:#FFD9A8;background:#FFFBF5}
+.state.live{border-color:#BFE8D2;background:#F5FCF8}
+.state.roll{border-color:#CFE0FB;background:#F6FAFF}
+.state.conf{border-color:#F5D3D0;background:#FFF7F6}
+.state-flow{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;font-size:11.5px;color:var(--t2)}
+.state-flow code{background:#F3F6F4;border-radius:5px;padding:2px 7px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#0A3D23}
+
+/* lanes */
+.lanes{display:flex;flex-direction:column;gap:10px}
+.lane{display:flex;gap:10px;align-items:stretch}
+.lane-tag{width:96px;flex:none;background:#0A3D23;color:#D6E3ED;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:11.5px;font-weight:800;line-height:1.5;padding:8px 6px}
+.lane-tag small{display:block;font-size:9.5px;font-weight:600;color:#7E96AB;margin-top:2px}
+.lane .chain{flex:1}
+.lane .node{min-width:118px;padding:9px 10px}
+
+/* api table */
+.api-table{overflow-x:auto}
+.api-table table{min-width:820px}
+.api-table td code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;background:#F3F6F4;border-radius:5px;padding:2px 6px;color:#0A3D23}
+.rules{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.rule{display:flex;gap:9px;border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:#FBFCFB}
+.rule .ri{width:22px;height:22px;border-radius:7px;background:var(--green-soft);color:var(--green-deep);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.rule b{font-size:12px;display:block;margin-bottom:2px}
+.rule span{font-size:11px;color:var(--t2);line-height:1.55}
+.footer{text-align:center;font-size:12px;color:var(--t3);margin-top:54px;line-height:1.9}
+.footer a{color:var(--green-deep);font-weight:700}
+@media(max-width:860px){
+  .ia{grid-template-columns:repeat(2,1fr)}
+  .modal-wrap{grid-template-columns:1fr}
+  .states{grid-template-columns:repeat(2,1fr)}
+  .rules{grid-template-columns:1fr}
+  .page-head{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">配置中心 · 装修中心 · 2026-11-27 更新</span>
+    <h1>后台装修中心 · 页面稿与流程图</h1>
+    <p>在管理后台以可视化方式搭建首页、社区首页、商城首页与我的页面：左侧组件库、中间区块画布、右侧属性与手机预览；保存草稿不影响线上，发布后用户端按固定槽位增量渲染，无配置时页面保持原样。</p>
+    <div class="stats">
+      <div class="stat"><b>4</b><span>可装修页面</span></div>
+      <div class="stat"><b>36</b><span>区块类型（5 大分组）</span></div>
+      <div class="stat"><b>5</b><span>后台接口</span></div>
+      <div class="stat"><b>草稿 → 发布 → 回滚</b><span>版本机制</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <nav class="jump">
+    <a href="#structure">页面结构</a>
+    <a href="#ui">后台页面稿</a>
+    <a href="#preview">手机预览与弹窗</a>
+    <a href="#slots">四页装修槽位</a>
+    <a href="#flows">核心流程</a>
+    <a href="#new-round">本轮新增</a>
+    <a href="#rules">校验与接口</a>
+    <a href="decoration-components.html">组件使用文档</a>
+    <a class="back" href="index.html">← 返回 UI 总览</a>
+  </nav>
+
+  <!-- ===== 页面结构 ===== -->
+  <div class="sec-h" id="structure"><i></i><h2>页面结构</h2><span class="sub">装修中心单页四区 · 与后台实现一一对应</span></div>
+  <div class="card">
+    <div class="ia">
+      <div class="ia-col">
+        <h4>① 顶部操作区</h4>
+        <ul>
+          <li><b>页面标题</b> 装修中心 + 说明</li>
+          <li><b>修改说明</b> 保存草稿必填，≥4 字</li>
+          <li><b>版本历史</b> 查看与回滚</li>
+          <li><b>保存草稿</b> 线上不生效</li>
+          <li><b>发布</b> 二次确认 + 近期核验</li>
+        </ul>
+      </div>
+      <div class="ia-col">
+        <h4>② 页面切换与状态</h4>
+        <ul>
+          <li><b>页面 Tab</b> 首页 / 社区首页 / 商城首页 / 我的页面</li>
+          <li><b>槽位提示</b> 说明区块插入位置</li>
+          <li><b>草稿提示条</b> 锁版本、未发布状态</li>
+          <li><b>区块计数</b> 当前页面区块数量</li>
+        </ul>
+      </div>
+      <div class="ia-col">
+        <h4>③ 三栏工作区</h4>
+        <ul>
+          <li><b>组件库</b> 36 种区块，按基础 / 店铺 / 营销 / 功能 / 会员分组</li>
+          <li><b>页面画布</b> 手机实时预览、点击选中、拖拽指示线</li>
+          <li><b>组件设置</b> 内容属性 + 通用样式（边距/圆角/背景/边框/时段）</li>
+          <li><b>页面设置</b> 名称、标题、介绍、封面、背景色/图</li>
+        </ul>
+      </div>
+      <div class="ia-col">
+        <h4>④ 预览与版本</h4>
+        <ul>
+          <li><b>手机画布</b> 选中浮层工具：启停/上移/下移/复制/删除</li>
+          <li><b>版本历史</b> 来源 / 原因 / 时间</li>
+          <li><b>回滚</b> 生成回滚草稿，发布后生成新版本</li>
+          <li><b>冲突提示</b> 草稿锁版本不一致时刷新重试</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 后台页面稿 ===== -->
+  <div class="sec-h" id="ui"><i></i><h2>后台页面稿（1440 × 900）</h2><span class="sub">配置中心 → 装修中心 · 首页 Tab · 选中轮播图区块</span></div>
+  <div class="frame-shell">
+    <div class="fit" id="fit">
+      <div class="frame">
+        <aside class="sidebar">
+          <div class="sb-brand"><span class="logo">校</span>校圈管理后台</div>
+          <div class="sb-group">运营</div>
+          <div class="sb-item"><span class="dot"></span>数据概览</div>
+          <div class="sb-item"><span class="dot"></span>任务管理</div>
+          <div class="sb-item"><span class="dot"></span>商城管理</div>
+          <div class="sb-item"><span class="dot"></span>社区管理</div>
+          <div class="sb-item"><span class="dot"></span>用户与资产</div>
+          <div class="sb-group">系统</div>
+          <div class="sb-item"><span class="dot"></span>配置中心</div>
+          <div class="sb-item sub"><span class="dot"></span>用户端配置</div>
+          <div class="sb-item sub on"><span class="dot"></span>装修中心</div>
+          <div class="sb-item sub"><span class="dot"></span>导航与图标</div>
+          <div class="sb-item"><span class="dot"></span>权限与角色</div>
+          <div class="sb-item"><span class="dot"></span>操作日志</div>
+          <div class="sb-foot">v13 · 绿色商业风</div>
+        </aside>
+
+        <div class="main">
+          <div class="topbar">
+            <div class="bread">配置中心 / <b>装修中心</b></div>
+            <div class="tbr">
+              <div class="ico">?</div>
+              <div class="ico">◷</div>
+              <div class="user"><span class="av">管</span>运营管理员</div>
+            </div>
+          </div>
+
+          <div class="content">
+            <div class="page-head">
+              <div>
+                <div class="eyebrow">可视化页面配置</div>
+                <h1>装修中心</h1>
+                <p>从组件库添加区块、拖拽排序并实时预览；草稿与线上隔离，发布后用户端自动生效。</p>
+              </div>
+              <div class="actions">
+                <div class="inp">修改说明（至少 4 个字）</div>
+                <div class="btn">版本历史</div>
+                <div class="btn">保存草稿</div>
+                <div class="btn primary">发布</div>
+              </div>
+            </div>
+
+            <div class="alert">
+              <span class="ai">i</span>
+              <span>当前有未发布草稿（锁版本 3），发布后才会替换线上页面。</span>
+            </div>
+
+            <div class="work">
+              <div class="tabs">
+                <span class="on">首页</span><span>社区首页</span><span>商城首页</span><span>我的页面</span>
+              </div>
+              <div class="hint">插入在积分卡之后、金刚区之前 · 原生积分卡、金刚区、TabBar 不接管</div>
+
+              <div class="cols">
+                <div class="panel">
+                  <div class="panel-h">组件库</div>
+                  <div class="panel-b">
+                    <div class="lib">
+                      <div class="lib-item"><b>轮播图</b><span>多张主视觉，可配标题与跳转</span></div>
+                      <div class="lib-item"><b>公告条</b><span>单行公告，支持富文本内容</span></div>
+                      <div class="lib-item"><b>金刚区</b><span>宫格入口，最多 10 个</span></div>
+                      <div class="lib-item"><b>单图横幅</b><span>一张可点击的横幅图片</span></div>
+                      <div class="lib-item"><b>图文卡片</b><span>左图右文 / 右图左文</span></div>
+                      <div class="lib-item"><b>商品列表</b><span>按数量拉取商城商品</span></div>
+                      <div class="lib-item"><b>帖子列表</b><span>按数量拉取社区帖子</span></div>
+                      <div class="lib-item"><b>任务推荐</b><span>从任务大厅拉取最新任务</span></div>
+                      <div class="lib-item"><b>富文本</b><span>加粗、列表、链接等排版</span></div>
+                      <div class="lib-item"><b>间距</b><span>在区块之间留白</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="panel">
+                  <div class="panel-h">页面区块 · 首页 <span class="cnt">4 个区块</span></div>
+                  <div class="panel-b">
+                    <div class="sec-card on">
+                      <div class="sec-row">
+                        <span class="grip">⋮⋮</span>
+                        <span class="tag">轮播图</span>
+                        <span class="sec-id">sec-home-banner</span>
+                        <span class="sw"></span>
+                        <span class="iconbtn">↑</span><span class="iconbtn">↓</span><span class="iconbtn">⧉</span><span class="iconbtn danger">✕</span>
+                      </div>
+                    </div>
+                    <div class="sec-card">
+                      <div class="sec-row">
+                        <span class="grip">⋮⋮</span>
+                        <span class="tag">公告条</span>
+                        <span class="sec-id">sec-home-notice</span>
+                        <span class="sw"></span>
+                        <span class="iconbtn">↑</span><span class="iconbtn">↓</span><span class="iconbtn">⧉</span><span class="iconbtn danger">✕</span>
+                      </div>
+                    </div>
+                    <div class="sec-card">
+                      <div class="sec-row">
+                        <span class="grip">⋮⋮</span>
+                        <span class="tag">金刚区</span>
+                        <span class="sec-id">sec-home-grid</span>
+                        <span class="sw"></span>
+                        <span class="iconbtn">↑</span><span class="iconbtn">↓</span><span class="iconbtn">⧉</span><span class="iconbtn danger">✕</span>
+                      </div>
+                    </div>
+                    <div class="sec-card">
+                      <div class="sec-row">
+                        <span class="grip">⋮⋮</span>
+                        <span class="tag">图文卡片</span>
+                        <span class="sec-id">sec-home-intro</span>
+                        <span class="sw off"></span>
+                        <span class="iconbtn">↑</span><span class="iconbtn">↓</span><span class="iconbtn">⧉</span><span class="iconbtn danger">✕</span>
+                      </div>
+                    </div>
+                    <div style="font-size:10.5px;color:#AEB3BB;line-height:1.5;margin-top:4px">支持拖拽排序；停用的区块不会在用户端显示。</div>
+                  </div>
+                </div>
+
+                <div class="panel">
+                  <div class="panel-tabs"><span class="on">属性设置</span><span>手机预览</span></div>
+                  <div class="form">
+                    <div class="frow-inline">
+                      <span><span class="tag" style="margin-right:6px">轮播图</span>sec-home-banner</span>
+                      <span style="display:flex;align-items:center;gap:6px;font-size:11px">在页面显示 <span class="sw" style="width:24px;height:14px"></span></span>
+                    </div>
+                    <div class="frow-inline"><span>自动轮播</span><span class="sw" style="width:24px;height:14px"></span></div>
+                    <div class="frow">
+                      <span class="flab">轮播间隔（毫秒）</span>
+                      <div class="fctrl">4500</div>
+                    </div>
+                    <div class="itemcard">
+                      <div class="ih">轮播图 1 <span>删除</span></div>
+                      <div class="frow">
+                        <span class="flab">轮播图片</span>
+                        <div class="imgbox">banner-home-01.png · 750 × 320</div>
+                      </div>
+                      <div class="frow"><span class="flab">主标题</span><div class="fctrl">欢迎回来，今天也有新任务</div></div>
+                      <div class="frow"><span class="flab">副标题</span><div class="fctrl">完成任务领取积分与现金奖励</div></div>
+                      <div class="frow"><span class="flab">按钮文字</span><div class="fctrl">去任务大厅</div></div>
+                      <div class="frow"><span class="flab">点击跳转</span><div class="fctrl">任务大厅 <span style="color:#AEB3BB">▾</span></div></div>
+                    </div>
+                    <div class="btn mini" style="width:100%;justify-content:center;border-style:dashed">新增轮播图</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 预览与弹窗 ===== -->
+  <div class="sec-h" id="preview"><i></i><h2>手机预览与版本弹窗</h2><span class="sub">右侧“手机预览”Tab · “版本历史”弹窗</span></div>
+
+  <div class="preview-row">
+    <div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="ph-banner">
+          <div class="mask"></div>
+          <b>欢迎回来，今天也有新任务</b>
+          <span>完成任务领取积分与现金奖励</span>
+          <span class="phbtn">去任务大厅</span>
+        </div>
+        <div class="ph-ann">
+          <span class="ic">公</span>
+          <div><b>平台公告</b><span>本周任务奖励已更新，去任务大厅查看。</span></div>
+        </div>
+        <div class="ph-grid">
+          <div class="gi"><i>任</i><span>任务大厅</span></div>
+          <div class="gi"><i>商</i><span>积分商城</span></div>
+          <div class="gi"><i>社</i><span>校园社区</span></div>
+          <div class="gi"><i>闲</i><span>二手闲置</span></div>
+        </div>
+        <div class="ph-it">
+          <div class="im">图</div>
+          <div><b>校园互助，从这里开始</b><span>发布需求，同学接单，进度可追踪</span></div>
+        </div>
+        <div class="ph-tip">装修区块 · 手机预览（非真实数据）</div>
+      </div>
+      <div class="phone-cap">首页预览：轮播图 + 公告条 + 金刚区 + 图文卡片</div>
+    </div>
+
+    <div style="flex:1;min-width:430px">
+      <div class="modal">
+        <div class="modal-h">装修版本历史 <span class="x">✕</span></div>
+        <table>
+          <thead><tr><th>版本</th><th>来源</th><th>原因</th><th>发布时间</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr class="cur">
+              <td><span class="ver">v3</span> <span class="pill ok">当前</span></td>
+              <td>回滚发布</td>
+              <td>公告条方案不符合预期，回滚到轮播方案。</td>
+              <td>2026-11-26 21:08</td>
+              <td><span class="mini-btn dis">回滚至此</span></td>
+            </tr>
+            <tr>
+              <td><span class="ver">v2</span></td>
+              <td>正常发布</td>
+              <td>临时改为公告条方案用于对比。</td>
+              <td>2026-11-26 20:52</td>
+              <td><span class="mini-btn">回滚至此</span></td>
+            </tr>
+            <tr>
+              <td><span class="ver">v1</span></td>
+              <td>正常发布</td>
+              <td>首页新增欢迎轮播与富文本说明。</td>
+              <td>2026-11-26 20:31</td>
+              <td><span class="mini-btn">回滚至此</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="margin-top:14px;padding:14px 16px">
+        <div class="note">
+          <b>回滚规则：</b>选择任意历史版本 → 生成“回滚草稿” → 再次点击发布 → 生成新的版本号（<span class="pill blue">source=rollback</span>），历史版本不会被删除。<br>
+          <b>草稿隔离：</b>保存草稿只写草稿表并递增 <code style="font-family:ui-monospace,Menlo,monospace;background:#F3F6F4;padding:1px 5px;border-radius:4px">lock_version</code>，线上公开接口与用户端完全不受影响。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 四页槽位 ===== -->
+  <div class="sec-h" id="slots"><i></i><h2>四个页面的装修槽位</h2><span class="sub">只做增量插入，原生功能块不接管；无配置时零差异</span></div>
+  <div class="card">
+    <div class="preview-row" style="gap:26px">
+      <div style="width:236px">
+        <div class="mini-page">
+          <div class="mp-head">首页</div>
+          <div class="mp-block">校区 / 搜索 / 消息</div>
+          <div class="mp-block">积分卡</div>
+          <div class="mp-slot">装修槽位</div>
+          <div class="mp-block">金刚区</div>
+          <div class="mp-block">推广横幅</div>
+          <div class="mp-block">任务推荐 feed</div>
+        </div>
+        <div class="phone-cap">积分卡之后</div>
+      </div>
+      <div style="width:236px">
+        <div class="mini-page">
+          <div class="mp-head">社区首页</div>
+          <div class="mp-block">品牌区</div>
+          <div class="mp-block">工具条</div>
+          <div class="mp-slot">装修槽位</div>
+          <div class="mp-block">feed 切换</div>
+          <div class="mp-block">帖子列表</div>
+        </div>
+        <div class="phone-cap">工具条之后、feed 之前</div>
+      </div>
+      <div style="width:236px">
+        <div class="mini-page">
+          <div class="mp-head">商城首页</div>
+          <div class="mp-block">品牌 / 搜索区</div>
+          <div class="mp-slot">装修槽位</div>
+          <div class="mp-block">优惠券</div>
+          <div class="mp-block">分类筛选</div>
+          <div class="mp-block">商品列表</div>
+        </div>
+        <div class="phone-cap">品牌与搜索区之后</div>
+      </div>
+      <div style="width:236px">
+        <div class="mini-page">
+          <div class="mp-head">我的页面</div>
+          <div class="mp-block">用户信息卡</div>
+          <div class="mp-slot">装修槽位</div>
+          <div class="mp-block">会员卡</div>
+          <div class="mp-block">资产 / 订单入口</div>
+          <div class="mp-block">功能菜单</div>
+        </div>
+        <div class="phone-cap">用户信息卡之后</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 流程图 ===== -->
+  <div class="sec-h" id="flows"><i></i><h2>核心流程</h2><span class="sub">配置主流程 · 版本状态机 · 数据流泳道</span></div>
+
+  <div class="flow">
+    <div class="flow-h"><span class="no">01</span><h3>装修配置主流程</h3><span class="tagline">从进入装修中心到用户端生效</span></div>
+    <div class="chain">
+      <div class="node enter"><span class="n">STEP 1</span><b>进入装修中心</b><p>配置中心 → 装修中心<br>权限 settings.manage</p></div>
+      <span class="arw">→</span>
+      <div class="node"><span class="n">STEP 2</span><b>选择页面</b><p>首页 / 社区 / 商城 / 我的<br>查看槽位说明</p></div>
+      <span class="arw">→</span>
+      <div class="node"><span class="n">STEP 3</span><b>添加区块</b><p>组件库点击追加<br>自动生成唯一区块 id</p></div>
+      <span class="arw">→</span>
+      <div class="node"><span class="n">STEP 4</span><b>排序与编辑</b><p>拖拽排序 / 启停 / 复制<br>属性面板配置图片与跳转</p></div>
+      <span class="arw">→</span>
+      <div class="node"><span class="n">STEP 5</span><b>保存草稿</b><p>填修改说明 ≥4 字<br>写草稿表 + 递增锁版本</p></div>
+      <span class="arw">→</span>
+      <div class="node warn"><span class="n">STEP 6</span><b>发布</b><p>二次确认 + 近期核验<br>生成版本并刷新缓存</p></div>
+      <span class="arw">→</span>
+      <div class="node"><span class="n">STEP 7</span><b>公开接口</b><p>GET /page-decoration<br>返回四页配置与版本号</p></div>
+      <span class="arw">→</span>
+      <div class="node done"><span class="n">STEP 8</span><b>用户端渲染</b><p>按固定槽位插入区块<br>未知类型跳过，空配置不渲染</p></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:#E7F9EF;border:1px solid #0BBF63"></i>入口</span>
+      <span><i style="background:#FFF8F2;border:1px solid #FF7A1A"></i>需近期核验</span>
+      <span><i style="background:#F5FCF8;border:1px solid #BFE8D2"></i>用户端结果</span>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-h"><span class="no">02</span><h3>版本与回滚状态机</h3><span class="tagline">草稿、线上版本与回滚草稿的关系</span></div>
+    <div class="states">
+      <div class="state draft"><span class="st">DRAFT</span><b>未发布草稿</b><p>可反复保存；<code>lock_version</code> 每次 +1；线上无变化。</p></div>
+      <div class="state live"><span class="st">PUBLISHED</span><b>线上版本 vN</b><p>公开接口与用户端读取；历史版本全部保留。</p></div>
+      <div class="state roll"><span class="st">ROLLBACK DRAFT</span><b>回滚草稿</b><p>基于历史版本 vM 生成；仍需发布才生效。</p></div>
+      <div class="state conf"><span class="st">CONFLICT</span><b>锁版本冲突</b><p>他人已更新草稿；提示刷新后基于最新锁版本重试。</p></div>
+    </div>
+    <div class="state-flow">
+      <span>新增/编辑</span><code>saveDraft</code><span>→</span>
+      <span>草稿</span><code>publish</code><span>→</span>
+      <span>vN 生效</span>
+      <span style="margin-left:14px">历史版本</span><code>rollback(target)</code><span>→</span>
+      <span>回滚草稿</span><code>publish</code><span>→</span>
+      <span>vN+1（source = rollback）</span>
+    </div>
+    <div class="note" style="margin-top:10px">失败分支：草稿保存时 <b>lock_version</b> 不一致返回 409；发布前需完成近期核验，否则返回 403；类型/数量/URL/富文本不合规则在保存阶段直接 422，不会污染线上。</div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-h"><span class="no">03</span><h3>数据流泳道</h3><span class="tagline">后台 → 设置服务 → 缓存与公开接口 → 用户端</span></div>
+    <div class="lanes">
+      <div class="lane">
+        <div class="lane-tag">管理后台<small>admin-web</small></div>
+        <div class="chain">
+          <div class="node"><b>装修中心</b><p>组件库 / 画布 / 属性</p></div><span class="arw">→</span>
+          <div class="node"><b>保存草稿</b><p>PUT /admin/page-decoration/draft</p></div><span class="arw">→</span>
+          <div class="node"><b>发布</b><p>POST /admin/page-decoration/publish</p></div>
+        </div>
+      </div>
+      <div class="lane">
+        <div class="lane-tag">Laravel<small>Settings 模块</small></div>
+        <div class="chain">
+          <div class="node"><b>深度校验</b><p>类型白名单 / 数量 / URL / 富文本清洗</p></div><span class="arw">→</span>
+          <div class="node"><b>草稿与版本</b><p>system_setting_drafts / versions</p></div><span class="arw">→</span>
+          <div class="node"><b>刷新缓存</b><p>system-setting:active:decoration.pages</p></div>
+        </div>
+      </div>
+      <div class="lane">
+        <div class="lane-tag">用户端<small>user-app</small></div>
+        <div class="chain">
+          <div class="node"><b>拉取配置</b><p>GET /api/v1/page-decoration</p></div><span class="arw">→</span>
+          <div class="node"><b>DecorationRenderer</b><p>按 type 渲染，未知类型跳过</p></div><span class="arw">→</span>
+          <div class="node done"><b>四页槽位</b><p>首页 / 社区 / 商城 / 我的</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 校验与接口 ===== -->
+  <div class="sec-h" id="rules"><i></i><h2>校验规则与接口清单</h2><span class="sub">保存阶段拦截，避免非法配置进入线上</span></div>
+
+  <div class="card">
+    <div class="rules">
+      <div class="rule"><span class="ri">1</span><div><b>区块类型白名单</b><span>仅支持轮播图、公告条、金刚区、单图横幅、图文卡片、商品列表、帖子列表、任务推荐、富文本、间距 10 种。</span></div></div>
+      <div class="rule"><span class="ri">2</span><div><b>区块数量与标识</b><span>每页最多 30 个区块；区块 id 需匹配字母数字下划线与短横线，且同页唯一。</span></div></div>
+      <div class="rule"><span class="ri">3</span><div><b>图片与跳转地址</b><span>仅允许 <code>https://</code>、<code>http://</code> 或站内相对路径（以 <code>/</code> 开头），拒绝 javascript: 等协议。</span></div></div>
+      <div class="rule"><span class="ri">4</span><div><b>富文本安全</b><span>公告与富文本经后端 sanitize，去除脚本、事件属性与危险标签，并限制纯文字长度。</span></div></div>
+      <div class="rule"><span class="ri">5</span><div><b>数量与尺寸边界</b><span>轮播最多 10 张、金刚区入口最多 10 个、商品/帖子 1–20、任务 1–10、间距 0–200rpx。</span></div></div>
+      <div class="rule"><span class="ri">6</span><div><b>发布安全</b><span>发布与回滚需近期核验；通用设置接口不再暴露该键，避免绕过装修中心直接改 JSON。</span></div></div>
+    </div>
+  </div>
+
+  <div class="card api-table">
+    <table>
+      <thead><tr><th>方法</th><th>路径</th><th>权限</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill ok">GET</span></td><td><code>/api/v1/page-decoration</code></td><td>公开 · 限流 60/分钟</td><td>返回四页装修配置、schema 版本与当前版本号</td></tr>
+        <tr><td><span class="pill blue">GET</span></td><td><code>/api/v1/admin/page-decoration</code></td><td>settings.manage</td><td>已发布配置、草稿、锁版本与版本列表</td></tr>
+        <tr><td><span class="pill warn">PUT</span></td><td><code>/api/v1/admin/page-decoration/draft</code></td><td>settings.manage + 近期核验</td><td>保存草稿，支持 expected_lock_version 并发控制</td></tr>
+        <tr><td><span class="pill warn">POST</span></td><td><code>/api/v1/admin/page-decoration/publish</code></td><td>settings.manage + 近期核验</td><td>发布草稿，生成版本并刷新缓存</td></tr>
+        <tr><td><span class="pill blue">GET</span></td><td><code>/api/v1/admin/page-decoration/versions</code></td><td>settings.manage</td><td>版本历史列表</td></tr>
+        <tr><td><span class="pill warn">POST</span></td><td><code>/api/v1/admin/page-decoration/rollback</code></td><td>settings.manage + 近期核验</td><td>基于历史版本创建回滚草稿</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="note">
+      <b>不在本期范围：</b>任意新建页面、像素级自由画布拖拽布局；不接管 TabBar、导航、弹窗、悬浮客服等原生功能块；社区与商城页面的原生区块不做整体替换，仅在固定槽位增量渲染。<br>
+      <b>与实现的一致性：</b>页面稿对应仓库 <code style="font-family:ui-monospace,Menlo,monospace;background:#F3F6F4;padding:1px 5px;border-radius:4px">apps/admin-web/src/features/decoration/</code> 与 <code style="font-family:ui-monospace,Menlo,monospace;background:#F3F6F4;padding:1px 5px;border-radius:4px">apps/user-app/src/components/decoration/</code>，设置键为 <code style="font-family:ui-monospace,Menlo,monospace;background:#F3F6F4;padding:1px 5px;border-radius:4px">decoration.pages</code>。
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>校圈 · 校园任务商城 · 后台装修中心页面稿 · 2026-11-26</div>
+    <div><a href="index.html">返回 UI 总览</a> · <a href="admin-screens.html">后台 42 屏</a> · <a href="sub-screens.html">C 端 89 屏</a></div>
+  </div>
+
+  <!-- ===== 本轮新增 ===== -->
+  <div class="sec-h" id="new-round"><i></i><h2>本轮新增 UI 与流程</h2><span class="sub">瓷片广告位 · 启动弹窗 · 平台数据源</span></div>
+  <div class="card">
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:1;min-width:280px">
+        <h4 style="font-size:13px;margin-bottom:10px">瓷片广告位（tile_ad）</h4>
+        <div style="display:grid;grid-template-columns:1.15fr 1fr;grid-template-rows:70px 70px;gap:6px;max-width:360px">
+          <div style="grid-row:1 / span 2;border-radius:10px;background:linear-gradient(150deg,#2F67DF,#7BA7FF);position:relative;overflow:hidden">
+            <div style="position:absolute;left:10px;bottom:10px">
+              <span style="display:inline-block;background:#0BBF63;color:#fff;font-size:9px;font-weight:700;border-radius:4px;padding:1px 6px;margin-bottom:4px">推荐</span>
+              <div style="font-size:13px;font-weight:800;color:#fff">新学期任务季</div>
+              <div style="font-size:9.5px;color:#EAF2FF">完成任务领额外积分</div>
+            </div>
+          </div>
+          <div style="border-radius:10px;background:linear-gradient(150deg,#12D978,#08A152);position:relative">
+            <div style="position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:700;color:#fff">新品上架</div>
+          </div>
+          <div style="border-radius:10px;background:linear-gradient(150deg,#FF9B4A,#F2620A);position:relative">
+            <div style="position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:700;color:#fff">社区热帖</div>
+          </div>
+        </div>
+        <p style="font-size:11.5px;color:#767C85;line-height:1.8;margin-top:10px">三种布局：左大右二 / 右大左二 / 三列等宽；支持圆角、间距、标题与副标题字号颜色、标签底色与文字颜色。</p>
+      </div>
+      <div style="flex:1;min-width:260px">
+        <h4 style="font-size:13px;margin-bottom:10px">启动弹窗（popup）</h4>
+        <div style="max-width:230px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 10px 28px rgba(15,25,20,.16);position:relative">
+          <div style="height:86px;background:linear-gradient(135deg,#12D978,#08A152);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">新人礼包</div>
+          <div style="padding:12px;text-align:center">
+            <div style="font-size:12.5px;font-weight:800;color:#1F2937">新人礼包</div>
+            <div style="font-size:10px;color:#7A859B;margin-top:4px;line-height:1.6">完成任务即可领取专属积分奖励</div>
+            <span style="display:inline-block;margin-top:9px;padding:5px 18px;border-radius:999px;background:#0BBF63;color:#fff;font-size:10.5px;font-weight:700">立即参与</span>
+          </div>
+          <span style="position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:999px;background:rgba(0,0,0,.35);color:#fff;font-size:13px;line-height:20px;text-align:center">×</span>
+        </div>
+        <p style="font-size:11.5px;color:#767C85;line-height:1.8;margin-top:10px">浮层展示，可选仅一次 / 每天一次 / 每次进入；支持关闭按钮、弹窗宽度与圆角。</p>
+      </div>
+      <div style="flex:1;min-width:260px">
+        <h4 style="font-size:13px;margin-bottom:10px">平台数据源</h4>
+        <ul style="font-size:11.5px;color:#767C85;line-height:1.9;padding-left:16px">
+          <li><b>公告</b>：读取系统公告，数量 1–10，按时间倒序拼接滚动；未登录时回退手动内容。</li>
+          <li><b>金刚区</b>：调用商品分类生成入口，数量 1–10，点击直达对应分类；分类为空时回退手动入口。</li>
+          <li><b>轮播</b>：读取「设置 → 首页内容 → 轮播图」，数量 1–10，沿用幻灯片的图片、标题、描述、按钮与跳转；为空时回退手动轮播。</li>
+          <li><b>兼容</b>：数据源为手动时完全沿用原有配置，旧草稿与线上配置不受影响。</li>
+        </ul>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;font-size:10px;color:#0A3D23">
+          <span style="background:#E7F9EF;border-radius:999px;padding:3px 10px;font-weight:700">手动填写</span>
+          <span style="background:#EAF2FF;color:#1E3A8A;border-radius:999px;padding:3px 10px;font-weight:700">读取系统公告</span>
+          <span style="background:#FFF2E5;color:#8A4B00;border-radius:999px;padding:3px 10px;font-weight:700">调用商品分类</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #EDEFEF">
+      <h4 style="font-size:13px;margin-bottom:10px">数据源渲染流程</h4>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:#3C4961">
+        <span style="background:#F4F6FA;border-radius:8px;padding:7px 12px">读取区块 props.data_source</span>
+        <span style="color:#AEB3BB">→</span>
+        <span style="background:#F4F6FA;border-radius:8px;padding:7px 12px">manual：直接使用手动配置</span>
+        <span style="color:#AEB3BB">→</span>
+        <span style="background:#EAF2FF;color:#1E3A8A;border-radius:8px;padding:7px 12px">system / product_category / platform：拉取平台数据</span>
+        <span style="color:#AEB3BB">→</span>
+        <span style="background:#E7F9EF;color:#0A3D23;border-radius:8px;padding:7px 12px">按 limit 截断</span>
+        <span style="color:#AEB3BB">→</span>
+        <span style="background:#F4F6FA;border-radius:8px;padding:7px 12px">失败或为空时回退手动内容</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<style>
+.mini-page{background:#fff;border:1px solid #E3E8E5;border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px;box-shadow:0 8px 20px rgba(23,26,23,.05)}
+.mp-head{font-size:12px;font-weight:800;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.mp-block{font-size:10.5px;color:var(--t2);background:#F6F8F7;border-radius:7px;padding:7px 8px}
+.mp-slot{font-size:10.5px;font-weight:800;color:var(--green-deep);background:var(--green-soft);border:1.5px dashed var(--green);border-radius:7px;padding:9px 8px;text-align:center}
+</style>
+
+<script>
+(function () {
+  var shell = document.querySelector('.frame-shell')
+  var fit = document.getElementById('fit')
+  var frame = fit ? fit.querySelector('.frame') : null
+  if (!shell || !fit || !frame) return
+  function resize() {
+    var width = frame.offsetWidth || 1440
+    var scale = Math.min(1, (shell.clientWidth - 24) / width)
+    fit.style.transform = 'scale(' + scale + ')'
+    shell.style.height = (frame.offsetHeight * scale + 24) + 'px'
+  }
+  window.addEventListener('resize', resize)
+  resize()
+})()
+</script>
+
+</body>
+</html>

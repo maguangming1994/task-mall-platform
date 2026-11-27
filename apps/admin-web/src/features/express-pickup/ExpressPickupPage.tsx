@@ -648,7 +648,7 @@ function PrintersTab({ messageApi, canPrinter }: { messageApi: MessageInstance; 
         <Button type="primary" icon={<PlusOutlined />} disabled={!canPrinter} onClick={openCreate}>新增小票机</Button>
         <Button icon={<ReloadOutlined />} onClick={() => void load()}>刷新</Button>
       </Space>
-      <Alert type="info" showIcon style={{ marginBottom: 12 }} message="每家校区可配置多台小票机，支付成功时使用该校区最新启用的一台自动打印。飞鹅已接入；大趋、商鹏需提供接口文档后补齐驱动。" />
+      <Alert type="info" showIcon style={{ marginBottom: 12 }} message="每家校区可配置多台小票机，支付成功时使用该校区最新启用的一台自动打印。飞鹅已接入；大趋、商鹏需提供接口文档后补齐驱动。如在装修中心「小票模板」绑定了快递代取模板并启用，打印内容以装修模板为准。" />
       <Table rowKey="id" size="small" loading={loading} columns={columns} dataSource={data?.items ?? []} scroll={{ x: 1180 }} pagination={{ pageSize: 20, showSizeChanger: false }} />
 
       <Modal

@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校圈 · 装修组件使用文档（36 种）</title>
+<style>
+:root{
+  --green:#0BBF63;--green-deep:#08A152;--green-grad:linear-gradient(135deg,#12D978,#08A152);
+  --green-soft:#E7F9EF;--green-dark:#0A3D23;
+  --blue:#3B82F6;--blue-soft:#EAF2FF;--orange:#FF7A1A;--orange-soft:#FFF2E5;
+  --bg:#EEF2EF;--line:#EDEFEF;--t1:#191B1F;--t2:#767C85;--t3:#AEB3BB;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px 70px}
+.hero{background:var(--green-grad);border-radius:0 0 30px 30px;padding:44px 0 46px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;width:360px;height:360px;border-radius:50%;background:rgba(255,255,255,.08);top:-180px;right:-60px}
+.hero .wrap{padding-bottom:0;position:relative}
+.hero .badge{display:inline-block;font-size:12px;font-weight:700;background:rgba(255,255,255,.18);border-radius:14px;padding:5px 13px}
+.hero h1{font-size:31px;font-weight:900;margin-top:14px}
+.hero p{font-size:13.5px;line-height:1.8;opacity:.94;margin-top:10px;max-width:900px}
+.hero .stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.hero .stat{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:10px 18px;font-size:12px}
+.hero .stat b{font-size:20px;display:block}
+
+.topnav{position:sticky;top:0;z-index:30;background:rgba(238,242,239,.94);backdrop-filter:blur(6px);border-bottom:1px solid #E1E7E3;padding:10px 0}
+.topnav .wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:0}
+.topnav a{font-size:12.5px;font-weight:700;color:var(--t2);background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 14px}
+.topnav a:hover{color:var(--green-deep);border-color:#BFE8D2}
+.topnav .search{margin-left:auto;height:32px;border:1px solid var(--line);border-radius:999px;padding:0 14px;font-size:12.5px;width:230px;outline:none;background:#fff}
+.topnav .search:focus{border-color:var(--green)}
+
+.layout{display:grid;grid-template-columns:210px 1fr;gap:22px;margin-top:24px}
+.side{position:sticky;top:62px;align-self:start;background:#fff;border-radius:16px;padding:14px;box-shadow:0 6px 20px rgba(23,26,23,.05);max-height:calc(100vh - 90px);overflow:auto}
+.side h4{font-size:11px;color:var(--t3);letter-spacing:.08em;margin:8px 6px 6px;font-weight:800}
+.side a{display:block;font-size:12.5px;color:var(--t2);padding:6px 8px;border-radius:7px}
+.side a:hover{background:var(--green-soft);color:var(--green-deep)}
+.content{min-width:0}
+.group-h{display:flex;align-items:center;gap:10px;margin:26px 0 12px}
+.group-h i{width:6px;height:20px;border-radius:3px;background:var(--green)}
+.group-h h2{font-size:19px;font-weight:800}
+.group-h .count{font-size:11.5px;color:var(--t2);background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+.card{background:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 1px 2px rgba(23,26,23,.03),0 8px 22px rgba(23,26,23,.05);margin-bottom:12px;scroll-margin-top:70px}
+.card-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.card-head .k{font-size:11px;font-weight:800;color:var(--green-deep);background:var(--green-soft);border-radius:7px;padding:3px 8px;white-space:nowrap;margin-top:1px}
+.card-head h3{font-size:15.5px;font-weight:800}
+.card-head .type{font-size:11px;color:var(--t3);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:2px}
+.desc{font-size:12.5px;color:var(--t2);line-height:1.75;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;font-size:10.5px;font-weight:800;color:var(--t3);background:#FAFBFA;border-bottom:1px solid var(--line);padding:7px 9px;white-space:nowrap}
+td{padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.6}
+tr:last-child td{border-bottom:0}
+td code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;background:#F3F6F4;border-radius:4px;padding:1px 5px;color:#0A3D23}
+td .req{font-size:10px;font-weight:700;color:#D4380D;background:#FFEEEA;border-radius:5px;padding:1px 5px;white-space:nowrap}
+td .opt{font-size:10px;font-weight:700;color:#4F7A63;background:#EAF7EF;border-radius:5px;padding:1px 5px;white-space:nowrap}
+.tips{margin-top:10px;background:#F7FDFA;border:1px solid #DFF3E8;border-radius:10px;padding:9px 12px}
+.tips b{font-size:10.5px;color:var(--green-deep);letter-spacing:.04em}
+.tips ul{margin:6px 0 0 16px}
+.tips li{font-size:11.5px;color:#4F6B5C;line-height:1.7}
+.note{background:#fff;border-radius:14px;padding:14px 16px;font-size:12.5px;color:var(--t2);line-height:1.8;margin-bottom:12px;box-shadow:0 6px 20px rgba(23,26,23,.04)}
+.note b{color:var(--t1)}
+.note ul{margin:6px 0 0 18px}
+.note li{margin-top:3px}
+.tag{display:inline-block;font-size:10px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:4px;background:var(--blue-soft);color:#2563EB}
+.empty{display:none;text-align:center;color:var(--t3);font-size:13px;padding:40px 0}
+.footer{text-align:center;font-size:12px;color:var(--t3);margin-top:40px;line-height:1.9}
+.footer a{color:var(--green-deep);font-weight:700}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.side{display:none}.topnav .search{width:100%;margin-left:0}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">装修中心 · 组件使用文档</span>
+    <h1>36 种装修组件完整使用说明</h1>
+    <p>面向运营与配置人员：说明每种组件的用途、字段含义、取值限制、默认值与使用建议。所有组件都支持通用样式（边距、圆角、背景、边框、显示渠道与时段），保存草稿不影响线上，发布后用户端按固定槽位渲染。</p>
+    <div class="stats">
+      <div class="stat"><b>36</b>组件</div>
+      <div class="stat"><b>5</b>分组</div>
+      <div class="stat"><b>4</b>可装修页面</div>
+      <div class="stat"><b>18</b>通用样式项</div>
+    </div>
+  </div>
+</header>
+
+<div class="topnav">
+  <div class="wrap">
+    <a href="#common">通用规范</a>
+    <a href="#group-basic">基础组件</a>
+    <a href="#group-shop">店铺组件</a>
+    <a href="#group-marketing">营销组件</a>
+    <a href="#group-feature">功能组件</a>
+    <a href="#group-member">会员组件</a>
+    <a href="#publish">发布与回滚</a>
+    <a href="decoration.html">← 页面稿与流程图</a>
+    <input class="search" id="search" type="search" placeholder="搜索组件名称或 type…">
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="layout">
+    <aside class="side" id="side"></aside>
+    <div class="content">
+
+      <section id="common">
+        <div class="group-h"><i></i><h2>通用规范</h2><span class="count">先读这里</span></div>
+
+        <div class="note">
+          <b>装修页面与槽位：</b>首页（积分卡之后）、社区首页（工具条之后）、商城首页（搜索区之后）、我的页面（用户信息卡之后）。装修只做增量插入，原生积分卡、TabBar、弹窗等不受影响；某页没有可见区块时不渲染任何内容，页面与原来完全一致。
+        </div>
+
+        <div class="note" style="margin-top:12px">
+          <b>页面级设置（每个页面独立）：</b>
+          <table style="margin-top:8px">
+            <thead><tr><th>字段</th><th>限制 / 默认</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>name</code> 页面名称</td><td>≤30 字，可空</td><td>仅后台识别使用，不展示给用户。</td></tr>
+              <tr><td><code>title</code> 页面标题</td><td>≤40 字，可空</td><td>非空时展示在装修区域顶部。</td></tr>
+              <tr><td><code>description</code> 页面介绍</td><td>≤200 字，可空</td><td>后台说明/活动备注，不在用户端展示。</td></tr>
+              <tr><td><code>cover_url</code> 页面封面</td><td>URL，可空</td><td>后台页面识别用，可留空。</td></tr>
+              <tr><td><code>background_color</code> 背景色</td><td><code>#RRGGBB</code>，可空</td><td>装修区域底色，留空使用页面默认。</td></tr>
+              <tr><td><code>background_url</code> 背景图</td><td>URL，可空</td><td>设置后铺满装修区域，优先于背景色。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note" style="margin-top:12px">
+          <b>每个组件的通用样式（组件设置 → 组件样式）：</b>
+          <table style="margin-top:8px">
+            <thead><tr><th>样式项</th><th>取值 / 默认</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>外边距 margin</td><td>上右下左各 0–100，默认 0</td><td>组件外侧留白，用户端按 rpx 渲染。</td></tr>
+              <tr><td>内边距 padding</td><td>上右下左各 0–100，默认 0</td><td>组件内侧留白，背景色会覆盖内边距区域。</td></tr>
+              <tr><td>圆角 radius</td><td>0–100，默认 0</td><td>作用于组件外层容器。</td></tr>
+              <tr><td>四角独立圆角 corner_radius</td><td>开 / 关，默认关；每角 0–100</td><td>开启后按左上/右上/左下/右下分别渲染，覆盖统一圆角。</td></tr>
+              <tr><td>整体透明度 opacity</td><td>20–100，默认 100</td><td>降低组件整体不透明度，适合做背景装饰或弱化提示。</td></tr>
+              <tr><td>每日显示时段 display_daily_*</td><td><code>HH:mm</code>，可空</td><td>每天固定时段展示；结束时间小于开始时间视为跨零点，留空表示全天。</td></tr>
+              <tr><td>背景</td><td>无 / 纯色 / 图片 / 渐变，默认无</td><td>纯色填 <code>#RRGGBB</code>；图片支持上传或 URL；渐变填 CSS，如 <code>linear-gradient(135deg,#12D978,#08A152)</code>。</td></tr>
+              <tr><td>边框</td><td>开 / 关，默认关</td><td>开启后可设边框颜色，未填默认 <code>#E7EBF2</code>。</td></tr>
+              <tr><td>阴影</td><td>开 / 关，默认关</td><td>为组件增加卡片阴影。</td></tr>
+              <tr><td>显示渠道</td><td>H5 / 小程序，默认全选</td><td>只勾选的渠道会渲染该组件；全部取消时按全选处理。</td></tr>
+              <tr><td>显示时段</td><td><code>YYYY-MM-DDTHH:mm</code>，可空</td><td>开始/结束均留空表示长期展示；到点自动显示或隐藏。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note" style="margin-top:12px">
+          <b>组件展示参数（本轮新增，均可留空使用默认）：</b>
+          <table style="margin-top:8px">
+            <thead><tr><th>组件</th><th>新增字段</th><th>展示效果</th></tr></thead>
+            <tbody>
+              <tr><td>轮播图 banner</td><td><code>height_rpx</code>、<code>radius_rpx</code>、<code>indicator</code>、<code>indicator_position</code>、<code>show_title</code>、<code>duration_ms</code></td><td>自定义高度与图片圆角；指示器可选圆点/短条/数字/不显示，并支持 6 个方位；可关闭标题层；可调切换动画时长。</td></tr>
+              <tr><td>金刚区 quick_grid</td><td><code>icon_shape</code>、<code>icon_size_rpx</code>、<code>label_size_rpx</code>、<code>label_color</code>、<code>row_gap_rpx</code>、入口 <code>badge_type</code>/<code>badge_text</code>/<code>badge_image</code></td><td>图标方形或圆形、尺寸与文字颜色可调；每条入口支持无角标/数字文字/圆点/图片四种角标。</td></tr>
+              <tr><td>公告 announcement</td><td><code>scroll</code>、<code>speed</code>、<code>title_size_rpx</code>、<code>text_color</code>、<code>icon_size_rpx</code>、<code>show_arrow</code></td><td>内容可滚动播放并调节速度，标题字号、正文颜色、图标尺寸与右侧箭头均可配置。</td></tr>
+              <tr><td>商品列表 product_grid</td><td><code>columns</code>、<code>show_price</code>、<code>show_subtitle</code>、<code>show_category</code></td><td>单列/两列/三列；可分别控制价格、副标题与分类标签是否展示。</td></tr>
+              <tr><td>帖子列表 post_list</td><td><code>layout</code>、<code>show_avatar</code>、<code>show_excerpt</code>、<code>show_stats</code></td><td>卡片或列表形态；头像、摘要、评论数可独立开关。</td></tr>
+              <tr><td>标题栏 title_bar</td><td><code>title_size_rpx</code>、<code>title_color</code>、<code>more_color</code></td><td>标题字号与颜色、右侧“更多”颜色可调。</td></tr>
+              <tr><td>选项卡 tab_nav</td><td><code>active_color</code>、<code>background_color</code>、<code>sticky</code></td><td>激活项颜色、未激活底色可调；可开启滚动吸顶。</td></tr>
+              <tr><td>视频 video</td><td><code>ratio</code></td><td>按高度设置或 16:9 / 4:3 / 1:1 固定比例。</td></tr>
+              <tr><td>订单弹幕 order_marquee</td><td><code>speed</code>、<code>bg_color</code>、<code>text_color</code>、<code>opacity</code></td><td>滚动速度、背景色、文字色与整体透明度可调。</td></tr>
+              <tr><td>警告提示 notice_bar</td><td><code>tone=normal</code>、<code>show_icon</code>、<code>title_size_rpx</code>、<code>content_size_rpx</code></td><td>新增“正常”中性色；左侧图标可隐藏，标题与内容字号可调。</td></tr>
+              <tr><td>公告 announcement</td><td><code>data_source</code>、<code>limit</code></td><td>可读取系统公告并按数量截断，未登录或为空时回退手动内容。</td></tr>
+              <tr><td>金刚区 quick_grid</td><td><code>data_source</code>、<code>limit</code></td><td>可调用商品分类生成入口，点击直达对应分类；为空时回退手动入口。</td></tr>
+              <tr><td>轮播图 banner</td><td><code>data_source</code>、<code>limit</code></td><td>可读取平台幻灯片（设置 → 首页内容 → 轮播图），数量 1–10；为空时回退手动轮播。</td></tr>
+              <tr><td>瓷片广告位 tile_ad</td><td><code>layout</code>、<code>items[3]</code>、<code>radius_rpx</code>、<code>gap_rpx</code>、标题/副标题/标签样式</td><td>左大右二、右大左二或三列等宽拼贴。</td></tr>
+              <tr><td>启动弹窗 popup</td><td><code>frequency</code>、<code>closable</code>、<code>width_rpx</code>、<code>radius_rpx</code></td><td>进入页面浮层展示，支持仅一次 / 每天一次 / 每次进入。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note" style="margin-top:12px">
+          <b>跳转类型（所有 link_type 字段通用）：</b>
+          <span class="tag">none 无跳转</span><span class="tag">tasks 任务大厅</span><span class="tag">products 积分商城</span><span class="tag">community 社区</span><span class="tag">notifications 消息通知</span><span class="tag">orders 我的订单</span><span class="tag">assets 我的资产</span><span class="tag">push 地推中心</span><span class="tag">second_hand 二手闲置</span><span class="tag">material 资料共享</span><span class="tag">express_pickup 快递代取</span><span class="tag">tasks:分类标识 任务大厅指定分类</span>
+        </div>
+
+        <div class="note" style="margin-top:12px">
+          <b>校验与限制（保存草稿时生效）：</b>
+          <ul>
+            <li>每个页面最多 30 个区块；区块标识仅允许字母、数字、下划线与短横线，同页不可重复。</li>
+            <li>图片与链接仅允许 <code>https://</code>、<code>http://</code> 或以 <code>/</code> 开头的站内路径。</li>
+            <li>颜色统一为 <code>#RRGGBB</code>；富文本会经后端清洗，脚本与事件属性会被移除。</li>
+            <li>不合规配置在保存草稿阶段直接拦截，不会影响线上。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="group-basic">
+        <div class="group-h"><i></i><h2>基础组件</h2><span class="count" id="count-basic"></span></div>
+        <div id="list-basic"></div>
+      </section>
+
+      <section id="group-shop">
+        <div class="group-h"><i></i><h2>店铺组件</h2><span class="count" id="count-shop"></span></div>
+        <div id="list-shop"></div>
+      </section>
+
+      <section id="group-marketing">
+        <div class="group-h"><i></i><h2>营销组件</h2><span class="count" id="count-marketing"></span></div>
+        <div id="list-marketing"></div>
+      </section>
+
+      <section id="group-feature">
+        <div class="group-h"><i></i><h2>功能组件</h2><span class="count" id="count-feature"></span></div>
+        <div id="list-feature"></div>
+      </section>
+
+      <section id="group-member">
+        <div class="group-h"><i></i><h2>会员组件</h2><span class="count" id="count-member"></span></div>
+        <div id="list-member"></div>
+      </section>
+
+      <section id="publish">
+        <div class="group-h"><i></i><h2>发布与回滚</h2><span class="count">上线流程</span></div>
+        <div class="note">
+          <b>1. 保存草稿：</b>填写修改说明（≥4 字）后保存。草稿只写草稿表并递增锁版本，线上接口与用户端完全不受影响。若提示“草稿已被其他管理员更新”，刷新页面后基于最新草稿继续编辑。
+        </div>
+        <div class="note" style="margin-top:10px">
+          <b>2. 发布：</b>点击发布并二次确认，完成近期核验后生成新版本，刷新配置缓存；用户端下一次拉取 `/api/v1/page-decoration` 即生效。
+        </div>
+        <div class="note" style="margin-top:10px">
+          <b>3. 版本与回滚：</b>版本历史记录来源、原因与时间。回滚会基于目标历史版本生成“回滚草稿”，仍需再发布一次才会生效，并生成新的版本号；历史版本不会被删除。
+        </div>
+        <div class="note" style="margin-top:10px">
+          <b>4. 上线前自检：</b>
+          <ul>
+            <li>手机画布中确认区块顺序、启停状态与图片是否正常。</li>
+            <li>检查显示渠道与显示时段是否符合活动安排。</li>
+            <li>发布后在 H5 与小程序分别确认一次；异常时用版本历史回滚。</li>
+          </ul>
+        </div>
+      </section>
+
+      <div class="empty" id="empty">没有匹配的组件，换个关键词试试。</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>校圈 · 校园任务商城 · 装修组件使用文档 · 2026-11-27</div>
+    <div><a href="decoration.html">页面稿与流程图</a> · <a href="index.html">UI 总览</a></div>
+  </div>
+</main>
+
+<script>
+const COMPONENTS = [
+  {
+    key: 'banner', name: '轮播图', group: 'basic',
+    desc: '多张主视觉轮播，适合首屏活动、平台公告与重点业务曝光。支持自动轮播、标题/副标题与按钮文案。',
+    fields: [
+      ['items[].image_url', '图片', '必填建议', '轮播图片，建议 750×320，aspectFill 裁切。'],
+      ['items[].title', '文本', '≤30 字', '主标题，显示在底部渐变遮罩上。'],
+      ['items[].subtitle', '文本', '≤60 字', '副标题，可留空。'],
+      ['items[].button_text', '文本', '≤12 字', '按钮文案，留空不显示按钮。'],
+      ['items[].link_type', '枚举', '默认 none', '点击整张轮播图跳转，类型见通用规范。'],
+      ['items[].link_value', '文本', 'URL / 站内路径', '自定义跳转地址，一般留空。'],
+      ['autoplay', '布尔', '默认 true', '是否自动轮播。'],
+      ['interval_ms', '整数', '1000–15000，默认 4500', '轮播间隔，单位毫秒。'],
+      ['data_source', '枚举', 'manual / platform', '手动上传或读取平台幻灯片（设置 → 首页内容 → 轮播图）。'],
+      ['limit', '整数', '1–10，默认 5', '读取平台幻灯片时的数量；为空时回退手动配置。'],
+      ['height_rpx', '整数', '200–600，默认 280', '轮播高度。'],
+      ['radius_rpx', '整数', '0–48，默认 24', '图片圆角。'],
+      ['indicator', '枚举', 'dots / bars / numbers / none', '指示器样式，默认圆点。'],
+      ['indicator_position', '枚举', '6 个方位', '指示器位置，默认右下。'],
+      ['show_title', '布尔', '默认 true', '是否显示标题渐变层。'],
+      ['duration_ms', '整数', '200–1000，默认 300', '切换动画时长。'],
+    ],
+    tips: ['最多 10 张轮播图，建议 1–5 张。', '首屏第一张尽量使用高对比主视觉，避免文字被图片淹没。'],
+  },
+  {
+    key: 'nav_bar', name: '导航栏', group: 'basic',
+    desc: '页面内的标题栏，用于分区引导或说明当前模块，可整体点击跳转。',
+    fields: [
+      ['title', '文本', '≤20 字', '主标题。'],
+      ['subtitle', '文本', '≤40 字', '副标题/说明。'],
+      ['link_type', '枚举', '默认 none', '整条导航点击跳转。'],
+      ['show_border', '布尔', '默认 false', '是否显示底部分割线。'],
+    ],
+    tips: ['与页面标题的区别：页面标题属于页面级设置，导航栏是可排序的组件。'],
+  },
+  {
+    key: 'search_box', name: '搜索框', group: 'basic',
+    desc: '搜索入口，点击后按配置跳转。适合放在商品或社区内容之前。',
+    fields: [
+      ['placeholder', '文本', '≤20 字，默认「搜索任务、商品或帖子」', '占位提示文案。'],
+      ['link_type', '枚举', '默认 products', '点击跳转目标。'],
+    ],
+    tips: ['当前为入口样式，不在此处直接输入搜索；点击后进入目标页搜索。'],
+  },
+  {
+    key: 'announcement', name: '公告条', group: 'basic',
+    desc: '单行公告，支持图标、标题与富文本内容，适合平台规则、活动提醒。',
+    fields: [
+      ['icon_text', '文本', '≤2 字', '图片为空时显示的图标文字，默认「公」。'],
+      ['icon_url', '图片', 'URL', '自定义图标，留空使用文字图标。'],
+      ['title', '文本', '≤30 字', '公告标题。'],
+      ['content', '富文本', '纯文字 ≤500 字', '公告内容，支持加粗、列表、链接，后端会清洗。'],
+      ['link_type', '枚举', '默认 notifications', '点击公告跳转。'],
+      ['link_value', '文本', 'URL / 站内路径', '自定义跳转地址，一般留空。'],
+      ['data_source', '枚举', 'manual / system，默认 manual', '数据来源：手动填写或读取系统公告。'],
+      ['limit', '整数', '1–10，默认 3', '读取系统公告的条数；未登录或为空时回退手动内容。'],
+      ['title_size_rpx', '整数', '22–36，默认 28', '标题字号。'],
+      ['text_color', '颜色', '#RRGGBB', '公告正文颜色。'],
+      ['icon_size_rpx', '整数', '32–72，默认 48', '图标尺寸。'],
+      ['scroll', '布尔', '默认 true', '内容是否滚动播放。'],
+      ['speed', '整数', '1–5，默认 3', '滚动速度。'],
+      ['show_arrow', '布尔', '默认 true', '是否显示右侧箭头。'],
+    ],
+    tips: ['内容过长时用户端最多显示两行，建议控制在 60 字以内。'],
+  },
+  {
+    key: 'quick_grid', name: '金刚区', group: 'basic',
+    desc: '宫格入口区，用于高频业务快捷入口，可与首页原生金刚区并存。',
+    fields: [
+      ['columns', '整数', '3–5，默认 4', '每行入口数量。'],
+      ['items[].id', '文本', '字母数字_-，唯一', '入口标识，后台自动生成，同组件内不可重复。'],
+      ['items[].label', '文本', '≤8 字', '入口名称。'],
+      ['items[].mark', '文本', '≤2 字', '无图标时显示的文字图标。'],
+      ['items[].icon_url', '图片', 'URL', '入口图标，建议 1:1。'],
+      ['items[].link_type', '枚举', '默认 none', '入口跳转类型。'],
+      ['items[].enabled', '布尔', '默认 true', '是否显示该入口。'],
+      ['items[].badge_type', '枚举', 'none / text / dot / image', '入口角标样式。'],
+      ['items[].badge_text', '文本', '≤4 字', '角标文字，badge_type=text 时生效。'],
+      ['items[].badge_image', '图片', 'URL', '角标图片，badge_type=image 时生效。'],
+      ['data_source', '枚举', 'manual / product_category', '数据来源：手动入口或调用商品分类。'],
+      ['limit', '整数', '1–10，默认 8', '调用商品分类时的入口数量。'],
+      ['icon_shape', '枚举', 'rounded / circle', '图标形状。'],
+      ['icon_size_rpx', '整数', '56–120，默认 84', '图标尺寸。'],
+      ['label_size_rpx', '整数', '20–32，默认 24', '入口文字字号。'],
+      ['label_color', '颜色', '#RRGGBB', '入口文字颜色。'],
+      ['row_gap_rpx', '整数', '0–48，默认 20', '行间距。'],
+    ],
+    tips: ['最多 10 个入口。', '建议 4 列、2 行以内，避免首屏过长。'],
+  },
+  {
+    key: 'image_banner', name: '单图横幅', group: 'basic',
+    desc: '一张可点击的横幅图片，适合活动头图与专题入口。',
+    fields: [
+      ['image_url', '图片', 'URL', '横幅图片，建议 750×高度按需。'],
+      ['link_type', '枚举', '默认 none', '点击跳转类型。'],
+      ['link_value', '文本', 'URL / 站内路径', '自定义跳转地址，一般留空。'],
+      ['height_rpx', '整数', '80–600，默认 200', '图片高度，用户端按 rpx 渲染。'],
+    ],
+    tips: ['图片比例与高度不匹配时会被裁切，建议先按目标高度出图。'],
+  },
+  {
+    key: 'image_text', name: '图文卡片', group: 'basic',
+    desc: '左图右文或右图左文的卡片，适合活动说明、业务介绍与内容推荐。',
+    fields: [
+      ['layout', '枚举', 'left / right，默认 left', '图片位置。'],
+      ['image_url', '图片', 'URL', '卡片图片，建议 1:1。'],
+      ['title', '文本', '≤30 字', '卡片标题。'],
+      ['description', '文本', '≤120 字', '卡片描述，用户端单行/多行自适应。'],
+      ['link_type', '枚举', '默认 none', '整卡点击跳转。'],
+      ['link_value', '文本', 'URL / 站内路径', '自定义跳转地址，一般留空。'],
+    ],
+    tips: ['描述建议 40 字以内，避免卡片高度过高。'],
+  },
+  {
+    key: 'rich_text', name: '富文本', group: 'basic',
+    desc: '自由排版的说明区，支持加粗、列表、对齐与链接，适合活动规则、平台介绍。',
+    fields: [
+      ['html', '富文本', '纯文字 ≤5000 字', '编辑器内容；脚本、事件属性与危险标签会被清洗。'],
+    ],
+    tips: ['发布前在手机预览确认排版；不要直接粘贴外部网页整段样式。'],
+  },
+  {
+    key: 'spacer', name: '辅助空白', group: 'basic',
+    desc: '在区块之间留白，控制节奏与分组。',
+    fields: [
+      ['height_rpx', '整数', '0–200，默认 24', '空白高度，用户端按 rpx 渲染。'],
+    ],
+    tips: ['一般 16–40rpx 即可；与组件外边距二选一，避免重复留白。'],
+  },
+  {
+    key: 'floating_box', name: '悬浮框', group: 'basic',
+    desc: '固定悬浮在页面右下角的圆形入口，适合客服、活动或快捷入口。',
+    fields: [
+      ['image_url', '图片', 'URL', '悬浮图标，建议 1:1；留空显示文字。'],
+      ['icon_text', '文本', '≤2 字，默认「客」', '无图片时的文字。'],
+      ['link_type', '枚举', '默认 none', '点击跳转类型。'],
+      ['bottom_rpx', '整数', '80–400，默认 180', '距页面底部距离，需避开 TabBar。'],
+    ],
+    tips: ['同一页面建议只放 1 个悬浮框，避免遮挡内容。', '小程序与 H5 均支持，注意底部安全区。'],
+  },
+  {
+    key: 'page_title', name: '页面标题', group: 'basic',
+    desc: '组件化的大标题与副标题，用于页面内分区说明。',
+    fields: [
+      ['title', '文本', '≤30 字，默认「页面标题」', '主标题。'],
+      ['subtitle', '文本', '≤60 字', '副标题。'],
+      ['align', '枚举', 'left / center，默认 left', '对齐方式。'],
+    ],
+    tips: ['与页面级「页面标题」不同：此组件参与排序，可放在任意位置。'],
+  },
+  {
+    key: 'list_nav', name: '列表导航', group: 'basic',
+    desc: '带图标、标题与描述的入口列表，适合业务聚合入口。',
+    fields: [
+      ['items[].icon_url', '图片', 'URL', '入口图标，建议 1:1。'],
+      ['items[].title', '文本', '≤20 字，默认「入口」', '入口标题。'],
+      ['items[].subtitle', '文本', '≤40 字', '入口描述。'],
+      ['items[].link_type', '枚举', '默认 none', '入口跳转类型。'],
+    ],
+    tips: ['最多 6 个入口。', '无图标时使用标题首字作为占位图标。'],
+  },
+  {
+    key: 'tag_group', name: '标签组', group: 'basic',
+    desc: '热门标签或快捷话题，点击跳转到社区、任务等目标。',
+    fields: [
+      ['title', '文本', '≤20 字', '区块标题，可留空。'],
+      ['items[].label', '文本', '≤12 字', '标签文字。'],
+      ['items[].link_type', '枚举', '默认 none', '标签跳转类型。'],
+    ],
+    tips: ['最多 10 个标签。', '标签文案建议带 # 前缀，与社区话题一致。'],
+  },
+  {
+    key: 'image_group', name: '单图组', group: 'basic',
+    desc: '多张图片网格，适合双列/三列橱窗与活动图墙。',
+    fields: [
+      ['columns', '整数', '2 或 3，默认 2', '每行图片数量。'],
+      ['items[].image_url', '图片', 'URL', '图片地址。'],
+      ['items[].link_type', '枚举', '默认 none', '点击跳转类型。'],
+    ],
+    tips: ['最多 9 张。', '同一组内图片建议保持相同比例。'],
+  },
+  {
+    key: 'button_group', name: '按钮组', group: 'basic',
+    desc: '一行最多 3 个快捷按钮，第一个按钮为主按钮样式。',
+    fields: [
+      ['items[].label', '文本', '≤10 字，默认「立即查看」', '按钮文字。'],
+      ['items[].link_type', '枚举', '默认 none', '按钮跳转类型。'],
+    ],
+    tips: ['两个按钮时平分宽度；三个按钮时文字建议 ≤6 字。'],
+  },
+  {
+    key: 'divider', name: '辅助线', group: 'basic',
+    desc: '实线或虚线分隔，用于内容分组。',
+    fields: [
+      ['line_style', '枚举', 'solid / dashed，默认 solid', '线条样式。'],
+      ['color', '颜色', '#RRGGBB，默认 #E7EBF2', '线条颜色。'],
+    ],
+    tips: ['通常配合辅助空白使用，形成更清晰的区块层次。'],
+  },
+  {
+    key: 'location_search', name: '定位搜索框', group: 'basic',
+    desc: '左侧显示校区文字的胶囊，右侧为搜索入口，适合首页顶部强化“校区 + 搜索”。',
+    fields: [
+      ['campus_text', '文本', '≤12 字，默认「选择校区」', '左侧校区文字。'],
+      ['placeholder', '文本', '≤20 字', '搜索占位文案。'],
+      ['link_type', '枚举', '默认 products', '点击搜索框跳转类型。'],
+    ],
+    tips: ['左侧胶囊固定跳转任务大厅，用于回到校区相关任务。'],
+  },
+  {
+    key: 'order_marquee', name: '订单弹幕', group: 'basic',
+    desc: '横向滚动的动态播报条，展示成交、任务完成等氛围文案。',
+    fields: [
+      ['icon_text', '文本', '≤2 字，默认「动」', '左侧图标文字。'],
+      ['items[].text', '文本', '≤40 字，最多 8 条', '每条动态的文字。'],
+      ['link_type', '枚举', '默认 none', '点击整条弹幕跳转类型。'],
+    ],
+    tips: ['动态内容为后台手填，不会自动读取订单数据。', '建议 3–5 条循环，避免文案过长。'],
+  },
+  {
+    key: 'video', name: '视频播放', group: 'basic',
+    desc: '内嵌视频播放器，支持封面与高度设置，适合校园宣传与活动介绍。',
+    fields: [
+      ['video_url', '视频', 'http(s) 地址', '视频文件地址，建议 mp4。'],
+      ['poster_url', '图片', 'URL', '视频封面，未播放时展示。'],
+      ['height_rpx', '整数', '180–600，默认 220', '播放器高度。'],
+    ],
+    tips: ['未填写视频地址时不渲染该组件。', '视频文件建议压缩后再上传，避免首屏加载过慢。'],
+  },
+  {
+    key: 'tab_nav', name: '选项卡导航', group: 'basic',
+    desc: '一行等宽的选项卡入口，用于业务分流或频道切换。',
+    fields: [
+      ['items[].label', '文本', '≤8 字', '选项卡文字。'],
+      ['items[].link_type', '枚举', '默认 none', '点击跳转类型。'],
+    ],
+    tips: ['最多 6 个；第一个为高亮主样式。', '当前为跳转型选项卡，不做页内内容切换。'],
+  },
+  {
+    key: 'ad_banner', name: '广告', group: 'basic',
+    desc: '可点击的广告横幅，右下角可显示“广告”角标。',
+    fields: [
+      ['image_url', '图片', 'URL', '广告图片。'],
+      ['link_type', '枚举', '默认 none', '点击跳转类型。'],
+      ['link_value', '文本', 'URL / 站内路径', '自定义跳转地址，一般留空。'],
+      ['height_rpx', '整数', '80–600，默认 160', '广告高度。'],
+      ['show_badge', '布尔', '默认 true', '是否显示“广告”角标。'],
+    ],
+    tips: ['与单图横幅的区别：广告组件自带角标，适合商业推广位。'],
+  },
+  {
+    key: 'image_showcase', name: '图片橱窗', group: 'basic',
+    desc: '一张大图加两张小图的橱窗布局，适合内容专题与活动聚合。',
+    fields: [
+      ['layout', '枚举', 'left / right，默认 left', '大图在左或在右。'],
+      ['items[].image_url', '图片', 'URL', '图片地址，固定取前 3 张。'],
+      ['items[].title', '文本', '≤16 字', '图片左下角角标文字。'],
+      ['items[].link_type', '枚举', '默认 none', '点击跳转类型。'],
+    ],
+    tips: ['第 1 张为大图，第 2、3 张为右侧小图。', '三张图建议使用同一主题、相近色调。'],
+  },
+  {
+    key: 'notice_bar', name: '警告提示', group: 'basic',
+    desc: '信息 / 警告 / 成功三色提示条，用于规则提醒与状态说明。',
+    fields: [
+      ['tone', '枚举', 'info / warning / success，默认 warning', '提示类型与配色。'],
+      ['title', '文本', '≤20 字，默认「温馨提示」', '提示标题。'],
+      ['content', '文本', '≤80 字', '提示内容。'],
+      ['link_type', '枚举', '默认 none', '点击跳转类型。'],
+    ],
+    tips: ['强提醒使用 warning，普通说明使用 info。', '内容建议控制在两行以内。'],
+  },
+  {
+    key: 'hot_tags', name: '热门标签', group: 'basic',
+    desc: '带 HOT 标记的热门标签，适合社区话题与活动关键词。',
+    fields: [
+      ['title', '文本', '≤20 字，默认「热门标签」', '区块标题。'],
+      ['items[].label', '文本', '≤12 字，最多 10 个', '标签文字。'],
+      ['items[].link_type', '枚举', '默认 none', '标签跳转类型。'],
+      ['items[].hot', '布尔', '默认 false', '是否显示 HOT 标记。'],
+    ],
+    tips: ['与标签组的区别：热门标签支持逐项 HOT 标记，默认带标题。'],
+  },
+  {
+    key: 'title_bar', name: '标题栏', group: 'basic',
+    desc: '左侧标题与副标题、右侧“更多”入口，用于内容分区。',
+    fields: [
+      ['title', '文本', '≤20 字', '标题。'],
+      ['subtitle', '文本', '≤40 字', '副标题。'],
+      ['more_text', '文本', '≤8 字，默认「更多」', '右侧入口文字。'],
+      ['link_type', '枚举', '默认 none', '点击标题栏跳转类型。'],
+    ],
+    tips: ['与页面标题的区别：标题栏带右侧“更多”入口，适合列表分组。'],
+  },
+  {
+    key: 'tile_ad', name: '瓷片广告位', group: 'marketing',
+    desc: '左大右二或三列拼贴广告，图片上叠加标题、副标题与标签，适合活动专题。',
+    fields: [
+      ['layout', '枚举', 'big-left / big-right / three', '拼贴布局，默认左大右二。'],
+      ['items[].image_url', '图片', 'URL，固定 3 块', '瓷片图片。'],
+      ['items[].title', '文本', '≤16 字', '主标题。'],
+      ['items[].subtitle', '文本', '≤24 字', '副标题。'],
+      ['items[].tag', '文本', '≤6 字', '标签文字，可留空。'],
+      ['items[].link_type', '枚举', '默认 none', '点击跳转类型。'],
+      ['radius_rpx', '整数', '0–32，默认 12', '瓷片圆角。'],
+      ['gap_rpx', '整数', '0–24，默认 8', '瓷片间距。'],
+      ['title_size_rpx / title_color', '整数 / 颜色', '24–40 / #RRGGBB', '主标题字号与颜色。'],
+      ['subtitle_size_rpx / subtitle_color', '整数 / 颜色', '20–30 / #RRGGBB', '副标题字号与颜色。'],
+      ['tag_bg / tag_color', '颜色', '#RRGGBB', '标签底色与文字颜色。'],
+    ],
+    tips: ['固定 3 块：第 1 块为大图，第 2、3 块为小图；三列等宽时三块同尺寸。'],
+  },
+  {
+    key: 'popup', name: '启动弹窗', group: 'marketing',
+    desc: '进入页面后浮层展示，支持展示频次、关闭按钮与按钮跳转。',
+    fields: [
+      ['image_url', '图片', 'URL', '弹窗顶部图片，可留空。'],
+      ['title', '文本', '≤20 字', '弹窗标题。'],
+      ['content', '文本', '≤60 字', '弹窗内容。'],
+      ['button_text', '文本', '≤10 字，默认「立即查看」', '按钮文字。'],
+      ['link_type', '枚举', '默认 none', '按钮点击跳转类型。'],
+      ['frequency', '枚举', 'once / daily / every', '展示频次：仅一次 / 每天一次 / 每次进入，默认每天一次。'],
+      ['closable', '布尔', '默认 true', '是否显示关闭按钮并允许点击遮罩关闭。'],
+      ['width_rpx', '整数', '480–660，默认 560', '弹窗宽度。'],
+      ['radius_rpx', '整数', '0–32，默认 20', '弹窗圆角。'],
+    ],
+    tips: ['同一区块按 id 记录本地展示状态；修改区块 id 会重新开始计数。'],
+  },
+
+  {
+    key: 'product_grid', name: '商品列表', group: 'shop',
+    desc: '按数量拉取商城商品，适合积分兑换与商城推荐。',
+    fields: [
+      ['title', '文本', '≤20 字，默认「精选商品」', '区块标题。'],
+      ['subtitle', '文本', '≤40 字', '区块副标题。'],
+      ['limit', '整数', '1–20，默认 6', '展示数量。'],
+      ['category_id', '文本', '≤64 字', '限定商品分类 ID，留空为全部。'],
+      ['price_mode', '枚举', 'default / points / cash / cash_points', '价格展示方式，默认按商品默认价格。'],
+      ['columns', '整数', '1–3，默认 2', '每行列数。'],
+      ['show_price', '布尔', '默认 true', '是否显示价格。'],
+      ['show_subtitle', '布尔', '默认 true', '是否显示商品副标题。'],
+      ['show_category', '布尔', '默认 false', '是否显示分类标签。'],
+    ],
+    tips: ['商品数据来自商城实时接口，发布后价格与库存自动保持最新。', '已接入分类筛选与价格模式：分类 ID 生效、按现金/积分展示价格。'],
+  },
+  {
+    key: 'category_nav', name: '分类导航', group: 'shop',
+    desc: '横向分类入口，用于商城分类或业务分流。',
+    fields: [
+      ['items[].label', '文本', '≤8 字', '分类名称。'],
+      ['items[].category_id', '文本', '≤64 字，可空', '商城分类 ID，填写后点击直达该分类；留空按跳转类型处理。'],
+      ['items[].link_type', '枚举', '默认 none', '未填分类 ID 时的跳转类型。'],
+    ],
+    tips: ['最多 8 项，支持横向滚动；第一项为高亮样式。'],
+  },
+  {
+    key: 'coupon', name: '优惠券', group: 'shop',
+    desc: '手动配置的优惠券卡片，用于活动发券与新人引导。',
+    fields: [
+      ['title', '文本', '≤20 字，默认「优惠券」', '区块标题。'],
+      ['source', '枚举', 'manual / center，默认 manual', 'manual 使用手填优惠券；center 读取优惠券中心并支持直接领取。'],
+      ['limit', '整数', '1–6，默认 3', '优惠券中心模式下的展示数量。'],
+      ['items[].title', '文本', '≤16 字', '优惠券名称（manual 模式）。'],
+      ['items[].value_text', '文本', '≤8 字', '优惠额度，如 ¥10 / 8 折（manual 模式）。'],
+      ['items[].condition', '文本', '≤20 字', '使用条件说明（manual 模式）。'],
+      ['items[].button_text', '文本', '≤10 字，默认「立即领取」', '按钮文案（manual 模式）。'],
+      ['items[].link_type', '枚举', '默认 none', '点击优惠券跳转类型（manual 模式）。'],
+    ],
+    tips: ['最多 6 张（manual）。', 'center 模式会展示券名、额度、门槛与剩余情况，点击按钮直接调用领取接口；未登录时自动跳转登录。'],
+  },
+  {
+    key: 'post_list', name: '帖子列表', group: 'shop',
+    desc: '按数量拉取社区帖子，用于社区内容外显。',
+    fields: [
+      ['title', '文本', '≤20 字，默认「社区热帖」', '区块标题。'],
+      ['subtitle', '文本', '≤40 字', '区块副标题。'],
+      ['limit', '整数', '1–20，默认 6', '展示数量。'],
+      ['category_code', '文本', '≤32 字', '限定帖子分类标识，留空为全部。'],
+    ],
+    tips: ['帖子内容来自社区实时接口；审核未通过的帖子不会展示。', '已接入分类筛选：填写分类标识后只展示该分类帖子。'],
+  },
+  {
+    key: 'task_list', name: '任务推荐', group: 'shop',
+    desc: '从任务大厅拉取最新任务，用于任务曝光与拉新。',
+    fields: [
+      ['title', '文本', '≤20 字，默认「推荐任务」', '区块标题。'],
+      ['subtitle', '文本', '≤40 字', '区块副标题。'],
+      ['limit', '整数', '1–10，默认 4', '展示数量。'],
+      ['category', '文本', '≤32 字', '限定任务分类，留空为全部。'],
+    ],
+    tips: ['任务数据来自任务大厅实时接口，展示最新可接任务。', '已接入分类筛选：填写任务分类后只展示该分类任务。'],
+  },
+
+  {
+    key: 'activity_group', name: '活动组', group: 'marketing',
+    desc: '横向活动卡片组，适合校园活动、专题活动批量曝光。',
+    fields: [
+      ['title', '文本', '≤20 字', '区块标题。'],
+      ['items[].image_url', '图片', 'URL', '活动图片，建议 16:9。'],
+      ['items[].title', '文本', '≤20 字，默认「活动」', '活动标题。'],
+      ['items[].subtitle', '文本', '≤40 字', '活动说明。'],
+      ['items[].link_type', '枚举', '默认 none', '活动跳转类型。'],
+    ],
+    tips: ['最多 4 个活动，支持横向滚动。'],
+  },
+
+  {
+    key: 'cart_entry', name: '购物车入口', group: 'feature',
+    desc: '展示购物车入口与结算按钮，点击直接进入购物车页面。',
+    fields: [
+      ['title', '文本', '≤20 字，默认「购物车」', '卡片标题。'],
+      ['description', '文本', '≤60 字', '卡片描述。'],
+      ['button_text', '文本', '≤10 字，默认「去结算」', '按钮文案。'],
+    ],
+    tips: ['点击统一跳转 /pages/cart/index，无需配置 link_type。'],
+  },
+  {
+    key: 'qr_code', name: '引流二维码', group: 'feature',
+    desc: '展示二维码与说明文字，用于社群、公众号或小程序引流。',
+    fields: [
+      ['image_url', '图片', 'URL', '二维码图片，建议 1:1、清晰可扫。'],
+      ['title', '文本', '≤20 字，默认「扫码加入」', '标题。'],
+      ['description', '文本', '≤60 字', '说明文字。'],
+    ],
+    tips: ['二维码需保证足够留白与对比度；发布后可用手机实扫验证。'],
+  },
+
+  {
+    key: 'member_card', name: '会员卡', group: 'member',
+    desc: '深色渐变会员入口卡片，用于会员权益与开通引导。',
+    fields: [
+      ['title', '文本', '≤20 字，默认「会员中心」', '卡片标题。'],
+      ['description', '文本', '≤60 字', '权益说明。'],
+      ['button_text', '文本', '≤10 字，默认「去开通」', '按钮文案。'],
+      ['link_type', '枚举', '默认 none', '整卡点击跳转类型。'],
+    ],
+    tips: ['会员功能未上线时建议不配置此组件，避免点击无响应。'],
+  },
+];
+
+const GROUP_NAMES = { basic: '基础组件', shop: '店铺组件', marketing: '营销组件', feature: '功能组件', member: '会员组件' };
+
+function esc(value) {
+  return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderComponent(item) {
+  const rows = item.fields.map(function (field) {
+    return '<tr><td><code>' + esc(field[0]) + '</code></td><td>' + esc(field[1]) + '</td><td>' + esc(field[2]) + '</td><td>' + esc(field[3]) + '</td></tr>';
+  }).join('');
+  const tips = item.tips.map(function (tip) { return '<li>' + esc(tip) + '</li>'; }).join('');
+  return '<article class="card" id="c-' + item.key + '" data-name="' + esc(item.name + ' ' + item.key) + '">'
+    + '<div class="card-head"><span class="k">' + GROUP_NAMES[item.group] + '</span><div><h3>' + esc(item.name) + '</h3><div class="type">type: ' + esc(item.key) + '</div></div></div>'
+    + '<div class="desc">' + esc(item.desc) + '</div>'
+    + '<table><thead><tr><th>字段</th><th>类型</th><th>限制 / 默认</th><th>说明</th></tr></thead><tbody>' + rows + '</tbody></table>'
+    + '<div class="tips"><b>使用建议</b><ul>' + tips + '</ul></div>'
+    + '</article>';
+}
+
+(function () {
+  const groups = ['basic', 'shop', 'marketing', 'feature', 'member'];
+  groups.forEach(function (group) {
+    const container = document.getElementById('list-' + group);
+    const items = COMPONENTS.filter(function (item) { return item.group === group; });
+    container.innerHTML = items.map(renderComponent).join('');
+    const counter = document.getElementById('count-' + group);
+    if (counter) counter.textContent = items.length + ' 种';
+  });
+
+  const side = document.getElementById('side');
+  side.innerHTML = '<h4>通用</h4><a href="#common">通用规范</a><a href="#publish">发布与回滚</a>'
+    + groups.map(function (group) {
+      const items = COMPONENTS.filter(function (item) { return item.group === group; });
+      return '<h4>' + GROUP_NAMES[group] + ' · ' + items.length + '</h4>'
+        + items.map(function (item) { return '<a href="#c-' + item.key + '">' + esc(item.name) + '</a>'; }).join('');
+    }).join('');
+
+  const search = document.getElementById('search');
+  const empty = document.getElementById('empty');
+  search.addEventListener('input', function () {
+    const keyword = search.value.trim().toLowerCase();
+    let visible = 0;
+    document.querySelectorAll('.card').forEach(function (card) {
+      const matched = !keyword || (card.getAttribute('data-name') || '').toLowerCase().indexOf(keyword) !== -1;
+      card.style.display = matched ? '' : 'none';
+      if (matched) visible += 1;
+    });
+    empty.style.display = visible === 0 ? 'block' : 'none';
+  });
+})();
+</script>
+
+</body>
+</html>

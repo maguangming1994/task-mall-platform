@@ -38,6 +38,10 @@ class RbacSeeder extends Seeder
             ['code' => 'community.review', 'name' => '审核社区内容', 'group' => 'community'],
             ['code' => 'material.manage', 'name' => '管理资料共享', 'group' => 'material'],
             ['code' => 'product.manage', 'name' => '管理商品与优惠券', 'group' => 'mall'],
+            ['code' => 'store.view', 'name' => '查看门店', 'group' => 'store'],
+            ['code' => 'store.review', 'name' => '审核开店申请', 'group' => 'store'],
+            ['code' => 'store.manage', 'name' => '管理门店与门店商品', 'group' => 'store'],
+            ['code' => 'store.settle', 'name' => '管理门店结算', 'group' => 'store'],
             ['code' => 'fulfillment.manage', 'name' => '管理库存与履约', 'group' => 'mall'],
             ['code' => 'after_sale.review', 'name' => '审核售后', 'group' => 'after_sale'],
             ['code' => 'finance.manage', 'name' => '管理支付与对账', 'group' => 'finance'],
@@ -58,15 +62,15 @@ class RbacSeeder extends Seeder
 
         $rolePermissions = [
             'super_admin' => array_column($permissions, 'code'),
-            'platform_admin' => ['user.view_masked', 'identity.review', 'privacy.manage', 'legal.manage', 'task.view', 'task.manage', 'task.frontend_publish', 'push.view', 'push.review', 'audit.view_own'],
-            'operations_admin' => ['user.view_masked', 'task.view', 'task.manage', 'product.manage', 'operations.manage', 'material.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.rule_manage', 'push.task_manage', 'push.review', 'robot.view', 'robot.settings_manage', 'express_pickup.view', 'express_pickup.manage', 'express_pickup.printer_manage', 'audit.view_own'],
-            'campus_agent' => ['user.view_masked', 'identity.review', 'task.view', 'task.manage', 'task.review', 'community.review', 'material.manage', 'product.manage', 'campus.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.task_manage', 'push.review', 'robot.view', 'robot.settings_manage', 'express_pickup.view', 'express_pickup.manage', 'express_pickup.printer_manage', 'audit.view_own'],
+            'platform_admin' => ['user.view_masked', 'identity.review', 'privacy.manage', 'legal.manage', 'task.view', 'task.manage', 'task.frontend_publish', 'push.view', 'push.review', 'store.view', 'store.review', 'audit.view_own'],
+            'operations_admin' => ['user.view_masked', 'task.view', 'task.manage', 'product.manage', 'operations.manage', 'material.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.rule_manage', 'push.task_manage', 'push.review', 'robot.view', 'robot.settings_manage', 'express_pickup.view', 'express_pickup.manage', 'express_pickup.printer_manage', 'store.view', 'store.review', 'store.manage', 'audit.view_own'],
+            'campus_agent' => ['user.view_masked', 'identity.review', 'task.view', 'task.manage', 'task.review', 'community.review', 'material.manage', 'product.manage', 'campus.manage', 'push.view', 'push.team_manage', 'push.member_manage', 'push.task_manage', 'push.review', 'robot.view', 'robot.settings_manage', 'express_pickup.view', 'express_pickup.manage', 'express_pickup.printer_manage', 'store.view', 'store.review', 'store.manage', 'audit.view_own'],
             'task_reviewer' => ['user.view_masked', 'task.view', 'task.review', 'after_sale.review', 'push.view', 'push.review', 'audit.view_own'],
             'community_reviewer' => ['user.view_masked', 'community.review', 'audit.view_own'],
-            'customer_service' => ['user.view_masked', 'identity.review', 'privacy.manage', 'task.view', 'after_sale.review', 'push.view', 'audit.view_own'],
-            'warehouse' => ['user.view_sensitive', 'product.manage', 'fulfillment.manage', 'audit.view_own'],
-            'finance' => ['user.view_masked', 'finance.manage', 'after_sale.review', 'push.view', 'push.settle', 'express_pickup.view', 'express_pickup.settle', 'audit.view'],
-            'auditor' => ['user.view_masked', 'task.view', 'audit.view'],
+            'customer_service' => ['user.view_masked', 'identity.review', 'privacy.manage', 'task.view', 'after_sale.review', 'push.view', 'store.view', 'audit.view_own'],
+            'warehouse' => ['user.view_sensitive', 'product.manage', 'fulfillment.manage', 'store.view', 'store.manage', 'audit.view_own'],
+            'finance' => ['user.view_masked', 'finance.manage', 'after_sale.review', 'push.view', 'push.settle', 'express_pickup.view', 'express_pickup.settle', 'store.view', 'store.settle', 'audit.view'],
+            'auditor' => ['user.view_masked', 'task.view', 'store.view', 'audit.view'],
         ];
 
         $roleNames = [

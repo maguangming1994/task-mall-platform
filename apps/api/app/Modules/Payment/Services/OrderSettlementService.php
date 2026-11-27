@@ -62,6 +62,11 @@ class OrderSettlementService
     private function consumeReservedResources(Order $order, User $user): void
     {
         foreach ($order->items as $item) {
+            if ($item->store_sku_id !== null) {
+                $this->consumeStoreReservation($item);
+                $item->update(['paid_cash_amount' => $item->cash_subtotal - $item->cash_discount_allocated, 'paid_points' => 0]);
+                continue;
+            }
             $reservation = DB::table('inventory_reservations')->where('order_item_id', $item->id)->lockForUpdate()->first();
             if (! $reservation || $reservation->status !== 'reserved') {
                 throw ValidationException::withMessages(['inventory' => '订单库存预占状态异常。']);
@@ -92,5 +97,31 @@ class OrderSettlementService
                 CouponTransaction::query()->create(['user_id' => $user->id, 'user_coupon_id' => $coupon->id, 'transaction_type' => 'use', 'status_before' => 'locked', 'status_after' => 'used', 'business_type' => 'order', 'business_id' => $order->public_id, 'event_key_hash' => hash('sha256', 'paid-order-coupon:'.$order->public_id), 'reason' => '支付成功后核销优惠券。']);
             }
         }
+    }
+
+    private function consumeStoreReservation($item): void
+    {
+        $reservation = DB::table('store_inventory_reservations')->where('order_item_id', $item->id)->lockForUpdate()->first();
+        if (! $reservation || $reservation->status !== 'reserved') {
+            throw ValidationException::withMessages(['inventory' => '门店库存预占状态异常。']);
+        }
+        $inventory = \App\Modules\Store\Models\StoreInventory::query()->lockForUpdate()->findOrFail($reservation->store_inventory_id);
+        $beforeOnHand = (int) $inventory->on_hand_quantity;
+        $beforeReserved = (int) $inventory->reserved_quantity;
+        $inventory->update([
+            'on_hand_quantity' => $beforeOnHand - $reservation->quantity,
+            'reserved_quantity' => $beforeReserved - $reservation->quantity,
+            'version' => $inventory->version + 1,
+        ]);
+        DB::table('store_inventory_reservations')->where('id', $reservation->id)->update(['status' => 'consumed', 'consumed_at' => now(), 'updated_at' => now()]);
+        \App\Modules\Store\Models\StoreInventoryTransaction::query()->create([
+            'store_inventory_id' => $inventory->id, 'transaction_type' => 'sale_consume',
+            'on_hand_change' => -$reservation->quantity, 'reserved_change' => -$reservation->quantity,
+            'on_hand_before' => $beforeOnHand, 'on_hand_after' => $inventory->on_hand_quantity,
+            'reserved_before' => $beforeReserved, 'reserved_after' => $inventory->reserved_quantity,
+            'business_type' => 'order_item', 'business_id' => $item->public_id,
+            'reason' => '支付成功后扣减门店预占库存。',
+            'idempotency_key_hash' => hash('sha256', 'store-paid-order-consume:'.$item->public_id),
+        ]);
     }
 }

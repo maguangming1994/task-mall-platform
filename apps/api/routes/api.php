@@ -47,6 +47,7 @@ use App\Modules\ExpressPickup\Http\Controllers\AdminCampusPrinterController;
 use App\Modules\ExpressPickup\Http\Controllers\AdminExpressPickupOrderController;
 use App\Modules\ExpressPickup\Http\Controllers\AdminExpressPickupRunnerController;
 use App\Modules\ExpressPickup\Http\Controllers\AdminExpressPickupSettlementController;
+use App\Modules\ExpressPickup\Http\Controllers\AdminReceiptTemplateController;
 use App\Modules\ExpressPickup\Http\Controllers\ExpressPickupOrderController;
 use App\Modules\ExpressPickup\Http\Controllers\ExpressPickupPaymentController;
 use App\Modules\ExpressPickup\Http\Controllers\ExpressPickupRunnerController;
@@ -105,12 +106,26 @@ use App\Modules\SecondHand\Http\Controllers\SecondHandOrderController;
 use App\Modules\SecondHand\Http\Controllers\SecondHandRatingController;
 use App\Modules\SecondHand\Http\Controllers\SecondHandRefundController;
 use App\Modules\Settings\Http\Controllers\AdminPageDecorationController;
+use App\Modules\Settings\Http\Controllers\AdminPageSchemeController;
 use App\Modules\Settings\Http\Controllers\AdminSystemSettingController;
 use App\Modules\Settings\Http\Controllers\AppearanceContentController;
 use App\Modules\Settings\Http\Controllers\AppNavigationController;
 use App\Modules\Settings\Http\Controllers\HomeContentController;
 use App\Modules\Settings\Http\Controllers\PageDecorationController;
 use App\Modules\Share\Http\Controllers\ShareQrCodeController;
+use App\Modules\Store\Http\Controllers\AdminStoreController;
+use App\Modules\Store\Http\Controllers\AdminStoreSettlementController;
+use App\Modules\Store\Http\Controllers\StoreApplicationController;
+use App\Modules\Store\Http\Controllers\StoreBrowseController;
+use App\Modules\Store\Http\Controllers\StoreManagerCategoryController;
+use App\Modules\Store\Http\Controllers\StoreManagerInventoryController;
+use App\Modules\Store\Http\Controllers\StoreManagerMediaController;
+use App\Modules\Store\Http\Controllers\StoreManagerMemberController;
+use App\Modules\Store\Http\Controllers\StoreManagerOrderController;
+use App\Modules\Store\Http\Controllers\StoreManagerProductController;
+use App\Modules\Store\Http\Controllers\StoreManagerSessionController;
+use App\Modules\Store\Http\Controllers\StoreManagerSettlementController;
+use App\Modules\Store\Http\Controllers\StoreManagerStoreController;
 use App\Modules\Support\Http\Controllers\AdminSupportTicketController;
 use App\Modules\Support\Http\Controllers\SupportTicketController;
 use App\Modules\Task\Http\Controllers\AdminRewardBudgetController;
@@ -166,6 +181,11 @@ Route::middleware(['auth.optional', 'module.gate:module_mall'])->group(function 
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/product-categories', [ProductController::class, 'categories']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
+    // 多门店：门店列表、门店详情与门店商品
+    Route::get('/stores', [StoreBrowseController::class, 'index']);
+    Route::get('/stores/{store}', [StoreBrowseController::class, 'show']);
+    Route::get('/stores/{store}/products', [StoreBrowseController::class, 'products']);
+    Route::get('/store-products/{storeProduct}', [StoreBrowseController::class, 'product']);
 });
 Route::middleware(['auth.optional', 'module.gate:module_second_hand'])->group(function () {
     Route::get('/second-hand/categories', [SecondHandItemController::class, 'categories']);
@@ -232,9 +252,42 @@ Route::middleware(['auth.publisher', 'module.gate:module_task_publish'])->prefix
     Route::post('/tasks/{task}/status', [TaskPublisherTaskController::class, 'status']);
 });
 
+Route::middleware(['auth.store'])->prefix('store-manager')->group(function () {
+    Route::delete('/session', [StoreManagerSessionController::class, 'destroy']);
+    Route::get('/profile', [StoreManagerSessionController::class, 'profile']);
+    Route::post('/media/assets/upload', [StoreManagerMediaController::class, 'upload'])->middleware('throttle:30,1');
+    Route::post('/media/assets/import-url', [StoreManagerMediaController::class, 'importUrl'])->middleware('throttle:20,1');
+    Route::get('/overview', [StoreManagerOrderController::class, 'overview']);
+    Route::put('/store', [StoreManagerStoreController::class, 'update']);
+    Route::get('/categories', [StoreManagerCategoryController::class, 'index']);
+    Route::post('/categories', [StoreManagerCategoryController::class, 'store']);
+    Route::put('/categories/{storeCategory}', [StoreManagerCategoryController::class, 'update']);
+    Route::delete('/categories/{storeCategory}', [StoreManagerCategoryController::class, 'destroy']);
+    Route::get('/products', [StoreManagerProductController::class, 'index']);
+    Route::post('/products', [StoreManagerProductController::class, 'store'])->middleware('throttle:60,1');
+    Route::get('/products/{storeProduct}', [StoreManagerProductController::class, 'show']);
+    Route::put('/products/{storeProduct}', [StoreManagerProductController::class, 'update']);
+    Route::post('/products/{storeProduct}/status', [StoreManagerProductController::class, 'status']);
+    Route::get('/inventory', [StoreManagerInventoryController::class, 'index']);
+    Route::post('/inventory/{storeSku}/adjust', [StoreManagerInventoryController::class, 'adjust']);
+    Route::get('/orders', [StoreManagerOrderController::class, 'index']);
+    Route::get('/orders/{order}', [StoreManagerOrderController::class, 'show']);
+    Route::get('/settlements', [StoreManagerSettlementController::class, 'index']);
+    Route::get('/settlements/{settlement}', [StoreManagerSettlementController::class, 'show']);
+    Route::get('/members', [StoreManagerMemberController::class, 'index']);
+    Route::post('/members', [StoreManagerMemberController::class, 'store'])->middleware('throttle:20,1');
+    Route::delete('/members/{member}', [StoreManagerMemberController::class, 'destroy']);
+});
+
 Route::middleware('auth.access')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/me', [CurrentUserController::class, 'show']);
+    // 多门店：用户开店申请与门店工作台令牌
+    Route::get('/me/stores', [StoreApplicationController::class, 'index']);
+    Route::post('/me/stores', [StoreApplicationController::class, 'store'])->middleware('throttle:5,60');
+    Route::put('/me/stores/{store}', [StoreApplicationController::class, 'update']);
+    Route::post('/me/stores/{store}/resubmit', [StoreApplicationController::class, 'resubmit'])->middleware('throttle:5,60');
+    Route::post('/me/stores/{store}/manager-session', [StoreManagerSessionController::class, 'store'])->middleware('throttle:20,1');
     Route::post('/me/task-publisher-session', [TaskPublisherAuthController::class, 'storeForUser'])->middleware(['module.gate:module_task_publish', 'throttle:10,1']);
     Route::put('/me', [UserProfileController::class, 'update'])->middleware('legal.consent:account');
     Route::put('/me/campus', [CampusController::class, 'select']);
@@ -706,6 +759,46 @@ Route::prefix('admin')->group(function () {
             ->middleware('admin.permission:settings.manage');
         Route::post('/page-decoration/rollback', [AdminPageDecorationController::class, 'rollback'])
             ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        // 装修中心：页面方案（同一页面多套方案，启用公众号渠道后镜像到页面装修）
+        Route::get('/decoration/campuses', [AdminPageSchemeController::class, 'campuses'])
+            ->middleware('admin.permission:settings.manage');
+        Route::get('/decoration/schemes', [AdminPageSchemeController::class, 'index'])
+            ->middleware('admin.permission:settings.manage');
+        Route::post('/decoration/schemes', [AdminPageSchemeController::class, 'store'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::put('/decoration/schemes/{scheme}', [AdminPageSchemeController::class, 'update'])
+            ->where('scheme', '[A-Za-z0-9_-]+')
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::post('/decoration/schemes/{scheme}/duplicate', [AdminPageSchemeController::class, 'duplicate'])
+            ->where('scheme', '[A-Za-z0-9_-]+')
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::put('/decoration/schemes/{scheme}/channel', [AdminPageSchemeController::class, 'channel'])
+            ->where('scheme', '[A-Za-z0-9_-]+')
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::delete('/decoration/schemes/{scheme}', [AdminPageSchemeController::class, 'destroy'])
+            ->where('scheme', '[A-Za-z0-9_-]+')
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        // 装修中心：小票打印模板（设计、启停、场景绑定与预览）
+        Route::get('/decoration/receipt-templates', [AdminReceiptTemplateController::class, 'index'])
+            ->middleware('admin.permission:settings.manage');
+        Route::post('/decoration/receipt-templates/preview', [AdminReceiptTemplateController::class, 'preview'])
+            ->middleware('admin.permission:settings.manage');
+        Route::post('/decoration/receipt-templates', [AdminReceiptTemplateController::class, 'store'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::put('/decoration/receipt-templates/bindings', [AdminReceiptTemplateController::class, 'updateBindings'])
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::put('/decoration/receipt-templates/{receiptTemplate}', [AdminReceiptTemplateController::class, 'update'])
+            ->where('receiptTemplate', '[A-Za-z0-9_-]+')
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::post('/decoration/receipt-templates/{receiptTemplate}/duplicate', [AdminReceiptTemplateController::class, 'duplicate'])
+            ->where('receiptTemplate', '[A-Za-z0-9_-]+')
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::post('/decoration/receipt-templates/{receiptTemplate}/toggle', [AdminReceiptTemplateController::class, 'toggle'])
+            ->where('receiptTemplate', '[A-Za-z0-9_-]+')
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
+        Route::delete('/decoration/receipt-templates/{receiptTemplate}', [AdminReceiptTemplateController::class, 'destroy'])
+            ->where('receiptTemplate', '[A-Za-z0-9_-]+')
+            ->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
         // 海报模板管理（与运营配置同级，平台管理员可调整所有业务场景的分享海报）
         Route::get('/poster-templates', [AdminPosterTemplateController::class, 'index'])
             ->middleware('admin.permission:settings.manage');
@@ -848,6 +941,21 @@ Route::prefix('admin')->group(function () {
         Route::post('/task-risk-cases/{taskRiskCase}/review', [AdminTaskRiskController::class, 'review'])->middleware('admin.permission:task.review');
         Route::get('/coupon-templates', [AdminCouponTemplateController::class, 'index'])->middleware('admin.permission:product.manage');
         Route::get('/coupon-templates/{couponTemplate}', [AdminCouponTemplateController::class, 'show'])->middleware('admin.permission:product.manage');
+        // 多门店：门店审核、门店商品监督与门店结算
+        Route::get('/stores', [AdminStoreController::class, 'index'])->middleware('admin.permission:store.view|store.review|store.manage|store.settle');
+        Route::get('/stores/{store}', [AdminStoreController::class, 'show'])->middleware('admin.permission:store.view|store.review|store.manage|store.settle');
+        Route::post('/stores/{store}/review', [AdminStoreController::class, 'review'])->middleware(['admin.permission:store.review', 'admin.recent_verification', 'admin.platform']);
+        Route::post('/stores/{store}/status', [AdminStoreController::class, 'status'])->middleware(['admin.permission:store.manage', 'admin.recent_verification', 'admin.platform']);
+        Route::put('/stores/{store}', [AdminStoreController::class, 'update'])->middleware(['admin.permission:store.manage', 'admin.platform']);
+        Route::post('/stores/{store}/campuses/{campus}', [AdminStoreController::class, 'campusStatus'])->middleware(['admin.permission:store.manage', 'admin.recent_verification', 'admin.platform']);
+        Route::get('/store-products', [AdminStoreController::class, 'products'])->middleware('admin.permission:store.view|store.manage');
+        Route::post('/store-products/{storeProduct}/status', [AdminStoreController::class, 'productStatus'])->middleware(['admin.permission:store.manage', 'admin.recent_verification', 'admin.platform']);
+        Route::get('/store-settlements', [AdminStoreSettlementController::class, 'index'])->middleware('admin.permission:store.settle|store.view');
+        Route::get('/store-settlements/{settlement}', [AdminStoreSettlementController::class, 'show'])->middleware('admin.permission:store.settle|store.view');
+        Route::get('/stores/{store}/settlement-preview', [AdminStoreSettlementController::class, 'preview'])->middleware(['admin.permission:store.settle', 'admin.platform']);
+        Route::post('/stores/{store}/settlements', [AdminStoreSettlementController::class, 'store'])->middleware(['admin.permission:store.settle', 'admin.recent_verification', 'admin.platform']);
+        Route::post('/store-settlements/{settlement}/confirm', [AdminStoreSettlementController::class, 'confirm'])->middleware(['admin.permission:store.settle', 'admin.recent_verification', 'admin.platform']);
+        Route::post('/store-settlements/{settlement}/pay', [AdminStoreSettlementController::class, 'pay'])->middleware(['admin.permission:store.settle', 'admin.recent_verification', 'admin.platform']);
         Route::get('/community/content-security/settings', [AdminCommunityContentSecurityController::class, 'show'])->middleware('admin.permission:settings.manage');
         Route::put('/community/content-security/settings', [AdminCommunityContentSecurityController::class, 'update'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification']);
         Route::post('/community/content-security/settings/test', [AdminCommunityContentSecurityController::class, 'test'])->middleware(['admin.permission:settings.manage', 'admin.recent_verification', 'throttle:10,1']);

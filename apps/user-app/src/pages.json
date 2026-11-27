@@ -668,6 +668,84 @@
           }
         }
       ]
+    },
+    {
+      "root": "pages-store",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "我的店铺"
+          }
+        },
+        {
+          "path": "apply",
+          "style": {
+            "navigationBarTitleText": "申请开店"
+          }
+        },
+        {
+          "path": "workbench",
+          "style": {
+            "navigationBarTitleText": "门店工作台",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "products",
+          "style": {
+            "navigationBarTitleText": "商品管理"
+          }
+        },
+        {
+          "path": "product-edit",
+          "style": {
+            "navigationBarTitleText": "编辑商品"
+          }
+        },
+        {
+          "path": "inventory",
+          "style": {
+            "navigationBarTitleText": "库存管理"
+          }
+        },
+        {
+          "path": "orders",
+          "style": {
+            "navigationBarTitleText": "门店订单"
+          }
+        },
+        {
+          "path": "settlements",
+          "style": {
+            "navigationBarTitleText": "结算账单"
+          }
+        },
+        {
+          "path": "settings",
+          "style": {
+            "navigationBarTitleText": "门店设置"
+          }
+        },
+        {
+          "path": "stores",
+          "style": {
+            "navigationBarTitleText": "校园门店"
+          }
+        },
+        {
+          "path": "store-home",
+          "style": {
+            "navigationBarTitleText": "门店主页"
+          }
+        },
+        {
+          "path": "product",
+          "style": {
+            "navigationBarTitleText": "门店商品"
+          }
+        }
+      ]
     }
   ]
 }

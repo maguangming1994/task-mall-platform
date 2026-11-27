@@ -18,6 +18,9 @@ use App\Modules\Order\Models\OrderBatch;
 use App\Modules\Payment\Services\PaymentCapabilityService;
 use App\Modules\Product\Models\ProductSku;
 use App\Modules\Settings\Services\SystemSettingService;
+use App\Modules\Store\Models\StoreInventory;
+use App\Modules\Store\Models\StoreInventoryTransaction;
+use App\Modules\Store\Models\StoreProductSku;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -28,6 +31,7 @@ class CheckoutOrderService
     public function __construct(
         private readonly SystemSettingService $settings,
         private readonly PaymentCapabilityService $paymentCapabilities,
+        private readonly \App\Modules\Store\Services\StoreCampusService $storeCampuses,
     ) {}
 
     public function preview(User $user, array $request, string $platform): array
@@ -106,7 +110,7 @@ class CheckoutOrderService
 
     public function presentOrder(Order $order): array
     {
-        $order->loadMissing(['items', 'fulfillments']);
+        $order->loadMissing(['items.store', 'fulfillments']);
         $itemIds = $order->items->pluck('id');
         $pendingRefunds = DB::table('refund_items')->join('refunds', 'refunds.id', '=', 'refund_items.refund_id')
             ->whereIn('refund_items.order_item_id', $itemIds)
@@ -170,6 +174,7 @@ class CheckoutOrderService
 
                 return [
                     'id' => $item->public_id, 'product_name' => $item->product_name, 'sku_name' => $item->sku_name,
+                    'store' => $item->store === null ? null : ['id' => $item->store->public_id, 'name' => $item->store->name],
                     'sku_description' => collect($item->specs_snapshot)
                         ->map(fn ($value, $key) => sprintf('%s: %s', $key, $value))
                         ->implode(', '),
@@ -229,23 +234,46 @@ class CheckoutOrderService
                 throw ValidationException::withMessages(['items' => '同一 SKU 和购买方式不能重复，请合并数量。']);
             }
             $seen[$key] = true;
-            $sku = ProductSku::query()->where('public_id', $input['sku_id'])->with(['product', 'purchaseOptions', 'inventory', 'shippingTemplate.versions'])->firstOrFail();
-            if ($sku->product->status !== 'on_sale' || $sku->status !== 'active') {
-                throw ValidationException::withMessages(['items' => '商品或 SKU 已下架。']);
-            }
-            $option = $sku->purchaseOptions->firstWhere('purchase_mode', $input['purchase_mode']);
-            if (! $option || ! $option->enabled || ($option->starts_at && $option->starts_at->isFuture()) || ($option->ends_at && $option->ends_at->isPast())) {
-                throw ValidationException::withMessages(['items' => '购买方式当前不可用。']);
-            }
-            $quantity = (int) $input['quantity'];
-            if ($sku->limit_per_order && $quantity > $sku->limit_per_order) {
-                throw ValidationException::withMessages(['items' => '数量超过单笔限购。']);
-            }
-            if (! $sku->inventory || $sku->inventory->on_hand_quantity - $sku->inventory->reserved_quantity < $quantity) {
-                throw ValidationException::withMessages(['items' => '可售库存不足。']);
+            $sku = ProductSku::query()->where('public_id', $input['sku_id'])->with(['product', 'purchaseOptions', 'inventory', 'shippingTemplate.versions'])->first();
+            if ($sku !== null) {
+                if ($sku->product->status !== 'on_sale' || $sku->status !== 'active') {
+                    throw ValidationException::withMessages(['items' => '商品或 SKU 已下架。']);
+                }
+                $option = $sku->purchaseOptions->firstWhere('purchase_mode', $input['purchase_mode']);
+                if (! $option || ! $option->enabled || ($option->starts_at && $option->starts_at->isFuture()) || ($option->ends_at && $option->ends_at->isPast())) {
+                    throw ValidationException::withMessages(['items' => '购买方式当前不可用。']);
+                }
+                $quantity = (int) $input['quantity'];
+                if ($sku->limit_per_order && $quantity > $sku->limit_per_order) {
+                    throw ValidationException::withMessages(['items' => '数量超过单笔限购。']);
+                }
+                if (! $sku->inventory || $sku->inventory->on_hand_quantity - $sku->inventory->reserved_quantity < $quantity) {
+                    throw ValidationException::withMessages(['items' => '可售库存不足。']);
+                }
+
+                return ['kind' => 'platform', 'sku' => $sku, 'option' => $option, 'quantity' => $quantity, 'cash_subtotal' => $option->cash_amount * $quantity, 'points_subtotal' => $option->points * $quantity];
             }
 
-            return ['sku' => $sku, 'option' => $option, 'quantity' => $quantity, 'cash_subtotal' => $option->cash_amount * $quantity, 'points_subtotal' => $option->points * $quantity];
+            $storeSku = StoreProductSku::query()->where('public_id', $input['sku_id'])->with(['product.store', 'inventories'])->firstOrFail();
+            if ($input['purchase_mode'] !== 'cash') {
+                throw ValidationException::withMessages(['items' => '门店商品仅支持现金购买。']);
+            }
+            $store = $storeSku->product?->store;
+            if ($store === null || ! $store->isActive() || $storeSku->product->status !== 'on_sale' || $storeSku->status !== 'active') {
+                throw ValidationException::withMessages(['items' => '门店商品已下架或门店暂停营业。']);
+            }
+            $quantity = (int) $input['quantity'];
+            if ($storeSku->limit_per_order && $quantity > $storeSku->limit_per_order) {
+                throw ValidationException::withMessages(['items' => '数量超过单笔限购。']);
+            }
+            // 门店按下单所在校区校验开通状态与分校区库存
+            $storeCampusId = $this->storeCampuses->assertOpen($store, $this->storeCampuses->contextCampusId($store));
+            $storeInventory = $storeSku->inventoryForCampus($storeCampusId);
+            if (! $storeInventory || $storeInventory->on_hand_quantity - $storeInventory->reserved_quantity < $quantity) {
+                throw ValidationException::withMessages(['items' => '门店商品可售库存不足。']);
+            }
+
+            return ['kind' => 'store', 'sku' => $storeSku, 'option' => null, 'quantity' => $quantity, 'cash_subtotal' => $storeSku->cash_amount * $quantity, 'points_subtotal' => 0, 'campus_id' => $storeCampusId];
         });
 
         $couponIds = array_values(array_filter(array_column($request['group_options'], 'coupon_id')));
@@ -334,17 +362,32 @@ class CheckoutOrderService
         $shippingAllocations = $this->allocate($group['items'], $group['shipping_amount'], 'quantity');
         foreach ($group['items'] as $index => $priced) {
             $sku = $priced['sku'];
+            $isStore = $priced['kind'] === 'store';
+            $option = $priced['option'];
             $item = $order->items()->create([
-                'product_sku_id' => $sku->id, 'product_public_id' => $sku->product->public_id, 'sku_public_id' => $sku->public_id,
-                'product_name' => $sku->product->name, 'sku_name' => $sku->name, 'specs_snapshot' => $sku->specs,
-                'image_file_public_id' => $sku->image_file_public_id, 'purchase_mode' => $priced['option']->purchase_mode,
+                'product_sku_id' => $isStore ? null : $sku->id,
+                'store_id' => $isStore ? $sku->product->store_id : null,
+                'store_sku_id' => $isStore ? $sku->id : null,
+                'store_name' => $isStore ? $sku->product->store->name : null,
+                'product_public_id' => $sku->product->public_id, 'sku_public_id' => $sku->public_id,
+                'product_name' => $sku->product->name, 'sku_name' => $sku->name, 'specs_snapshot' => $sku->specs ?? [],
+                'image_file_public_id' => $isStore ? null : $sku->image_file_public_id,
+                'purchase_mode' => $isStore ? 'cash' : $option->purchase_mode,
                 'fulfillment_type' => $sku->fulfillment_type, 'quantity' => $priced['quantity'],
-                'unit_cash_amount' => $priced['option']->cash_amount, 'unit_points' => $priced['option']->points,
+                'unit_cash_amount' => $isStore ? (int) $sku->cash_amount : $option->cash_amount,
+                'unit_points' => $isStore ? 0 : $option->points,
                 'cash_subtotal' => $priced['cash_subtotal'], 'points_subtotal' => $priced['points_subtotal'],
                 'cash_discount_allocated' => $cashAllocations[$index], 'points_discount_allocated' => $pointsAllocations[$index],
-                'shipping_allocated' => $shippingAllocations[$index], 'purchase_limit_snapshot' => ['per_order' => $sku->limit_per_order, 'per_day' => $sku->limit_per_day, 'campaign' => $sku->limit_campaign, 'lifetime' => $sku->limit_lifetime],
+                'shipping_allocated' => $shippingAllocations[$index],
+                'purchase_limit_snapshot' => $isStore
+                    ? ['per_order' => $sku->limit_per_order]
+                    : ['per_order' => $sku->limit_per_order, 'per_day' => $sku->limit_per_day, 'campaign' => $sku->limit_campaign, 'lifetime' => $sku->limit_lifetime],
             ]);
-            $this->reserveInventory($item, $sku->inventory, $priced['quantity'], $expiry);
+            if ($isStore) {
+                $this->reserveStoreInventory($item, $sku, $priced['quantity'], $expiry, $priced['campus_id'] ?? null);
+            } else {
+                $this->reserveInventory($item, $sku->inventory, $priced['quantity'], $expiry);
+            }
         }
         $pointReservation = $group['payable_points'] > 0 ? $this->freezePoints($user, $order, $group['payable_points']) : null;
         if ($group['coupon']) {
@@ -354,6 +397,34 @@ class CheckoutOrderService
         if (! $pendingCash) {
             $this->completeNonCashOrder($user, $order, $pointReservation);
         }
+    }
+
+    private function reserveStoreInventory($orderItem, StoreProductSku $sku, int $quantity, $expiry, ?int $campusId): void
+    {
+        $locked = StoreInventory::query()->where('store_product_sku_id', $sku->id)->where('campus_id', $campusId)->lockForUpdate()->first();
+        if ($locked === null) {
+            StoreInventory::query()->firstOrCreate(['store_product_sku_id' => $sku->id, 'campus_id' => $campusId]);
+            $locked = StoreInventory::query()->where('store_product_sku_id', $sku->id)->where('campus_id', $campusId)->lockForUpdate()->firstOrFail();
+        }
+        if ($locked->on_hand_quantity - $locked->reserved_quantity < $quantity) {
+            throw ValidationException::withMessages(['inventory' => '创建订单时门店库存已不足。']);
+        }
+        $beforeReserved = (int) $locked->reserved_quantity;
+        $locked->update(['reserved_quantity' => $beforeReserved + $quantity, 'version' => $locked->version + 1]);
+        DB::table('store_inventory_reservations')->insert([
+            'public_id' => (string) Str::ulid(), 'order_item_id' => $orderItem->id,
+            'store_inventory_id' => $locked->id, 'quantity' => $quantity, 'status' => 'reserved',
+            'expires_at' => $expiry, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        StoreInventoryTransaction::query()->create([
+            'store_inventory_id' => $locked->id, 'transaction_type' => 'reserve',
+            'on_hand_change' => 0, 'reserved_change' => $quantity,
+            'on_hand_before' => $locked->on_hand_quantity, 'on_hand_after' => $locked->on_hand_quantity,
+            'reserved_before' => $beforeReserved, 'reserved_after' => $locked->reserved_quantity,
+            'business_type' => 'order_item', 'business_id' => $orderItem->public_id,
+            'reason' => '创建待支付订单预占门店库存。',
+            'idempotency_key_hash' => hash('sha256', 'store-order-reserve:'.$orderItem->public_id),
+        ]);
     }
 
     private function reserveInventory($orderItem, Inventory $inventory, int $quantity, $expiry): void
@@ -405,9 +476,40 @@ class CheckoutOrderService
         CouponTransaction::query()->create(['user_id' => $user->id, 'user_coupon_id' => $locked->id, 'transaction_type' => 'lock', 'status_before' => 'unused', 'status_after' => 'locked', 'business_type' => 'order', 'business_id' => $order->public_id, 'event_key_hash' => hash('sha256', 'order-coupon-lock:'.$order->public_id), 'reason' => '创建订单锁定优惠券。']);
     }
 
+    private function consumeStoreReservation($item): void
+    {
+        $reservation = DB::table('store_inventory_reservations')->where('order_item_id', $item->id)->lockForUpdate()->first();
+        if (! $reservation || $reservation->status !== 'reserved') {
+            throw ValidationException::withMessages(['inventory' => '门店库存预占状态异常。']);
+        }
+        $inventory = StoreInventory::query()->lockForUpdate()->findOrFail($reservation->store_inventory_id);
+        $beforeOnHand = (int) $inventory->on_hand_quantity;
+        $beforeReserved = (int) $inventory->reserved_quantity;
+        $inventory->update([
+            'on_hand_quantity' => $beforeOnHand - $reservation->quantity,
+            'reserved_quantity' => $beforeReserved - $reservation->quantity,
+            'version' => $inventory->version + 1,
+        ]);
+        DB::table('store_inventory_reservations')->where('id', $reservation->id)->update(['status' => 'consumed', 'consumed_at' => now(), 'updated_at' => now()]);
+        StoreInventoryTransaction::query()->create([
+            'store_inventory_id' => $inventory->id, 'transaction_type' => 'sale_consume',
+            'on_hand_change' => -$reservation->quantity, 'reserved_change' => -$reservation->quantity,
+            'on_hand_before' => $beforeOnHand, 'on_hand_after' => $inventory->on_hand_quantity,
+            'reserved_before' => $beforeReserved, 'reserved_after' => $inventory->reserved_quantity,
+            'business_type' => 'order_item', 'business_id' => $item->public_id,
+            'reason' => '订单支付成功或无需支付时扣减门店库存。',
+            'idempotency_key_hash' => hash('sha256', 'store-order-consume:'.$item->public_id),
+        ]);
+    }
+
     private function completeNonCashOrder(User $user, Order $order, ?object $pointReservation): void
     {
         foreach ($order->items as $item) {
+            if ($item->store_sku_id !== null) {
+                $this->consumeStoreReservation($item);
+                $item->update(['paid_cash_amount' => 0, 'paid_points' => 0]);
+                continue;
+            }
             $reservation = DB::table('inventory_reservations')->where('order_item_id', $item->id)->lockForUpdate()->first();
             $inventory = Inventory::query()->lockForUpdate()->findOrFail($reservation->inventory_id);
             $beforeOnHand = $inventory->on_hand_quantity;
@@ -456,7 +558,7 @@ class CheckoutOrderService
     {
         $groups = [];
         $total = 0;
-        foreach ($items->groupBy(fn ($item) => $item['sku']->shipping_template_id) as $templateId => $templateItems) {
+        foreach ($items->where('kind', 'platform')->groupBy(fn ($item) => $item['sku']->shipping_template_id) as $templateId => $templateItems) {
             if (! $templateId) {
                 throw ValidationException::withMessages(['shipping' => '物流 SKU 未配置运费模板。']);
             }
@@ -477,6 +579,16 @@ class CheckoutOrderService
             $amount = $base + $surcharge;
             $total += $amount;
             $groups[] = ['template_id' => $template->public_id, 'template_version' => $template->current_version_no, 'charge_type' => $content['charge_type'], 'quantity' => $quantity, 'weight_grams' => $weight, 'base_amount' => $base, 'remote_surcharge_amount' => $surcharge, 'free_shipping' => $free, 'amount' => $amount];
+        }
+
+        foreach ($items->where('kind', 'store')->groupBy(fn ($item) => $item['sku']->product->store_id) as $storeItems) {
+            $store = $storeItems->first()['sku']->product->store;
+            $quantity = $storeItems->sum('quantity');
+            $subtotal = $storeItems->sum('cash_subtotal');
+            $free = $store->free_shipping_threshold !== null && $subtotal >= (int) $store->free_shipping_threshold;
+            $amount = $free ? 0 : (int) $store->shipping_fee_amount;
+            $total += $amount;
+            $groups[] = ['template_id' => null, 'store_id' => $store->public_id, 'template_version' => null, 'charge_type' => 'store_flat', 'quantity' => $quantity, 'weight_grams' => 0, 'base_amount' => $amount, 'remote_surcharge_amount' => 0, 'free_shipping' => $free, 'amount' => $amount];
         }
 
         return ['amount' => $total, 'groups' => $groups];

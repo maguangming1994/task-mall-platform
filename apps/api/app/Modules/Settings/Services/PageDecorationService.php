@@ -11,11 +11,16 @@ class PageDecorationService
     private const SECTION_TYPES = [
         'banner', 'announcement', 'quick_grid', 'image_banner', 'image_text',
         'product_grid', 'post_list', 'task_list', 'rich_text', 'spacer',
+        'nav_bar', 'search_box', 'category_nav', 'coupon', 'floating_box',
+        'page_title', 'list_nav', 'tag_group', 'image_group', 'button_group', 'divider',
+        'activity_group', 'member_card', 'cart_entry', 'qr_code',
+        'location_search', 'order_marquee', 'video', 'tab_nav', 'ad_banner',
+        'image_showcase', 'notice_bar', 'hot_tags', 'title_bar', 'tile_ad', 'popup',
     ];
 
     public function __construct(private readonly SystemSettingService $settings) {}
 
-    /** @return array{schema_version:int,pages:array<string,array{background_url:string,sections:array<int,array<string,mixed>>}>,version:int|null} */
+    /** @return array{schema_version:int,pages:array<string,array<string,mixed>>,version:int|null} */
     public function published(): array
     {
         $resolved = $this->settings->read(self::SETTING_KEY);
@@ -23,18 +28,18 @@ class PageDecorationService
         return $this->normalize($resolved['value'], $resolved['version']);
     }
 
-    /** @return array{schema_version:int,pages:array<string,array{background_url:string,sections:array<int,array<string,mixed>>}>} */
+    /** @return array{schema_version:int,pages:array<string,array<string,mixed>>} */
     public function emptyConfig(): array
     {
         $pages = [];
         foreach (self::PAGES as $page) {
-            $pages[$page] = ['background_url' => '', 'sections' => []];
+            $pages[$page] = $this->emptyPage();
         }
 
         return ['schema_version' => 1, 'pages' => $pages];
     }
 
-    /** @return array{schema_version:int,pages:array<string,array{background_url:string,sections:array<int,array<string,mixed>>}>,version:int|null} */
+    /** @return array{schema_version:int,pages:array<string,array<string,mixed>>,version:int|null} */
     private function normalize(mixed $value, ?int $version): array
     {
         $config = $this->emptyConfig();
@@ -54,6 +59,11 @@ class PageDecorationService
                 ? $pageValue['sections']
                 : [];
             $config['pages'][$page] = [
+                'name' => is_string($pageValue['name'] ?? null) ? $pageValue['name'] : '',
+                'title' => is_string($pageValue['title'] ?? null) ? $pageValue['title'] : '',
+                'description' => is_string($pageValue['description'] ?? null) ? $pageValue['description'] : '',
+                'cover_url' => is_string($pageValue['cover_url'] ?? null) ? $pageValue['cover_url'] : '',
+                'background_color' => is_string($pageValue['background_color'] ?? null) ? $pageValue['background_color'] : '',
                 'background_url' => is_string($pageValue['background_url'] ?? null) ? $pageValue['background_url'] : '',
                 'sections' => array_values(array_filter(
                     $sections,
@@ -68,5 +78,19 @@ class PageDecorationService
         }
 
         return [...$config, 'version' => $version];
+    }
+
+    /** @return array<string, mixed> */
+    private function emptyPage(): array
+    {
+        return [
+            'name' => '',
+            'title' => '',
+            'description' => '',
+            'cover_url' => '',
+            'background_color' => '',
+            'background_url' => '',
+            'sections' => [],
+        ];
     }
 }

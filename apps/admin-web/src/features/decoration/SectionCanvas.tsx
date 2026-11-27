@@ -1,7 +1,8 @@
 import { ArrowDownOutlined, ArrowUpOutlined, CopyOutlined, DeleteOutlined, HolderOutlined } from '@ant-design/icons'
-import { Button, Empty, Popconfirm, Space, Switch, Tag, Typography } from 'antd'
+import { Button, Empty, Popconfirm, Switch, Typography } from 'antd'
 import { useState } from 'react'
 import type { DecorationSection } from '../../api/admin'
+import { SectionPreview, sectionOuterStyle } from './DecorationPreview'
 import { sectionTypeLabel } from './sectionRegistry'
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 
 export function SectionCanvas({ sections, selectedId, onSelect, onChange }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
 
   const move = (index: number, offset: number) => {
     const target = index + offset
@@ -29,6 +31,7 @@ export function SectionCanvas({ sections, selectedId, onSelect, onChange }: Prop
     const copy: DecorationSection = {
       ...source,
       id: `sec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+      style: JSON.parse(JSON.stringify(source.style)) as DecorationSection['style'],
       props: JSON.parse(JSON.stringify(source.props)) as Record<string, unknown>,
     }
     const next = [...sections]
@@ -37,51 +40,72 @@ export function SectionCanvas({ sections, selectedId, onSelect, onChange }: Prop
     onSelect(copy.id)
   }
 
+  const toggle = (index: number) => onChange(sections.map((item, itemIndex) => itemIndex === index ? { ...item, enabled: !item.enabled } : item))
+
   const dropAt = (targetIndex: number) => {
-    if (dragIndex === null || dragIndex === targetIndex) return
-    const next = [...sections]
-    const [moved] = next.splice(dragIndex, 1)
-    next.splice(targetIndex, 0, moved)
+    if (dragIndex !== null && dragIndex !== targetIndex) {
+      const next = [...sections]
+      const [moved] = next.splice(dragIndex, 1)
+      next.splice(targetIndex > dragIndex ? targetIndex - 1 : targetIndex, 0, moved)
+      onChange(next)
+    }
     setDragIndex(null)
-    onChange(next)
+    setDropIndex(null)
   }
 
-  if (sections.length === 0) {
-    return <Empty description="还没有区块，从左侧组件库点击添加" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-  }
-
-  return (
-    <Space direction="vertical" style={{ width: '100%' }} size="small">
-      {sections.map((section, index) => <div
-        key={section.id}
-        draggable
-        onDragStart={() => setDragIndex(index)}
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={() => dropAt(index)}
-        onClick={() => onSelect(section.id)}
-        style={{
-          border: `1px solid ${selectedId === section.id ? '#2F67DF' : '#E7EBF2'}`,
-          boxShadow: selectedId === section.id ? '0 0 0 2px rgba(47,103,223,.12)' : 'none',
-          borderRadius: 10,
-          padding: '10px 12px',
-          background: '#fff',
-          cursor: 'pointer',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <HolderOutlined style={{ color: '#A0AABF', cursor: 'grab' }} />
-          <Tag color="blue">{sectionTypeLabel(section.type)}</Tag>
-          <Typography.Text type="secondary" style={{ flex: 1 }} ellipsis>{section.id}</Typography.Text>
-          <Switch size="small" checked={section.enabled} onClick={(_, event) => event.stopPropagation()} onChange={(checked) => onChange(sections.map((item) => item.id === section.id ? { ...item, enabled: checked } : item))} />
-          <Button type="text" size="small" icon={<ArrowUpOutlined />} disabled={index === 0} onClick={(event) => { event.stopPropagation(); move(index, -1) }} aria-label="上移" />
-          <Button type="text" size="small" icon={<ArrowDownOutlined />} disabled={index === sections.length - 1} onClick={(event) => { event.stopPropagation(); move(index, 1) }} aria-label="下移" />
-          <Button type="text" size="small" icon={<CopyOutlined />} onClick={(event) => { event.stopPropagation(); duplicate(index) }} aria-label="复制" />
-          <Popconfirm title="删除该区块？" onConfirm={() => remove(index)}>
-            <Button danger type="text" size="small" icon={<DeleteOutlined />} onClick={(event) => event.stopPropagation()} aria-label="删除" />
-          </Popconfirm>
-        </div>
-      </div>)}
-      <Typography.Text type="secondary">支持拖拽排序；停用的区块不会在用户端显示。</Typography.Text>
-    </Space>
-  )
+  return <div style={{ background: '#F4F6F4', borderRadius: 12, padding: '18px 14px', maxHeight: 640, overflow: 'auto' }}>
+    <div style={{ width: 336, margin: '0 auto', border: '10px solid #1F2430', borderRadius: 32, background: '#F5F7FB', padding: 10, minHeight: 520 }}>
+      <div style={{ height: 18, borderRadius: 999, background: 'rgba(0,0,0,.12)', width: 90, margin: '0 auto 10px' }} />
+      {sections.length === 0
+        ? <div style={{ marginTop: 80 }}><Empty description="从左侧组件库点击添加区块" image={Empty.PRESENTED_IMAGE_SIMPLE} /></div>
+        : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {sections.map((section, index) => {
+            const selected = selectedId === section.id
+            return <div key={section.id}>
+              {dropIndex === index && dragIndex !== null && dragIndex !== index ? <div style={{ height: 3, borderRadius: 2, background: '#FF3B30', margin: '2px 0' }} /> : null}
+              <div
+                draggable
+                onDragStart={() => setDragIndex(index)}
+                onDragEnd={() => { setDragIndex(null); setDropIndex(null) }}
+                onDragOver={(event) => { event.preventDefault(); setDropIndex(index) }}
+                onDrop={(event) => { event.preventDefault(); dropAt(index) }}
+                onClick={() => onSelect(section.id)}
+                style={{
+                  position: 'relative',
+                  border: `1px solid ${selected ? '#2F67DF' : 'transparent'}`,
+                  outline: selected ? '2px solid rgba(47,103,223,.16)' : 'none',
+                  borderRadius: 10,
+                  opacity: section.enabled ? 1 : .45,
+                  cursor: 'pointer',
+                  padding: 2,
+                  ...sectionOuterStyle(section),
+                }}
+              >
+                <div style={{ position: 'absolute', top: -9, left: 6, zIndex: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', background: selected ? '#2F67DF' : '#8B95A6', borderRadius: 5, padding: '1px 6px' }}>{sectionTypeLabel(section.type)}</span>
+                  {!section.enabled ? <span style={{ fontSize: 9, color: '#fff', background: '#8B95A6', borderRadius: 5, padding: '1px 5px' }}>已停用</span> : null}
+                </div>
+                <SectionPreview section={section} />
+                {selected ? <div
+                  onClick={(event) => event.stopPropagation()}
+                  style={{ position: 'absolute', right: -2, top: -14, zIndex: 3, display: 'flex', alignItems: 'center', gap: 2, background: '#fff', border: '1px solid #E3E8F0', borderRadius: 8, padding: 3, boxShadow: '0 4px 12px rgba(15,25,20,.12)' }}
+                >
+                  <HolderOutlined style={{ color: '#A0AABF', cursor: 'grab', padding: '0 2px' }} />
+                  <Switch size="small" checked={section.enabled} onChange={() => toggle(index)} />
+                  <Button type="text" size="small" icon={<ArrowUpOutlined />} disabled={index === 0} onClick={() => move(index, -1)} aria-label="上移" />
+                  <Button type="text" size="small" icon={<ArrowDownOutlined />} disabled={index === sections.length - 1} onClick={() => move(index, 1)} aria-label="下移" />
+                  <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => duplicate(index)} aria-label="复制" />
+                  <Popconfirm title="删除该区块？" onConfirm={() => remove(index)}>
+                    <Button danger type="text" size="small" icon={<DeleteOutlined />} aria-label="删除" />
+                  </Popconfirm>
+                </div> : null}
+              </div>
+            </div>
+          })}
+        </div>}
+    </div>
+    <Typography.Paragraph type="secondary" style={{ textAlign: 'center', marginTop: 12, fontSize: 12 }}>
+      点击区块选中；拖动排序；右上角工具可启停、上下移、复制与删除。
+    </Typography.Paragraph>
+  </div>
 }

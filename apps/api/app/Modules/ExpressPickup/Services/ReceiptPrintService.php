@@ -18,6 +18,7 @@ class ReceiptPrintService
     public function __construct(
         private readonly PrinterManager $printers,
         private readonly ReceiptTemplateRenderer $renderer,
+        private readonly ReceiptTemplateService $templates,
     ) {}
 
     public function defaultTemplate(): string
@@ -133,9 +134,16 @@ class ReceiptPrintService
 
     public function renderOrder(CampusPrinter $printer, ExpressPickupOrder $order): string
     {
+        $variables = $this->orderVariables($order);
+        // 装修中心绑定并启用的快递代取模板优先，未配置时保持一机一模板的旧行为。
+        $compiled = $this->templates->compiledForScene('express_pickup', $variables, (int) $order->campus_id);
+        if ($compiled !== null) {
+            return $compiled;
+        }
+
         return $this->renderer->render(
             $printer->template ?: $this->defaultTemplate(),
-            $this->orderVariables($order),
+            $variables,
             $printer->paper_width,
         );
     }

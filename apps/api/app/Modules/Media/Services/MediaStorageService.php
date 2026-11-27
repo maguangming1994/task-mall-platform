@@ -2,6 +2,7 @@
 
 namespace App\Modules\Media\Services;
 
+use App\Models\User;
 use App\Modules\Admin\Models\AdminUser;
 use App\Modules\Media\Jobs\MigrateMediaStorage;
 use App\Modules\Media\Models\MediaAsset;
@@ -116,17 +117,17 @@ class MediaStorageService
         return $provider->fresh();
     }
 
-    public function upload(UploadedFile $file, AdminUser $admin): MediaAsset
+    public function upload(UploadedFile $file, AdminUser|User $actor): MediaAsset
     {
         $bytes = file_get_contents($file->getRealPath());
         if ($bytes === false) {
             throw ValidationException::withMessages(['file' => '无法读取上传文件。']);
         }
 
-        return $this->storeBytes($bytes, $file->getClientOriginalName(), 'local_upload', $admin, $file->getClientMimeType());
+        return $this->storeBytes($bytes, $file->getClientOriginalName(), 'local_upload', $actor, $file->getClientMimeType());
     }
 
-    public function importUrl(string $url, AdminUser $admin): MediaAsset
+    public function importUrl(string $url, AdminUser|User $actor): MediaAsset
     {
         $target = $this->assertPublicHttpsUrl($url);
         $response = $this->requestPinnedRemoteImage($url, $target);
@@ -139,7 +140,7 @@ class MediaStorageService
         }
         $name = basename((string) parse_url($url, PHP_URL_PATH)) ?: 'remote-image';
 
-        return $this->storeBytes($this->readRemoteBody($response), $name, 'url_import', $admin, $response->header('Content-Type'));
+        return $this->storeBytes($this->readRemoteBody($response), $name, 'url_import', $actor, $response->header('Content-Type'));
     }
 
     /** @param array<string, mixed> $metadata */
@@ -256,7 +257,7 @@ class MediaStorageService
     }
 
     /** @param array<string, mixed> $metadata */
-    private function storeBytes(string $bytes, string $originalName, string $sourceType, AdminUser $admin, ?string $declaredMime, array $metadata = []): MediaAsset
+    private function storeBytes(string $bytes, string $originalName, string $sourceType, AdminUser|User $actor, ?string $declaredMime, array $metadata = []): MediaAsset
     {
         if ($bytes === '' || strlen($bytes) > self::MAX_IMAGE_BYTES) {
             throw ValidationException::withMessages(['file' => '图片不能为空且不能超过 10MB。']);
@@ -284,7 +285,10 @@ class MediaStorageService
             'source_type' => $sourceType, 'original_name' => Str::limit(basename(str_replace('\\', '/', $originalName)), 255, ''),
             'mime_type' => $mime, 'size_bytes' => strlen($bytes), 'sha256' => hash('sha256', $bytes),
             'storage_provider' => $provider->provider, 'object_path' => $path, 'public_url' => $this->publicUrl($provider, $path),
-            'status' => 'active', 'metadata' => [...$metadata, 'width' => $width, 'height' => $height, 'delivery_url_version' => 1], 'created_by_admin_id' => $admin->id,
+            'status' => 'active', 'metadata' => [...$metadata, 'width' => $width, 'height' => $height, 'delivery_url_version' => 1],
+            ...($actor instanceof AdminUser
+                ? ['created_by_admin_id' => $actor->id]
+                : ['created_by_user_id' => $actor->id]),
         ]);
     }
 

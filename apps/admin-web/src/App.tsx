@@ -25,6 +25,7 @@ import {
   Result,
   Select,
   Skeleton,
+  Tooltip,
   message,
 } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
@@ -122,10 +123,18 @@ function LoginPage() {
   )
 }
 
+const SIDEBAR_COLLAPSED_KEY = 'xq-admin-sidebar-collapsed'
+
 function AdminShell() {
   const { admin, navigation, logout } = useAdminAuth()
   const path = useHashPath()
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
   const [openKeys, setOpenKeys] = useState<string[]>([])
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [passwordSubmitting, setPasswordSubmitting] = useState(false)
@@ -202,10 +211,23 @@ function AdminShell() {
     ? { key: g.pages[0].path, icon: g.icon, label: g.label }
     : { key: g.key, icon: g.icon, label: g.label, children: g.pages.map((p) => ({ key: p.path, label: p.title })) })
 
+  const toggleCollapsed = () => {
+    setCollapsed((value) => {
+      const next = !value
+      try {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0')
+      } catch {
+        // 隐私模式下 localStorage 不可用时仅本次生效
+      }
+      return next
+    })
+  }
+
   const renderMenu = (inDrawer = false) => (
     <Menu
       theme="dark"
       mode="inline"
+      inlineCollapsed={inDrawer ? false : collapsed}
       selectedKeys={route ? [route.page.path] : []}
       openKeys={inDrawer ? openKeys : (collapsed ? undefined : openKeys)}
       onOpenChange={(keys) => setOpenKeys(keys as string[])}
@@ -221,7 +243,9 @@ function AdminShell() {
       {contextHolder}
       {!isMobile && (
         <Layout.Sider width={216} collapsedWidth={72} collapsed={collapsed} className="xq-sider">
-          <div className="xq-sider-brand"><span className="logo">校</span>{!collapsed && <span>校圈 Admin</span>}</div>
+          <div className="xq-sider-brand" title={collapsed ? '校圈 Admin' : undefined}>
+            <span className="logo">校</span>{!collapsed && <span>校圈 Admin</span>}
+          </div>
           {renderMenu(false)}
           <div className="xq-sider-foot">{collapsed ? 'v3.2.0' : '校圈 v3.2.0 · build 20261004'}</div>
         </Layout.Sider>
@@ -256,15 +280,20 @@ function AdminShell() {
             {isMobile ? (
               <Button type="text" className="xq-mobile-menu-btn" icon={<MenuOutlined />} onClick={() => setMobileNavOpen(true)} />
             ) : (
-              <Button
-                type="text"
-                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                onClick={() => setCollapsed((v) => !v)}
-              />
+              <Tooltip title={collapsed ? '展开侧边栏' : '收起侧边栏'} placement="bottomLeft">
+                <Button
+                  type="text"
+                  aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
+                  icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                  onClick={toggleCollapsed}
+                />
+              </Tooltip>
             )}
             <Breadcrumb items={[
               { title: '首页' },
-              ...(route?.group.key === 'workbench' ? [{ title: '工作台' }] : [{ title: route?.group.label ?? '' }, { title: route?.page.title ?? '' }]),
+              ...(route?.group.key === 'workbench' || route?.group.key === 'apps'
+                ? [{ title: route?.page.title ?? '' }]
+                : [{ title: route?.group.label ?? '' }, { title: route?.page.title ?? '' }]),
             ]} />
           </div>
           <div className="xq-header-right">

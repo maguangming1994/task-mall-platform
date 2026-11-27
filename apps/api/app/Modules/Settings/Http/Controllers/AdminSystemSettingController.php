@@ -10,10 +10,12 @@ use App\Modules\Auth\Services\SmsProviderSettingsService;
 use App\Modules\Auth\Services\WechatProviderSettingsService;
 use App\Modules\Identity\Services\IdentityVerificationSettingsService;
 use App\Modules\Payment\Services\WechatPaymentSettingsService;
+use App\Modules\ExpressPickup\Services\ReceiptTemplateService;
 use App\Modules\Settings\Models\SystemSettingDefinition;
 use App\Modules\Settings\Models\SystemSettingDraft;
 use App\Modules\Settings\Models\SystemSettingVersion;
 use App\Modules\Settings\Services\PageDecorationService;
+use App\Modules\Settings\Services\PageSchemeService;
 use App\Modules\Settings\Services\SystemSettingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,7 +30,12 @@ class AdminSystemSettingController extends Controller
         ]);
         $definitions = SystemSettingDefinition::query()
             ->where('enabled', true)
-            ->whereNotIn('setting_key', [...$this->specializedSettingKeys(), PageDecorationService::SETTING_KEY])
+            ->whereNotIn('setting_key', [
+                ...$this->specializedSettingKeys(),
+                PageDecorationService::SETTING_KEY,
+                PageSchemeService::SETTING_KEY,
+                ReceiptTemplateService::SETTING_KEY,
+            ])
             ->when(isset($data['group']), fn ($query) => $query->where('group_code', $data['group']))
             ->when(isset($data['keyword']), function ($query) use ($data): void {
                 $keyword = '%'.$data['keyword'].'%';

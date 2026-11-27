@@ -64,11 +64,12 @@ class ShippingTemplateService
     public function quoteCart(User $user, UserAddress $address): array
     {
         abort_unless($address->user_id === $user->id, 404);
-        $cart = Cart::query()->where('user_id', $user->id)->with(['items.sku.product', 'items.sku.purchaseOptions', 'items.sku.shippingTemplate.versions'])->first();
+        $cart = Cart::query()->where('user_id', $user->id)->with(['items.sku.product', 'items.sku.purchaseOptions', 'items.sku.shippingTemplate.versions', 'items.storeSku.product.store'])->first();
         if (! $cart) {
             return ['shipping_cash_amount' => 0, 'groups' => [], 'cash_only' => true];
         }
-        $groups = $cart->items->where('selected', true)->filter(fn ($item) => $item->sku->fulfillment_type === 'logistics')->groupBy('sku.shipping_template_id');
+        $selected = $cart->items->where('selected', true);
+        $groups = $selected->filter(fn ($item) => $item->sku !== null && $item->sku->fulfillment_type === 'logistics')->groupBy('sku.shipping_template_id');
         $result = [];
         $total = 0;
         foreach ($groups as $templateId => $items) {
@@ -103,6 +104,24 @@ class ShippingTemplateService
                 'template_id' => $template->public_id, 'template_version' => $template->current_version_no,
                 'charge_type' => $content['charge_type'], 'quantity' => $quantity, 'weight_grams' => $weightGrams,
                 'base_amount' => $base, 'remote_surcharge_amount' => $surcharge, 'free_rule' => $freeRule,
+                'shipping_cash_amount' => $amount,
+            ];
+        }
+
+        foreach ($selected->filter(fn ($item) => $item->storeSku !== null && $item->storeSku->fulfillment_type === 'logistics')->groupBy(fn ($item) => $item->storeSku?->product?->store_id) as $storeItems) {
+            $store = $storeItems->first()->storeSku?->product?->store;
+            if ($store === null || ! $store->isActive()) {
+                throw ValidationException::withMessages(['shipping' => '购物车包含已暂停营业的门店商品。']);
+            }
+            $quantity = $storeItems->sum('quantity');
+            $cashSubtotal = $storeItems->sum(fn ($item) => (int) $item->storeSku->cash_amount * $item->quantity);
+            $free = $store->free_shipping_threshold !== null && $cashSubtotal >= (int) $store->free_shipping_threshold;
+            $amount = $free ? 0 : (int) $store->shipping_fee_amount;
+            $total += $amount;
+            $result[] = [
+                'template_id' => null, 'store_id' => $store->public_id, 'template_version' => null,
+                'charge_type' => 'store_flat', 'quantity' => $quantity, 'weight_grams' => 0,
+                'base_amount' => $amount, 'remote_surcharge_amount' => 0, 'free_rule' => $free,
                 'shipping_cash_amount' => $amount,
             ];
         }

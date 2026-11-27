@@ -60,7 +60,7 @@
 
     <DecorationRenderer
       v-if="decoration.sections.length"
-      :sections="decoration.sections"
+      :page="decoration"
       @navigate="handleDecorationLink"
     />
 
@@ -151,7 +151,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import AppTabBar from '@/components/AppTabBar.vue'
 import DecorationRenderer from '@/components/decoration/DecorationRenderer.vue'
-import { loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
+import { emptyDecorationPage, loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
 import { loadAssetOverview, updateProfile, type AssetOverview } from '@/api/account'
 import { getCommunitySocialStats } from '@/api/community'
 import { loadAppearanceContent, type AccountAppearance } from '@/api/appearance'
@@ -182,7 +182,7 @@ const savingNickname = ref(false)
 const uploading = ref(false)
 const accountAppearance = ref<AccountAppearance>({ profile_icon_url: '', service_icons: [] })
 const resolvingAccount = ref(Boolean(auth.accessToken))
-const decoration = ref<DecorationPageConfig>({ background_url: '', sections: [] })
+const decoration = ref<DecorationPageConfig>(emptyDecorationPage())
 // 微信小程序原生胶囊（右上角 ••• ⊙）不可遮挡、不可覆盖触摸；
 // 用胶囊矩形把自定义图标行定位到胶囊左侧，并让头部内容下移避开。
 const headStyle = ref<Record<string, string>>({})
@@ -224,6 +224,8 @@ const baseServices = [
   { id: 'tasks', mark: '任', label: '我的任务', note: '提交与进度', tone: 'blue', action: openTasks, icon: '/static/icons/service-tasks.svg' },
   { id: 'publisher', mark: '发', label: '发布任务', note: '创建与管理', tone: 'violet', action: openPublisher, icon: '/static/icons/module-task-publish.svg' },
   { id: 'orders', mark: '单', label: '我的订单', note: '支付与履约', tone: 'orange', action: () => openOrders(), icon: '/static/icons/service-orders.svg' },
+  { id: 'stores', mark: '门', label: '校园门店', note: '逛校园实体店', tone: 'blue', action: openStoreMarket, icon: '/static/icons/module-mall.svg' },
+  { id: 'my_stores', mark: '店', label: '我的店铺', note: '开店与门店工作台', tone: 'violet', action: openMyStores, icon: '/static/icons/module-mall-trade.svg' },
   { id: 'second_hand', mark: '闲', label: '校园闲置', note: '买卖二手好物', tone: 'green', action: openSecondHand, icon: '/static/icons/service-tasks.svg' },
   { id: 'material', mark: '资', label: '资料共享', note: '真题 · 笔记 · 网盘', tone: 'blue', action: openMaterial, icon: '/static/icons/service-tasks.svg' },
   { id: 'second_hand_orders', mark: '订', label: '闲置订单', note: '买卖交易记录', tone: 'orange', action: () => openSecondHandOrders(), icon: '/static/icons/service-orders.svg' },
@@ -243,6 +245,8 @@ const serviceModuleMap: Record<string, ModuleCode> = {
   tasks: 'module_tasks',
   publisher: 'module_task_publish',
   orders: 'module_mall_trade',
+  stores: 'module_mall_trade',
+  my_stores: 'module_mall_trade',
   second_hand: 'module_second_hand',
   second_hand_orders: 'module_second_hand',
   chat: 'module_second_hand',
@@ -489,6 +493,8 @@ function openVip() { uni.showToast({ title: '校园 PLUS 会员即将上线', ic
 function openTasks() { uni.setStorageSync('task_mall_open_my_tasks', true); uni.reLaunch({ url: '/pages/tasks/index' }) }
 function openPublisher() { uni.navigateTo({ url: '/pages/publisher/index' }) }
 function openOrders(status?: string) { uni.navigateTo({ url: `/pages/orders/index${status ? `?status=${status}` : ''}` }) }
+function openMyStores() { uni.navigateTo({ url: '/pages-store/index' }) }
+function openStoreMarket() { uni.navigateTo({ url: '/pages-store/stores' }) }
 function openAfterSales() { uni.navigateTo({ url: '/pages/after-sales/index' }) }
 function openReferrals() { uni.navigateTo({ url: '/pages/referrals/index' }) }
 function openPushCenter() { uni.navigateTo({ url: '/pages/push-center/index' }) }

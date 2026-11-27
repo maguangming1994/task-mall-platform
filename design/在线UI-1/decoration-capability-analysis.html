@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校圈 · 装修组件能力分析与优化落地</title>
+<style>
+:root{
+  --green:#0BBF63;--green-deep:#08A152;--green-grad:linear-gradient(135deg,#12D978,#08A152);
+  --green-soft:#E7F9EF;--blue:#3B82F6;--blue-soft:#EAF2FF;--orange:#FF7A1A;--orange-soft:#FFF2E5;
+  --bg:#EEF2EF;--line:#EDEFEF;--t1:#191B1F;--t2:#767C85;--t3:#AEB3BB;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px 70px}
+.hero{background:linear-gradient(135deg,#12D978,#08A152);border-radius:0 0 30px 30px;padding:44px 0 46px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;width:360px;height:360px;border-radius:50%;background:rgba(255,255,255,.08);top:-180px;right:-60px}
+.hero .wrap{padding-bottom:0;position:relative}
+.hero .badge{display:inline-block;font-size:12px;font-weight:700;background:rgba(255,255,255,.18);border-radius:14px;padding:5px 13px}
+.hero h1{font-size:31px;font-weight:900;margin-top:14px}
+.hero p{font-size:13.5px;line-height:1.8;opacity:.94;margin-top:10px;max-width:900px}
+.hero .stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.hero .stat{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:10px 18px;font-size:12px}
+.hero .stat b{font-size:20px;display:block}
+.topnav{position:sticky;top:0;z-index:30;background:rgba(238,242,239,.94);backdrop-filter:blur(6px);border-bottom:1px solid #E1E7E3;padding:10px 0}
+.topnav .wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:0}
+.topnav a{font-size:12.5px;font-weight:700;color:var(--t2);background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 14px}
+.topnav a:hover{color:var(--green-deep);border-color:#BFE8D2}
+.content{min-width:0;margin-top:24px}
+.group-h{display:flex;align-items:center;gap:10px;margin:26px 0 12px}
+.group-h i{width:6px;height:20px;border-radius:3px;background:var(--green)}
+.group-h h2{font-size:19px;font-weight:800}
+.group-h .count{font-size:11.5px;color:var(--t2);background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+.note{background:#fff;border-radius:14px;padding:14px 16px;font-size:12.5px;color:var(--t2);line-height:1.8;margin-bottom:12px;box-shadow:0 6px 20px rgba(23,26,23,.04)}
+.note b{color:var(--t1)}
+.note ul{margin:6px 0 0 18px}
+.note li{margin-top:3px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+th{text-align:left;font-size:10.5px;font-weight:800;color:var(--t3);background:#FAFBFA;border-bottom:1px solid var(--line);padding:7px 9px;white-space:nowrap}
+td{padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.65}
+tr:last-child td{border-bottom:0}
+td code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;background:#F3F6F4;border-radius:4px;padding:1px 5px;color:#0A3D23}
+.pill{display:inline-block;font-size:10px;font-weight:800;border-radius:5px;padding:1px 6px;white-space:nowrap}
+.ok{color:#0A3D23;background:var(--green-soft)}
+.gap{color:#8A4B00;background:var(--orange-soft)}
+.plan{color:#1E3A8A;background:var(--blue-soft)}
+.footer{text-align:center;font-size:12px;color:var(--t3);margin-top:40px;line-height:1.9}
+.footer a{color:var(--green-deep);font-weight:700}
+@media(max-width:900px){.topnav .wrap{gap:6px}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">装修中心 · 能力分析</span>
+    <h1>参考装修后台的能力拆解与本次落地</h1>
+    <p>基于 20 张参考后台（组件面板 / 画布 / 属性面板）截图，整理组件功能、可操作项与页面展示效果；对照本校圈装修中心现状形成差距矩阵，并按“渐进、不破坏现有配置”的原则落地通用样式与 10 个高频组件的展示参数。</p>
+    <div class="stats">
+      <div class="stat"><b>20</b>参考截图</div>
+      <div class="stat"><b>12</b>可复用组件形态</div>
+      <div class="stat"><b>3</b>本轮通用样式</div>
+      <div class="stat"><b>2</b>新增组件</div>
+      <div class="stat"><b>2</b>平台数据源</div>
+    </div>
+  </div>
+</header>
+
+<div class="topnav">
+  <div class="wrap">
+    <a href="#frame">面板骨架</a>
+    <a href="#matrix">组件能力矩阵</a>
+    <a href="#gap">差距与优先级</a>
+    <a href="#landed">本轮落地</a>
+    <a href="#next">下一轮</a>
+    <a href="decoration-components.html">组件使用文档 →</a>
+    <a href="decoration.html">页面稿与流程图 →</a>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="content">
+
+    <section id="frame">
+      <div class="group-h"><i></i><h2>一、参考后台的通用面板骨架</h2><span class="count">三段式</span></div>
+      <div class="note">
+        <b>三栏结构：</b>左侧组件库（基础 / 店铺 / 营销 / 功能 / 会员分组），中间手机画布（选中蓝框 + 悬浮工具：上移、下移、复制、设置），右侧属性面板。属性面板固定三段：
+        <table>
+          <thead><tr><th>段落</th><th>配置项</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td>组件布局</td><td>外边距（四向，可负值）、内边距（四向）、组件圆角（四角独立）、组件背景（无 / 纯色 / 图片）、显示渠道（多端多选）、显示时间（0–24 点区间）、订阅消息绑定</td><td>所有组件通用，决定占位与可见性。</td></tr>
+            <tr><td>组件样式</td><td>图标形状 / 高度、行间距、字号 / 粗细 / 斜体、每行数量、显示类型（普通 / 多页滑动）、圆角幅度、滚动速度、颜色组（内层 / 图标 / 文字）、比例、指示器、透明度、位置</td><td>按组件类型提供展示细节。</td></tr>
+            <tr><td>内容</td><td>手动填写，或调用平台数据（幻灯片 / 公告 / 商品分类 / 同城信息）；读取数量 5 / 10 / 20；条目级图标、文字、颜色、链接、角标四形态</td><td>数据来源与条目维护。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="matrix">
+      <div class="group-h"><i></i><h2>二、参考组件能力矩阵</h2><span class="count">12 类</span></div>
+      <div class="note">
+        <table>
+          <thead><tr><th>组件</th><th>可操作项</th><th>页面展示效果</th></tr></thead>
+          <tbody>
+            <tr><td>图片轮播</td><td>轮播高度、图片圆角、标题显隐、指示器（方块 / 圆形 / 圆点 / 数字 / 不显示）、指示器 6 向位置、3D、自动播放 + 间隔 + 切换时长、长按菜单、沉浸式导航、页面背景联动、数据源</td><td>全宽轮播 + 标题层 + 指示器，可沉浸到导航栏。</td></tr>
+            <tr><td>导航栏 / 金刚区</td><td>行间距、图标形状、图标高度、文字上边距 / 字号 / 粗细 / 斜体、每行 3 / 4 / 5 个、普通或滑动分页、角标、每项图标 / 文字颜色 / 链接</td><td>宫格入口，可左右分页，带角标提示。</td></tr>
+            <tr><td>公告</td><td>内边距、圆角、图标大小、文字大小 / 粗细、滚动速度、三处颜色、左侧图片显隐与宽高、数据源、读取数量</td><td>单行滚动公告，点击进入详情或列表。</td></tr>
+            <tr><td>搜索框</td><td>四角圆角、内部四向内边距 / 圆角 / 背景、输入框背景 / 边框 / 文字 / 图标色、形状、文字对齐、右侧搜索按钮显隐、跳转、提示文字</td><td>可完整配色的搜索条，支持定位框组合。</td></tr>
+            <tr><td>定位搜索框</td><td>整体样式（定位框 + 搜索框 / 定位 + 图标）、定位框与搜索框形状、配色、提示文字、跳转</td><td>左侧定位胶囊 + 右侧搜索框。</td></tr>
+            <tr><td>视频播放</td><td>内边距、圆角、背景、比例 16:9 / 4:3 / 1:1、封面、来源（上传 / 第三方链接）</td><td>按比例适配的播放器。</td></tr>
+            <tr><td>订单弹幕</td><td>启用开关、组件样式、背景 / 文字色、距顶 px、距左 px、整体透明度、数据源、跳转</td><td>页面内绝对定位的滚动播报。</td></tr>
+            <tr><td>警告提示</td><td>类型（成功 / 警告 / 正常 / 信息）、标题与描述字号 / 粗细 / 斜体 / 颜色、左侧图标显隐、关闭按钮</td><td>四色提示条，可关闭。</td></tr>
+            <tr><td>瓷片广告位</td><td>区域布局（点选 1 / 2 / 3 格）、图片圆角、主副标题字号与颜色、标签文字 / 颜色 / 背景</td><td>左大右二小拼贴广告。</td></tr>
+            <tr><td>标签组</td><td>每项文字 / 背景 / 边框色、形状（自定义圆角 / 左半圆 / 右半圆）、圆角值、允许关闭、跳转；整组大小（默认 / 迷你）</td><td>横排胶囊标签，可关闭。</td></tr>
+            <tr><td>富文本</td><td>字体、粗体 / 斜体 / 下划线、对齐、列表、图片、视频、表格、链接</td><td>完整排版内容区。</td></tr>
+            <tr><td>启动图 / 广告</td><td>显示开关、背景色、长按菜单、展示频次与间隔、手动或调用引导图、图片 + 跳转</td><td>全屏启动层，可限制展示次数。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="gap">
+      <div class="group-h"><i></i><h2>三、现状对照与优先级</h2><span class="count">已有 / 缺口</span></div>
+      <div class="note">
+        <b>已有能力：</b>34 种组件、5 个分组、三栏画布、拖拽排序、启停 / 复制 / 删除、草稿 - 发布 - 回滚、优惠券中心直领、列表分类筛选直达，以及外边距、内边距、统一圆角、4 种背景、边框、阴影、显示渠道与日期区间。
+        <table>
+          <thead><tr><th>优先级</th><th>缺口</th><th>本轮处理</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill gap">P1</span></td><td>通用：四角独立圆角、每日 0–24 点时段、整体透明度</td><td><span class="pill ok">已落地</span></td></tr>
+            <tr><td><span class="pill gap">P1</span></td><td>高频组件展示参数：轮播指示器与尺寸、金刚区图标与角标、公告滚动与配色、商品列数、帖子形态</td><td><span class="pill ok">已落地</span></td></tr>
+            <tr><td><span class="pill gap">P2</span></td><td>标题栏与选项卡配色字号、视频比例、弹幕速度与配色、提示条图标与字号</td><td><span class="pill ok">已落地</span></td></tr>
+            <tr><td><span class="pill gap">P3</span></td><td>调用平台数据（公告 / 商品分类）与读取数量、瓷片广告区域布局、启动弹窗</td><td><span class="pill ok">已落地</span></td></tr>
+            <tr><td><span class="pill gap">P4</span></td><td>轮播读取平台幻灯片（设置 → 首页内容 → 轮播图）</td><td><span class="pill ok">已落地</span></td></tr>
+            <tr><td><span class="pill plan">P5</span></td><td>富文本视频增强、弹窗多页定向投放</td><td><span class="pill plan">后续</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="landed">
+      <div class="group-h"><i></i><h2>四、本轮落地清单</h2><span class="count">13 + 4 项</span></div>
+
+      <div class="note">
+        <b>第二轮新增（2026-11-27）：</b>
+        <table>
+          <thead><tr><th>能力</th><th>字段</th><th>行为</th></tr></thead>
+          <tbody>
+            <tr><td>瓷片广告位 <code>tile_ad</code></td><td><code>layout</code>、<code>items[3]</code>、<code>radius_rpx</code>、<code>gap_rpx</code>、标题/副标题/标签样式</td><td>左大右二、右大左二、三列等宽三种拼贴；固定 3 块，超出后端拦截。</td></tr>
+            <tr><td>启动弹窗 <code>popup</code></td><td><code>frequency</code>、<code>closable</code>、<code>width_rpx</code>、<code>radius_rpx</code></td><td>浮层展示；按区块 id 记录本地频次（仅一次 / 每天一次 / 每次进入）。</td></tr>
+            <tr><td>公告数据源</td><td><code>data_source</code> manual / system、<code>limit</code> 1–10</td><td>读取系统公告并按数量拼接滚动，未登录或为空回退手动内容。</td></tr>
+            <tr><td>金刚区数据源</td><td><code>data_source</code> manual / product_category、<code>limit</code> 1–10</td><td>调用商品分类生成入口，点击直达分类，为空回退手动入口。</td></tr>
+            <tr><td>轮播数据源</td><td><code>data_source</code> manual / platform、<code>limit</code> 1–10</td><td>读取「设置 → 首页内容 → 轮播图」的图片、标题、描述、按钮与跳转；为空回退手动轮播。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <b>通用样式（34 个组件全部生效，未设置时保持原样）：</b>
+        <table>
+          <thead><tr><th>字段</th><th>取值 / 默认</th><th>渲染规则</th></tr></thead>
+          <tbody>
+            <tr><td><code>corner_radius</code> + <code>radius_corners</code></td><td>开关默认关；四角各 0–100</td><td>开启后按左上 / 右上 / 左下 / 右下渲染，关闭时继续使用 <code>radius</code>。</td></tr>
+            <tr><td><code>opacity</code></td><td>20–100，默认 100</td><td>输出为 0.2–1 的不透明度，后端限制边界。</td></tr>
+            <tr><td><code>display_daily_start</code> / <code>display_daily_end</code></td><td><code>HH:mm</code>，可空</td><td>与日期区间叠加判断；结束早于开始视为跨零点。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <b>组件展示参数（默认值与原视觉一致）：</b>
+        <table>
+          <thead><tr><th>组件</th><th>新增字段（默认值）</th><th>展示差异</th></tr></thead>
+          <tbody>
+            <tr><td>轮播图</td><td><code>height_rpx</code> 280、<code>radius_rpx</code> 24、<code>indicator</code> dots、<code>indicator_position</code> bottom-right、<code>show_title</code> true、<code>duration_ms</code> 300</td><td>高度与图片圆角可配，指示器支持圆点 / 短条 / 数字 / 关闭及 6 个方位，标题层可整体隐藏。</td></tr>
+            <tr><td>金刚区</td><td><code>icon_shape</code> rounded、<code>icon_size_rpx</code> 84、<code>label_size_rpx</code> 24、<code>label_color</code> #3C4961、<code>row_gap_rpx</code> 20；入口 <code>badge_type</code> none / <code>badge_text</code> / <code>badge_image</code></td><td>图标圆形或圆角方形，尺寸与文字颜色可调；入口支持文字、圆点、图片角标。</td></tr>
+            <tr><td>公告</td><td><code>scroll</code> true、<code>speed</code> 3、<code>title_size_rpx</code> 28、<code>text_color</code> #8A6A1F、<code>icon_size_rpx</code> 48、<code>show_arrow</code> true</td><td>正文滚动播放，速度 1–5；标题字号、正文色、图标尺寸与箭头可配。</td></tr>
+            <tr><td>商品列表</td><td><code>columns</code> 2、<code>show_price</code> true、<code>show_subtitle</code> true、<code>show_category</code> false</td><td>单列 / 两列 / 三列；价格、副标题、分类标签独立开关。</td></tr>
+            <tr><td>帖子列表</td><td><code>layout</code> card、<code>show_avatar</code> true、<code>show_excerpt</code> false、<code>show_stats</code> true</td><td>卡片或列表；头像、摘要、评论数独立开关。</td></tr>
+            <tr><td>标题栏</td><td><code>title_size_rpx</code> 32、<code>title_color</code> #1F2937、<code>more_color</code> #0BBF63</td><td>标题字号与颜色、“更多”颜色可调。</td></tr>
+            <tr><td>选项卡</td><td><code>active_color</code> #0BBF63、<code>background_color</code> #F2F4F8、<code>sticky</code> false</td><td>激活色与底色可调，可滚动吸顶。</td></tr>
+            <tr><td>视频</td><td><code>ratio</code> auto（另支持 16:9 / 4:3 / 1:1）</td><td>auto 沿用高度设置，其余按宽度换算高度。</td></tr>
+            <tr><td>订单弹幕</td><td><code>speed</code> 3、<code>bg_color</code> #FFF8E8、<code>text_color</code> #8A6A1F、<code>opacity</code> 100</td><td>滚动速度、配色与整体透明度可调。</td></tr>
+            <tr><td>警告提示</td><td><code>tone</code> 新增 normal、<code>show_icon</code> true、<code>title_size_rpx</code> 26、<code>content_size_rpx</code> 22</td><td>新增中性色；图标可隐藏，标题与内容字号可调。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <b>兼容策略：</b>
+        <ul>
+          <li>新增字段全部可选；旧配置缺失字段时按默认值渲染，线上视觉不变。</li>
+          <li>后端校验只做边界约束与白名单，不要求一次提交全部字段；草稿保存失败不会影响线上。</li>
+          <li>后台预览、用户端渲染与后端校验三处字段名保持一致，避免“后台能配、端上不生效”。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="next">
+      <div class="group-h"><i></i><h2>五、后续建议</h2><span class="count">P5</span></div>
+      <div class="note">
+        <ul>
+          <li><b>弹窗多页定向：</b>支持“仅指定页面 / 指定人群 / 延迟弹出”，当前为进入页面即展示。</li>
+          <li><b>富文本增强：</b>补充视频与图片对齐能力；表格已由后端清洗白名单支持。</li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="footer">
+      <a href="decoration-components.html">组件使用文档</a> · <a href="decoration.html">装修中心页面稿与流程图</a> · <a href="index.html">返回设计总览</a>
+    </div>
+  </div>
+</main>
+
+</body>
+</html>

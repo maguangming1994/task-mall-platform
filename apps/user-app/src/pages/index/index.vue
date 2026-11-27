@@ -65,7 +65,7 @@
     <!-- 装修区块：未配置时不渲染，保持页面原样 -->
     <DecorationRenderer
       v-if="homeDecoration.sections.length"
-      :sections="homeDecoration.sections"
+      :page="homeDecoration"
       @navigate="handleDecorationLink"
     />
 
@@ -201,7 +201,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { onLoad, onShareAppMessage, onShareTimeline, onShow } from '@dcloudio/uni-app'
 import { loadHomeContent, type HomeCarouselItem, type HomeContent, type HomeLinkType } from '@/api/home'
-import { loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
+import { emptyDecorationPage, loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
 import { loadPendingLegalDocuments } from '@/api/legal'
 import { openPrimaryNavigation } from '@/api/navigation'
 import { listProducts, type MallProduct } from '@/api/products'
@@ -240,7 +240,7 @@ const popupVisible = ref(false)
 const homeLoading = ref(false)
 const homeLoaded = ref(false)
 const homeError = ref('')
-const homeDecoration = ref<DecorationPageConfig>({ background_url: '', sections: [] })
+const homeDecoration = ref<DecorationPageConfig>(emptyDecorationPage())
 const activeHeroIndex = ref(0)
 const activeInfoTab = ref<InfoTab>('announcement')
 const failedHeroImages = ref<Record<string, boolean>>({})

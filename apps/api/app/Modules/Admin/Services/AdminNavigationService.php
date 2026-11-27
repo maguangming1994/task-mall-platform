@@ -20,6 +20,7 @@ class AdminNavigationService
             ['code' => 'tasks', 'label' => '任务中心', 'icon' => 'ProfileOutlined', 'path' => '/tasks', 'permissions' => ['task.view', 'task.manage', 'task.review']],
             ['code' => 'task_templates', 'label' => '任务模板中心', 'icon' => 'ProfileOutlined', 'path' => '/task-templates', 'permissions' => ['task.view', 'task.manage']],
             ['code' => 'mall', 'label' => '商城中心', 'icon' => 'ShopOutlined', 'path' => '/mall', 'permissions' => ['product.manage']],
+            ['code' => 'stores', 'label' => '门店管理', 'icon' => 'ShopOutlined', 'path' => '/stores', 'permissions' => ['store.view', 'store.review', 'store.manage', 'store.settle']],
             ['code' => 'orders', 'label' => '订单与售后', 'icon' => 'FileDoneOutlined', 'path' => '/orders', 'permissions' => ['fulfillment.manage', 'after_sale.review']],
             ['code' => 'finance', 'label' => '资产与财务', 'icon' => 'WalletOutlined', 'path' => '/finance', 'permissions' => ['finance.manage']],
             ['code' => 'community', 'label' => '社区内容', 'icon' => 'MessageOutlined', 'path' => '/community', 'permissions' => ['community.review']],

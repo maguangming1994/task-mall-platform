@@ -69,6 +69,8 @@
     /* ---------- Layout ---------- */
     .layout { display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: 48px; margin-top: 48px; }
 
+    .content { max-width: 900px; margin: 48px auto 0; }
+
     .toc { position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 48px); overflow: auto; font-size: 13px; }
     .toc-title { margin: 0 0 12px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; }
     .toc ol { margin: 0; padding: 0; list-style: none; border-left: 1px solid var(--rule); }
@@ -97,16 +99,15 @@
     .sr-empty { padding: 6px 2px; color: var(--muted); font-size: 11.5px; }
 
     /* ---------- Mobile bar / drawer ---------- */
-    .mobile-bar { display: none; }
     .drawer { position: fixed; inset: 0; z-index: 90; visibility: hidden; pointer-events: none; }
     .drawer.open { visibility: visible; pointer-events: auto; }
     .drawer-mask { position: absolute; inset: 0; background: rgba(22, 33, 26, 0.45); opacity: 0; transition: opacity 0.25s; }
     .drawer.open .drawer-mask { opacity: 1; }
     .drawer-panel {
-      position: absolute; top: 0; left: 0; bottom: 0; width: 86%; max-width: 380px;
+      position: absolute; top: 0; right: 0; bottom: 0; width: 88%; max-width: 400px;
       padding: 16px; overflow: auto; background: var(--bg);
-      box-shadow: 8px 0 30px rgba(0, 0, 0, 0.18);
-      transform: translateX(-100%); transition: transform 0.25s;
+      box-shadow: -8px 0 30px rgba(0, 0, 0, 0.18);
+      transform: translateX(100%); transition: transform 0.25s;
     }
     .drawer.open .drawer-panel { transform: none; }
     .drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -123,14 +124,21 @@
     }
     .drawer-toc a.active { border-left-color: var(--accent); color: var(--accent); font-weight: 700; }
 
-    .back-top {
-      position: fixed; right: 16px; bottom: 20px; z-index: 50;
-      display: none; align-items: center; justify-content: center;
-      width: 38px; height: 38px; border: 1px solid var(--rule); border-radius: 50%;
-      background: var(--bg2); color: var(--accent); font-size: 15px; cursor: pointer;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    .fab-stack {
+      position: fixed; right: 16px; bottom: 18px; z-index: 55;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
     }
-    .back-top.show { display: flex; }
+    .fab {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 13px; border: 1px solid var(--rule); border-radius: 999px;
+      background: rgba(255, 255, 255, 0.96); color: var(--ink);
+      font-family: var(--font); font-size: 12px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); backdrop-filter: blur(8px);
+    }
+    .fab:hover { border-color: var(--accent); color: var(--accent); }
+    .fab-ico { font-size: 14px; line-height: 1; }
+    .fab-top { display: none; }
+    .fab-top.show { display: inline-flex; }
 
     /* ---------- Sections ---------- */
     section { margin-bottom: 56px; scroll-margin-top: 24px; }
@@ -338,27 +346,14 @@
 
     /* ---------- Responsive ---------- */
     @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; gap: 0; }
-      .toc { display: none; }
       .meta-grid { grid-template-columns: repeat(2, 1fr); }
       .card-grid { grid-template-columns: 1fr; }
       h1 { font-size: 30px; }
       h2 { font-size: 21px; }
-      .page { padding: 0 20px 72px; }
+      .page { padding: 0 20px 88px; }
       .cover { padding: 40px 0 32px; }
-      body { padding-top: 54px; }
-      section { scroll-margin-top: 70px; }
-      .mobile-bar {
-        position: fixed; top: 0; left: 0; right: 0; z-index: 60;
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 9px 16px; border-bottom: 1px solid var(--rule);
-        background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(10px);
-      }
-      .mb-title { font-size: 13px; font-weight: 800; }
-      .mb-btn {
-        padding: 6px 12px; border: 0; border-radius: 999px;
-        background: var(--accent); color: #fff; font-family: var(--font); font-size: 12px; font-weight: 700;
-      }
+      .content { margin-top: 32px; }
+      .fab-stack { right: 12px; bottom: 14px; }
     }
 
     @media (max-width: 760px) {
@@ -377,7 +372,7 @@
     @media print {
       body { background: #fff; font-size: 12px; }
       .toc { display: none; }
-      .mobile-bar, .drawer, .back-top { display: none !important; }
+      .mobile-bar, .drawer, .fab-stack { display: none !important; }
       .layout { display: block; margin-top: 24px; }
       .page { max-width: none; padding: 0; }
       section { page-break-inside: avoid; margin-bottom: 28px; }
@@ -391,10 +386,6 @@
   </style>
 </head>
 <body>
-<div class="mobile-bar">
-  <span class="mb-title">学校代理操作手册</span>
-  <button class="mb-btn" id="openDrawer" type="button">目录 / 搜索</button>
-</div>
 <div class="page">
 
   <header class="cover">
@@ -412,29 +403,7 @@
     </dl>
   </header>
 
-  <div class="layout">
-
-    <nav class="toc" aria-label="目录">
-      <p class="toc-title">目录</p>
-      <div class="toc-search">
-        <input id="tocSearch" type="search" placeholder="搜索：任务审核、转发、机器人…" autocomplete="off" aria-label="搜索手册内容">
-        <div class="search-results" id="tocResults"></div>
-      </div>
-      <ol>
-        <li><a href="#s1">1. 角色定位与入口</a></li>
-        <li><a href="#s2">2. 账号开通与学校绑定</a></li>
-        <li><a href="#s3">3. 登录与切换学校</a></li>
-        <li><a href="#s4">4. 权限矩阵</a></li>
-        <li><a href="#s5">5. 日常操作流程</a></li>
-        <li><a href="#s6">6. 审核判断标准</a></li>
-        <li><a href="#s7">7. 校区隔离与数据边界</a></li>
-        <li><a href="#s8">8. 安全与审计</a></li>
-        <li><a href="#s9">9. 常见问题与错误码</a></li>
-        <li><a href="#s10">10. 首日检查清单</a></li>
-      </ol>
-    </nav>
-
-    <main>
+  <main class="content">
 
       <!-- ================= 1 ================= -->
       <section id="s1">
@@ -1268,8 +1237,7 @@
         <p>适用对象：学校代理（campus_agent）及其开通负责人。</p>
       </footer>
 
-    </main>
-  </div>
+  </main>
 </div>
 
 <div class="drawer" id="drawer" aria-hidden="true">
@@ -1287,7 +1255,17 @@
   </div>
 </div>
 
-<button class="back-top" id="backTop" type="button" aria-label="回到顶部">↑</button>
+<div class="fab-stack">
+  <button class="fab" id="openSearch" type="button" aria-label="搜索手册">
+    <span class="fab-ico">⌕</span><span class="fab-txt">搜索</span>
+  </button>
+  <button class="fab" id="openToc" type="button" aria-label="打开目录">
+    <span class="fab-ico">☰</span><span class="fab-txt">目录</span>
+  </button>
+  <button class="fab fab-top" id="backTop" type="button" aria-label="回到顶部">
+    <span class="fab-ico">↑</span><span class="fab-txt">顶部</span>
+  </button>
+</div>
 
 <script>
 (function () {
@@ -1368,49 +1346,66 @@
     history.replaceState(null, '', '#' + id);
   }
 
-  var desktopInput = document.getElementById('tocSearch');
   var drawer = document.getElementById('drawer');
   var drawerInput = document.getElementById('drawerSearch');
+  var drawerToc = document.getElementById('drawerToc');
 
-  bindSearch(desktopInput, document.getElementById('tocResults'), function (id) { gotoSec(id, false); });
   bindSearch(drawerInput, document.getElementById('drawerResults'), function (id) { gotoSec(id, true); });
 
-  var drawerToc = document.getElementById('drawerToc');
-  var tocList = document.querySelector('.toc ol');
-  if (tocList && drawerToc) {
-    var clone = tocList.cloneNode(true);
-    Array.prototype.slice.call(clone.querySelectorAll('a')).forEach(function (link) {
+  // 目录由章节标题动态生成，正文调整后无需同步维护。
+  if (drawerToc) {
+    var list = document.createElement('ol');
+    items.forEach(function (item, index) {
+      var li = document.createElement('li');
+      var link = document.createElement('a');
+      link.href = '#' + item.id;
+      link.textContent = (index + 1) + '. ' + item.title;
       link.addEventListener('click', function (event) {
         event.preventDefault();
-        gotoSec(link.getAttribute('href').slice(1), true);
+        gotoSec(item.id, true);
       });
+      li.appendChild(link);
+      list.appendChild(li);
     });
-    drawerToc.appendChild(clone);
+    drawerToc.appendChild(list);
   }
 
-  function openDrawer() {
+  var lastTrigger = null;
+  function openPanel(mode) {
     drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    setTimeout(function () { if (drawerInput) drawerInput.focus(); }, 120);
+    setTimeout(function () {
+      if (mode === 'search') drawerInput.focus();
+      else document.getElementById('closeDrawer').focus();
+    }, 160);
   }
   function closeDrawer() {
     drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+    if (lastTrigger) lastTrigger.focus();
   }
 
-  document.getElementById('openDrawer').addEventListener('click', openDrawer);
+  document.getElementById('openToc').addEventListener('click', function (event) {
+    lastTrigger = event.currentTarget;
+    openPanel('toc');
+  });
+  document.getElementById('openSearch').addEventListener('click', function (event) {
+    lastTrigger = event.currentTarget;
+    openPanel('search');
+  });
   document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
   document.getElementById('drawerMask').addEventListener('click', closeDrawer);
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape' && drawer.classList.contains('open')) closeDrawer();
-    if (event.key === '/' && document.activeElement !== desktopInput && document.activeElement !== drawerInput) {
+    if (event.key === '/' && document.activeElement !== drawerInput) {
       event.preventDefault();
-      if (window.innerWidth <= 900) openDrawer();
-      else if (desktopInput) desktopInput.focus();
+      openPanel('search');
     }
   });
 
-  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a, .drawer-toc a'));
+  var links = Array.prototype.slice.call(document.querySelectorAll('.drawer-toc a'));
   function setActive(id) {
     links.forEach(function (link) {
       link.classList.toggle('active', link.getAttribute('href') === '#' + id);

@@ -1,18 +1,48 @@
 import {
+  AccountBookOutlined,
+  AppstoreOutlined,
+  AuditOutlined,
+  BankOutlined,
+  BarChartOutlined,
+  BgColorsOutlined,
+  CarOutlined,
+  CheckCircleOutlined,
+  CommentOutlined,
+  CustomerServiceOutlined,
   DashboardOutlined,
-  TeamOutlined,
-  ProfileOutlined,
-  ShopOutlined,
-  ShoppingCartOutlined,
-  WalletOutlined,
+  DatabaseOutlined,
+  ExperimentOutlined,
+  FileDoneOutlined,
+  FileProtectOutlined,
+  FileSearchOutlined,
+  FileTextOutlined,
+  FireOutlined,
+  FolderOpenOutlined,
+  GiftOutlined,
+  HistoryOutlined,
+  IdcardOutlined,
+  LockOutlined,
   MessageOutlined,
+  NodeIndexOutlined,
   NotificationOutlined,
-  RocketOutlined,
+  PercentageOutlined,
+  PictureOutlined,
+  ProfileOutlined,
   ReadOutlined,
   RobotOutlined,
-  CarOutlined,
-  SettingOutlined,
+  RocketOutlined,
   SafetyCertificateOutlined,
+  SettingOutlined,
+  ShopOutlined,
+  ShoppingCartOutlined,
+  ShoppingOutlined,
+  SnippetsOutlined,
+  TagOutlined,
+  TeamOutlined,
+  TrophyOutlined,
+  UnorderedListOutlined,
+  UsergroupAddOutlined,
+  WalletOutlined,
 } from '@ant-design/icons'
 import { lazy, useEffect, useState, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react'
 import type { NavigationItem } from '../api/admin'
@@ -21,18 +51,25 @@ export interface AdminPageDef {
   path: string
   title: string
   navCode: string
+  /** 应用中心卡片上的说明文案 */
+  description: string
+  /** 应用中心卡片图标 */
+  icon: ReactNode
   element: LazyExoticComponent<ComponentType>
 }
 export interface AdminGroupDef {
   key: string
   label: string
   icon: ReactNode
+  /** 应用中心分组主色 */
+  accent: string
   pages: AdminPageDef[]
 }
 
 const lazyOf = <K extends string>(loader: () => Promise<Record<K, ComponentType>>, name: K) =>
   lazy(() => loader().then((m) => ({ default: m[name] })))
 
+const AppCenterPage = lazyOf(() => import('../features/app-center/AppCenterPage'), 'AppCenterPage')
 const DashboardPage = lazyOf(() => import('../features/dashboard/DashboardPage'), 'DashboardPage')
 const TaskAuditPage = lazyOf(() => import('../features/tasks/TaskAuditPage'), 'TaskAuditPage')
 const TaskManagementPage = lazyOf(() => import('../features/tasks/TaskManagementPage'), 'TaskManagementPage')
@@ -73,85 +110,92 @@ const PosterTemplatePage = lazyOf(() => import('../features/settings/PosterTempl
 const DecorationPage = lazyOf(() => import('../features/decoration/DecorationPage'), 'DecorationPage')
 const RobotPage = lazyOf(() => import('../features/robot/RobotPage'), 'RobotPage')
 const ExpressPickupPage = lazyOf(() => import('../features/express-pickup/ExpressPickupPage'), 'ExpressPickupPage')
+const StoresPage = lazyOf(() => import('../features/stores/StoresPage'), 'StoresPage')
 const PostManagePage = lazyOf(() => import('../features/content-audit/PostManagePage'), 'PostManagePage')
 const CommentManagePage = lazyOf(() => import('../features/content-audit/CommentManagePage'), 'CommentManagePage')
 const AuditConfigPage = lazyOf(() => import('../features/content-audit/AuditConfigPage'), 'AuditConfigPage')
 const AuditRecordPage = lazyOf(() => import('../features/content-audit/AuditRecordPage'), 'AuditRecordPage')
 
 export const ADMIN_GROUPS: AdminGroupDef[] = [
-  { key: 'workbench', label: '工作台', icon: <DashboardOutlined />, pages: [
-    { path: '/workbench', title: '工作台', navCode: 'workbench', element: DashboardPage },
+  { key: 'apps', label: '应用中心', icon: <AppstoreOutlined />, accent: '#0ea5e9', pages: [
+    { path: '/apps', title: '应用中心', navCode: 'workbench', description: '全部模块与功能入口的集中导航。', icon: <AppstoreOutlined />, element: AppCenterPage },
   ] },
-  { key: 'users', label: '用户中心', icon: <TeamOutlined />, pages: [
-    { path: '/users', title: '用户管理', navCode: 'users', element: UsersPage },
-    { path: '/users/identity-review', title: '实名审核', navCode: 'identity_review', element: IdentityReviewPage },
+  { key: 'workbench', label: '工作台', icon: <DashboardOutlined />, accent: '#22c55e', pages: [
+    { path: '/workbench', title: '工作台', navCode: 'workbench', description: '今日关键指标、待办事项与趋势概览。', icon: <DashboardOutlined />, element: DashboardPage },
   ] },
-  { key: 'tasks', label: '任务中心', icon: <ProfileOutlined />, pages: [
-    { path: '/tasks/audit', title: '任务审核', navCode: 'tasks', element: TaskAuditPage },
-    { path: '/tasks/list', title: '任务管理', navCode: 'tasks', element: TaskManagementPage },
-    { path: '/tasks/templates', title: '任务模板中心', navCode: 'task_templates', element: TaskTemplateCenterPage },
+  { key: 'users', label: '用户中心', icon: <TeamOutlined />, accent: '#3b82f6', pages: [
+    { path: '/users', title: '用户管理', navCode: 'users', description: '查询用户资料、校区归属与账号状态。', icon: <TeamOutlined />, element: UsersPage },
+    { path: '/users/identity-review', title: '实名审核', navCode: 'identity_review', description: '审核学生实名认证材料。', icon: <IdcardOutlined />, element: IdentityReviewPage },
   ] },
-  { key: 'mall', label: '商城中心', icon: <ShopOutlined />, pages: [
-    { path: '/mall/products', title: '商品管理', navCode: 'mall', element: ProductsPage },
-    { path: '/mall/second-hand', title: '闲置审核', navCode: 'second_hand', element: SecondHandAuditPage },
-    { path: '/mall/categories', title: '商品分类', navCode: 'mall', element: CategoriesPage },
-    { path: '/mall/inventory', title: '库存管理', navCode: 'mall', element: InventoryPage },
-    { path: '/mall/coupons', title: '优惠券', navCode: 'mall', element: CouponsPage },
+  { key: 'tasks', label: '任务中心', icon: <ProfileOutlined />, accent: '#16a34a', pages: [
+    { path: '/tasks/audit', title: '任务审核', navCode: 'tasks', description: '审核新发布任务的合规性与内容。', icon: <AuditOutlined />, element: TaskAuditPage },
+    { path: '/tasks/list', title: '任务管理', navCode: 'tasks', description: '查询、下架与维护平台任务。', icon: <UnorderedListOutlined />, element: TaskManagementPage },
+    { path: '/tasks/templates', title: '任务模板中心', navCode: 'task_templates', description: '维护可复用的任务发布模板。', icon: <SnippetsOutlined />, element: TaskTemplateCenterPage },
   ] },
-  { key: 'orders', label: '订单与售后', icon: <ShoppingCartOutlined />, pages: [
-    { path: '/orders', title: '订单管理', navCode: 'orders', element: OrdersPage },
-    { path: '/after-sales', title: '售后管理', navCode: 'orders', element: AfterSalesPage },
+  { key: 'mall', label: '商城中心', icon: <ShopOutlined />, accent: '#f59e0b', pages: [
+    { path: '/mall/products', title: '商品管理', navCode: 'mall', description: '商品上下架、价格与 SKU 维护。', icon: <ShoppingOutlined />, element: ProductsPage },
+    { path: '/mall/second-hand', title: '闲置审核', navCode: 'second_hand', description: '审核校园闲置物品发布内容。', icon: <TagOutlined />, element: SecondHandAuditPage },
+    { path: '/mall/categories', title: '商品分类', navCode: 'mall', description: '维护商城分类层级与排序。', icon: <AppstoreOutlined />, element: CategoriesPage },
+    { path: '/mall/inventory', title: '库存管理', navCode: 'mall', description: '查看库存数量与变动记录。', icon: <DatabaseOutlined />, element: InventoryPage },
+    { path: '/mall/coupons', title: '优惠券', navCode: 'mall', description: '创建与发放商城优惠券。', icon: <GiftOutlined />, element: CouponsPage },
   ] },
-  { key: 'finance', label: '资产与财务', icon: <WalletOutlined />, pages: [
-    { path: '/finance/withdrawals', title: '资产与提现复核', navCode: 'finance', element: AssetManagementPage },
-    { path: '/finance/points', title: '积分管理', navCode: 'finance', element: PointsPage },
+  { key: 'orders', label: '订单与售后', icon: <ShoppingCartOutlined />, accent: '#6366f1', pages: [
+    { path: '/orders', title: '订单管理', navCode: 'orders', description: '查询订单、处理发货与异常订单。', icon: <ShoppingCartOutlined />, element: OrdersPage },
+    { path: '/after-sales', title: '售后管理', navCode: 'orders', description: '处理退款、换货与售后工单。', icon: <CustomerServiceOutlined />, element: AfterSalesPage },
   ] },
-  { key: 'community', label: '社区内容', icon: <MessageOutlined />, pages: [
-    { path: '/community', title: '社区运营', navCode: 'community', element: CommunityManagementPage },
+  { key: 'finance', label: '资产与财务', icon: <WalletOutlined />, accent: '#14b8a6', pages: [
+    { path: '/finance/withdrawals', title: '资产与提现复核', navCode: 'finance', description: '复核提现申请并登记打款结果。', icon: <WalletOutlined />, element: AssetManagementPage },
+    { path: '/finance/points', title: '积分管理', navCode: 'finance', description: '查看积分流水与人工调整积分。', icon: <TrophyOutlined />, element: PointsPage },
   ] },
-  { key: 'material', label: '资料共享', icon: <ReadOutlined />, pages: [
-    { path: '/material/audit', title: '资料审核', navCode: 'material', element: MaterialAuditPage },
-    { path: '/material/categories', title: '资料分类', navCode: 'material', element: MaterialCategoryPage },
-    { path: '/material/requests', title: '求资料与举报', navCode: 'material', element: MaterialRequestPage },
+  { key: 'community', label: '社区内容', icon: <MessageOutlined />, accent: '#ec4899', pages: [
+    { path: '/community', title: '社区运营', navCode: 'community', description: '社区分类、话题与举报处理。', icon: <MessageOutlined />, element: CommunityManagementPage },
   ] },
-  { key: 'operations', label: '运营与消息', icon: <NotificationOutlined />, pages: [
-    { path: '/operations/campaigns', title: '活动运营', navCode: 'operations', element: CampaignsPage },
-    { path: '/operations/release-control', title: '功能灰度发布', navCode: 'operations', element: OperationsPage },
-    { path: '/operations/data-board', title: '数据看板', navCode: 'data_board', element: DataBoardPage },
-    { path: '/operations/notify', title: '消息通知', navCode: 'operations', element: NotifyPage },
+  { key: 'material', label: '资料共享', icon: <ReadOutlined />, accent: '#8b5cf6', pages: [
+    { path: '/material/audit', title: '资料审核', navCode: 'material', description: '审核用户上传的学习资料。', icon: <ReadOutlined />, element: MaterialAuditPage },
+    { path: '/material/categories', title: '资料分类', navCode: 'material', description: '维护资料库分类与展示顺序。', icon: <FolderOpenOutlined />, element: MaterialCategoryPage },
+    { path: '/material/requests', title: '求资料与举报', navCode: 'material', description: '处理资料求助与违规举报。', icon: <FileSearchOutlined />, element: MaterialRequestPage },
   ] },
-  { key: 'push', label: '地推运营', icon: <RocketOutlined />, pages: [
-    { path: '/push/teams', title: '团队管理', navCode: 'push', element: PushTeamsPage },
-    { path: '/push/members', title: '成员与等级', navCode: 'push', element: PushMembersPage },
-    { path: '/push/rules', title: '等级佣金规则', navCode: 'push', element: PushRulesPage },
-    { path: '/push/tasks', title: '推广任务配置', navCode: 'push', element: PushTasksPage },
-    { path: '/push/reviews', title: '申请与交单审核', navCode: 'push', element: PushReviewsPage },
-    { path: '/push/settlements', title: '结算批次', navCode: 'push', element: PushSettlementsPage },
+  { key: 'operations', label: '运营与消息', icon: <NotificationOutlined />, accent: '#f97316', pages: [
+    { path: '/operations/campaigns', title: '活动运营', navCode: 'operations', description: '配置平台活动与推广位。', icon: <FireOutlined />, element: CampaignsPage },
+    { path: '/operations/release-control', title: '功能灰度发布', navCode: 'operations', description: '按端与校区控制模块开关。', icon: <ExperimentOutlined />, element: OperationsPage },
+    { path: '/operations/data-board', title: '数据看板', navCode: 'data_board', description: '业务核心数据的汇总视图。', icon: <BarChartOutlined />, element: DataBoardPage },
+    { path: '/operations/notify', title: '消息通知', navCode: 'operations', description: '发送站内与订阅消息通知。', icon: <NotificationOutlined />, element: NotifyPage },
   ] },
-  { key: 'express', label: '快递代取', icon: <CarOutlined />, pages: [
-    { path: '/express-pickup', title: '快递代取', navCode: 'express_pickup', element: ExpressPickupPage },
+  { key: 'push', label: '地推运营', icon: <RocketOutlined />, accent: '#ef4444', pages: [
+    { path: '/push/teams', title: '团队管理', navCode: 'push', description: '管理地推团队与负责校区。', icon: <RocketOutlined />, element: PushTeamsPage },
+    { path: '/push/members', title: '成员与等级', navCode: 'push', description: '维护团队成员与等级晋升。', icon: <UsergroupAddOutlined />, element: PushMembersPage },
+    { path: '/push/rules', title: '等级佣金规则', navCode: 'push', description: '配置等级佣金与阶梯奖励。', icon: <PercentageOutlined />, element: PushRulesPage },
+    { path: '/push/tasks', title: '推广任务配置', navCode: 'push', description: '配置推广任务与考核指标。', icon: <NodeIndexOutlined />, element: PushTasksPage },
+    { path: '/push/reviews', title: '申请与交单审核', navCode: 'push', description: '审核入团申请与推广交单。', icon: <FileDoneOutlined />, element: PushReviewsPage },
+    { path: '/push/settlements', title: '结算批次', navCode: 'push', description: '生成与核对佣金结算批次。', icon: <AccountBookOutlined />, element: PushSettlementsPage },
   ] },
-  { key: 'robot', label: 'XP 机器人', icon: <RobotOutlined />, pages: [
-    { path: '/robot', title: 'XP 机器人', navCode: 'robot', element: RobotPage },
+  { key: 'express', label: '快递代取', icon: <CarOutlined />, accent: '#0ea5e9', pages: [
+    { path: '/express-pickup', title: '快递代取', navCode: 'express_pickup', description: '管理代取订单与配送状态。', icon: <CarOutlined />, element: ExpressPickupPage },
   ] },
-  { key: 'content_audit', label: '内容审核', icon: <SafetyCertificateOutlined />, pages: [
-    { path: '/content-audit/posts', title: '帖子管理', navCode: 'community', element: PostManagePage },
-    { path: '/content-audit/comments', title: '评论管理', navCode: 'community', element: CommentManagePage },
-    { path: '/content-audit/config', title: '审核配置', navCode: 'settings', element: AuditConfigPage },
-    { path: '/content-audit/records', title: '审核记录', navCode: 'community', element: AuditRecordPage },
+  { key: 'stores', label: '门店管理', icon: <ShopOutlined />, accent: '#06b6d4', pages: [
+    { path: '/stores', title: '门店管理', navCode: 'stores', description: '维护合作门店资料与营业状态。', icon: <ShopOutlined />, element: StoresPage },
   ] },
-  { key: 'config', label: '配置中心', icon: <SettingOutlined />, pages: [
-    { path: '/config', title: '配置中心', navCode: 'settings', element: SettingsPage },
-    { path: '/decoration', title: '装修中心', navCode: 'settings', element: DecorationPage },
-    { path: '/support/tickets', title: '工单客服', navCode: 'support', element: SupportPage },
-    { path: '/config/privacy', title: '隐私与合规', navCode: 'privacy', element: PrivacyPage },
-    { path: '/config/readiness', title: '上线检查', navCode: 'readiness', element: ReadinessPage },
-    { path: '/config/poster-templates', title: '海报模板管理', navCode: 'settings', element: PosterTemplatePage },
+  { key: 'robot', label: 'XP 机器人', icon: <RobotOutlined />, accent: '#7c3aed', pages: [
+    { path: '/robot', title: 'XP 机器人', navCode: 'robot', description: '配置机器人转发与校区开放范围。', icon: <RobotOutlined />, element: RobotPage },
   ] },
-  { key: 'security', label: '权限与审计', icon: <SafetyCertificateOutlined />, pages: [
-    { path: '/security/roles', title: '角色权限', navCode: 'security', element: RolesPage },
-    { path: '/security/campuses', title: '学校与代理', navCode: 'campuses', element: CampusManagementPage },
-    { path: '/security/logs', title: '操作日志', navCode: 'security', element: AuditLogsPage },
+  { key: 'content_audit', label: '内容审核', icon: <SafetyCertificateOutlined />, accent: '#dc2626', pages: [
+    { path: '/content-audit/posts', title: '帖子管理', navCode: 'community', description: '管理社区帖子与审核状态。', icon: <FileTextOutlined />, element: PostManagePage },
+    { path: '/content-audit/comments', title: '评论管理', navCode: 'community', description: '处理评论审核与违规内容。', icon: <CommentOutlined />, element: CommentManagePage },
+    { path: '/content-audit/config', title: '审核配置', navCode: 'settings', description: '配置内容安全服务与审核策略。', icon: <SafetyCertificateOutlined />, element: AuditConfigPage },
+    { path: '/content-audit/records', title: '审核记录', navCode: 'community', description: '查询机器审核与人工复核记录。', icon: <HistoryOutlined />, element: AuditRecordPage },
+  ] },
+  { key: 'config', label: '配置中心', icon: <SettingOutlined />, accent: '#64748b', pages: [
+    { path: '/config', title: '配置中心', navCode: 'settings', description: '平台参数、支付与三方服务配置。', icon: <SettingOutlined />, element: SettingsPage },
+    { path: '/decoration', title: '装修中心', navCode: 'settings', description: '配置小程序首页与频道装修。', icon: <BgColorsOutlined />, element: DecorationPage },
+    { path: '/support/tickets', title: '工单客服', navCode: 'support', description: '处理用户咨询与售后工单。', icon: <CustomerServiceOutlined />, element: SupportPage },
+    { path: '/config/privacy', title: '隐私与合规', navCode: 'privacy', description: '维护协议文本与隐私合规配置。', icon: <FileProtectOutlined />, element: PrivacyPage },
+    { path: '/config/readiness', title: '上线检查', navCode: 'readiness', description: '上线前的配置与依赖自检清单。', icon: <CheckCircleOutlined />, element: ReadinessPage },
+    { path: '/config/poster-templates', title: '海报模板管理', navCode: 'settings', description: '维护分享海报模板与文案。', icon: <PictureOutlined />, element: PosterTemplatePage },
+  ] },
+  { key: 'security', label: '权限与审计', icon: <SafetyCertificateOutlined />, accent: '#475569', pages: [
+    { path: '/security/roles', title: '角色权限', navCode: 'security', description: '配置角色与菜单权限范围。', icon: <LockOutlined />, element: RolesPage },
+    { path: '/security/campuses', title: '学校与代理', navCode: 'campuses', description: '维护学校信息与代理归属。', icon: <BankOutlined />, element: CampusManagementPage },
+    { path: '/security/logs', title: '操作日志', navCode: 'security', description: '查询后台敏感操作的审计记录。', icon: <AuditOutlined />, element: AuditLogsPage },
   ] },
 ]
 

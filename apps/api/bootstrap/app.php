@@ -59,8 +59,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.permission' => RequireAdminPermission::class,
             'admin.recent_verification' => RequireRecentAdminVerification::class,
             'admin.campus' => EnforceAdminCampusScope::class,
+            'admin.platform' => \App\Modules\Admin\Http\Middleware\RequirePlatformAdmin::class,
             'legal.consent' => RequireLegalConsent::class,
             'auth.publisher' => AuthenticateTaskPublisher::class,
+            'auth.store' => \App\Modules\Store\Http\Middleware\AuthenticateStoreManager::class,
             'module.gate' => RequireModuleEnabled::class,
             'campus.bound' => RequireBoundCampus::class,
         ]);

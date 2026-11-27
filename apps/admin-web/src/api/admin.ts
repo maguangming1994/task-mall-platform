@@ -192,14 +192,57 @@ export interface SettingVersion {
 
 export type DecorationPageKey = 'home' | 'community' | 'mall' | 'account'
 
+export type DecorationChannel = 'h5' | 'miniapp'
+
+export interface DecorationSpacing {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
+export interface DecorationCorners {
+  top_left: number
+  top_right: number
+  bottom_left: number
+  bottom_right: number
+}
+
+export interface DecorationStyle {
+  margin: DecorationSpacing
+  padding: DecorationSpacing
+  radius: number
+  corner_radius: boolean
+  radius_corners: DecorationCorners
+  opacity: number
+  display_daily_start: string
+  display_daily_end: string
+  background_type: 'none' | 'color' | 'image' | 'gradient'
+  background_color: string
+  background_image: string
+  background_gradient: string
+  border: boolean
+  border_color: string
+  shadow: boolean
+  channels: DecorationChannel[]
+  display_start: string
+  display_end: string
+}
+
 export interface DecorationSection {
   id: string
   type: string
   enabled: boolean
+  style: DecorationStyle
   props: Record<string, unknown>
 }
 
 export interface DecorationPageConfig {
+  name: string
+  title: string
+  description: string
+  cover_url: string
+  background_color: string
   background_url: string
   sections: DecorationSection[]
 }
@@ -215,6 +258,75 @@ export interface PageDecorationOverview {
   current_version: number | null
   draft: SettingDraft | null
   versions: SettingVersion[]
+}
+
+export interface DecorationScheme {
+  id: string
+  name: string
+  page_key: DecorationPageKey
+  page: DecorationPageConfig
+  created_at: string
+  updated_at: string
+  derived: boolean
+}
+
+export interface DecorationSchemeOverview {
+  schema_version: number
+  pages: Record<DecorationPageKey, { h5: string | null; miniapp: string | null }>
+  schemes: DecorationScheme[]
+  page_types: Array<{ key: DecorationPageKey; label: string }>
+  channels: Array<{ key: DecorationChannel; label: string; effective: boolean }>
+  version: number | null
+}
+
+export type ReceiptBlockType = 'text' | 'product_header' | 'product_item' | 'qr_code' | 'distribution_code' | 'divider' | 'blank'
+
+export type ReceiptAlign = 'left' | 'center' | 'right'
+
+export interface ReceiptBlockProps {
+  content: string
+  align: ReceiptAlign
+  font_size: number
+  bold: number
+}
+
+export interface ReceiptBlock {
+  id: string
+  type: ReceiptBlockType
+  props: ReceiptBlockProps
+}
+
+export interface ReceiptTemplate {
+  id: string
+  name: string
+  campus_id: number | null
+  campus_name: string
+  paper_width: 58 | 80
+  print_type: string
+  status: 'enabled' | 'disabled'
+  blocks: ReceiptBlock[]
+  created_at: string
+  updated_at: string
+}
+
+export interface ReceiptTemplateInput {
+  name: string
+  campus_id: number | null
+  paper_width: 58 | 80
+  print_type: string
+  status: 'enabled' | 'disabled'
+  blocks: ReceiptBlock[]
+}
+
+export interface ReceiptTemplateOverview {
+  schema_version: number
+  templates: ReceiptTemplate[]
+  bindings: Record<string, Record<'receipt' | 'split' | 'label', string | null>>
+  scenes: Array<{ code: string; label: string; status: 'active' | 'pending' }>
+  slots: Array<{ code: 'receipt' | 'split' | 'label'; label: string }>
+  block_types: Array<{ code: ReceiptBlockType; label: string }>
+  variables: Array<{ key: string; label: string }>
+  version: number | null
 }
 
 export interface PrivacyRequestItem {
@@ -1631,6 +1743,84 @@ export async function rollbackPageDecoration(targetVersion: number, reason: stri
   return request('/admin/page-decoration/rollback', {
     method: 'POST',
     body: JSON.stringify({ target_version: targetVersion, reason }),
+  })
+}
+
+export async function getDecorationSchemes(): Promise<DecorationSchemeOverview> {
+  return request('/admin/decoration/schemes')
+}
+
+export async function createDecorationScheme(input: { name: string; page_key: DecorationPageKey }): Promise<{ scheme: DecorationScheme; overview: DecorationSchemeOverview }> {
+  return request('/admin/decoration/schemes', { method: 'POST', body: JSON.stringify(input) })
+}
+
+export async function updateDecorationScheme(
+  id: string,
+  input: { name: string; page: DecorationPageConfig; reason?: string },
+): Promise<{ scheme: DecorationScheme; overview: DecorationSchemeOverview }> {
+  return request(`/admin/decoration/schemes/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+
+export async function duplicateDecorationScheme(id: string): Promise<{ scheme: DecorationScheme; overview: DecorationSchemeOverview }> {
+  return request(`/admin/decoration/schemes/${encodeURIComponent(id)}/duplicate`, { method: 'POST', body: JSON.stringify({}) })
+}
+
+export async function setDecorationSchemeChannel(
+  id: string,
+  channel: DecorationChannel,
+  enabled: boolean,
+): Promise<DecorationSchemeOverview> {
+  return request(`/admin/decoration/schemes/${encodeURIComponent(id)}/channel`, {
+    method: 'PUT',
+    body: JSON.stringify({ channel, enabled }),
+  })
+}
+
+export async function deleteDecorationScheme(id: string): Promise<{ id: string }> {
+  return request(`/admin/decoration/schemes/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export async function listDecorationCampuses(): Promise<{ items: Array<{ id: number; name: string }> }> {
+  return request('/admin/decoration/campuses')
+}
+
+export async function getReceiptTemplates(): Promise<ReceiptTemplateOverview> {
+  return request('/admin/decoration/receipt-templates')
+}
+
+export async function createReceiptTemplate(input: ReceiptTemplateInput): Promise<{ template: ReceiptTemplate; overview: ReceiptTemplateOverview }> {
+  return request('/admin/decoration/receipt-templates', { method: 'POST', body: JSON.stringify(input) })
+}
+
+export async function updateReceiptTemplate(id: string, input: ReceiptTemplateInput): Promise<{ template: ReceiptTemplate; overview: ReceiptTemplateOverview }> {
+  return request(`/admin/decoration/receipt-templates/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+
+export async function duplicateReceiptTemplate(id: string): Promise<{ template: ReceiptTemplate; overview: ReceiptTemplateOverview }> {
+  return request(`/admin/decoration/receipt-templates/${encodeURIComponent(id)}/duplicate`, { method: 'POST', body: JSON.stringify({}) })
+}
+
+export async function toggleReceiptTemplate(id: string): Promise<{ template: ReceiptTemplate; overview: ReceiptTemplateOverview }> {
+  return request(`/admin/decoration/receipt-templates/${encodeURIComponent(id)}/toggle`, { method: 'POST', body: JSON.stringify({}) })
+}
+
+export async function deleteReceiptTemplate(id: string): Promise<{ id: string }> {
+  return request(`/admin/decoration/receipt-templates/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export async function saveReceiptTemplateBindings(
+  bindings: ReceiptTemplateOverview['bindings'],
+): Promise<ReceiptTemplateOverview> {
+  return request('/admin/decoration/receipt-templates/bindings', { method: 'PUT', body: JSON.stringify({ bindings }) })
+}
+
+export async function previewReceiptTemplate(
+  blocks: ReceiptBlock[],
+  paperWidth: 58 | 80,
+): Promise<{ content: string; preview: string }> {
+  return request('/admin/decoration/receipt-templates/preview', {
+    method: 'POST',
+    body: JSON.stringify({ blocks, paper_width: paperWidth }),
   })
 }
 
@@ -3419,4 +3609,227 @@ export function testCampusPrinter(id: string): Promise<{ ok: boolean; message: s
 }
 export function previewCampusPrinter(input: { template?: string | null; paper_width?: number; campus_id?: number | null }): Promise<{ content: string }> {
   return adminRequest('/admin/express-pickup/printers/preview', { method: 'POST', body: JSON.stringify(input) })
+}
+
+// ---------------------------------------------------------------------------
+// 多门店：门店审核、门店商品监督与门店结算
+// ---------------------------------------------------------------------------
+
+export type AdminStoreStatus = 'pending' | 'active' | 'rejected' | 'suspended' | 'closed'
+
+export const ADMIN_STORE_STATUS_OPTIONS: Array<{ value: AdminStoreStatus; label: string; color: string }> = [
+  { value: 'pending', label: '待审核', color: 'processing' },
+  { value: 'active', label: '营业中', color: 'success' },
+  { value: 'rejected', label: '已驳回', color: 'error' },
+  { value: 'suspended', label: '已暂停', color: 'warning' },
+  { value: 'closed', label: '已关闭', color: 'default' },
+]
+
+export interface AdminStorePagination {
+  page: number
+  page_size: number
+  total: number
+  last_page: number
+}
+
+export interface AdminStoreOwner {
+  id: string
+  nickname: string
+  phone: string | null
+  status: string
+}
+
+export interface AdminStore {
+  id: string
+  name: string
+  logo_url: string | null
+  description: string | null
+  contact_phone: string | null
+  address: string | null
+  business_hours: string | null
+  status: AdminStoreStatus
+  reject_reason: string | null
+  commission_rate_bps: number
+  shipping_fee_amount: number
+  free_shipping_threshold: number | null
+  campus_id: number | null
+  campus_name: string | null
+  owner: AdminStoreOwner | null
+  product_count: number
+  applied_at: string | null
+  reviewed_at: string | null
+  created_at: string | null
+}
+
+export interface AdminStoreMember {
+  id: string
+  role: string
+  status: string
+  nickname: string | null
+  phone: string | null
+  joined_at: string | null
+}
+
+export interface AdminStoreUnbilled {
+  item_count: number
+  gross_amount: number
+  refunded_amount: number
+  commission_amount: number
+  net_amount: number
+}
+
+export interface AdminStoreCampus {
+  campus_id: string
+  campus_name: string
+  status: 'active' | 'disabled'
+  is_primary: boolean
+  unbilled: AdminStoreUnbilled | null
+}
+
+export interface AdminStoreDetail extends AdminStore {
+  members: AdminStoreMember[]
+  unbilled: AdminStoreUnbilled
+  campuses: AdminStoreCampus[]
+}
+
+export interface AdminStoreListResponse {
+  items: AdminStore[]
+  pagination: AdminStorePagination
+}
+
+export type AdminStoreProductStatus = 'draft' | 'on_sale' | 'off_shelf'
+
+export const ADMIN_STORE_PRODUCT_STATUS_OPTIONS: Array<{ value: AdminStoreProductStatus; label: string; color: string }> = [
+  { value: 'draft', label: '草稿', color: 'default' },
+  { value: 'on_sale', label: '在售', color: 'success' },
+  { value: 'off_shelf', label: '已下架', color: 'warning' },
+]
+
+export interface AdminStoreProduct {
+  id: string
+  name: string
+  cover_url: string | null
+  status: AdminStoreProductStatus
+  admin_off_shelf_reason: string | null
+  store: { id: string; name: string } | null
+  sku_count: number
+  price_from: number | null
+  price_to: number | null
+  created_at: string | null
+}
+
+export interface AdminStoreProductListResponse {
+  items: AdminStoreProduct[]
+  pagination: AdminStorePagination
+}
+
+export type AdminStoreSettlementStatus = 'pending' | 'confirmed' | 'paid' | 'void'
+
+export const ADMIN_STORE_SETTLEMENT_STATUS_OPTIONS: Array<{ value: AdminStoreSettlementStatus; label: string; color: string }> = [
+  { value: 'pending', label: '待确认', color: 'processing' },
+  { value: 'confirmed', label: '已确认', color: 'blue' },
+  { value: 'paid', label: '已打款', color: 'success' },
+  { value: 'void', label: '已作废', color: 'default' },
+]
+
+export interface AdminStoreSettlement {
+  id: string
+  batch_no: string
+  store: { id: string; name: string } | null
+  campus_id: string
+  campus_name: string
+  period_start: string
+  period_end: string
+  gross_amount: number
+  refunded_amount: number
+  commission_amount: number
+  net_amount: number
+  item_count: number
+  status: AdminStoreSettlementStatus
+  remark: string | null
+  confirmed_at: string | null
+  paid_at: string | null
+  created_at: string | null
+}
+
+export interface AdminStoreSettlementItem {
+  id: number
+  order_item_id: number
+  order_id: number
+  gross_amount: number
+  refunded_amount: number
+  commission_amount: number
+  net_amount: number
+}
+
+export interface AdminStoreSettlementDetail extends AdminStoreSettlement {
+  items: AdminStoreSettlementItem[]
+}
+
+export interface AdminStoreSettlementPreview {
+  store_id: string
+  campus_id: string
+  campus_name: string
+  period_start: string
+  period_end: string
+  commission_rate_bps: number
+  item_count: number
+  gross_amount: number
+  refunded_amount: number
+  commission_amount: number
+  net_amount: number
+}
+
+function storeQuery(filters: Record<string, unknown>): string {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return
+    query.set(key, String(value))
+  })
+  return query.size ? `?${query.toString()}` : ''
+}
+
+export function listAdminStores(filters: Record<string, unknown> = {}): Promise<AdminStoreListResponse> {
+  return adminRequest(`/admin/stores${storeQuery(filters)}`)
+}
+export function getAdminStoreDetail(id: string): Promise<AdminStoreDetail> {
+  return adminRequest(`/admin/stores/${encodeURIComponent(id)}`)
+}
+export function reviewAdminStore(id: string, input: { action: 'approve' | 'reject'; reason?: string; commission_rate_bps?: number }): Promise<AdminStore> {
+  return adminRequest(`/admin/stores/${encodeURIComponent(id)}/review`, { method: 'POST', body: JSON.stringify(input) })
+}
+export function updateAdminStoreStatus(id: string, input: { action: 'suspend' | 'activate' | 'close'; reason?: string }): Promise<AdminStore> {
+  return adminRequest(`/admin/stores/${encodeURIComponent(id)}/status`, { method: 'POST', body: JSON.stringify(input) })
+}
+export function updateAdminStoreSettings(id: string, input: { commission_rate_bps?: number; shipping_fee_amount?: number; free_shipping_threshold?: number | null }): Promise<AdminStore> {
+  return adminRequest(`/admin/stores/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+export function updateAdminStoreCampus(storeId: string, campusId: string, action: 'enable' | 'disable'): Promise<Omit<AdminStoreCampus, 'unbilled'>> {
+  return adminRequest(`/admin/stores/${encodeURIComponent(storeId)}/campuses/${encodeURIComponent(campusId)}`, { method: 'POST', body: JSON.stringify({ action }) })
+}
+
+export function listAdminStoreProducts(filters: Record<string, unknown> = {}): Promise<AdminStoreProductListResponse> {
+  return adminRequest(`/admin/store-products${storeQuery(filters)}`)
+}
+export function updateAdminStoreProductStatus(id: string, input: { action: 'off_shelf' | 'clear_block'; reason?: string }): Promise<{ id: string; status: AdminStoreProductStatus; admin_off_shelf_reason: string | null }> {
+  return adminRequest(`/admin/store-products/${encodeURIComponent(id)}/status`, { method: 'POST', body: JSON.stringify(input) })
+}
+
+export function listAdminStoreSettlements(filters: { status?: string; store_id?: string; campus_id?: string; page?: number; page_size?: number } = {}): Promise<{ items: AdminStoreSettlement[]; pagination: AdminStorePagination }> {
+  return adminRequest(`/admin/store-settlements${storeQuery(filters)}`)
+}
+export function getAdminStoreSettlement(id: string): Promise<AdminStoreSettlementDetail> {
+  return adminRequest(`/admin/store-settlements/${encodeURIComponent(id)}`)
+}
+export function previewAdminStoreSettlement(storeId: string, input: { period_start: string; period_end: string }, campusId?: string): Promise<AdminStoreSettlementPreview> {
+  return adminRequest(`/admin/stores/${encodeURIComponent(storeId)}/settlement-preview${storeQuery({ ...input, campus_id: campusId })}`)
+}
+export function createAdminStoreSettlement(storeId: string, input: { period_start: string; period_end: string; remark?: string }, campusId?: string): Promise<AdminStoreSettlement> {
+  return adminRequest(`/admin/stores/${encodeURIComponent(storeId)}/settlements`, { method: 'POST', body: JSON.stringify({ ...input, campus_id: campusId }) })
+}
+export function confirmAdminStoreSettlement(id: string): Promise<AdminStoreSettlement> {
+  return adminRequest(`/admin/store-settlements/${encodeURIComponent(id)}/confirm`, { method: 'POST', body: JSON.stringify({}) })
+}
+export function payAdminStoreSettlement(id: string): Promise<AdminStoreSettlement> {
+  return adminRequest(`/admin/store-settlements/${encodeURIComponent(id)}/pay`, { method: 'POST', body: JSON.stringify({}) })
 }

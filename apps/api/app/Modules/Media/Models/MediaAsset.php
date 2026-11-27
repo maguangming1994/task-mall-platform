@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 
 class MediaAsset extends Model
 {
-    protected $fillable = ['public_id', 'source_type', 'original_name', 'mime_type', 'size_bytes', 'sha256', 'storage_provider', 'object_path', 'public_url', 'status', 'metadata', 'created_by_admin_id'];
+    protected $fillable = ['public_id', 'source_type', 'original_name', 'mime_type', 'size_bytes', 'sha256', 'storage_provider', 'object_path', 'public_url', 'status', 'metadata', 'created_by_admin_id', 'created_by_user_id'];
 
     protected static function booted(): void
     {

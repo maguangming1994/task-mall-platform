@@ -51,8 +51,10 @@ class PageDecorationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.version', 1)
             ->assertJsonCount(2, 'data.pages.home.sections')
-            ->assertJsonPath('data.pages.home.sections.0.type', 'banner');
-
+            ->assertJsonPath('data.pages.home.sections.0.type', 'banner')
+            ->assertJsonPath('data.pages.home.sections.0.style.channels', ['h5', 'miniapp'])
+            ->assertJsonPath('data.pages.home.sections.0.style.display_start', '')
+            ->assertJsonPath('data.pages.home.name', '');
         $richText = (string) $this->getJson('/api/v1/page-decoration')->json('data.pages.home.sections.1.props.html');
         $this->assertStringContainsString('你好', $richText);
         $this->assertStringNotContainsString('onclick', $richText);
@@ -112,6 +114,20 @@ class PageDecorationTest extends TestCase
         $this->withToken($token)->putJson('/api/v1/admin/page-decoration/draft', [
             'value' => $badUrl,
             'reason' => '验证不安全的图片地址会被拒绝。',
+        ])->assertUnprocessable()->assertJsonPath('code', 'VALIDATION_FAILED');
+
+        $badChannel = $this->valueWithBanner();
+        $badChannel['pages']['home']['sections'][0]['style'] = ['channels' => ['app']];
+        $this->withToken($token)->putJson('/api/v1/admin/page-decoration/draft', [
+            'value' => $badChannel,
+            'reason' => '验证不支持的显示渠道会被拒绝。',
+        ])->assertUnprocessable()->assertJsonPath('code', 'VALIDATION_FAILED');
+
+        $badSpacing = $this->valueWithBanner();
+        $badSpacing['pages']['home']['sections'][0]['style'] = ['margin' => ['top' => 500]];
+        $this->withToken($token)->putJson('/api/v1/admin/page-decoration/draft', [
+            'value' => $badSpacing,
+            'reason' => '验证超出范围的外边距会被拒绝。',
         ])->assertUnprocessable()->assertJsonPath('code', 'VALIDATION_FAILED');
     }
 
@@ -178,6 +194,268 @@ class PageDecorationTest extends TestCase
         $this->withToken($token)->getJson('/api/v1/admin/settings/decoration.pages')
             ->assertStatus(409)
             ->assertJsonPath('code', 'SETTING_SPECIALIZED_ENDPOINT');
+    }
+
+    public function test_advanced_style_and_display_settings_are_normalized(): void
+    {
+        [, $token] = $this->admin('decoration-style-owner');
+
+        $value = [
+            'schema_version' => 1,
+            'pages' => [
+                'home' => ['sections' => [
+                    [
+                        'id' => 'home-banner',
+                        'type' => 'banner',
+                        'enabled' => true,
+                        'style' => [
+                            'corner_radius' => true,
+                            'radius_corners' => ['top_left' => 12, 'top_right' => 0, 'bottom_left' => 0, 'bottom_right' => 24],
+                            'opacity' => 60,
+                            'display_daily_start' => '09:00',
+                            'display_daily_end' => '22:30',
+                        ],
+                        'props' => [
+                            'items' => [[
+                                'image_url' => 'https://example.com/a.png',
+                                'title' => 'A',
+                                'subtitle' => '',
+                                'button_text' => '查看',
+                                'link_type' => 'none',
+                                'link_value' => '',
+                            ]],
+                            'height_rpx' => 360,
+                            'indicator' => 'numbers',
+                            'indicator_position' => 'top-center',
+                            'show_title' => false,
+                        ],
+                    ],
+                    [
+                        'id' => 'home-grid',
+                        'type' => 'quick_grid',
+                        'enabled' => true,
+                        'props' => [
+                            'columns' => 5,
+                            'icon_shape' => 'circle',
+                            'icon_size_rpx' => 96,
+                            'label_color' => '#123456',
+                            'items' => [[
+                                'id' => 'e1',
+                                'label' => '任务',
+                                'mark' => '任',
+                                'icon_url' => '',
+                                'link_type' => 'tasks',
+                                'enabled' => true,
+                                'badge_type' => 'text',
+                                'badge_text' => '新',
+                            ]],
+                        ],
+                    ],
+                    ['id' => 'home-products', 'type' => 'product_grid', 'enabled' => true, 'props' => [
+                        'columns' => 3,
+                        'show_price' => false,
+                        'show_subtitle' => true,
+                        'show_category' => true,
+                    ]],
+                    ['id' => 'home-notice', 'type' => 'notice_bar', 'enabled' => true, 'props' => [
+                        'tone' => 'normal',
+                        'show_icon' => false,
+                        'title_size_rpx' => 32,
+                    ]],
+                ]],
+                'community' => ['sections' => []],
+                'mall' => ['sections' => []],
+                'account' => ['sections' => []],
+            ],
+        ];
+
+        $this->withToken($token)->putJson('/api/v1/admin/page-decoration/draft', [
+            'value' => $value,
+            'reason' => '补充通用样式与组件展示参数。',
+        ])->assertOk();
+
+        $this->withToken($token)->postJson('/api/v1/admin/page-decoration/publish', [
+            'confirm_publish' => true,
+        ])->assertOk();
+
+        $config = $this->getJson('/api/v1/page-decoration')->assertOk()->json('data');
+        $banner = $config['pages']['home']['sections'][0];
+        $this->assertSame(12, $banner['style']['radius_corners']['top_left']);
+        $this->assertSame(24, $banner['style']['radius_corners']['bottom_right']);
+        $this->assertSame(60, $banner['style']['opacity']);
+        $this->assertSame('09:00', $banner['style']['display_daily_start']);
+        $this->assertSame('22:30', $banner['style']['display_daily_end']);
+        $this->assertSame(360, $banner['props']['height_rpx']);
+        $this->assertSame('numbers', $banner['props']['indicator']);
+        $this->assertFalse($banner['props']['show_title']);
+
+        $grid = $config['pages']['home']['sections'][1];
+        $this->assertSame('circle', $grid['props']['icon_shape']);
+        $this->assertSame('#123456', $grid['props']['label_color']);
+        $this->assertSame('text', $grid['props']['items'][0]['badge_type']);
+        $this->assertSame('新', $grid['props']['items'][0]['badge_text']);
+
+        $products = $config['pages']['home']['sections'][2];
+        $this->assertSame(3, $products['props']['columns']);
+        $this->assertTrue($products['props']['show_category']);
+        $this->assertFalse($products['props']['show_price']);
+
+        $notice = $config['pages']['home']['sections'][3];
+        $this->assertSame('normal', $notice['props']['tone']);
+        $this->assertFalse($notice['props']['show_icon']);
+    }
+
+    public function test_advanced_style_rejects_out_of_range_values(): void
+    {
+        [, $token] = $this->admin('decoration-style-guard');
+
+        $value = [
+            'schema_version' => 1,
+            'pages' => [
+                'home' => ['sections' => [
+                    ['id' => 'home-banner', 'type' => 'banner', 'enabled' => true, 'style' => ['opacity' => 10], 'props' => ['items' => []]],
+                ]],
+                'community' => ['sections' => []],
+                'mall' => ['sections' => []],
+                'account' => ['sections' => []],
+            ],
+        ];
+
+        $this->withToken($token)->putJson('/api/v1/admin/page-decoration/draft', [
+            'value' => $value,
+            'reason' => '校验透明度边界。',
+        ])->assertStatus(422);
+
+        $value['pages']['home']['sections'][0]['style'] = ['display_daily_start' => '9:00'];
+        $this->withToken($token)->putJson('/api/v1/admin/page-decoration/draft', [
+            'value' => $value,
+            'reason' => '校验每日时段格式。',
+        ])->assertStatus(422);
+    }
+
+    public function test_tile_ad_popup_and_data_source_sections_are_supported(): void
+    {
+        [, $token] = $this->admin('decoration-next-owner');
+
+        $value = [
+            'schema_version' => 1,
+            'pages' => [
+                'home' => ['sections' => [
+                    [
+                        'id' => 'home-tiles',
+                        'type' => 'tile_ad',
+                        'enabled' => true,
+                        'props' => [
+                            'layout' => 'big-right',
+                            'radius_rpx' => 16,
+                            'gap_rpx' => 10,
+                            'tag_bg' => '#123456',
+                            'items' => [
+                                ['image_url' => 'https://example.com/1.png', 'title' => '主推', 'subtitle' => '副标题', 'tag' => '推荐', 'link_type' => 'tasks', 'link_value' => ''],
+                                ['image_url' => 'https://example.com/2.png', 'title' => '二', 'subtitle' => '', 'tag' => '', 'link_type' => 'products', 'link_value' => ''],
+                                ['image_url' => 'https://example.com/3.png', 'title' => '三', 'subtitle' => '', 'tag' => '', 'link_type' => 'community', 'link_value' => ''],
+                            ],
+                        ],
+                    ],
+                    [
+                        'id' => 'home-popup',
+                        'type' => 'popup',
+                        'enabled' => true,
+                        'props' => [
+                            'image_url' => 'https://example.com/popup.png',
+                            'title' => '新人礼包',
+                            'content' => '完成任务领取积分',
+                            'button_text' => '立即参与',
+                            'link_type' => 'tasks',
+                            'frequency' => 'once',
+                            'closable' => false,
+                            'width_rpx' => 600,
+                        ],
+                    ],
+                    [
+                        'id' => 'home-announce',
+                        'type' => 'announcement',
+                        'enabled' => true,
+                        'props' => ['title' => '公告', 'data_source' => 'system', 'limit' => 5],
+                    ],
+                    [
+                        'id' => 'home-grid',
+                        'type' => 'quick_grid',
+                        'enabled' => true,
+                        'props' => ['columns' => 4, 'data_source' => 'product_category', 'limit' => 6, 'items' => []],
+                    ],
+                    [
+                        'id' => 'home-platform-banner',
+                        'type' => 'banner',
+                        'enabled' => true,
+                        'props' => ['items' => [], 'data_source' => 'platform', 'limit' => 4],
+                    ],
+                ]],
+                'community' => ['sections' => []],
+                'mall' => ['sections' => []],
+                'account' => ['sections' => []],
+            ],
+        ];
+
+        $this->withToken($token)->putJson('/api/v1/admin/page-decoration/draft', [
+            'value' => $value,
+            'reason' => '补充瓷片广告、启动弹窗与数据源能力。',
+        ])->assertOk();
+
+        $this->withToken($token)->postJson('/api/v1/admin/page-decoration/publish', [
+            'confirm_publish' => true,
+        ])->assertOk();
+
+        $config = $this->getJson('/api/v1/page-decoration')->assertOk()->json('data');
+        $tiles = $config['pages']['home']['sections'][0];
+        $this->assertSame('tile_ad', $tiles['type']);
+        $this->assertSame('big-right', $tiles['props']['layout']);
+        $this->assertSame(16, $tiles['props']['radius_rpx']);
+        $this->assertSame('#123456', $tiles['props']['tag_bg']);
+        $this->assertCount(3, $tiles['props']['items']);
+        $this->assertSame('推荐', $tiles['props']['items'][0]['tag']);
+
+        $popup = $config['pages']['home']['sections'][1];
+        $this->assertSame('once', $popup['props']['frequency']);
+        $this->assertFalse($popup['props']['closable']);
+        $this->assertSame(600, $popup['props']['width_rpx']);
+
+        $announce = $config['pages']['home']['sections'][2];
+        $this->assertSame('system', $announce['props']['data_source']);
+        $this->assertSame(5, $announce['props']['limit']);
+
+        $grid = $config['pages']['home']['sections'][3];
+        $this->assertSame('product_category', $grid['props']['data_source']);
+        $this->assertSame(6, $grid['props']['limit']);
+
+        $platformBanner = $config['pages']['home']['sections'][4];
+        $this->assertSame('platform', $platformBanner['props']['data_source']);
+        $this->assertSame(4, $platformBanner['props']['limit']);
+    }
+
+    public function test_tile_ad_rejects_more_than_three_tiles(): void
+    {
+        [, $token] = $this->admin('decoration-tile-guard');
+
+        $value = [
+            'schema_version' => 1,
+            'pages' => [
+                'home' => ['sections' => [[
+                    'id' => 'home-tiles',
+                    'type' => 'tile_ad',
+                    'enabled' => true,
+                    'props' => ['items' => array_fill(0, 4, ['image_url' => '', 'title' => '瓷片', 'subtitle' => '', 'tag' => '', 'link_type' => 'none', 'link_value' => ''])],
+                ]]],
+                'community' => ['sections' => []],
+                'mall' => ['sections' => []],
+                'account' => ['sections' => []],
+            ],
+        ];
+
+        $this->withToken($token)->putJson('/api/v1/admin/page-decoration/draft', [
+            'value' => $value,
+            'reason' => '校验瓷片数量上限。',
+        ])->assertStatus(422);
     }
 
     /** @return array<string, mixed> */

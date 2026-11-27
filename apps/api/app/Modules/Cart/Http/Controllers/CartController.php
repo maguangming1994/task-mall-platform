@@ -8,8 +8,10 @@ use App\Models\User;
 use App\Modules\Cart\Models\CartItem;
 use App\Modules\Cart\Services\CartService;
 use App\Modules\Product\Models\ProductSku;
+use App\Modules\Store\Models\StoreProductSku;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class CartController extends Controller
 {
@@ -24,8 +26,16 @@ class CartController extends Controller
     {
         $data = $request->validate(['sku_id' => ['required', 'string', 'size:26'], 'purchase_mode' => ['required', 'in:cash,points,cash_points'], 'quantity' => ['required', 'integer', 'min:1']]);
         /** @var User $user */ $user = $request->user();
-        $sku = ProductSku::query()->where('public_id', $data['sku_id'])->firstOrFail();
-        $service->add($user, $sku, $data['purchase_mode'], $data['quantity']);
+        $sku = ProductSku::query()->where('public_id', $data['sku_id'])->first();
+        if ($sku !== null) {
+            $service->add($user, $sku, $data['purchase_mode'], $data['quantity']);
+        } else {
+            $storeSku = StoreProductSku::query()->where('public_id', $data['sku_id'])->firstOrFail();
+            if ($data['purchase_mode'] !== 'cash') {
+                throw ValidationException::withMessages(['purchase_mode' => '门店商品仅支持现金购买。']);
+            }
+            $service->addStore($user, $storeSku, $data['quantity']);
+        }
 
         return ApiResponse::success($service->present($user), 201);
     }

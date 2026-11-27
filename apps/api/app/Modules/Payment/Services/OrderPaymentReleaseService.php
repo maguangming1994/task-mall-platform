@@ -25,6 +25,10 @@ class OrderPaymentReleaseService
                 return $locked;
             }
             foreach ($locked->items as $item) {
+                if ($item->store_sku_id !== null) {
+                    $this->releaseStoreReservation($item, $reason);
+                    continue;
+                }
                 $reservation = DB::table('inventory_reservations')->where('order_item_id', $item->id)->lockForUpdate()->first();
                 if (! $reservation || $reservation->status !== 'reserved') {
                     continue;
@@ -60,5 +64,26 @@ class OrderPaymentReleaseService
 
             return $locked->fresh('items');
         });
+    }
+
+    private function releaseStoreReservation($item, string $reason): void
+    {
+        $reservation = DB::table('store_inventory_reservations')->where('order_item_id', $item->id)->lockForUpdate()->first();
+        if (! $reservation || $reservation->status !== 'reserved') {
+            return;
+        }
+        $inventory = \App\Modules\Store\Models\StoreInventory::query()->lockForUpdate()->findOrFail($reservation->store_inventory_id);
+        $before = (int) $inventory->reserved_quantity;
+        $inventory->update(['reserved_quantity' => $before - $reservation->quantity, 'version' => $inventory->version + 1]);
+        DB::table('store_inventory_reservations')->where('id', $reservation->id)->update(['status' => 'released', 'released_at' => now(), 'updated_at' => now()]);
+        \App\Modules\Store\Models\StoreInventoryTransaction::query()->create([
+            'store_inventory_id' => $inventory->id, 'transaction_type' => 'release',
+            'on_hand_change' => 0, 'reserved_change' => -$reservation->quantity,
+            'on_hand_before' => $inventory->on_hand_quantity, 'on_hand_after' => $inventory->on_hand_quantity,
+            'reserved_before' => $before, 'reserved_after' => $inventory->reserved_quantity,
+            'business_type' => 'order_item', 'business_id' => $item->public_id,
+            'reason' => $reason,
+            'idempotency_key_hash' => hash('sha256', 'store-order-release:'.$item->public_id),
+        ]);
     }
 }

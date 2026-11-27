@@ -216,6 +216,35 @@ class SystemSettingDefinitionSeeder extends Seeder
                 'schema_version' => ['type' => 'integer', 'min' => 1],
                 'pages' => ['type' => 'object'],
             ]], 'normal'],
+            ['decoration.schemes', 'decoration', '页面装修方案', 'object', null, [
+                'schema_version' => 1,
+                'pages' => [
+                    'home' => ['h5' => null, 'miniapp' => null],
+                    'community' => ['h5' => null, 'miniapp' => null],
+                    'mall' => ['h5' => null, 'miniapp' => null],
+                    'account' => ['h5' => null, 'miniapp' => null],
+                ],
+                'schemes' => [],
+            ], ['required_keys' => ['schema_version', 'pages', 'schemes'], 'properties' => [
+                'schema_version' => ['type' => 'integer', 'min' => 1],
+                'pages' => ['type' => 'object'],
+                'schemes' => ['type' => 'array'],
+            ]], 'normal'],
+            ['decoration.receipt_templates', 'decoration', '小票打印模板', 'object', null, [
+                'schema_version' => 1,
+                'templates' => [],
+                'bindings' => [
+                    'express_pickup' => ['receipt' => null, 'split' => null, 'label' => null],
+                    'delivery' => ['receipt' => null, 'split' => null, 'label' => null],
+                    'pickup' => ['receipt' => null, 'split' => null, 'label' => null],
+                    'dine_in' => ['receipt' => null, 'split' => null, 'label' => null],
+                    'wechat_reserve' => ['receipt' => null, 'split' => null, 'label' => null],
+                ],
+            ], ['required_keys' => ['schema_version', 'templates', 'bindings'], 'properties' => [
+                'schema_version' => ['type' => 'integer', 'min' => 1],
+                'templates' => ['type' => 'array'],
+                'bindings' => ['type' => 'object'],
+            ]], 'normal'],
         ];
 
         foreach ($definitions as $definition) {
@@ -231,7 +260,11 @@ class SystemSettingDefinitionSeeder extends Seeder
                             ? '维护 H5 与小程序共用的底部导航文字、图标、位置、显示状态与跳转目标；发布后用户端自动刷新。'
                             : ($key === 'decoration.pages'
                                 ? '由装修中心维护首页、社区、商城与我的页面的区块；保存草稿不影响线上，发布后用户端自动刷新。'
-                                : '由配置中心统一维护；发布后仅影响新产生的业务事实。')),
+                                : ($key === 'decoration.schemes'
+                                    ? '由装修中心维护同一页面的多套方案；启用公众号或小程序渠道后立即生效，未启用方案时沿用原有页面装修。'
+                                    : ($key === 'decoration.receipt_templates'
+                                        ? '由装修中心维护小票打印模板；绑定到打印场景并启用后覆盖小票机的自定义模板。'
+                                        : '由配置中心统一维护；发布后仅影响新产生的业务事实。')))),
                     'value_type' => $type,
                     'unit' => $unit,
                     'options' => $options,
