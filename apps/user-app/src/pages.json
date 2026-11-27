@@ -537,6 +537,29 @@
       ]
     },
     {
+      "root": "pages/campus-agent",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "校区代理交流板"
+          }
+        },
+        {
+          "path": "compose",
+          "style": {
+            "navigationBarTitleText": "发布代理动态"
+          }
+        },
+        {
+          "path": "detail",
+          "style": {
+            "navigationBarTitleText": "代理动态详情"
+          }
+        }
+      ]
+    },
+    {
       "root": "pages/publisher",
       "pages": [
         {

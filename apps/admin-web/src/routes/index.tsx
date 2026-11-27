@@ -115,6 +115,7 @@ const PostManagePage = lazyOf(() => import('../features/content-audit/PostManage
 const CommentManagePage = lazyOf(() => import('../features/content-audit/CommentManagePage'), 'CommentManagePage')
 const AuditConfigPage = lazyOf(() => import('../features/content-audit/AuditConfigPage'), 'AuditConfigPage')
 const AuditRecordPage = lazyOf(() => import('../features/content-audit/AuditRecordPage'), 'AuditRecordPage')
+const CampusAgentBindingsPage = lazyOf(() => import('../features/campus-agent/CampusAgentBindingsPage'), 'CampusAgentBindingsPage')
 
 export const ADMIN_GROUPS: AdminGroupDef[] = [
   { key: 'apps', label: '应用中心', icon: <AppstoreOutlined />, accent: '#0ea5e9', pages: [
@@ -195,6 +196,7 @@ export const ADMIN_GROUPS: AdminGroupDef[] = [
   { key: 'security', label: '权限与审计', icon: <SafetyCertificateOutlined />, accent: '#475569', pages: [
     { path: '/security/roles', title: '角色权限', navCode: 'security', description: '配置角色与菜单权限范围。', icon: <LockOutlined />, element: RolesPage },
     { path: '/security/campuses', title: '学校与代理', navCode: 'campuses', description: '维护学校信息与代理归属。', icon: <BankOutlined />, element: CampusManagementPage },
+    { path: '/security/campus-agent-bindings', title: '代理绑定', navCode: 'campuses', description: '管理代理微信 openid 绑定与交流板帖子。', icon: <TeamOutlined />, element: CampusAgentBindingsPage },
     { path: '/security/logs', title: '操作日志', navCode: 'security', description: '查询后台敏感操作的审计记录。', icon: <AuditOutlined />, element: AuditLogsPage },
   ] },
 ]

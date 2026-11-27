@@ -124,6 +124,7 @@
       <view v-if="modules.isEnabled('module_wallet')" class="fn" @click="openAssets"><view class="fn-ic" style="background:#FFF2E5">🎫</view><text class="fn-label">积分明细</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view v-if="modules.isEnabled('module_wallet_recharge') && !modules.reviewing" class="fn" @click="openRecharge"><view class="fn-ic" style="background:#FFF6DE">💳</view><text class="fn-label">钱包充值</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view v-if="auth.user?.phone_bound" class="fn" @click="openPhoneChange"><view class="fn-ic" style="background:#E7F9EF">📱</view><text class="fn-label">手机号</text><view class="sp" /><text class="fn-note">{{ auth.user?.phone_masked || '已绑定' }}</text><text class="fn-arrow">›</text></view>
+      <view v-if="isCampusAgent" class="fn" @click="openCampusAgentBoard"><view class="fn-ic" style="background:#EAF2FF">🏫</view><text class="fn-label">校区代理交流板</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view class="fn" @click="openSupport"><view class="fn-ic" style="background:#EAF2FF">🎧</view><text class="fn-label">客服中心</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view v-if="modules.isLaunched('module_feedback')" class="fn" @click="openSupport"><view class="fn-ic" style="background:#F1EAFF">💬</view><text class="fn-label">意见反馈</text><view class="sp" /><text class="fn-arrow">›</text></view>
       <view class="fn" @click="openPrivacy"><view class="fn-ic" style="background:#EEF1F5">⚙️</view><text class="fn-label">设置</text><view class="sp" /><text class="fn-arrow">›</text></view>
@@ -154,6 +155,8 @@ import DecorationRenderer from '@/components/decoration/DecorationRenderer.vue'
 import { emptyDecorationPage, loadPageDecoration, type DecorationPageConfig } from '@/api/decoration'
 import { loadAssetOverview, updateProfile, type AssetOverview } from '@/api/account'
 import { getCommunitySocialStats } from '@/api/community'
+import { listCampusAgentPosts } from '@/api/campusAgent'
+import { ApiError } from '@/api/http'
 import { loadAppearanceContent, type AccountAppearance } from '@/api/appearance'
 import { resolveApiAssetUrl } from '@/api/http'
 import { chooseAndUploadAvatar, uploadAvatarFromPath } from '@/api/upload'
@@ -171,6 +174,7 @@ const admin = useAdminStore()
 const modules = useModulesStore()
 const followEnabled = computed(() => modules.isLaunched('module_follow'))
 const icons = useIconConfigStore()
+const isCampusAgent = ref(false)
 const nickname = ref(auth.user?.nickname ?? '')
 const avatarFileId = ref(auth.user?.avatar_file_id ?? '')
 const avatarPreviewUrl = ref('')
@@ -303,7 +307,26 @@ onShow(() => {
   initCapsuleInset()
   void load()
   void loadDecoration()
+  void detectCampusAgent()
 })
+
+/** 探测当前用户是否已绑定为校区代理：能访问 /campus-agent/posts 就是代理 */
+async function detectCampusAgent() {
+  if (!auth.accessToken) { isCampusAgent.value = false; return }
+  try {
+    await listCampusAgentPosts(auth.accessToken, { page: 1, page_size: 1 })
+    isCampusAgent.value = true
+  } catch (e) {
+    if (e instanceof ApiError && e.code === 'NOT_CAMPUS_AGENT') {
+      isCampusAgent.value = false
+    } else {
+      // 网络错误等临时异常时不隐藏入口，避免代理用户无法进入
+      isCampusAgent.value = true
+    }
+  }
+}
+
+function openCampusAgentBoard() { uni.navigateTo({ url: '/pages/campus-agent/index' }) }
 
 async function loadDecoration() { decoration.value = (await loadPageDecoration()).pages.account }
 function handleDecorationLink(link: string) {

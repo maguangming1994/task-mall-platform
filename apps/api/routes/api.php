@@ -32,6 +32,8 @@ use App\Modules\Auth\Http\Controllers\WechatAuthController;
 use App\Modules\Auth\Http\Controllers\WechatJssdkController;
 use App\Modules\Campus\Http\Controllers\AdminCampusController;
 use App\Modules\Campus\Http\Controllers\CampusController;
+use App\Modules\CampusAgent\Http\Controllers\AdminCampusAgentBindingController;
+use App\Modules\CampusAgent\Http\Controllers\CampusAgentPostController;
 use App\Modules\Cart\Http\Controllers\CartController;
 use App\Modules\Chat\Http\Controllers\ChatController;
 use App\Modules\Community\Http\Controllers\AdminCommunityContentSecurityController;
@@ -526,6 +528,14 @@ Route::middleware('auth.access')->group(function () {
         Route::get('/earnings', [UserPushController::class, 'earnings']);
     });
 
+    // 校区代理交流板（仅绑定过小程序 openid 的代理可访问，所有代理互相可见）
+    Route::prefix('campus-agent')->group(function () {
+        Route::get('/posts', [CampusAgentPostController::class, 'index']);
+        Route::get('/posts/{post}', [CampusAgentPostController::class, 'show']);
+        Route::post('/posts', [CampusAgentPostController::class, 'store'])->middleware('throttle:20,1');
+        Route::delete('/posts/{post}', [CampusAgentPostController::class, 'destroy']);
+    });
+
     // 广播鉴权（WebSocket 私有频道）
     Route::post('/broadcasting/auth', function (Request $request) {
         return Broadcast::auth($request);
@@ -694,6 +704,19 @@ Route::prefix('admin')->group(function () {
                 ->middleware(['admin.permission:robot.message_send', 'throttle:30,1']);
             Route::post('/messages/{message:public_id}/refresh', [AdminRobotController::class, 'refreshMessage'])
                 ->middleware(['admin.permission:robot.view', 'throttle:30,1']);
+        });
+        // 校区代理小程序绑定管理：绑定/解绑/查看所有代理帖（仅平台管理员）
+        Route::prefix('campus-agent-bindings')->group(function () {
+            Route::get('/', [AdminCampusAgentBindingController::class, 'index'])
+                ->middleware('admin.permission:rbac.manage');
+            Route::post('/', [AdminCampusAgentBindingController::class, 'store'])
+                ->middleware(['admin.permission:rbac.manage', 'admin.recent_verification']);
+            Route::delete('/{publicId}', [AdminCampusAgentBindingController::class, 'destroy'])
+                ->middleware(['admin.permission:rbac.manage', 'admin.recent_verification']);
+            Route::get('/posts', [AdminCampusAgentBindingController::class, 'posts'])
+                ->middleware('admin.permission:rbac.manage');
+            Route::patch('/posts/{publicId}/status', [AdminCampusAgentBindingController::class, 'togglePost'])
+                ->middleware(['admin.permission:rbac.manage', 'admin.recent_verification']);
         });
         // 校区功能模块矩阵：学校代理可读（只读）；写入仅持 campus.module_manage 的平台超管 + 近期二次验证
         Route::get('/campuses/{campus}/modules', [AdminCampusModuleController::class, 'show']);
