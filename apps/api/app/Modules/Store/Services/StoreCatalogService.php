@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Store\Models\Store;
 use App\Modules\Store\Models\StoreCategory;
 use App\Modules\Store\Models\StoreInventory;
+use App\Modules\Store\Models\StoreInventoryTransaction;
 use App\Modules\Store\Models\StoreProduct;
 use App\Modules\Store\Models\StoreProductSku;
 use App\Modules\Store\Models\StoreProductStatusChange;
@@ -263,7 +264,7 @@ class StoreCatalogService
             return;
         }
         $locked->update(['on_hand_quantity' => $quantity, 'version' => $locked->version + 1]);
-        \App\Modules\Store\Models\StoreInventoryTransaction::query()->create([
+        StoreInventoryTransaction::query()->create([
             'store_inventory_id' => $locked->id,
             'transaction_type' => 'manual_set',
             'on_hand_change' => $quantity - $before,
@@ -300,17 +301,17 @@ class StoreCatalogService
         foreach ($skus as $index => $sku) {
             $position = $index + 1;
             if (trim((string) ($sku['name'] ?? '')) === '') {
-                throw ValidationException::withMessages(['skus' => ["第 {$position} 个规格缺少名称。"] ]);
+                throw ValidationException::withMessages(['skus' => ["第 {$position} 个规格缺少名称。"]]);
             }
             $amount = (int) ($sku['cash_amount'] ?? 0);
             if ($amount < 1 || $amount > 10000000) {
-                throw ValidationException::withMessages(['skus' => ["第 {$position} 个规格价格需在 0.01 至 100000 元之间。"] ]);
+                throw ValidationException::withMessages(['skus' => ["第 {$position} 个规格价格需在 0.01 至 100000 元之间。"]]);
             }
             if (! in_array((string) ($sku['fulfillment_type'] ?? 'logistics'), ['logistics', 'no_logistics'], true)) {
-                throw ValidationException::withMessages(['skus' => ["第 {$position} 个规格的交付方式无效。"] ]);
+                throw ValidationException::withMessages(['skus' => ["第 {$position} 个规格的交付方式无效。"]]);
             }
             if (isset($sku['stock_quantity']) && ((int) $sku['stock_quantity'] < 0 || (int) $sku['stock_quantity'] > 1000000)) {
-                throw ValidationException::withMessages(['skus' => ["第 {$position} 个规格库存超出范围。"] ]);
+                throw ValidationException::withMessages(['skus' => ["第 {$position} 个规格库存超出范围。"]]);
             }
         }
     }

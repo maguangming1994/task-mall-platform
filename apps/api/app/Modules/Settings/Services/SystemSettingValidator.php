@@ -261,6 +261,7 @@ class SystemSettingValidator
             $page = $pages[$pageKey] ?? null;
             if ($page === null) {
                 $normalizedPages[$pageKey] = $this->decorationPageDefaults();
+
                 continue;
             }
             if (! is_array($page) || array_is_list($page)) {
@@ -1233,7 +1234,7 @@ class SystemSettingValidator
                 'title_color' => $this->normalizeDecorationColor($definition, (string) ($props['title_color'] ?? ''), "{$label} 标题颜色") ?: '#1F2937',
                 'more_color' => $this->normalizeDecorationColor($definition, (string) ($props['more_color'] ?? ''), "{$label} 更多文字颜色") ?: '#0BBF63',
             ],
-            'tile_ad' => (function () use ($definition, $props, $label, $url, $link, $integer): array {
+            'tile_ad' => (function () use ($definition, $props, $label, $integer): array {
                 $rawItems = $props['items'] ?? [];
                 if (! is_array($rawItems) || ! array_is_list($rawItems)) {
                     $this->fail($definition, "{$label} 的瓷片必须为数组。");

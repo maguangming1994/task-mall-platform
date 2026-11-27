@@ -56,15 +56,18 @@ class ReceiptTemplateCompiler
             $props = is_array($block['props'] ?? null) ? $block['props'] : [];
             if ($type === 'divider') {
                 $lines[] = str_repeat('-', $width);
+
                 continue;
             }
             if ($type === 'blank') {
                 $lines[] = '';
+
                 continue;
             }
             if ($type === 'qr_code') {
                 $value = $this->substitute($this->content($props, '${order_no}'), $variables);
                 $lines[] = $plain ? $value : '<C><QR>'.$this->stripTags($value).'</QR></C>';
+
                 continue;
             }
             $content = $this->substitute($this->content($props, self::DEFAULT_CONTENT[$type] ?? ''), $variables);

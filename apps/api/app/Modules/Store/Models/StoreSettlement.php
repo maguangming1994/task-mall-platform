@@ -2,6 +2,7 @@
 
 namespace App\Modules\Store\Models;
 
+use App\Modules\Campus\Models\Campus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -49,7 +50,7 @@ class StoreSettlement extends Model
 
     public function campus(): BelongsTo
     {
-        return $this->belongsTo(\App\Modules\Campus\Models\Campus::class);
+        return $this->belongsTo(Campus::class);
     }
 
     public function items(): HasMany

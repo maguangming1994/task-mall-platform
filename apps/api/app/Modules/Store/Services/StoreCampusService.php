@@ -3,6 +3,7 @@
 namespace App\Modules\Store\Services;
 
 use App\Modules\Campus\Models\Campus;
+use App\Modules\Order\Models\Order;
 use App\Modules\Store\Models\Store;
 use App\Modules\Store\Models\StoreCampus;
 use Illuminate\Database\Eloquent\Builder;
@@ -110,7 +111,7 @@ class StoreCampusService
     /**
      * 订单校区过滤：主校区兼容 campus_id 为 NULL 的历史订单。
      *
-     * @param  Builder<\App\Modules\Order\Models\Order>  $query
+     * @param  Builder<Order>  $query
      */
     public function applyOrderCampus(Builder $query, Store $store, int $campusId): void
     {

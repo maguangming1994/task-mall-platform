@@ -15,9 +15,13 @@ class Store extends Model
     use BelongsToCampus;
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_REJECTED = 'rejected';
+
     public const STATUS_SUSPENDED = 'suspended';
+
     public const STATUS_CLOSED = 'closed';
 
     protected $fillable = [

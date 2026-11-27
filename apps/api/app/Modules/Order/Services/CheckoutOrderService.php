@@ -21,6 +21,7 @@ use App\Modules\Settings\Services\SystemSettingService;
 use App\Modules\Store\Models\StoreInventory;
 use App\Modules\Store\Models\StoreInventoryTransaction;
 use App\Modules\Store\Models\StoreProductSku;
+use App\Modules\Store\Services\StoreCampusService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -31,7 +32,7 @@ class CheckoutOrderService
     public function __construct(
         private readonly SystemSettingService $settings,
         private readonly PaymentCapabilityService $paymentCapabilities,
-        private readonly \App\Modules\Store\Services\StoreCampusService $storeCampuses,
+        private readonly StoreCampusService $storeCampuses,
     ) {}
 
     public function preview(User $user, array $request, string $platform): array
@@ -508,6 +509,7 @@ class CheckoutOrderService
             if ($item->store_sku_id !== null) {
                 $this->consumeStoreReservation($item);
                 $item->update(['paid_cash_amount' => 0, 'paid_points' => 0]);
+
                 continue;
             }
             $reservation = DB::table('inventory_reservations')->where('order_item_id', $item->id)->lockForUpdate()->first();

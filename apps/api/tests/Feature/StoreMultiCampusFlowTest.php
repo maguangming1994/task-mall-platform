@@ -16,6 +16,7 @@ use App\Modules\Order\Models\OrderItem;
 use App\Modules\Store\Models\StoreInventory;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class StoreMultiCampusFlowTest extends TestCase
@@ -223,7 +224,7 @@ class StoreMultiCampusFlowTest extends TestCase
     private function loginAndConsent(string $phone, Campus $campus): array
     {
         $user = User::query()->create([
-            'public_id' => (string) \Illuminate\Support\Str::ulid(),
+            'public_id' => (string) Str::ulid(),
             'nickname' => '多校区用户'.$phone,
             'phone' => $phone,
             'phone_hash' => hash('sha256', $phone),

@@ -12,6 +12,8 @@ use App\Modules\Assets\Models\WalletTransaction;
 use App\Modules\Inventory\Models\Inventory;
 use App\Modules\Inventory\Models\InventoryTransaction;
 use App\Modules\Order\Models\Order;
+use App\Modules\Store\Models\StoreInventory;
+use App\Modules\Store\Models\StoreInventoryTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -65,6 +67,7 @@ class OrderSettlementService
             if ($item->store_sku_id !== null) {
                 $this->consumeStoreReservation($item);
                 $item->update(['paid_cash_amount' => $item->cash_subtotal - $item->cash_discount_allocated, 'paid_points' => 0]);
+
                 continue;
             }
             $reservation = DB::table('inventory_reservations')->where('order_item_id', $item->id)->lockForUpdate()->first();
@@ -105,7 +108,7 @@ class OrderSettlementService
         if (! $reservation || $reservation->status !== 'reserved') {
             throw ValidationException::withMessages(['inventory' => '门店库存预占状态异常。']);
         }
-        $inventory = \App\Modules\Store\Models\StoreInventory::query()->lockForUpdate()->findOrFail($reservation->store_inventory_id);
+        $inventory = StoreInventory::query()->lockForUpdate()->findOrFail($reservation->store_inventory_id);
         $beforeOnHand = (int) $inventory->on_hand_quantity;
         $beforeReserved = (int) $inventory->reserved_quantity;
         $inventory->update([
@@ -114,7 +117,7 @@ class OrderSettlementService
             'version' => $inventory->version + 1,
         ]);
         DB::table('store_inventory_reservations')->where('id', $reservation->id)->update(['status' => 'consumed', 'consumed_at' => now(), 'updated_at' => now()]);
-        \App\Modules\Store\Models\StoreInventoryTransaction::query()->create([
+        StoreInventoryTransaction::query()->create([
             'store_inventory_id' => $inventory->id, 'transaction_type' => 'sale_consume',
             'on_hand_change' => -$reservation->quantity, 'reserved_change' => -$reservation->quantity,
             'on_hand_before' => $beforeOnHand, 'on_hand_after' => $inventory->on_hand_quantity,

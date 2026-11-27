@@ -7,6 +7,7 @@ use App\Common\Middleware\MeasureRequestPerformance;
 use App\Common\Support\ApiResponse;
 use App\Modules\Admin\Http\Middleware\AuthenticateAdminAccessToken;
 use App\Modules\Admin\Http\Middleware\RequireAdminPermission;
+use App\Modules\Admin\Http\Middleware\RequirePlatformAdmin;
 use App\Modules\Admin\Http\Middleware\RequireRecentAdminVerification;
 use App\Modules\Auth\Http\Middleware\AuthenticateAccessToken;
 use App\Modules\Auth\Http\Middleware\AuthenticateOptionalAccessToken;
@@ -19,6 +20,7 @@ use App\Modules\Operations\Http\Middleware\RequireModuleEnabled;
 use App\Modules\Privacy\Exceptions\PrivacyException;
 use App\Modules\Refund\Exceptions\RefundException;
 use App\Modules\Settings\Exceptions\SettingException;
+use App\Modules\Store\Http\Middleware\AuthenticateStoreManager;
 use App\Modules\Task\Http\Middleware\AuthenticateTaskPublisher;
 use App\Modules\Upload\Exceptions\UploadException;
 use Illuminate\Foundation\Application;
@@ -59,10 +61,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.permission' => RequireAdminPermission::class,
             'admin.recent_verification' => RequireRecentAdminVerification::class,
             'admin.campus' => EnforceAdminCampusScope::class,
-            'admin.platform' => \App\Modules\Admin\Http\Middleware\RequirePlatformAdmin::class,
+            'admin.platform' => RequirePlatformAdmin::class,
             'legal.consent' => RequireLegalConsent::class,
             'auth.publisher' => AuthenticateTaskPublisher::class,
-            'auth.store' => \App\Modules\Store\Http\Middleware\AuthenticateStoreManager::class,
+            'auth.store' => AuthenticateStoreManager::class,
             'module.gate' => RequireModuleEnabled::class,
             'campus.bound' => RequireBoundCampus::class,
         ]);

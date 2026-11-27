@@ -46,7 +46,7 @@ class DecorationSchemeAndReceiptTest extends TestCase
             'channel' => 'h5',
             'enabled' => true,
         ])->assertOk()
-            ->assertJsonPath("data.pages.home.h5", $schemeId);
+            ->assertJsonPath('data.pages.home.h5', $schemeId);
 
         $live = $this->getJson('/api/v1/page-decoration')->assertOk()->json('data');
         $this->assertSame('rich_text', $live['pages']['home']['sections'][0]['type']);

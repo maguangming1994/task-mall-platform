@@ -11,7 +11,9 @@ use Illuminate\Support\Str;
 class StoreProduct extends Model
 {
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_ON_SALE = 'on_sale';
+
     public const STATUS_OFF_SHELF = 'off_shelf';
 
     protected $fillable = [

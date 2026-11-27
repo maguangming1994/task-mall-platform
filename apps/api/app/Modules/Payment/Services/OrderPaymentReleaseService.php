@@ -10,6 +10,8 @@ use App\Modules\Assets\Models\UserCoupon;
 use App\Modules\Inventory\Models\Inventory;
 use App\Modules\Inventory\Models\InventoryTransaction;
 use App\Modules\Order\Models\Order;
+use App\Modules\Store\Models\StoreInventory;
+use App\Modules\Store\Models\StoreInventoryTransaction;
 use Illuminate\Support\Facades\DB;
 
 class OrderPaymentReleaseService
@@ -27,6 +29,7 @@ class OrderPaymentReleaseService
             foreach ($locked->items as $item) {
                 if ($item->store_sku_id !== null) {
                     $this->releaseStoreReservation($item, $reason);
+
                     continue;
                 }
                 $reservation = DB::table('inventory_reservations')->where('order_item_id', $item->id)->lockForUpdate()->first();
@@ -72,11 +75,11 @@ class OrderPaymentReleaseService
         if (! $reservation || $reservation->status !== 'reserved') {
             return;
         }
-        $inventory = \App\Modules\Store\Models\StoreInventory::query()->lockForUpdate()->findOrFail($reservation->store_inventory_id);
+        $inventory = StoreInventory::query()->lockForUpdate()->findOrFail($reservation->store_inventory_id);
         $before = (int) $inventory->reserved_quantity;
         $inventory->update(['reserved_quantity' => $before - $reservation->quantity, 'version' => $inventory->version + 1]);
         DB::table('store_inventory_reservations')->where('id', $reservation->id)->update(['status' => 'released', 'released_at' => now(), 'updated_at' => now()]);
-        \App\Modules\Store\Models\StoreInventoryTransaction::query()->create([
+        StoreInventoryTransaction::query()->create([
             'store_inventory_id' => $inventory->id, 'transaction_type' => 'release',
             'on_hand_change' => 0, 'reserved_change' => -$reservation->quantity,
             'on_hand_before' => $inventory->on_hand_quantity, 'on_hand_after' => $inventory->on_hand_quantity,

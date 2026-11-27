@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StoreCampus extends Model
 {
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_DISABLED = 'disabled';
 
     protected $fillable = ['store_id', 'campus_id', 'status', 'created_by_admin_id'];

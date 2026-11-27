@@ -4,7 +4,6 @@ namespace App\Modules\Store\Http\Controllers;
 
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Modules\Campus\Models\Campus;
 use App\Modules\Store\Models\Store;
 use App\Modules\Store\Models\StoreProduct;

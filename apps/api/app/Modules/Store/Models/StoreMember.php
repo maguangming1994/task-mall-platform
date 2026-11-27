@@ -10,7 +10,9 @@ use Illuminate\Support\Str;
 class StoreMember extends Model
 {
     public const ROLE_OWNER = 'owner';
+
     public const ROLE_MANAGER = 'manager';
+
     public const ROLE_STAFF = 'staff';
 
     protected $fillable = ['public_id', 'store_id', 'user_id', 'role', 'status', 'joined_at'];

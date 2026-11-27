@@ -16,6 +16,7 @@ use App\Modules\Order\Models\OrderItem;
 use App\Modules\Store\Models\StoreInventory;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class StoreMultiTenantFlowTest extends TestCase
@@ -200,7 +201,7 @@ class StoreMultiTenantFlowTest extends TestCase
         $this->withToken($managerToken)->getJson('/api/v1/store-manager/settlements')
             ->assertOk()->assertJsonPath('data.unbilled.item_count', 0)
             ->assertJsonPath('data.items.0.status', 'paid')->assertJsonPath('data.items.0.net_amount', 5502);
-        $this->withToken($managerToken)->getJson("/api/v1/store-manager/orders?page=1")
+        $this->withToken($managerToken)->getJson('/api/v1/store-manager/orders?page=1')
             ->assertOk()->assertJsonPath('data.items.0.store_gross_amount', 5980);
         $this->withToken($managerToken)->getJson("/api/v1/store-manager/orders/{$orderId}")
             ->assertOk()->assertJsonPath('data.items.0.product_name', '手作曲奇礼盒');
@@ -220,7 +221,7 @@ class StoreMultiTenantFlowTest extends TestCase
     private function loginAndConsent(string $phone): array
     {
         $user = User::query()->create([
-            'public_id' => (string) \Illuminate\Support\Str::ulid(),
+            'public_id' => (string) Str::ulid(),
             'nickname' => '门店用户'.$phone,
             'phone' => $phone,
             'phone_hash' => hash('sha256', $phone),

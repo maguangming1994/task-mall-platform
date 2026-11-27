@@ -5,6 +5,7 @@ namespace App\Modules\Store\Services;
 use App\Modules\Order\Models\Order;
 use App\Modules\Order\Models\OrderItem;
 use App\Modules\Store\Models\Store;
+use App\Modules\Store\Models\StoreInventory;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class StoreOrderService
@@ -85,11 +86,11 @@ class StoreOrderService
 
         $pendingFulfillment = (clone $base)->whereIn('status', ['pending_fulfillment', 'partially_refunded'])->count();
         $productCounts = $store->products()
-            ->selectRaw("status, COUNT(*) AS total")
+            ->selectRaw('status, COUNT(*) AS total')
             ->groupBy('status')
             ->pluck('total', 'status');
 
-        $lowStock = \App\Modules\Store\Models\StoreInventory::query()
+        $lowStock = StoreInventory::query()
             ->whereHas('sku.product', fn ($query) => $query->where('store_id', $store->id))
             ->when($campusId !== null, fn ($query) => $query->where('campus_id', $campusId))
             ->whereColumn('on_hand_quantity', '<=', 'reserved_quantity')
