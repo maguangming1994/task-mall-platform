@@ -738,7 +738,7 @@ class SystemSettingValidator
         $boolean = fn (string $key, bool $default) => is_bool($props[$key] ?? null) ? $props[$key] : $default;
 
         return match ($type) {
-            'banner' => (function () use ($definition, $props, $label, $url, $link, $linkValue, $integer, $boolean): array {
+            'banner' => (function () use ($definition, $props, $label, $integer, $boolean): array {
                 $rawItems = $props['items'] ?? [];
                 if (! is_array($rawItems) || ! array_is_list($rawItems)) {
                     $this->fail($definition, "{$label} 的轮播项必须为数组。");
@@ -793,7 +793,7 @@ class SystemSettingValidator
                 'data_source' => in_array($props['data_source'] ?? '', ['manual', 'system'], true) ? $props['data_source'] : 'manual',
                 'limit' => $integer('limit', 1, 10, 3),
             ],
-            'quick_grid' => (function () use ($definition, $props, $label, $url, $link, $integer): array {
+            'quick_grid' => (function () use ($definition, $props, $label, $integer): array {
                 $rawItems = $props['items'] ?? [];
                 if (! is_array($rawItems) || ! array_is_list($rawItems)) {
                     $this->fail($definition, "{$label} 的入口必须为数组。");

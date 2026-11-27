@@ -34,8 +34,11 @@ class ExpressPickupOrder extends Model
     public const PRINT_STATUS_FAILED = 'failed';
 
     public const REFUND_STATUS_PENDING = 'pending';
+
     public const REFUND_STATUS_PROCESSING = 'processing';
+
     public const REFUND_STATUS_REFUNDED = 'refunded';
+
     public const REFUND_STATUS_FAILED = 'failed';
 
     protected $fillable = [
