@@ -65,7 +65,7 @@ export function listCampusAgentPosts(page = 1, pageSize = 20) {
 
 export function toggleCampusAgentPost(publicId: string, status: 'published' | 'hidden') {
   return adminRequest<{ public_id: string; status: string }>(
-    `/admin/campus-agent-bindings/posts/${publicId}/toggle`,
-    { method: 'POST', body: JSON.stringify({ status }) },
+    `/admin/campus-agent-bindings/posts/${publicId}/status`,
+    { method: 'PATCH', body: JSON.stringify({ status }) },
   )
 }
