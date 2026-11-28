@@ -5,6 +5,7 @@ namespace App\Modules\CampusAgent\Http\Controllers;
 use App\Common\Support\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Modules\Auth\Models\UserIdentity;
 use App\Modules\CampusAgent\Models\CampusAgentPost;
 use App\Modules\CampusAgent\Models\CampusAgentWechatBinding;
 use Illuminate\Http\JsonResponse;
@@ -126,18 +127,20 @@ class CampusAgentPostController extends Controller
             return null;
         }
 
-        // 从 auth_identities 找小程序 openid
-        $row = \DB::table('auth_identities')
+        // 从 user_identities 找小程序 openid
+        // 必须走 UserIdentity 模型查询：provider_user_value 在模型里 encrypted cast，
+        // 用 DB::table 拿到的是密文，无法和绑定表里的 openid_hash 匹配。
+        $identity = UserIdentity::query()
             ->where('user_id', $user->id)
-            ->where('provider_code', 'wechat_mini')
-            ->orderByDesc('last_used_at')
-            ->first(['provider_user_value', 'last_used_at']);
+            ->where('provider', 'wechat_mini')
+            ->orderByDesc('last_login_at')
+            ->first();
 
-        if ($row === null) {
+        if ($identity === null) {
             return null;
         }
 
-        $hash = CampusAgentWechatBinding::hashOpenid($row->provider_user_value);
+        $hash = CampusAgentWechatBinding::hashOpenid($identity->provider_user_value ?? '');
         $binding = CampusAgentWechatBinding::query()
             ->where('openid_hash', $hash)
             ->with(['adminUser:id,name'])

@@ -88,10 +88,15 @@ class CommunityContentSecurityService
     /** @return array<string,mixed> */
     private function scanWechat(User $user, string $content, int $scene): array
     {
-        $openid = UserIdentity::query()
+        // 注意：provider_user_value 在 UserIdentity 模型里 encrypted cast，
+        // 必须走模型属性访问（first()?->provider_user_value）才会自动解密；
+        // 用 query()->value() 拿到的是加密后的密文，微信会返回 errcode=40003。
+        $identity = UserIdentity::query()
             ->where('user_id', $user->id)
             ->where('provider', 'wechat_mini')
-            ->value('provider_user_value');
+            ->orderByDesc('last_login_at')
+            ->first();
+        $openid = $identity?->provider_user_value;
         if (! is_string($openid) || $openid === '') {
             return $this->skipped('no-openid');
         }
