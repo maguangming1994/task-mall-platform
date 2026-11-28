@@ -119,11 +119,22 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
+            // 优先把字段级的真实原因（例如内容安全拦截「内容包含违法违规或不当信息」）
+            // 提到 message，避免前端只看到一句含糊的「请求参数校验失败」而不知道为什么发不出去。
+            $errors = $exception->errors();
+            $firstMessage = '';
+            foreach ($errors as $fieldErrors) {
+                if (is_array($fieldErrors) && $fieldErrors !== []) {
+                    $firstMessage = (string) $fieldErrors[array_key_first($fieldErrors)];
+                    break;
+                }
+            }
+
             return ApiResponse::error(
                 'VALIDATION_FAILED',
-                '请求参数校验失败。',
+                $firstMessage !== '' ? $firstMessage : '请求参数校验失败。',
                 422,
-                ['errors' => $exception->errors()],
+                ['errors' => $errors],
             );
         });
         $exceptions->render(function (HttpExceptionInterface $exception, Request $request) {

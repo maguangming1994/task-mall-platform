@@ -398,8 +398,14 @@ async function submit() {
     uni.removeStorageSync(draftKey())
     uni.showToast({ title: post.status === 'published' ? '发布成功' : '内容已提交审核', icon: 'success' })
     setTimeout(() => uni.navigateBack(), 600)
-  } catch (error) { submitError.value = errorMessage(error); persistDraft() }
-  finally { submitting.value = false }
+  } catch (error) {
+    const reason = errorMessage(error)
+    submitError.value = reason
+    // 失败必须立刻弹出醒目的提示，避免用户只看到页面底部不显眼的错误块、误以为“发布卡住了”。
+    // 内容安全拦截等业务错误会带较长中文原因，用 modal 完整展示（toast 长文案会被截断）。
+    uni.showModal({ title: '发布未成功', content: reason, showCancel: false, confirmText: '我知道了' })
+    persistDraft()
+  } finally { submitting.value = false }
 }
 function goBack() { uni.navigateBack() }
 function categoryTip(code: CommunityCategory['code']) { return ({ experience: '经历与复盘', guide: '方法与步骤', question: '问题与求助', showcase: '作品与成果' } as Record<CommunityCategory['code'], string>)[code] }
