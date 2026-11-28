@@ -32,7 +32,7 @@
     </view>
 
     <!-- 积分卡片 -->
-    <view class="home-v13-point-card">
+    <view v-if="!overridePoint" class="home-v13-point-card">
       <view class="home-v13-pc-top">
         <view class="home-v13-pc-left">
           <text class="home-v13-pc-label">我的积分 ›</text>
@@ -62,7 +62,7 @@
       </view>
     </view>
 
-    <!-- 装修区块：未配置时不渲染，保持页面原样 -->
+    <!-- 装修 sections 驱动首页：存在配置时按配置渲染核心区块；无配置时不渲染，保持下方硬编码原样 -->
     <DecorationRenderer
       v-if="homeDecoration.sections.length"
       :page="homeDecoration"
@@ -70,7 +70,7 @@
     />
 
     <!-- 金刚区 -->
-    <view class="home-v13-king">
+    <view v-if="!overrideQuickGrid" class="home-v13-king">
       <view
         v-for="item in quickEntries"
         :key="`king-${item.id}`"
@@ -87,7 +87,7 @@
 
     <!-- 橙色推广横幅 -->
     <view
-      v-if="activeHeroSlide"
+      v-if="activeHeroSlide && !overrideHero"
       class="home-v13-promo"
       @click="navigateHomeLink(activeHeroSlide.link_type)"
     >
@@ -106,7 +106,7 @@
     </view>
 
     <!-- 任务推荐流 -->
-    <view class="home-v13-feed-tabs">
+    <view v-if="!overrideFeed" class="home-v13-feed-tabs">
       <text
         v-for="tab in feedTabOptions"
         :key="tab.id"
@@ -122,12 +122,13 @@
     </view>
 
     <!-- 社交式任务卡片列表 -->
-    <view
-      v-for="task in feedTasks"
-      :key="`feed-${task.id}`"
-      class="home-v13-post"
-      @click="openTaskDetail(task.id)"
-    >
+    <template v-if="!overrideFeed">
+      <view
+        v-for="task in feedTasks"
+        :key="`feed-${task.id}`"
+        class="home-v13-post"
+        @click="openTaskDetail(task.id)"
+      >
       <view class="home-v13-post-head">
         <image
           v-if="taskAvatarSrc(task)"
@@ -171,10 +172,11 @@
         <text v-if="task.location_text" class="home-v13-post-loc">@ {{ task.location_text }}</text>
         <button class="home-v13-post-btn" :class="{ 'home-v13-post-btn--disabled': !task.can_claim }" :disabled="!task.can_claim" @click.stop="openTaskDetail(task.id)">{{ taskActionLabel(task) }}</button>
       </view>
-    </view>
+      </view>
+    </template>
 
     <!-- 无任务时回退 -->
-    <view v-if="!feedTasks.length && !homeLoading" class="home-v13-empty" @click="openTasks">
+    <view v-if="!overrideFeed && !feedTasks.length && !homeLoading" class="home-v13-empty" @click="openTasks">
       <text class="home-v13-empty-text">新的校园任务正在准备中</text>
       <text class="home-v13-empty-link">去任务大厅看看 ›</text>
     </view>
@@ -241,6 +243,21 @@ const homeLoading = ref(false)
 const homeLoaded = ref(false)
 const homeError = ref('')
 const homeDecoration = ref<DecorationPageConfig>(emptyDecorationPage())
+/**
+ * 装修 sections 驱动首页（做法 B）：
+ * 当装修配置里出现某核心区块类型时，首页隐藏对应硬编码区块，改由 DecorationRenderer 统一渲染。
+ * 未配置时（sections 为空）保持线上硬编码原样，外观不变。
+ */
+const decoHas = (type: string) => homeDecoration.value.sections.some((s) => s.type === type && s.enabled !== false)
+const overrideBrand = computed(() => decoHas('brand_card'))
+const overridePoint = computed(() => decoHas('point_card'))
+const overrideHero = computed(() => decoHas('banner'))
+const overrideAnnouncement = computed(() => decoHas('announcement'))
+const overrideRecommendation = computed(() => decoHas('recommendation_card'))
+const overrideQuickGrid = computed(() => decoHas('quick_grid'))
+const overrideFeed = computed(() => decoHas('task_list'))
+const overrideProductSection = computed(() => decoHas('product_section'))
+const overrideTrust = computed(() => decoHas('trust_card'))
 const activeHeroIndex = ref(0)
 const activeInfoTab = ref<InfoTab>('announcement')
 const failedHeroImages = ref<Record<string, boolean>>({})

@@ -277,8 +277,16 @@ export function SectionPropertyPanel({ section, onChange }: Props) {
           return <Card key={index} size="small" title={`入口 ${index + 1}`} extra={<Button danger size="small" onClick={() => setProp('items', listProp('items').filter((_, entryIndex) => entryIndex !== index))}>删除</Button>}>
             <TextField label="入口名称" value={text('label')} maxLength={8} onChange={(value) => update('label', value)} />
             <TextField label="图片为空时显示的文字" value={text('mark')} maxLength={2} onChange={(value) => update('mark', value)} />
-            <ImageField label="入口图标" value={text('icon_url')} onChange={(value) => update('icon_url', value)} />
-            <LinkField value={text('link_type', 'none')} onChange={(value) => update('link_type', value)} />
+            <div style={{ marginBottom: 12 }}>
+              <FieldLabel>外部跳转类型</FieldLabel>
+              <Select style={{ width: '100%' }} value={text('link_ext_type', 'none')} options={[{ value: 'none', label: '内部页面（下方选择）' }, { value: 'miniprogram', label: '跳转其他小程序' }, { value: 'h5', label: '打开 H5 网页' }]} onChange={(value) => update('link_ext_type', value)} />
+            </div>
+            {text('link_ext_type', 'none') === 'miniprogram' && <>
+              <TextField label="目标小程序 AppID" value={text('mini_app_id')} maxLength={32} placeholder="如 wx1234567890abcdef" onChange={(value) => update('mini_app_id', value)} />
+              <TextField label="目标页面路径（可留空）" value={text('mini_path')} maxLength={200} placeholder="如 pages/index/index?id=1" onChange={(value) => update('mini_path', value)} />
+            </>}
+            {text('link_ext_type', 'none') === 'h5' && <TextField label="H5 链接地址" value={text('h5_url')} maxLength={500} placeholder="https://…（需为已配置的业务域名）" onChange={(value) => update('h5_url', value)} />}
+            {text('link_ext_type', 'none') === 'none' && <LinkField value={text('link_type', 'none')} onChange={(value) => update('link_type', value)} />}
             <div style={{ marginBottom: 12 }}>
               <FieldLabel>角标样式</FieldLabel>
               <Select style={{ width: '100%' }} value={text('badge_type', 'none')} options={[{ value: 'none', label: '不显示' }, { value: 'text', label: '数字文字' }, { value: 'dot', label: '圆点' }, { value: 'image', label: '图片' }]} onChange={(value) => update('badge_type', value)} />
@@ -288,7 +296,7 @@ export function SectionPropertyPanel({ section, onChange }: Props) {
             <Space><Switch checked={item.enabled !== false} onChange={(checked) => update('enabled', checked)} /><span>显示该入口</span></Space>
           </Card>
         })}
-        <Button type="dashed" block onClick={() => setProp('items', [...listProp('items'), { id: `entry-${Date.now().toString(36)}`, label: '新入口', mark: '新', icon_url: '', link_type: 'none', enabled: true, badge_type: 'none', badge_text: '', badge_image: '' }])}>新增入口</Button>
+        <Button type="dashed" block onClick={() => setProp('items', [...listProp('items'), { id: `entry-${Date.now().toString(36)}`, label: '新入口', mark: '新', icon_url: '', link_type: 'none', link_ext_type: 'none', mini_app_id: '', mini_path: '', h5_url: '', enabled: true, badge_type: 'none', badge_text: '', badge_image: '' }])}>新增入口</Button>
       </>}
     </>}
 
@@ -671,6 +679,63 @@ export function SectionPropertyPanel({ section, onChange }: Props) {
       </div>
       <NumberField label="弹窗宽度（rpx）" min={480} max={660} value={numberProp('width_rpx', 560)} onChange={(value) => setProp('width_rpx', value)} />
       <NumberField label="弹窗圆角（rpx）" min={0} max={32} value={numberProp('radius_rpx', 20)} onChange={(value) => setProp('radius_rpx', value)} />
+    </>}
+
+    {section.type === 'brand_card' && <>
+      <TextField label="Logo 文字（图片为空时显示）" value={stringProp('logo_text')} maxLength={4} onChange={(value) => setProp('logo_text', value)} />
+      <ImageField label="Logo 图片" value={stringProp('logo_url')} onChange={(value) => setProp('logo_url', value)} />
+      <TextField label="品牌名称" value={stringProp('name')} maxLength={20} onChange={(value) => setProp('name', value)} />
+      <TextField label="品牌标语" value={stringProp('caption')} maxLength={40} onChange={(value) => setProp('caption', value)} />
+      <LinkField value={stringProp('link_type', 'none')} onChange={(value) => setProp('link_type', value)} />
+    </>}
+
+    {section.type === 'point_card' && <>
+      <TextField label="积分标签" value={stringProp('points_label')} maxLength={12} onChange={(value) => setProp('points_label', value)} />
+      <TextField label="签到按钮文字" value={stringProp('sign_button_text')} maxLength={10} onChange={(value) => setProp('sign_button_text', value)} />
+      <LinkField value={stringProp('link_type', 'assets')} onChange={(value) => setProp('link_type', value)} />
+    </>}
+
+    {section.type === 'recommendation_card' && <>
+      <TextField label="区块标题" value={stringProp('section_title')} maxLength={20} onChange={(value) => setProp('section_title', value)} />
+      <TextField label="区块副标题" value={stringProp('section_subtitle')} maxLength={40} onChange={(value) => setProp('section_subtitle', value)} />
+      <TextField label="推荐卡标题" value={stringProp('title')} maxLength={30} onChange={(value) => setProp('title', value)} />
+      <TextField label="推荐卡描述" value={stringProp('description')} maxLength={120} textarea onChange={(value) => setProp('description', value)} />
+      <TextField label="标签文字" value={stringProp('tag')} maxLength={6} onChange={(value) => setProp('tag', value)} />
+      <TextField label="奖励文案" value={stringProp('reward_text')} maxLength={20} onChange={(value) => setProp('reward_text', value)} />
+      <TextField label="时长文案" value={stringProp('time_text')} maxLength={12} onChange={(value) => setProp('time_text', value)} />
+      <TextField label="图标文字" value={stringProp('icon_text')} maxLength={2} onChange={(value) => setProp('icon_text', value)} />
+      <ImageField label="图标图片" value={stringProp('icon_url')} onChange={(value) => setProp('icon_url', value)} />
+      <ImageField label="背景图片" value={stringProp('background_url')} onChange={(value) => setProp('background_url', value)} />
+      <LinkField value={stringProp('link_type', 'tasks')} onChange={(value) => setProp('link_type', value)} />
+    </>}
+
+    {section.type === 'product_section' && <>
+      <TextField label="区块标题" value={stringProp('section_title')} maxLength={20} onChange={(value) => setProp('section_title', value)} />
+      <TextField label="区块副标题" value={stringProp('section_subtitle')} maxLength={40} onChange={(value) => setProp('section_subtitle', value)} />
+      {listProp('cards').map((item, index) => {
+        const update = (key: string, value: unknown) => setProp('cards', listProp('cards').map((entry, entryIndex) => entryIndex === index ? { ...entry, [key]: value } : entry))
+        const text = (key: string, fallback = '') => typeof item[key] === 'string' ? item[key] as string : fallback
+        return <Card key={index} size="small" title={`兑换卡 ${index + 1}`}>
+          <TextField label="眉标" value={text('eyebrow')} maxLength={8} onChange={(value) => update('eyebrow', value)} />
+          <TextField label="标题" value={text('title')} maxLength={12} onChange={(value) => update('title', value)} />
+          <TextField label="价格文案" value={text('price_text')} maxLength={12} onChange={(value) => update('price_text', value)} />
+          <div style={{ marginBottom: 12 }}>
+            <FieldLabel>配色</FieldLabel>
+            <Select style={{ width: '100%' }} value={text('tone', 'blue')} options={[{ value: 'blue', label: '蓝' }, { value: 'warm', label: '暖黄' }, { value: 'green', label: '绿' }, { value: 'orange', label: '橙' }]} onChange={(value) => update('tone', value)} />
+          </div>
+          <ImageField label="卡片图片" value={text('image_url')} onChange={(value) => update('image_url', value)} />
+          <ImageField label="背景图片" value={text('background_url')} onChange={(value) => update('background_url', value)} />
+          <LinkField value={text('link_type', 'products')} onChange={(value) => update('link_type', value)} />
+        </Card>
+      })}
+    </>}
+
+    {section.type === 'trust_card' && <>
+      <TextField label="标题" value={stringProp('title')} maxLength={30} onChange={(value) => setProp('title', value)} />
+      <TextField label="描述" value={stringProp('description')} maxLength={120} textarea onChange={(value) => setProp('description', value)} />
+      <ImageField label="图标图片" value={stringProp('icon_url')} onChange={(value) => setProp('icon_url', value)} />
+      <ImageField label="背景图片" value={stringProp('background_url')} onChange={(value) => setProp('background_url', value)} />
+      <LinkField value={stringProp('link_type', 'assets')} onChange={(value) => setProp('link_type', value)} />
     </>}
 
     <StyleEditor style={style} onChange={updateStyle} />

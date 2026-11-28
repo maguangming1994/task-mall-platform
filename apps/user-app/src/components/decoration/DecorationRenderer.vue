@@ -9,7 +9,9 @@
           :autoplay="boolValue(section.props.autoplay, true)"
           :interval="numberValue(section.props.interval_ms, 4500)"
           :duration="numberValue(section.props.duration_ms, 300)"
+          :current="bannerCurrent(section.id)"
           circular
+          @change="onBannerChange(section.id, $event)"
         >
           <swiper-item v-for="(item, index) in bannerItems(section)" :key="index">
             <view class="deco-banner-item" @click="navigate(stringValue(item.link_type))">
@@ -28,13 +30,13 @@
           class="deco-banner-indicator"
           :class="'pos-' + (stringValue(section.props.indicator_position) || 'bottom-right')"
         >
-          <text v-if="stringValue(section.props.indicator) === 'numbers'" class="deco-banner-indicator-num">1/{{ Math.max(1, bannerItems(section).length) }}</text>
+          <text v-if="stringValue(section.props.indicator) === 'numbers'" class="deco-banner-indicator-num">{{ bannerCurrent(section.id) + 1 }}/{{ Math.max(1, bannerItems(section).length) }}</text>
           <view
             v-else
             v-for="(item, index) in bannerItems(section)"
             :key="index"
             class="deco-banner-dot"
-            :class="{ 'is-active': index === 0, 'is-bar': stringValue(section.props.indicator) === 'bars' }"
+            :class="{ 'is-active': index === bannerCurrent(section.id), 'is-bar': stringValue(section.props.indicator) === 'bars' }"
           />
         </view>
       </view>
@@ -60,13 +62,21 @@
         <view class="deco-announce-main">
           <text class="deco-announce-title" :style="{ fontSize: `${numberValue(section.props.title_size_rpx, 28)}rpx` }">{{ stringValue(section.props.title) || '平台公告' }}</text>
           <view class="deco-announce-view">
-            <rich-text
+            <view
               v-if="announcementNodes(section)"
-              class="deco-announce-content"
-              :class="{ 'is-scroll': section.props.scroll !== false }"
-              :style="{ color: stringValue(section.props.text_color) || '#8A6A1F', animationDuration: `${14 - numberValue(section.props.speed, 3) * 2}s` }"
-              :nodes="announcementNodes(section)"
-            />
+              class="deco-announce-viewport"
+            >
+              <text
+                v-if="section.props.scroll !== false"
+                class="deco-announce-marquee"
+                :style="{ color: stringValue(section.props.text_color) || '#8A6A1F', animationDuration: `${14 - numberValue(section.props.speed, 3) * 2}s` }"
+              >{{ announcementNodes(section) }}　　{{ announcementNodes(section) }}</text>
+              <text
+                v-else
+                class="deco-announce-content"
+                :style="{ color: stringValue(section.props.text_color) || '#8A6A1F' }"
+              >{{ announcementNodes(section) }}</text>
+            </view>
           </view>
         </view>
         <text v-if="section.props.show_arrow !== false" class="deco-announce-arrow">›</text>
@@ -94,7 +104,7 @@
             <view
               v-else
               class="deco-grid-icon deco-grid-mark"
-              :style="{ borderRadius: stringValue(section.props.icon_shape) === 'circle' ? '50%' : '24rpx' }"
+              :style="gridMarkStyle(item)"
             >{{ stringValue(item.mark) || stringValue(item.label).slice(0, 1) }}</view>
             <view v-if="stringValue(item.badge_type) === 'dot'" class="deco-grid-badge-dot" />
             <text v-else-if="stringValue(item.badge_type) === 'text'" class="deco-grid-badge-text">{{ stringValue(item.badge_text) || '新' }}</text>
@@ -109,6 +119,11 @@
             class="deco-grid-label"
             :style="{ fontSize: `${numberValue(section.props.label_size_rpx, 24)}rpx`, color: stringValue(section.props.label_color) || '#3C4961' }"
           >{{ stringValue(item.label) }}</text>
+          <text
+            v-if="stringValue(item.note)"
+            class="deco-grid-note"
+            :style="{ fontSize: `${Math.max(18, numberValue(section.props.label_size_rpx, 24) - 6)}rpx` }"
+          >{{ stringValue(item.note) }}</text>
         </view>
       </view>
 
@@ -229,10 +244,39 @@
           <text class="deco-list-title">{{ stringValue(section.props.title) || '推荐任务' }}</text>
           <text class="deco-list-more" @click="navigate('tasks')">去任务大厅 ›</text>
         </view>
-        <view v-for="task in tasksFor(section).slice(0, numberValue(section.props.limit, 4))" :key="task.id" class="deco-task" @click="openTask(task.id)">
-          <text class="deco-task-title">{{ task.title }}</text>
-          <text class="deco-task-desc">{{ task.description_text || task.description }}</text>
+        <view
+          v-for="task in tasksFor(section).slice(0, numberValue(section.props.limit, 5))"
+          :key="`deco-task-${task.id}`"
+          class="deco-task-card"
+          @click="openTask(task.id)"
+        >
+          <view class="deco-task-head">
+            <image v-if="task.publisher?.avatar_url" class="deco-task-avatar" :src="assetUrl(task.publisher.avatar_url)" mode="aspectFill" />
+            <view v-else class="deco-task-avatar deco-task-avatar-fallback">{{ (task.publisher?.display_name || '同').slice(0, 1) }}</view>
+            <view class="deco-task-head-main">
+              <view class="deco-task-name-row">
+                <text class="deco-task-name">{{ task.publisher?.display_name || '同学' }}</text>
+                <text v-if="task.publisher?.publisher_badge" class="deco-task-badge">{{ task.publisher.publisher_badge }}</text>
+              </view>
+              <text class="deco-task-meta">{{ task.published_at ? String(task.published_at).slice(0, 10) : '' }}</text>
+            </view>
+          </view>
+          <text class="deco-task-body">{{ task.description_text || task.description || task.title }}</text>
+          <view class="deco-task-tags">
+            <text v-if="task.bounty" class="deco-task-tag deco-task-tag-red">悬赏</text>
+            <text v-if="task.urgent" class="deco-task-tag deco-task-tag-orange">加急</text>
+            <text v-for="tag in (task.tags || []).slice(0, 3)" :key="tag" class="deco-task-tag deco-task-tag-gray">{{ tag }}</text>
+          </view>
+          <view v-if="task.gallery?.length" class="deco-task-gallery" :class="`g-${Math.min(task.gallery.length, 3)}`">
+            <image v-for="(img, gi) in task.gallery.slice(0, 3)" :key="gi" class="deco-task-gallery-img" :src="assetUrl(img)" mode="aspectFill" />
+          </view>
+          <view class="deco-task-foot">
+            <text class="deco-task-pts">{{ taskRewardText(task) }}</text>
+            <text v-if="task.location_text" class="deco-task-loc">@ {{ task.location_text }}</text>
+            <button class="deco-task-btn" :class="{ 'deco-task-btn--disabled': !task.can_claim }" :disabled="!task.can_claim" @click.stop="openTask(task.id)">{{ task.can_claim ? '去接单' : '暂不可领' }}</button>
+          </view>
         </view>
+        <view v-if="!tasksFor(section).length" class="deco-task-empty">暂无任务</view>
       </view>
 
       <view v-else-if="section.type === 'rich_text'" class="deco-rich">
@@ -468,13 +512,18 @@
         </view>
       </view>
 
-      <view v-else-if="section.type === 'point_card'" class="deco-point" @click="navigate(stringValue(section.props.link_type))">
+      <view v-else-if="section.type === 'point_card'" class="deco-point" @click="navigate(stringValue(section.props.link_type) || 'assets')">
         <view class="deco-point-top">
           <view class="deco-point-left">
             <text class="deco-point-label">{{ stringValue(section.props.points_label) || '我的积分' }} ›</text>
-            <text class="deco-point-tip">积分越多，兑换越多</text>
+            <text class="deco-point-num">
+              {{ pointAccount?.available_points?.toLocaleString() || '0' }}
+              <text v-if="auth.isAuthenticated" class="deco-point-tip">今日已赚 +{{ pointAccount?.points_earned_today ?? 0 }}</text>
+            </text>
           </view>
-          <text class="deco-point-btn">{{ stringValue(section.props.sign_button_text) || '每日签到' }}</text>
+          <text class="deco-point-btn" :class="{ signed: checkedInToday }">
+            {{ checkedInToday ? '今日已签' : (stringValue(section.props.sign_button_text) || '每日签到') }}
+          </text>
         </view>
       </view>
 
@@ -482,7 +531,9 @@
         <text v-if="stringValue(section.props.section_title)" class="deco-reco-section-title">{{ stringValue(section.props.section_title) }}</text>
         <text v-if="stringValue(section.props.section_subtitle)" class="deco-reco-section-subtitle">{{ stringValue(section.props.section_subtitle) }}</text>
         <view class="deco-reco-card">
-          <text v-if="stringValue(section.props.icon_text)" class="deco-reco-icon">{{ stringValue(section.props.icon_text) }}</text>
+          <image v-if="stringValue(section.props.background_url)" :src="assetUrl(stringValue(section.props.background_url))" mode="aspectFill" class="deco-reco-bg" />
+          <image v-if="stringValue(section.props.icon_url)" :src="assetUrl(stringValue(section.props.icon_url))" mode="aspectFit" class="deco-reco-icon-img" />
+          <text v-else-if="stringValue(section.props.icon_text)" class="deco-reco-icon">{{ stringValue(section.props.icon_text) }}</text>
           <view class="deco-reco-main">
             <view class="deco-reco-title-row">
               <text class="deco-reco-title">{{ stringValue(section.props.title) }}</text>
@@ -519,6 +570,8 @@
       </view>
 
       <view v-else-if="section.type === 'trust_card'" class="deco-trust" @click="navigate(stringValue(section.props.link_type))">
+        <image v-if="stringValue(section.props.background_url)" :src="assetUrl(stringValue(section.props.background_url))" mode="aspectFill" class="deco-trust-bg" />
+        <image v-if="stringValue(section.props.icon_url)" :src="assetUrl(stringValue(section.props.icon_url))" mode="aspectFit" class="deco-trust-icon" />
         <view class="deco-trust-main">
           <text class="deco-trust-title">{{ stringValue(section.props.title) || '每一笔资产都有记录' }}</text>
           <text class="deco-trust-desc">{{ stringValue(section.props.description) }}</text>
@@ -540,7 +593,8 @@ import { resolveApiAssetUrl } from '@/api/http'
 import { listProductCategories, listProducts, type MallProduct, type ProductCategory } from '@/api/products'
 import { listCommunityPosts, type CommunityCategory, type CommunityPost } from '@/api/community'
 import { listHallTasks, type HallTask } from '@/api/tasks'
-import { claimCoupon, listCouponCenter, type CouponCenterItem } from '@/api/assets'
+import { claimCoupon, listCouponCenter, getPointAccount, type CouponCenterItem } from '@/api/assets'
+import { getDailyCheckIn } from '@/api/growth'
 import { listNotifications, type AppNotification } from '@/api/notifications'
 import { loadHomeContent, type HomeCarouselItem } from '@/api/home'
 import type { DecorationPageConfig, DecorationSection } from '@/api/decoration'
@@ -558,6 +612,22 @@ const props = defineProps<{ page: DecorationPageConfig }>()
 const emit = defineEmits<{ (event: 'navigate', link: string): void }>()
 
 const auth = useAuthStore()
+const pointAccount = ref<{ available_points: number; points_earned_today: number } | null>(null)
+const checkedInToday = ref(false)
+const needsPointCard = computed(() => visibleSections.value.some((section) => section.type === 'point_card'))
+async function loadPointAccount() {
+  if (!auth.accessToken) return
+  try {
+    const [account, checkIn] = await Promise.allSettled([getPointAccount(auth.accessToken), getDailyCheckIn(auth.accessToken)])
+    if (account.status === 'fulfilled') {
+      pointAccount.value = {
+        available_points: account.value.available_points,
+        points_earned_today: account.value.points_earned_today ?? 0,
+      }
+    }
+    if (checkIn.status === 'fulfilled') checkedInToday.value = checkIn.value.checked_in_today ?? false
+  } catch { /* 未登录或接口异常时保持 0 */ }
+}
 const productsByCategory = ref<Record<string, MallProduct[]>>({})
 const postsByCategory = ref<Record<string, CommunityPost[]>>({})
 const tasksByCategory = ref<Record<string, HallTask[]>>({})
@@ -566,6 +636,13 @@ const productCategoriesList = ref<ProductCategory[]>([])
 const platformSlides = ref<HomeCarouselItem[]>([])
 const systemNotices = ref<AppNotification[]>([])
 const popupVisible = ref<Record<string, boolean>>({})
+const bannerIndex = ref<Record<string, number>>({})
+function bannerCurrent(id: string): number {
+  return bannerIndex.value[id] ?? 0
+}
+function onBannerChange(id: string, event: { detail?: { current?: number } }) {
+  bannerIndex.value = { ...bannerIndex.value, [id]: Number(event.detail?.current || 0) }
+}
 const claimingCouponId = ref<string | null>(null)
 const loadingProducts = new Set<string>()
 const loadingPosts = new Set<string>()
@@ -722,6 +799,23 @@ function gridEntries(section: DecorationSection): Record<string, unknown>[] {
   return listValue(section.props.items).filter((entry) => entry.enabled !== false)
 }
 
+const GRID_TONE_MAP: Record<string, { bg: string; color: string }> = {
+  green: { bg: '#E7F9EF', color: '#0BBF63' },
+  blue: { bg: '#EAF2FF', color: '#3B82F6' },
+  orange: { bg: '#FFF2E5', color: '#F2620A' },
+  violet: { bg: '#F1EAFF', color: '#8B5CF6' },
+  pink: { bg: '#FFEAF1', color: '#F43F7F' },
+  cyan: { bg: '#E3F7F5', color: '#12A59B' },
+  yellow: { bg: '#FFF6DC', color: '#D99400' },
+  gray: { bg: '#F0F2F5', color: '#8A919C' },
+  warm: { bg: '#FFF6DE', color: '#D99400' },
+}
+function gridMarkStyle(item: Record<string, unknown>): Record<string, string> {
+  const tone = stringValue(item.tone) || 'green'
+  const style = GRID_TONE_MAP[tone] || GRID_TONE_MAP.green
+  return { background: style.bg, color: style.color }
+}
+
 function tileStyle(section: DecorationSection, index: number): Record<string, string> {
   const layout = stringValue(section.props.layout) || 'big-left'
   const radius = `${numberValue(section.props.radius_rpx, 12)}rpx`
@@ -841,6 +935,15 @@ function postsFor(section: DecorationSection): CommunityPost[] {
 function tasksFor(section: DecorationSection): HallTask[] {
   return tasksByCategory.value[stringValue(section.props.category)] ?? []
 }
+function taskRewardText(task: HallTask): string {
+  const rewards = task.rewards || []
+  if (!rewards.length) return '+0 积分'
+  return rewards.map((reward) => {
+    if (reward.type === 'wallet_balance') return `+¥${Number(reward.balance_amount || 0).toFixed(2)}`
+    if (reward.type === 'coupon') return `+${reward.quantity || 1}张券`
+    return `+${Number(reward.points || 0).toLocaleString()} 积分`
+  }).join(' + ')
+}
 
 const needsCouponCenter = computed(() => visibleSections.value.some((section) => section.type === 'coupon' && stringValue(section.props.source) === 'center'))
 
@@ -859,6 +962,7 @@ watch(() => postCategories.value.join('\u0001'), () => { postCategories.value.fo
 watch(() => taskCategories.value.join('\u0001'), () => { taskCategories.value.forEach((category) => { void loadTasksFor(category) }) }, { immediate: true })
 watch(needsCouponCenter, (value) => { if (value) void loadCouponCenter() }, { immediate: true })
 watch(() => auth.accessToken, (token) => { if (token && needsCouponCenter.value) void loadCouponCenter() })
+watch(() => [needsPointCard.value, auth.accessToken] as const, ([needs, token]) => { if (needs && token) void loadPointAccount() }, { immediate: true })
 watch(needsProductCategories, (value) => { if (value) void loadProductCategories() }, { immediate: true })
 watch(needsPlatformSlides, (value) => { if (value) void loadPlatformSlides() }, { immediate: true })
 watch(() => [needsSystemNotices.value, auth.accessToken] as const, ([needs, token]) => { if (needs && token) void loadSystemNotices() }, { immediate: true })
@@ -897,6 +1001,29 @@ function navigate(link: string) {
 function openProduct(id: string) { uni.navigateTo({ url: `/pages/product-detail/index?id=${encodeURIComponent(id)}` }) }
 function openCart() { uni.navigateTo({ url: '/pages/cart/index' }) }
 function openCategory(item: Record<string, unknown>) {
+  const extType = stringValue(item.link_ext_type)
+  if (extType === 'miniprogram') {
+    const miniAppId = stringValue(item.mini_app_id)
+    if (!miniAppId) {
+      uni.showToast({ title: '未配置目标小程序 AppID', icon: 'none' })
+      return
+    }
+    uni.navigateToMiniProgram({
+      appId: miniAppId,
+      path: stringValue(item.mini_path) || undefined,
+      fail: () => uni.showToast({ title: '跳转失败，请确认已关联该小程序', icon: 'none' }),
+    })
+    return
+  }
+  if (extType === 'h5') {
+    const h5Url = stringValue(item.h5_url)
+    if (!h5Url) {
+      uni.showToast({ title: '未配置 H5 链接', icon: 'none' })
+      return
+    }
+    uni.navigateTo({ url: `/pages/webview/index?url=${encodeURIComponent(h5Url)}` })
+    return
+  }
   const categoryId = stringValue(item.category_id)
   if (categoryId) {
     uni.setStorageSync('task_mall_products_category', categoryId)
@@ -985,10 +1112,10 @@ function openTask(id: string) { uni.navigateTo({ url: `/pages/task-detail/index?
 .deco-announce-icon-img { width: 100%; height: 100%; border-radius: 12rpx; }
 .deco-announce-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
 .deco-announce-title { font-size: 28rpx; font-weight: 600; color: #5c4300; }
-.deco-announce-view { overflow: hidden; white-space: nowrap; }
-.deco-announce-content { font-size: 24rpx; color: #8a6a1f; max-height: 80rpx; overflow: hidden; display: inline-block; }
-.deco-announce-content.is-scroll { animation: deco-announce-scroll 8s linear infinite; }
-@keyframes deco-announce-scroll { 0% { transform: translateX(60%); } 100% { transform: translateX(-100%); } }
+.deco-announce-view { overflow: hidden; white-space: nowrap; flex: 1; }
+.deco-announce-marquee { display: inline-block; white-space: nowrap; font-size: 24rpx; animation: deco-announce-scroll 10s linear infinite; padding-right: 40rpx; }
+.deco-announce-content { display: inline-block; font-size: 24rpx; color: #8a6a1f; }
+@keyframes deco-announce-scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 .deco-announce-arrow { color: #b79a52; font-size: 32rpx; }
 .deco-grid { display: flex; flex-wrap: wrap; padding: 20rpx 8rpx; background: #fff; border-radius: 24rpx; }
 .deco-grid-item { display: flex; flex-direction: column; align-items: center; gap: 10rpx; padding: 10rpx 0; }
@@ -996,6 +1123,7 @@ function openTask(id: string) { uni.navigateTo({ url: `/pages/task-detail/index?
 .deco-grid-icon { width: 100%; height: 100%; border-radius: 24rpx; }
 .deco-grid-mark { display: flex; align-items: center; justify-content: center; background: #eaf1ff; color: #2f67df; font-size: 32rpx; font-weight: 700; }
 .deco-grid-label { font-size: 24rpx; color: #3c4961; }
+.deco-grid-note { font-size: 18rpx; color: #9aa5b8; line-height: 1.2; margin-top: -6rpx; }
 .deco-grid-badge-dot { position: absolute; top: 0; right: 0; width: 14rpx; height: 14rpx; border-radius: 999rpx; background: #ff5964; }
 .deco-grid-badge-text { position: absolute; top: -8rpx; right: -10rpx; padding: 0 8rpx; border-radius: 999rpx; background: #ff5964; color: #fff; font-size: 18rpx; font-weight: 700; line-height: 1.5; }
 .deco-grid-badge-img { position: absolute; top: -12rpx; right: -12rpx; width: 40rpx; height: 40rpx; }
@@ -1043,6 +1171,33 @@ function openTask(id: string) { uni.navigateTo({ url: `/pages/task-detail/index?
 .deco-post-title, .deco-task-title { font-size: 28rpx; color: #1f2937; font-weight: 600; }
 .deco-post-excerpt { font-size: 22rpx; color: #8b95a6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deco-post-meta, .deco-task-desc { font-size: 24rpx; color: #7a859b; }
+/* 首页任务流富卡片（装修 task_list 接管时与首页外观对齐） */
+.deco-task-card { display: flex; flex-direction: column; gap: 12rpx; padding: 22rpx 0; border-top: 1rpx solid #f0f2f7; }
+.deco-task-head { display: flex; align-items: center; gap: 16rpx; }
+.deco-task-avatar { width: 64rpx; height: 64rpx; border-radius: 50%; flex-shrink: 0; background: #eef2f9; }
+.deco-task-avatar-fallback { display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #7a859b; }
+.deco-task-head-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
+.deco-task-name-row { display: flex; align-items: center; gap: 8rpx; }
+.deco-task-name { font-size: 26rpx; font-weight: 700; color: #1f2937; }
+.deco-task-badge { padding: 2rpx 10rpx; border-radius: 6rpx; background: #eaf7ef; color: #0a9d54; font-size: 18rpx; }
+.deco-task-meta { font-size: 20rpx; color: #9aa5b8; }
+.deco-task-body { font-size: 26rpx; color: #3c4961; line-height: 1.5; }
+.deco-task-tags { display: flex; flex-wrap: wrap; gap: 8rpx; }
+.deco-task-tag { padding: 2rpx 12rpx; border-radius: 8rpx; font-size: 20rpx; }
+.deco-task-tag-red { background: #ffe9ea; color: #ff5964; }
+.deco-task-tag-orange { background: #fff2e5; color: #f2620a; }
+.deco-task-tag-gray { background: #f0f2f5; color: #7a859b; }
+.deco-task-gallery { display: grid; gap: 8rpx; }
+.deco-task-gallery.g-1 { grid-template-columns: 1fr; }
+.deco-task-gallery.g-2 { grid-template-columns: 1fr 1fr; }
+.deco-task-gallery.g-3 { grid-template-columns: 1fr 1fr 1fr; }
+.deco-task-gallery-img { width: 100%; height: 160rpx; border-radius: 12rpx; }
+.deco-task-foot { display: flex; align-items: center; gap: 16rpx; }
+.deco-task-pts { font-size: 26rpx; font-weight: 700; color: #ff5964; }
+.deco-task-loc { font-size: 20rpx; color: #9aa5b8; flex: 1; }
+.deco-task-btn { margin-left: auto; padding: 8rpx 24rpx; border-radius: 999rpx; background: #0bbf63; color: #fff; font-size: 22rpx; font-weight: 600; border: 0; line-height: 1.6; }
+.deco-task-btn--disabled { background: #e3e8ef; color: #9aa5b8; }
+.deco-task-empty { padding: 40rpx 0; text-align: center; font-size: 24rpx; color: #9aa5b8; }
 .deco-rich { padding: 20rpx; background: #fff; border-radius: 24rpx; font-size: 26rpx; color: #3c4961; line-height: 1.7; }
 .deco-float { position: fixed; right: 24rpx; z-index: 30; width: 96rpx; height: 96rpx; border-radius: 50%; background: #0bbf63; color: #fff; font-size: 28rpx; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 12rpx 28rpx rgba(11,191,99,.35); }
 .deco-float-img { width: 96rpx; height: 96rpx; border-radius: 50%; }
@@ -1160,11 +1315,15 @@ function openTask(id: string) { uni.navigateTo({ url: `/pages/task-detail/index?
 .deco-point-left { display: flex; flex-direction: column; gap: 6rpx; min-width: 0; }
 .deco-point-label { font-size: 26rpx; font-weight: 700; }
 .deco-point-tip { font-size: 20rpx; opacity: .85; }
+.deco-point-num { font-size: 30rpx; font-weight: 800; margin-top: 4rpx; }
+.deco-point-btn.signed { background: rgba(255,255,255,.12); opacity: .7; }
 .deco-point-btn { flex-shrink: 0; padding: 12rpx 26rpx; border-radius: 999rpx; background: rgba(255,255,255,.22); font-size: 24rpx; font-weight: 600; }
 .deco-reco { display: flex; flex-direction: column; gap: 10rpx; }
 .deco-reco-section-title { font-size: 32rpx; font-weight: 800; color: #1f2937; }
 .deco-reco-section-subtitle { font-size: 22rpx; color: #8b95a6; }
-.deco-reco-card { display: flex; gap: 18rpx; background: #fff; border-radius: 22rpx; padding: 24rpx; box-shadow: 0 6rpx 20rpx rgba(15,30,20,.06); }
+.deco-reco-card { position: relative; overflow: hidden; display: flex; gap: 18rpx; background: #fff; border-radius: 22rpx; padding: 24rpx; box-shadow: 0 6rpx 20rpx rgba(15,30,20,.06); }
+.deco-reco-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: .25; }
+.deco-reco-icon-img { width: 64rpx; height: 64rpx; border-radius: 18rpx; flex-shrink: 0; }
 .deco-reco-icon { width: 64rpx; height: 64rpx; border-radius: 18rpx; background: #eaf7ef; color: #0a9d54; font-size: 30rpx; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .deco-reco-main { display: flex; flex-direction: column; gap: 8rpx; min-width: 0; flex: 1; }
 .deco-reco-title-row { display: flex; align-items: center; gap: 10rpx; }
@@ -1182,11 +1341,15 @@ function openTask(id: string) { uni.navigateTo({ url: `/pages/task-detail/index?
 .deco-section-card { position: relative; border-radius: 20rpx; padding: 24rpx; min-height: 160rpx; display: flex; flex-direction: column; justify-content: flex-end; gap: 6rpx; overflow: hidden; }
 .deco-section-card.tone-blue { background: linear-gradient(135deg,#e8f1ff,#d4e4ff); }
 .deco-section-card.tone-warm { background: linear-gradient(135deg,#fff3e6,#ffe4cc); }
+.deco-section-card.tone-green { background: linear-gradient(135deg,#e7f9ef,#ccf0dd); }
+.deco-section-card.tone-orange { background: linear-gradient(135deg,#fff2e5,#ffd9b8); }
 .deco-section-card-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: .35; }
 .deco-section-card-eyebrow { font-size: 20rpx; color: #6b7893; }
 .deco-section-card-title { font-size: 28rpx; font-weight: 700; color: #1f2937; }
 .deco-section-card-price { font-size: 24rpx; font-weight: 700; color: #ff5964; }
-.deco-trust { display: flex; align-items: center; gap: 16rpx; background: #f4f6fa; border-radius: 20rpx; padding: 24rpx 26rpx; }
+.deco-trust { position: relative; overflow: hidden; display: flex; align-items: center; gap: 16rpx; background: #f4f6fa; border-radius: 20rpx; padding: 24rpx 26rpx; }
+.deco-trust-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: .2; }
+.deco-trust-icon { width: 56rpx; height: 56rpx; border-radius: 14rpx; flex-shrink: 0; }
 .deco-trust-main { display: flex; flex-direction: column; gap: 6rpx; min-width: 0; flex: 1; }
 .deco-trust-title { font-size: 26rpx; font-weight: 700; color: #1f2937; }
 .deco-trust-desc { font-size: 22rpx; color: #7a859b; line-height: 1.5; }

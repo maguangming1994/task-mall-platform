@@ -426,6 +426,48 @@ export function SectionPreview({ section }: { section: DecorationSection }) {
         <span style={{ fontSize: 9.5, color: '#AEB3BB' }}>用户端为浮层展示</span>
       </div>
     }
+    case 'brand_card':
+      return <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg,#0BBF63,#0A9D54)', color: '#fff', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{stringValue(props, 'logo_text') || 'TM'}</div>
+        <div><div style={{ fontSize: 16, fontWeight: 800, color: '#1F2937' }}>{stringValue(props, 'name') || '任务商城'}</div><div style={{ fontSize: 8.5, letterSpacing: 1, color: '#9AA5B8' }}>{stringValue(props, 'caption')}</div></div>
+      </div>
+    case 'point_card':
+      return <div style={{ background: 'linear-gradient(135deg,#0BBF63,#0A9D54)', borderRadius: 12, padding: 14, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div><div style={{ fontSize: 12, fontWeight: 700 }}>{stringValue(props, 'points_label') || '我的积分'} ›</div><div style={{ fontSize: 9, opacity: .85 }}>积分越多，兑换越多</div></div>
+        <span style={{ padding: '5px 13px', borderRadius: 999, background: 'rgba(255,255,255,.22)', fontSize: 10, fontWeight: 600 }}>{stringValue(props, 'sign_button_text') || '每日签到'}</span>
+      </div>
+    case 'recommendation_card':
+      return <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#1F2937' }}>{stringValue(props, 'section_title') || '今日推荐'}</div>
+        <div style={{ fontSize: 10, color: '#8B95A6' }}>{stringValue(props, 'section_subtitle')}</div>
+        <div style={{ display: 'flex', gap: 9, background: '#fff', borderRadius: 11, padding: 12, boxShadow: '0 3px 10px rgba(15,30,20,.06)' }}>
+          <div style={{ width: 30, height: 30, borderRadius: 9, background: '#EAF7EF', color: '#0A9D54', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{stringValue(props, 'icon_text') || '新'}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ fontSize: 14, fontWeight: 700, color: '#1F2937' }}>{stringValue(props, 'title')}</span>{stringValue(props, 'tag') ? <span style={{ padding: '1px 6px', borderRadius: 4, background: '#FFF2E5', color: '#D96B1A', fontSize: 9 }}>{stringValue(props, 'tag')}</span> : null}</div>
+            <div style={{ fontSize: 10, color: '#7A859B', marginTop: 2 }}>{stringValue(props, 'description')}</div>
+            <div style={{ marginTop: 4 }}><span style={{ fontSize: 11, fontWeight: 700, color: '#FF5964' }}>{stringValue(props, 'reward_text')}</span>{stringValue(props, 'time_text') ? <span style={{ fontSize: 9, color: '#9AA5B8', marginLeft: 8 }}>{stringValue(props, 'time_text')}</span> : null}</div>
+          </div>
+        </div>
+      </div>
+    case 'product_section':
+      return <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#1F2937' }}>{stringValue(props, 'section_title') || '精选兑换'}</div>
+        <div style={{ fontSize: 10, color: '#8B95A6' }}>{stringValue(props, 'section_subtitle')}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {(Array.isArray(props.cards) ? props.cards : []).map((card: Record<string, unknown>, i: number) => (
+            <div key={i} style={{ borderRadius: 10, padding: 12, minHeight: 80, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 3, background: (card.tone === 'warm' ? 'linear-gradient(135deg,#FFF3E6,#FFE4CC)' : 'linear-gradient(135deg,#E8F1FF,#D4E4FF)') }}>
+              <div style={{ fontSize: 9, color: '#6B7893' }}>{stringValue(card, 'eyebrow')}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#1F2937' }}>{stringValue(card, 'title')}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#FF5964' }}>{stringValue(card, 'price_text')}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    case 'trust_card':
+      return <div style={{ display: 'flex', alignItems: 'center', gap: 9, background: '#F4F6FA', borderRadius: 10, padding: 12 }}>
+        <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700, color: '#1F2937' }}>{stringValue(props, 'title') || '每一笔资产都有记录'}</div><div style={{ fontSize: 10, color: '#7A859B', marginTop: 2 }}>{stringValue(props, 'description')}</div></div>
+        <span style={{ fontSize: 16, color: '#9AA5B8' }}>›</span>
+      </div>
     case 'title_bar':
       return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <div><div style={{ fontSize: numberValue(props, 'title_size_rpx', 32) / 2, fontWeight: 800, color: stringValue(props, 'title_color') || '#1F2937' }}>{stringValue(props, 'title') || '标题'}</div><div style={{ fontSize: 10.5, color: '#8B95A6' }}>{stringValue(props, 'subtitle')}</div></div>

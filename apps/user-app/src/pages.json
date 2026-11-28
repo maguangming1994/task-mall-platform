@@ -389,6 +389,12 @@
       "style": {
         "navigationStyle": "custom"
       }
+    },
+    {
+      "path": "pages/webview/index",
+      "style": {
+        "navigationBarTitleText": "网页详情"
+      }
     }
   ],
   "globalStyle": {
