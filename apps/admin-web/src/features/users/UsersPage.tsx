@@ -77,8 +77,8 @@ export function UsersPage() {
 
   const exportCsv = () => {
     if (!rows.length) { messageApi.info('当前没有可导出的用户。'); return }
-    const header = '用户ID,昵称,角色,手机号,注册时间,积分余额,状态\n'
-    const body = rows.map((u) => [u.id, u.nickname, u.level?.name ?? '', u.phone_masked ?? '', fmtDate(u.created_at), u.assets.points_available, statusPills[u.status]?.label ?? u.status].join(',')).join('\n')
+    const header = '用户ID,昵称,角色,学校,手机号,注册时间,积分余额,状态\n'
+    const body = rows.map((u) => [u.id, u.nickname, u.level?.name ?? '', u.campus?.name ?? '未绑定', u.phone_masked ?? '', fmtDate(u.created_at), u.assets.points_available, statusPills[u.status]?.label ?? u.status].join(',')).join('\n')
     const blob = new Blob([`﻿${header}${body}`], { type: 'text/csv;charset=utf-8' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
@@ -157,6 +157,15 @@ export function UsersPage() {
     { title: '用户ID', dataIndex: 'id' },
     { title: '用户信息', render: (_, r) => <UCell name={r.nickname} sub={<><span style={{ display: 'block' }}>UID {r.id}</span><span>{r.level?.name ?? '普通用户'}</span></>} /> },
     { title: '手机号', render: (_, r) => r.phone_masked ?? '—' },
+    {
+      title: '学校',
+      render: (_, r) => r.campus
+        ? <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontWeight: 500 }}>{r.campus.name}</span>
+            {r.campus.isolation_mode === 'strict' && <Pill tone="blue">严格隔离</Pill>}
+          </div>
+        : <Pill tone="gray">未绑定</Pill>,
+    },
     {
       title: '来源',
       render: (_, r) => {
@@ -323,6 +332,9 @@ export function UsersPage() {
                 { key: 'id', label: '用户ID', children: detail.id },
                 { key: 'nick', label: '昵称', children: detail.nickname },
                 { key: 'level', label: '角色等级', children: detail.level?.name ?? '普通用户' },
+                { key: 'campus', label: '所属学校', children: detail.campus
+                  ? <>{detail.campus.name}{detail.campus.isolation_mode === 'strict' ? '（严格隔离）' : ''}</>
+                  : '未绑定' },
                 { key: 'phone', label: '手机号', children: detail.phone_masked ?? '—' },
                 { key: 'status', label: '状态', children: statusPills[detail.status]?.label ?? detail.status },
                 { key: 'points', label: '积分', children: `可用 ${detail.assets.points_available.toLocaleString()} / 冻结 ${detail.assets.points_frozen.toLocaleString()}` },
