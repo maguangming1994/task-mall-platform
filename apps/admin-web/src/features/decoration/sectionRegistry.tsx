@@ -346,6 +346,56 @@ export const DECORATION_SECTION_DEFS: DecorationSectionDef[] = [
       radius_rpx: 20,
     }),
   },
+  {
+    type: 'brand_card',
+    label: '品牌卡',
+    description: '首页顶部品牌标识：logo 文字/图片、名称与标语。',
+    group: 'feature',
+    createProps: () => ({ logo_text: 'TM', logo_url: '', name: '任务商城', caption: 'TASK · REWARD · LIFE', link_type: 'none' }),
+  },
+  {
+    type: 'point_card',
+    label: '积分签到卡',
+    description: '我的积分、今日已赚与每日签到入口。',
+    group: 'feature',
+    createProps: () => ({ points_label: '我的积分', sign_button_text: '每日签到', link_type: 'assets' }),
+  },
+  {
+    type: 'recommendation_card',
+    label: '今日推荐卡',
+    description: '首页推荐任务卡：标题、描述、标签、奖励文案与时长。',
+    group: 'feature',
+    createProps: () => ({
+      section_title: '今日推荐', section_subtitle: '从一件简单的小事开始',
+      title: '完成新手任务', description: '完善资料、熟悉流程，开启你的第一份奖励',
+      tag: '简单', reward_text: '最高 +300 积分', time_text: '约 3 分钟',
+      icon_text: '新', icon_url: '', background_url: '', link_type: 'tasks',
+    }),
+  },
+  {
+    type: 'product_section',
+    label: '精选兑换',
+    description: '首页精选兑换双卡片（积分好物/生活补给）。',
+    group: 'feature',
+    createProps: () => ({
+      section_title: '精选兑换', section_subtitle: '三种购买方式，价格各端一致',
+      cards: [
+        { id: 'points-choice', eyebrow: '积分好物', title: '日常精选', price_text: '积分兑换', tone: 'blue', image_url: '', background_url: '', link_type: 'products' },
+        { id: 'life-choice', eyebrow: '限时推荐', title: '生活补给', price_text: '现金 / 积分', tone: 'warm', image_url: '', background_url: '', link_type: 'products' },
+      ],
+    }),
+  },
+  {
+    type: 'trust_card',
+    label: '资产可信卡',
+    description: '说明积分来源、有效期与变动记录的信任背书卡。',
+    group: 'feature',
+    createProps: () => ({
+      title: '每一笔资产都有记录',
+      description: '积分来源、有效期、退款和余额变动清晰可查',
+      icon_url: '', background_url: '', link_type: 'assets',
+    }),
+  },
 ]
 
 export const DECORATION_SECTION_MAP: Record<string, DecorationSectionDef> = Object.fromEntries(

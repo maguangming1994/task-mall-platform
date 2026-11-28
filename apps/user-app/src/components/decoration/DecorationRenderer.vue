@@ -459,6 +459,73 @@
         </view>
       </view>
 
+      <view v-else-if="section.type === 'brand_card'" class="deco-brand" @click="navigate(stringValue(section.props.link_type))">
+        <image v-if="stringValue(section.props.logo_url)" :src="assetUrl(stringValue(section.props.logo_url))" mode="aspectFit" class="deco-brand-logo-img" />
+        <text v-else class="deco-brand-logo">{{ stringValue(section.props.logo_text) || 'TM' }}</text>
+        <view class="deco-brand-main">
+          <text class="deco-brand-name">{{ stringValue(section.props.name) || '任务商城' }}</text>
+          <text v-if="stringValue(section.props.caption)" class="deco-brand-caption">{{ stringValue(section.props.caption) }}</text>
+        </view>
+      </view>
+
+      <view v-else-if="section.type === 'point_card'" class="deco-point" @click="navigate(stringValue(section.props.link_type))">
+        <view class="deco-point-top">
+          <view class="deco-point-left">
+            <text class="deco-point-label">{{ stringValue(section.props.points_label) || '我的积分' }} ›</text>
+            <text class="deco-point-tip">积分越多，兑换越多</text>
+          </view>
+          <text class="deco-point-btn">{{ stringValue(section.props.sign_button_text) || '每日签到' }}</text>
+        </view>
+      </view>
+
+      <view v-else-if="section.type === 'recommendation_card'" class="deco-reco" @click="navigate(stringValue(section.props.link_type))">
+        <text v-if="stringValue(section.props.section_title)" class="deco-reco-section-title">{{ stringValue(section.props.section_title) }}</text>
+        <text v-if="stringValue(section.props.section_subtitle)" class="deco-reco-section-subtitle">{{ stringValue(section.props.section_subtitle) }}</text>
+        <view class="deco-reco-card">
+          <text v-if="stringValue(section.props.icon_text)" class="deco-reco-icon">{{ stringValue(section.props.icon_text) }}</text>
+          <view class="deco-reco-main">
+            <view class="deco-reco-title-row">
+              <text class="deco-reco-title">{{ stringValue(section.props.title) }}</text>
+              <text v-if="stringValue(section.props.tag)" class="deco-reco-tag">{{ stringValue(section.props.tag) }}</text>
+            </view>
+            <text class="deco-reco-desc">{{ stringValue(section.props.description) }}</text>
+            <view class="deco-reco-meta">
+              <text v-if="stringValue(section.props.reward_text)" class="deco-reco-reward">{{ stringValue(section.props.reward_text) }}</text>
+              <text v-if="stringValue(section.props.time_text)" class="deco-reco-time">{{ stringValue(section.props.time_text) }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view v-else-if="section.type === 'product_section'" class="deco-section">
+        <view class="deco-section-head">
+          <text class="deco-section-title">{{ stringValue(section.props.section_title) || '精选兑换' }}</text>
+          <text v-if="stringValue(section.props.section_subtitle)" class="deco-section-subtitle">{{ stringValue(section.props.section_subtitle) }}</text>
+        </view>
+        <view class="deco-section-cards">
+          <view
+            v-for="(card, index) in (Array.isArray(section.props.cards) ? section.props.cards : [])"
+            :key="`ps-${index}`"
+            class="deco-section-card"
+            :class="`tone-${card.tone || 'blue'}`"
+            @click="navigate(stringValue(card.link_type))"
+          >
+            <image v-if="stringValue(card.image_url)" :src="assetUrl(stringValue(card.image_url))" mode="aspectFill" class="deco-section-card-img" />
+            <text v-if="stringValue(card.eyebrow)" class="deco-section-card-eyebrow">{{ stringValue(card.eyebrow) }}</text>
+            <text class="deco-section-card-title">{{ stringValue(card.title) }}</text>
+            <text class="deco-section-card-price">{{ stringValue(card.price_text) }}</text>
+          </view>
+        </view>
+      </view>
+
+      <view v-else-if="section.type === 'trust_card'" class="deco-trust" @click="navigate(stringValue(section.props.link_type))">
+        <view class="deco-trust-main">
+          <text class="deco-trust-title">{{ stringValue(section.props.title) || '每一笔资产都有记录' }}</text>
+          <text class="deco-trust-desc">{{ stringValue(section.props.description) }}</text>
+        </view>
+        <text class="deco-trust-arrow">›</text>
+      </view>
+
       <view v-else-if="section.type === 'floating_box'" class="deco-float" :style="{ bottom: `${numberValue(section.props.bottom_rpx, 180)}rpx` }" @click="navigate(stringValue(section.props.link_type))">
         <image v-if="stringValue(section.props.image_url)" :src="assetUrl(stringValue(section.props.image_url))" mode="aspectFill" class="deco-float-img" />
         <text v-else>{{ stringValue(section.props.icon_text) || '客' }}</text>
@@ -480,7 +547,7 @@ import type { DecorationPageConfig, DecorationSection } from '@/api/decoration'
 import { useAuthStore } from '@/stores/auth'
 import { navigateToLogin } from '@/utils/authRedirect'
 
-const KNOWN_TYPES = ['banner', 'announcement', 'quick_grid', 'image_banner', 'image_text', 'product_grid', 'post_list', 'task_list', 'rich_text', 'spacer', 'nav_bar', 'search_box', 'category_nav', 'coupon', 'floating_box', 'page_title', 'list_nav', 'tag_group', 'image_group', 'button_group', 'divider', 'activity_group', 'member_card', 'cart_entry', 'qr_code', 'location_search', 'order_marquee', 'video', 'tab_nav', 'ad_banner', 'image_showcase', 'notice_bar', 'hot_tags', 'title_bar', 'tile_ad', 'popup']
+const KNOWN_TYPES = ['banner', 'announcement', 'quick_grid', 'image_banner', 'image_text', 'product_grid', 'post_list', 'task_list', 'rich_text', 'spacer', 'nav_bar', 'search_box', 'category_nav', 'coupon', 'floating_box', 'page_title', 'list_nav', 'tag_group', 'image_group', 'button_group', 'divider', 'activity_group', 'member_card', 'cart_entry', 'qr_code', 'location_search', 'order_marquee', 'video', 'tab_nav', 'ad_banner', 'image_showcase', 'notice_bar', 'hot_tags', 'title_bar', 'tile_ad', 'popup', 'brand_card', 'point_card', 'recommendation_card', 'product_section', 'trust_card']
 
 let CURRENT_CHANNEL: 'h5' | 'miniapp' = 'h5'
 // #ifdef MP-WEIXIN
@@ -1081,4 +1148,47 @@ function openTask(id: string) { uni.navigateTo({ url: `/pages/task-detail/index?
 .deco-popup-content { font-size: 26rpx; color: #7a859b; line-height: 1.6; }
 .deco-popup-btn { margin-top: 8rpx; padding: 16rpx 56rpx; border-radius: 999rpx; background: #0bbf63; color: #fff; font-size: 28rpx; font-weight: 700; }
 .deco-popup-close { position: absolute; top: 16rpx; right: 16rpx; width: 48rpx; height: 48rpx; border-radius: 999rpx; background: rgba(0,0,0,.35); color: #fff; font-size: 32rpx; line-height: 44rpx; text-align: center; }
+/* 首页核心区块（brand/point/recommendation/product_section/trust） */
+.deco-brand { display: flex; align-items: center; gap: 18rpx; padding: 8rpx 4rpx; }
+.deco-brand-logo { width: 76rpx; height: 76rpx; border-radius: 20rpx; background: linear-gradient(135deg,#0bbf63,#0a9d54); color: #fff; font-size: 34rpx; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.deco-brand-logo-img { width: 76rpx; height: 76rpx; border-radius: 20rpx; flex-shrink: 0; }
+.deco-brand-main { display: flex; flex-direction: column; gap: 4rpx; min-width: 0; }
+.deco-brand-name { font-size: 34rpx; font-weight: 800; color: #1f2937; }
+.deco-brand-caption { font-size: 20rpx; letter-spacing: 2rpx; color: #9aa5b8; }
+.deco-point { background: linear-gradient(135deg,#0bbf63,#0a9d54); border-radius: 24rpx; padding: 28rpx 30rpx; color: #fff; }
+.deco-point-top { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
+.deco-point-left { display: flex; flex-direction: column; gap: 6rpx; min-width: 0; }
+.deco-point-label { font-size: 26rpx; font-weight: 700; }
+.deco-point-tip { font-size: 20rpx; opacity: .85; }
+.deco-point-btn { flex-shrink: 0; padding: 12rpx 26rpx; border-radius: 999rpx; background: rgba(255,255,255,.22); font-size: 24rpx; font-weight: 600; }
+.deco-reco { display: flex; flex-direction: column; gap: 10rpx; }
+.deco-reco-section-title { font-size: 32rpx; font-weight: 800; color: #1f2937; }
+.deco-reco-section-subtitle { font-size: 22rpx; color: #8b95a6; }
+.deco-reco-card { display: flex; gap: 18rpx; background: #fff; border-radius: 22rpx; padding: 24rpx; box-shadow: 0 6rpx 20rpx rgba(15,30,20,.06); }
+.deco-reco-icon { width: 64rpx; height: 64rpx; border-radius: 18rpx; background: #eaf7ef; color: #0a9d54; font-size: 30rpx; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.deco-reco-main { display: flex; flex-direction: column; gap: 8rpx; min-width: 0; flex: 1; }
+.deco-reco-title-row { display: flex; align-items: center; gap: 10rpx; }
+.deco-reco-title { font-size: 28rpx; font-weight: 700; color: #1f2937; }
+.deco-reco-tag { padding: 2rpx 12rpx; border-radius: 8rpx; background: #fff2e5; color: #d96b1a; font-size: 20rpx; }
+.deco-reco-desc { font-size: 22rpx; color: #7a859b; line-height: 1.5; }
+.deco-reco-meta { display: flex; align-items: center; gap: 16rpx; }
+.deco-reco-reward { font-size: 24rpx; font-weight: 700; color: #ff5964; }
+.deco-reco-time { font-size: 20rpx; color: #9aa5b8; }
+.deco-section { display: flex; flex-direction: column; gap: 14rpx; }
+.deco-section-head { display: flex; flex-direction: column; gap: 4rpx; }
+.deco-section-title { font-size: 32rpx; font-weight: 800; color: #1f2937; }
+.deco-section-subtitle { font-size: 22rpx; color: #8b95a6; }
+.deco-section-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16rpx; }
+.deco-section-card { position: relative; border-radius: 20rpx; padding: 24rpx; min-height: 160rpx; display: flex; flex-direction: column; justify-content: flex-end; gap: 6rpx; overflow: hidden; }
+.deco-section-card.tone-blue { background: linear-gradient(135deg,#e8f1ff,#d4e4ff); }
+.deco-section-card.tone-warm { background: linear-gradient(135deg,#fff3e6,#ffe4cc); }
+.deco-section-card-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: .35; }
+.deco-section-card-eyebrow { font-size: 20rpx; color: #6b7893; }
+.deco-section-card-title { font-size: 28rpx; font-weight: 700; color: #1f2937; }
+.deco-section-card-price { font-size: 24rpx; font-weight: 700; color: #ff5964; }
+.deco-trust { display: flex; align-items: center; gap: 16rpx; background: #f4f6fa; border-radius: 20rpx; padding: 24rpx 26rpx; }
+.deco-trust-main { display: flex; flex-direction: column; gap: 6rpx; min-width: 0; flex: 1; }
+.deco-trust-title { font-size: 26rpx; font-weight: 700; color: #1f2937; }
+.deco-trust-desc { font-size: 22rpx; color: #7a859b; line-height: 1.5; }
+.deco-trust-arrow { font-size: 32rpx; color: #9aa5b8; flex-shrink: 0; }
 </style>
