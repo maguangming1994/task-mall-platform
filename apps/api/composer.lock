@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9f2609f7a966bc30c5be79a9c0a85ce0",
+    "content-hash": "76cb05acd6157f89d4e4fadb5b46ebb3",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -248,6 +248,191 @@
             "time": "2025-12-15T10:15:24+00:00"
         },
         {
+            "name": "alibabacloud/darabonba-array",
+            "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/darabonba-array.git",
+                "reference": "b0d9ccd24f003f0f9ab4e965f4130ef86eb74f9e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/darabonba-array/zipball/b0d9ccd24f003f0f9ab4e965f4130ef86eb74f9e",
+                "reference": "b0d9ccd24f003f0f9ab4e965f4130ef86eb74f9e",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">5.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AlibabaCloud\\Darabonba\\ArrayUtil\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Alibaba Cloud Tea Array Util Library for PHP",
+            "support": {
+                "source": "https://github.com/alibabacloud-sdk-php/darabonba-array/tree/0.1.0"
+            },
+            "time": "2022-10-31T10:02:39+00:00"
+        },
+        {
+            "name": "alibabacloud/darabonba-encode-util",
+            "version": "0.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/darabonba-encode-util.git",
+                "reference": "50b2cd0eb4aac8f8fbcae9d15218e177dffcda30"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/darabonba-encode-util/zipball/50b2cd0eb4aac8f8fbcae9d15218e177dffcda30",
+                "reference": "50b2cd0eb4aac8f8fbcae9d15218e177dffcda30",
+                "shasum": ""
+            },
+            "require": {
+                "alibabacloud/tea-utils": "^0.2",
+                "lizhichao/one-sm": "^1.5",
+                "php": ">5.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AlibabaCloud\\Darabonba\\EncodeUtil\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Alibaba Cloud Tea Encode Util Library for PHP",
+            "support": {
+                "source": "https://github.com/alibabacloud-sdk-php/darabonba-encode-util/tree/0.0.2"
+            },
+            "time": "2022-12-10T04:38:35+00:00"
+        },
+        {
+            "name": "alibabacloud/darabonba-map",
+            "version": "0.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/darabonba-map.git",
+                "reference": "98318d77341735769ed106d5cd5a24613336de7e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/darabonba-map/zipball/98318d77341735769ed106d5cd5a24613336de7e",
+                "reference": "98318d77341735769ed106d5cd5a24613336de7e",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">5.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.8.35|^5.4.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AlibabaCloud\\Darabonba\\MapUtil\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Alibaba Cloud Tea Map Util Library for PHP",
+            "support": {
+                "source": "https://github.com/alibabacloud-sdk-php/darabonba-map/tree/0.0.1"
+            },
+            "time": "2021-12-07T02:48:54+00:00"
+        },
+        {
+            "name": "alibabacloud/darabonba-signature-util",
+            "version": "0.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/darabonba-signature-util.git",
+                "reference": "1cc0ef26e8c723f139f0dd2913b9a951eb4fa4b9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/darabonba-signature-util/zipball/1cc0ef26e8c723f139f0dd2913b9a951eb4fa4b9",
+                "reference": "1cc0ef26e8c723f139f0dd2913b9a951eb4fa4b9",
+                "shasum": ""
+            },
+            "require": {
+                "alibabacloud/tea-utils": "^0.2",
+                "lizhichao/one-sm": "^1.5",
+                "php": ">5.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AlibabaCloud\\Darabonba\\SignatureUtil\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Alibaba Cloud Tea signature Util Library for PHP",
+            "support": {
+                "source": "https://github.com/alibabacloud-sdk-php/darabonba-signature-util/tree/0.0.4"
+            },
+            "time": "2022-12-10T04:38:35+00:00"
+        },
+        {
+            "name": "alibabacloud/darabonba-string",
+            "version": "0.1.16",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/darabonba-string.git",
+                "reference": "48266c48f2eb03feeeeaa2c8642970ae308f6ea4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/darabonba-string/zipball/48266c48f2eb03feeeeaa2c8642970ae308f6ea4",
+                "reference": "48266c48f2eb03feeeeaa2c8642970ae308f6ea4",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">5.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AlibabaCloud\\Darabonba\\String\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Alibaba Cloud Tea Console Output Library for PHP",
+            "support": {
+                "issues": "https://github.com/alibabacloud-sdk-php/darabonba-string/issues",
+                "source": "https://github.com/alibabacloud-sdk-php/darabonba-string/tree/0.1.16"
+            },
+            "time": "2025-05-29T08:55:05+00:00"
+        },
+        {
             "name": "alibabacloud/dysmsapi-20170525",
             "version": "4.6.0",
             "source": {
@@ -287,6 +472,107 @@
                 "source": "https://github.com/alibabacloud-sdk-php/Dysmsapi-20170525/tree/4.6.0"
             },
             "time": "2026-07-01T13:56:24+00:00"
+        },
+        {
+            "name": "alibabacloud/endpoint-util",
+            "version": "0.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/endpoint-util.git",
+                "reference": "f3fe88a25d8df4faa3b0ae14ff202a9cc094e6c5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/endpoint-util/zipball/f3fe88a25d8df4faa3b0ae14ff202a9cc094e6c5",
+                "reference": "f3fe88a25d8df4faa3b0ae14ff202a9cc094e6c5",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">5.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.8.35|^5.4.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AlibabaCloud\\Endpoint\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Alibaba Cloud SDK",
+                    "email": "sdk-team@alibabacloud.com"
+                }
+            ],
+            "description": "Alibaba Cloud Endpoint Library for PHP",
+            "support": {
+                "source": "https://github.com/alibabacloud-sdk-php/endpoint-util/tree/0.1.1"
+            },
+            "time": "2020-06-04T10:57:15+00:00"
+        },
+        {
+            "name": "alibabacloud/gateway-pop",
+            "version": "0.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/alibabacloud-gateway-pop.git",
+                "reference": "7a301640dac20ab649ab2e3eb44cf2d321f76f1e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/alibabacloud-gateway-pop/zipball/7a301640dac20ab649ab2e3eb44cf2d321f76f1e",
+                "reference": "7a301640dac20ab649ab2e3eb44cf2d321f76f1e",
+                "shasum": "",
+                "mirrors": [
+                    {
+                        "url": "https://mirrors.aliyun.com/composer/dists/%package%/%reference%.%type%",
+                        "preferred": true
+                    }
+                ]
+            },
+            "require": {
+                "alibabacloud/credentials": "^1.2.2",
+                "alibabacloud/darabonba-array": "^0.1.0",
+                "alibabacloud/darabonba-encode-util": "^0.0.2",
+                "alibabacloud/darabonba-map": "^0.0.1",
+                "alibabacloud/darabonba-signature-util": "^0.0.4",
+                "alibabacloud/darabonba-string": "^0.1.16",
+                "alibabacloud/endpoint-util": "^0.1.0",
+                "alibabacloud/gateway-spi": "^1",
+                "alibabacloud/openapi-util": "^0.1.10|^0.2.1",
+                "alibabacloud/tea-utils": "^0.2.21",
+                "alibabacloud/tea-xml": "^0.2",
+                "php": ">5.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Darabonba\\GatewayPop\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Alibaba Cloud SDK",
+                    "email": "sdk-team@alibabacloud.com"
+                }
+            ],
+            "description": "Alibaba Cloud POP Client",
+            "support": {
+                "source": "https://github.com/alibabacloud-sdk-php/alibabacloud-gateway-pop/tree/0.1.3"
+            },
+            "time": "2025-11-27T05:56:40+00:00"
         },
         {
             "name": "alibabacloud/gateway-spi",
@@ -366,8 +652,7 @@
             "support": {
                 "source": "https://github.com/alibabacloud-sdk-php/green-20220302/tree/3.6.10"
             },
-            "time": "2026-11-09T17:28:07+00:00",
-            "published-time": "2026-11-09T17:28:46+00:00"
+            "time": "2026-11-09T17:28:07+00:00"
         },
         {
             "name": "alibabacloud/openapi-core",
@@ -381,7 +666,13 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/alibabacloud-sdk-php/openapi-core/zipball/7b241b2a0e71f70629e2ecdc5cbe8c8b6b3a7567",
                 "reference": "7b241b2a0e71f70629e2ecdc5cbe8c8b6b3a7567",
-                "shasum": ""
+                "shasum": "",
+                "mirrors": [
+                    {
+                        "url": "https://mirrors.aliyun.com/composer/dists/%package%/%reference%.%type%",
+                        "preferred": true
+                    }
+                ]
             },
             "require": {
                 "alibabacloud/credentials": "^1.2.2",
@@ -416,6 +707,52 @@
                 "source": "https://github.com/alibabacloud-sdk-php/openapi-core/tree/1.0.9"
             },
             "time": "2026-01-15T06:47:29+00:00"
+        },
+        {
+            "name": "alibabacloud/openapi-util",
+            "version": "0.2.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/openapi-util.git",
+                "reference": "02b1dda623b3d4614720da76b81640e9f308c52d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/openapi-util/zipball/02b1dda623b3d4614720da76b81640e9f308c52d",
+                "reference": "02b1dda623b3d4614720da76b81640e9f308c52d",
+                "shasum": ""
+            },
+            "require": {
+                "alibabacloud/tea": "^3.1",
+                "alibabacloud/tea-utils": "^0.2",
+                "lizhichao/one-sm": "^1.5",
+                "php": ">5.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AlibabaCloud\\OpenApiUtil\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Alibaba Cloud SDK",
+                    "email": "sdk-team@alibabacloud.com"
+                }
+            ],
+            "description": "Alibaba Cloud OpenApi Util",
+            "support": {
+                "issues": "https://github.com/alibabacloud-sdk-php/openapi-util/issues",
+                "source": "https://github.com/alibabacloud-sdk-php/openapi-util/tree/0.2.2"
+            },
+            "time": "2026-01-14T07:41:26+00:00"
         },
         {
             "name": "alibabacloud/tea",
@@ -481,6 +818,90 @@
                 "source": "https://github.com/aliyun/tea-php"
             },
             "time": "2023-05-16T06:43:41+00:00"
+        },
+        {
+            "name": "alibabacloud/tea-utils",
+            "version": "0.2.22",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/tea-utils.git",
+                "reference": "d885eadc9d185661ff9bd1d037333f62ba5daa99"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/tea-utils/zipball/d885eadc9d185661ff9bd1d037333f62ba5daa99",
+                "reference": "d885eadc9d185661ff9bd1d037333f62ba5daa99",
+                "shasum": ""
+            },
+            "require": {
+                "alibabacloud/tea": "^3.1",
+                "php": ">5.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AlibabaCloud\\Tea\\Utils\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Alibaba Cloud SDK",
+                    "email": "sdk-team@alibabacloud.com"
+                }
+            ],
+            "description": "Alibaba Cloud Tea Utils for PHP",
+            "support": {
+                "issues": "https://github.com/aliyun/tea-util/issues",
+                "source": "https://github.com/aliyun/tea-util"
+            },
+            "time": "2025-11-19T04:38:07+00:00"
+        },
+        {
+            "name": "alibabacloud/tea-xml",
+            "version": "0.2.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alibabacloud-sdk-php/tea-xml.git",
+                "reference": "3e0c000bf536224eebbac913c371bef174c0a16a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/tea-xml/zipball/3e0c000bf536224eebbac913c371bef174c0a16a",
+                "reference": "3e0c000bf536224eebbac913c371bef174c0a16a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">5.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "*",
+                "symfony/var-dumper": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AlibabaCloud\\Tea\\XML\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Alibaba Cloud SDK",
+                    "email": "sdk-team@alibabacloud.com"
+                }
+            ],
+            "description": "Alibaba Cloud Tea XML Library for PHP",
+            "support": {
+                "source": "https://github.com/alibabacloud-sdk-php/tea-xml/tree/0.2.4"
+            },
+            "time": "2022-08-02T04:12:58+00:00"
         },
         {
             "name": "aws/aws-crt-php",
@@ -3030,6 +3451,60 @@
                 }
             ],
             "time": "2026-03-08T20:05:35+00:00"
+        },
+        {
+            "name": "lizhichao/one-sm",
+            "version": "1.10",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/lizhichao/sm.git",
+                "reference": "687a012a44a5bfd4d9143a0234e1060543be455a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/lizhichao/sm/zipball/687a012a44a5bfd4d9143a0234e1060543be455a",
+                "reference": "687a012a44a5bfd4d9143a0234e1060543be455a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.6"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "OneSm\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "tanszhe",
+                    "email": "1018595261@qq.com"
+                }
+            ],
+            "description": "国密sm3",
+            "keywords": [
+                "php",
+                "sm3"
+            ],
+            "support": {
+                "issues": "https://github.com/lizhichao/sm/issues",
+                "source": "https://github.com/lizhichao/sm/tree/1.10"
+            },
+            "funding": [
+                {
+                    "url": "https://www.vicsdf.com/img/w.jpg",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://www.vicsdf.com/img/z.jpg",
+                    "type": "custom"
+                }
+            ],
+            "time": "2021-05-26T06:19:22+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -10000,5 +10475,5 @@
         "php": "^8.3"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.11.0"
+    "plugin-api-version": "2.6.0"
 }
