@@ -59,6 +59,48 @@ export const securityRiskMeta: Record<CommunityContentSecurityRiskLevel, { label
   high: { label: '高风险', color: 'red' },
 }
 
+/**
+ * 机审风险标签中文映射。
+ * 阿里云 TextModerationPlus 返回的 Result[].Label 为类目 code（ad/porn/politics 等），
+ * 微信 msg_sec_check 返回的是数字字符串。映射覆盖常见类目，未命中的原样显示原值。
+ */
+export const securityRiskLabelLabels: Record<string, string> = {
+  ad: '广告',
+  porn: '色情低俗',
+  sexy: '性感',
+  politics: '时政敏感',
+  terrorism: '暴恐',
+  abuse: '辱骂攻击',
+  ban: '违禁内容',
+  contraband: '违禁物品',
+  fraud: '欺诈诈骗',
+  drug: '涉毒',
+  gambling: '赌博',
+  violence: '暴力',
+  spam: '垃圾信息',
+  watermark: '水印',
+  qrcode: '二维码引流',
+  improper: '不当内容',
+  forbidden: '违法违规',
+  other: '其他风险',
+  // 微信 msg_sec_check v2 的 result.label 数字编码
+  '100': '正常',
+  '10001': '色情',
+  '20001': '诈骗',
+  '20002': '辱骂',
+  '20003': '政治敏感',
+  '20006': '违法犯罪',
+  '20008': '广告',
+  '20012': '暴恐',
+  '20013': '色情低俗',
+  '30001': '违法违规',
+  '30002': '违法违规',
+}
+
+export function securityRiskLabelLabel(value: string): string {
+  return securityRiskLabelLabels[value] ?? securityRiskLabelLabels[value.toLowerCase()] ?? value
+}
+
 export const emptyAuditStats = (): CommunityAuditStats => ({
   total: 0,
   pending_review: 0,

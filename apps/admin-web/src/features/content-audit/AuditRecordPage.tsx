@@ -11,7 +11,7 @@ import {
   type CommunityContentSecurityVerdict,
 } from '../../api/admin'
 import { PageHead, StatCard } from '../../components/xq'
-import { errorText, formatTime, securityProviderLabels, securityRiskMeta, securityVerdictMeta } from './shared'
+import { errorText, formatTime, securityProviderLabels, securityRiskLabelLabel, securityRiskMeta, securityVerdictMeta } from './shared'
 
 interface RecordFilters {
   content_type?: 'post' | 'comment'
@@ -132,7 +132,7 @@ export function AuditRecordPage() {
       title: '风险标签',
       dataIndex: 'risk_labels',
       width: 190,
-      render: (values: string[]) => values.length ? <Space size={4} wrap>{values.map((value) => <Tag key={value}>{value}</Tag>)}</Space> : <Typography.Text type="secondary">无</Typography.Text>,
+      render: (values: string[]) => values.length ? <Space size={4} wrap>{values.map((value) => <Tag key={value}>{securityRiskLabelLabel(value)}</Tag>)}</Space> : <Typography.Text type="secondary">无</Typography.Text>,
     },
     {
       title: '降级原因',
